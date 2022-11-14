@@ -1,0 +1,273 @@
+/*
+  Copyright 2021 Adobe. All rights reserved.
+  This file is licensed to you under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License. You may obtain a copy
+  of the License at http://www.apache.org/licenses/LICENSE-2.0
+  Unless required by applicable law or agreed to in writing, software distributed under
+  the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+  OF ANY KIND, either express or implied. See the License for the specific language
+  governing permissions and limitations under the License.
+*/
+
+package com.adobe.marketing.mobile;
+
+import static com.adobe.marketing.mobile.FunctionalTestHelper.*;
+import static com.adobe.marketing.mobile.services.HttpMethod.POST;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import com.adobe.marketing.mobile.edge.identity.Identity;
+import com.adobe.marketing.mobile.services.HttpConnecting;
+import com.adobe.marketing.mobile.services.TestableNetworkRequest;
+import com.adobe.marketing.mobile.util.FunctionalTestConstants;
+import com.adobe.marketing.mobile.util.FunctionalTestUtils;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.runner.RunWith;
+
+@RunWith(AndroidJUnit4.class)
+public class CompletionHandlerFunctionalTests {
+
+	private static final String EXEDGE_INTERACT_URL_STRING =
+		FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
+	private static final String CONFIG_ID = "1234abcd-abcd-1234-5678-123456abcdef";
+
+	private static final String RESPONSE_BODY_WITH_HANDLE =
+		"\u0000{\"requestId\": \"0ee43289-4a4e-469a-bf5c-1d8186919a26\",\"handle\": [{\"payload\": [{\"id\": \"AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9\",\"scope\": \"buttonColor\",\"items\": [{                           \"schema\": \"https://ns.adobe.com/personalization/json-content-item\",\"data\": {\"content\": {\"value\": \"#D41DBA\"}}}]}],\"type\": \"personalization:decisions\"}]}\n";
+	private static final String RESPONSE_BODY_WITH_TWO_ERRORS =
+		"\u0000{\"requestId\": \"0ee43289-4a4e-469a-bf5c-1d8186919a27\",\"errors\": [{\"message\": \"An error occurred while calling the 'X' service for this request. Please try again.\", \"code\": \"502\"}, {\"message\": \"An error occurred while calling the 'Y', service unavailable\", \"code\": \"503\"}]}\n";
+
+	@Rule
+	public RuleChain rule = RuleChain
+		.outerRule(new LogOnErrorRule())
+		.around(new SetupCoreRule())
+		.around(new RegisterMonitorExtensionRule());
+
+	@Before
+	public void setup() throws Exception {
+		setExpectationEvent(EventType.HUB.getName(), EventSource.BOOTED.getName(), 1);
+		setExpectationEvent(EventType.CONFIGURATION.getName(), EventSource.REQUEST_CONTENT.getName(), 1);
+		setExpectationEvent(EventType.CONFIGURATION.getName(), EventSource.RESPONSE_CONTENT.getName(), 1);
+		setExpectationEvent(EventType.HUB.getName(), EventSource.SHARED_STATE.getName(), 4);
+
+		HashMap<String, Object> config = new HashMap<String, Object>() {
+			{
+				put("edge.configId", CONFIG_ID);
+			}
+		};
+		MobileCore.updateConfiguration(config);
+
+		Edge.registerExtension();
+		Identity.registerExtension();
+
+		final CountDownLatch latch = new CountDownLatch(1);
+		MobileCore.start(
+			new AdobeCallback() {
+				@Override
+				public void call(Object o) {
+					latch.countDown();
+				}
+			}
+		);
+
+		latch.await();
+		assertExpectedEvents(false);
+		resetTestExpectations();
+	}
+
+	@Test
+	public void testSendEvent_withCompletionHandler_callsCompletionCorrectly() throws InterruptedException {
+		HttpConnecting responseConnection = createNetworkResponse(RESPONSE_BODY_WITH_HANDLE, 200);
+		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
+		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
+
+		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
+			.setXdmSchema(
+				new HashMap<String, Object>() {
+					{
+						put("eventType", "personalizationEvent");
+						put("test", "xdm");
+					}
+				}
+			)
+			.build();
+		final CountDownLatch latch = new CountDownLatch(1);
+		final List<EdgeEventHandle> receivedHandles = new ArrayList<>();
+		Edge.sendEvent(
+			experienceEvent,
+			new EdgeCallback() {
+				@Override
+				public void onComplete(List<EdgeEventHandle> handles) {
+					receivedHandles.addAll(handles);
+					latch.countDown();
+				}
+			}
+		);
+
+		assertNetworkRequestCount();
+		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch.await(1, TimeUnit.SECONDS));
+
+		List<TestableNetworkRequest> resultNetworkRequests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST);
+		assertEquals(1, resultNetworkRequests.size());
+		assertEquals(1, receivedHandles.size());
+
+		assertEquals("personalization:decisions", receivedHandles.get(0).getType());
+		assertEquals(1, receivedHandles.get(0).getPayload().size());
+
+		Map<String, String> data = FunctionalTestUtils.flattenMap(receivedHandles.get(0).getPayload().get(0));
+
+		assertEquals(4, data.size());
+		assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9", data.get("id"));
+		assertEquals("#D41DBA", data.get("items[0].data.content.value"));
+		assertEquals("https://ns.adobe.com/personalization/json-content-item", data.get("items[0].schema"));
+		assertEquals("buttonColor", data.get("scope"));
+	}
+
+	@Test
+	public void testSendEventx2_withCompletionHandler_whenResponseHandle_callsCompletionCorrectly()
+		throws InterruptedException {
+		HttpConnecting responseConnection = createNetworkResponse(RESPONSE_BODY_WITH_HANDLE, 200);
+		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
+		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 2);
+
+		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
+			.setXdmSchema(
+				new HashMap<String, Object>() {
+					{
+						put("eventType", "personalizationEvent");
+						put("test", "xdm");
+					}
+				}
+			)
+			.build();
+
+		final CountDownLatch latch1 = new CountDownLatch(1);
+		Edge.sendEvent(
+			experienceEvent,
+			new EdgeCallback() {
+				@Override
+				public void onComplete(List<EdgeEventHandle> handles) {
+					assertEquals(1, handles.size());
+					latch1.countDown();
+				}
+			}
+		);
+
+		final CountDownLatch latch2 = new CountDownLatch(1);
+		Edge.sendEvent(
+			experienceEvent,
+			new EdgeCallback() {
+				@Override
+				public void onComplete(List<EdgeEventHandle> handles) {
+					assertEquals(1, handles.size());
+					latch2.countDown();
+				}
+			}
+		);
+
+		assertNetworkRequestCount();
+		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch1.await(1, TimeUnit.SECONDS));
+		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch2.await(1, TimeUnit.SECONDS));
+	}
+
+	@Test
+	public void testSendEventx2_withCompletionHandler_whenServerError_callsCompletion() throws InterruptedException {
+		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
+			.setXdmSchema(
+				new HashMap<String, Object>() {
+					{
+						put("eventType", "personalizationEvent");
+						put("test", "xdm");
+					}
+				}
+			)
+			.build();
+
+		// set expectations and send first event
+		HttpConnecting responseConnection1 = createNetworkResponse(RESPONSE_BODY_WITH_HANDLE, 200);
+		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection1);
+		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
+
+		final CountDownLatch latch1 = new CountDownLatch(1);
+		Edge.sendEvent(
+			experienceEvent,
+			new EdgeCallback() {
+				@Override
+				public void onComplete(List<EdgeEventHandle> handles) {
+					assertEquals(1, handles.size());
+					latch1.countDown();
+				}
+			}
+		);
+
+		assertNetworkRequestCount();
+		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch1.await(1, TimeUnit.SECONDS));
+
+		resetTestExpectations();
+
+		// set expectations and send second event
+		HttpConnecting responseConnection2 = createNetworkResponse(RESPONSE_BODY_WITH_TWO_ERRORS, 200);
+		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection2);
+		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
+
+		final CountDownLatch latch2 = new CountDownLatch(1);
+		Edge.sendEvent(
+			experienceEvent,
+			new EdgeCallback() {
+				@Override
+				public void onComplete(List<EdgeEventHandle> handles) {
+					// 0 handles, received errors but still called completion
+					assertEquals(0, handles.size());
+					latch2.countDown();
+				}
+			}
+		);
+
+		assertNetworkRequestCount();
+		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch2.await(1, TimeUnit.SECONDS));
+	}
+
+	@Test
+	public void testSendEvent_withCompletionHandler_whenServerErrorAndHandle_callsCompletion()
+		throws InterruptedException {
+		final String responseBodyWithHandleAndError =
+			"\u0000{\"requestId\": \"0ee43289-4a4e-469a-bf5c-1d8186919a26\",\"handle\": [{\"payload\": [{\"id\": \"AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9\",\"scope\": \"buttonColor\",\"items\": [{                           \"schema\": \"https://ns.adobe.com/personalization/json-content-item\",\"data\": {\"content\": {\"value\": \"#D41DBA\"}}}]}],\"type\": \"personalization:decisions\"}],\"errors\": [{\"message\": \"An error occurred while calling the 'X' service for this request. Please try again.\", \"code\": \"502\"}, {\"message\": \"An error occurred while calling the 'Y', service unavailable\", \"code\": \"503\"}]}\n";
+		HttpConnecting responseConnection = createNetworkResponse(responseBodyWithHandleAndError, 200);
+		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
+		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
+
+		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
+			.setXdmSchema(
+				new HashMap<String, Object>() {
+					{
+						put("eventType", "personalizationEvent");
+						put("test", "xdm");
+					}
+				}
+			)
+			.build();
+		final CountDownLatch latch = new CountDownLatch(1);
+		Edge.sendEvent(
+			experienceEvent,
+			new EdgeCallback() {
+				@Override
+				public void onComplete(List<EdgeEventHandle> handles) {
+					assertEquals(1, handles.size());
+					latch.countDown();
+				}
+			}
+		);
+
+		assertNetworkRequestCount();
+		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch.await(1, TimeUnit.SECONDS));
+	}
+}
