@@ -87,7 +87,7 @@ jobs:
     # List of available Android Docker images: https://circleci.com/developer/images/image/cimg/android#image-tags
     executor:
       name: android/android-docker
-      tag: 2022.09.2
+      tag: 2022.09.2-node
 
     steps:
       - checkout
