@@ -46,6 +46,7 @@ jobs:
         type: string
         default: v1
 
+    # List of available Android Docker images: https://circleci.com/developer/images/image/cimg/android#image-tags
     executor:
       name: android/android-docker
       tag: 2022.09.2-node
@@ -153,6 +154,10 @@ jobs:
           cache-prefix: << parameters.gradle-cache-prefix >>
       - android/restore-build-cache:
           cache-prefix: << parameters.build-cache-prefix >>
+
+      - run:
+          name: List availabe emulator images
+          command: sdkmanager --list
 
       - android/start-emulator-and-run-tests:
           #   It should match the name seen in the "sdkmanager --list" output
