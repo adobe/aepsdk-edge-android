@@ -71,6 +71,10 @@ jobs:
       - android/save-build-cache:
           cache-prefix: << parameters.build-cache-prefix >>
 
+      # Store Lint report
+      - store_artifacts:
+          path: code/edge/build/reports
+
   build-and-unit-test:
     parameters:
       gradle-cache-prefix:
