@@ -130,7 +130,7 @@ jobs:
           path: ci/unit-test/build/reports
 
       - store_test_results:
-          path: ci/unit-test/build/test-results
+          path: code/edge/build/test-results
 
   functional-test:
     parameters:
@@ -158,7 +158,7 @@ jobs:
 
       - android/start-emulator-and-run-tests:
           #   It should match the name seen in the "sdkmanager --list" output
-          system-image: system-images;android-29;default;x86
+          system-image: system-images;android-33;google_apis;x86_64
           #   The command to be run, while waiting for emulator startup
           post-emulator-launch-assemble-command: make ci-build
           #   The test command
