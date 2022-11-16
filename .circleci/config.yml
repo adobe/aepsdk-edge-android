@@ -149,8 +149,6 @@ jobs:
     steps:
       - checkout
 
-      - android/restore-gradle-cache:
-          cache-prefix: << parameters.gradle-cache-prefix >>
       - android/restore-build-cache:
           cache-prefix: << parameters.build-cache-prefix >>
 
@@ -165,9 +163,8 @@ jobs:
           post-emulator-launch-assemble-command: make ci-build
           #   The test command
           test-command: make ci-functional-test
+          restore-gradle-cache-prefix: << parameters.gradle-cache-prefix >>
       
-      - android/save-gradle-cache:
-          cache-prefix: << parameters.gradle-cache-prefix >>
       - android/save-build-cache:
           cache-prefix: << parameters.build-cache-prefix >>
 
