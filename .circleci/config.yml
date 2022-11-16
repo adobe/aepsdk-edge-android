@@ -123,7 +123,7 @@ jobs:
       # Code coverage upload using Codecov
       # See options explanation here: https://docs.codecov.com/docs/codecov-uploader
       - codecov/upload:
-          file: 'ci/unit-test/build/reports/jacoco/*'
+          file: ci/unit-test/build/reports/jacoco/platformUnitTestJacocoReport/platformUnitTestJacocoReport.xml
           flags: unit-tests
 
       - store_artifacts:
@@ -174,12 +174,12 @@ jobs:
       # Code coverage upload using Codecov
       # See options explanation here: https://docs.codecov.com/docs/codecov-uploader
       - codecov/upload:
-          file: 'ci/functional-test/build/reports/coverage/*'
+          file: ci/functional-test/build/reports/coverage/androidTest/phone/debug/connected/report.xml
           flags: functional-tests
 
       - store_artifacts:
           path: ci/functional-test/build/reports
 
       - store_test_results:
-          path: code/edge/build/outputs/androidTests
+          path: code/edge/build/outputs/androidTest-results
           
