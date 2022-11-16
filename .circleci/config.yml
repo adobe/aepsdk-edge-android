@@ -129,6 +129,7 @@ jobs:
       - store_artifacts:
           path: ci/unit-test/build/reports
 
+      # On test failures, the step in the Makefile to copy the reports to ci/ is not run, so store test results from build folder instead.
       - store_test_results:
           path: code/edge/build/test-results
 
@@ -153,7 +154,7 @@ jobs:
           cache-prefix: << parameters.build-cache-prefix >>
 
       - run:
-          name: List availabe emulator images
+          name: List available emulator images
           command: sdkmanager --list
 
       - android/start-emulator-and-run-tests:
@@ -177,6 +178,7 @@ jobs:
       - store_artifacts:
           path: ci/functional-test/build/reports
 
+      # On test failures, the step in the Makefile to copy the reports to ci/ is not run, so store test results from build folder instead.
       - store_test_results:
           path: code/edge/build/outputs/androidTest-results
           
