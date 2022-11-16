@@ -26,13 +26,13 @@ AAR_FILE_DIR =  $(ROOT_DIR)/code/$(PROJECT_NAME)/build/outputs/aar
 init:
 	git config core.hooksPath .githooks
 	
-create-ci:
-	(mkdir -p ci)
-
 clean:
 	(rm -rf ci)
 	(rm -rf $(AAR_FILE_DIR))
 	(./code/gradlew -p code clean)
+
+create-ci: clean
+	(mkdir -p ci)
 
 format:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) spotlessApply)

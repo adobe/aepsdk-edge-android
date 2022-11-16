@@ -46,6 +46,7 @@ jobs:
         type: string
         default: v1
 
+    # List of available Android Docker images: https://circleci.com/developer/images/image/cimg/android#image-tags
     executor:
       name: android/android-docker
       tag: 2022.09.2-node
@@ -71,6 +72,10 @@ jobs:
       - android/save-build-cache:
           cache-prefix: << parameters.build-cache-prefix >>
 
+      # Store Lint report
+      - store_artifacts:
+          path: code/edge/build/reports
+
   build-and-unit-test:
     parameters:
       gradle-cache-prefix:
@@ -83,7 +88,7 @@ jobs:
     # List of available Android Docker images: https://circleci.com/developer/images/image/cimg/android#image-tags
     executor:
       name: android/android-docker
-      tag: 2022.09.2
+      tag: 2022.09.2-node
 
     steps:
       - checkout
@@ -118,15 +123,15 @@ jobs:
       # Code coverage upload using Codecov
       # See options explanation here: https://docs.codecov.com/docs/codecov-uploader
       - codecov/upload:
-          file: ./ci/unit-test/build/reports
+          file: ci/unit-test/build/reports/jacoco/platformUnitTestJacocoReport/platformUnitTestJacocoReport.xml
           flags: unit-tests
-          validate: true
 
       - store_artifacts:
           path: ci/unit-test/build/reports
 
+      # On test failures, the step in the Makefile to copy the reports to ci/ is not run, so store test results from build folder instead.
       - store_test_results:
-          path: ci/unit-test/build/test-results
+          path: code/edge/build/test-results
 
   functional-test:
     parameters:
@@ -145,34 +150,35 @@ jobs:
     steps:
       - checkout
 
-      - android/restore-gradle-cache:
-          cache-prefix: << parameters.gradle-cache-prefix >>
       - android/restore-build-cache:
           cache-prefix: << parameters.build-cache-prefix >>
 
+      - run:
+          name: List available emulator images
+          command: sdkmanager --list
+
       - android/start-emulator-and-run-tests:
           #   It should match the name seen in the "sdkmanager --list" output
-          system-image: system-images;android-33;google_apis;x86_64
+          system-image: system-images;android-29;default;x86
           #   The command to be run, while waiting for emulator startup
           post-emulator-launch-assemble-command: make ci-build
           #   The test command
           test-command: make ci-functional-test
+          restore-gradle-cache-prefix: << parameters.gradle-cache-prefix >>
       
-      - android/save-gradle-cache:
-          cache-prefix: << parameters.gradle-cache-prefix >>
       - android/save-build-cache:
           cache-prefix: << parameters.build-cache-prefix >>
 
       # Code coverage upload using Codecov
       # See options explanation here: https://docs.codecov.com/docs/codecov-uploader
       - codecov/upload:
-          file: ./ci/functional-test/build/reports
+          file: ci/functional-test/build/reports/coverage/androidTest/phone/debug/connected/report.xml
           flags: functional-tests
-          validate: true
 
       - store_artifacts:
           path: ci/functional-test/build/reports
 
+      # On test failures, the step in the Makefile to copy the reports to ci/ is not run, so store test results from build folder instead.
       - store_test_results:
-          path: ci/functional-test/build/outputs/androidTest-results
+          path: code/edge/build/outputs/androidTest-results
           
