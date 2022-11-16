@@ -123,9 +123,8 @@ jobs:
       # Code coverage upload using Codecov
       # See options explanation here: https://docs.codecov.com/docs/codecov-uploader
       - codecov/upload:
-          file: ./ci/unit-test/build/reports
+          file: 'ci/unit-test/build/reports/jacoco/*'
           flags: unit-tests
-          validate: true
 
       - store_artifacts:
           path: ci/unit-test/build/reports
@@ -175,9 +174,8 @@ jobs:
       # Code coverage upload using Codecov
       # See options explanation here: https://docs.codecov.com/docs/codecov-uploader
       - codecov/upload:
-          file: ./ci/functional-test/build/reports
+          file: 'ci/functional-test/build/reports/coverage/*'
           flags: functional-tests
-          validate: true
 
       - store_artifacts:
           path: ci/functional-test/build/reports
