@@ -24,7 +24,7 @@ interface EdgeSharedStateCallback {
 	 * @param event current event for which to fetch the shared state; if null is passed, the latest shared state is returned
 	 * @return current shared state if found, null if shared state is pending or an error occurred
 	 */
-	Map<String, Object> getSharedState(final String stateOwner, final Event event);
+	SharedStateResult getSharedState(final String stateOwner, final Event event);
 
 	/**
 	 * Sets a Shared State to the {@link EventHub}.
