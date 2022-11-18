@@ -54,9 +54,6 @@ class EdgeExtension extends Extension {
 	/**
 	 * Called by the Mobile SDK when registering the extension.
 	 * Initialize the extension and register event listeners.
-	 * The example below uses {@link EdgeExtensionListener} to handle all interesting events,
-	 * however separate {@link com.adobe.marketing.mobile.ExtensionListener} classes may be used
-	 * instead.
 	 * It is recommended to listen for each specific event the extension is interested in.
 	 * Use of a wildcard listener is discouraged in production environments.
 	 *
@@ -69,9 +66,6 @@ class EdgeExtension extends Extension {
 	/**
 	 * Called by the Mobile SDK when registering the extension.
 	 * Initialize the extension and register event listeners.
-	 * The example below uses {@link EdgeExtensionListener} to handle all interesting events,
-	 * however separate {@link com.adobe.marketing.mobile.ExtensionListener} classes may be used
-	 * instead.
 	 * It is recommended to listen for each specific event the extension is interested in.
 	 * Use of a wildcard listener is discouraged in production environments.
 	 * <p>
