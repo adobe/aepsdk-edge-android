@@ -16,17 +16,17 @@ import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.DataReaderException;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("unused")
 public class Edge {
+
 	private static final String LOG_SOURCE = "Edge";
 	private static final long CALLBACK_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(1);
 	public static final Class<? extends Extension> EXTENSION = EdgeExtension.class;
-	
+
 	private Edge() {}
 
 	/**
@@ -68,7 +68,11 @@ public class Edge {
 	 */
 	public static void sendEvent(final ExperienceEvent experienceEvent, final EdgeCallback callback) {
 		if (experienceEvent == null) {
-			Log.warning(LOG_TAG, LOG_SOURCE, "sendEvent API cannot make request, the ExperienceEvent should not be null.");
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"sendEvent API cannot make request, the ExperienceEvent should not be null."
+			);
 			return;
 		}
 
@@ -112,7 +116,11 @@ public class Edge {
 	 */
 	public static void getLocationHint(final AdobeCallback<String> callback) {
 		if (callback == null) {
-			Log.debug(LOG_TAG, LOG_SOURCE, "Unexpected null callback, provide a callback to receive current location hint.");
+			Log.debug(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Unexpected null callback, provide a callback to receive current location hint."
+			);
 			return;
 		}
 
@@ -149,20 +157,33 @@ public class Edge {
 					}
 
 					try {
-						String locationHint = DataReader.getString(responseData, EdgeConstants.EventDataKey.LOCATION_HINT);
+						String locationHint = DataReader.getString(
+							responseData,
+							EdgeConstants.EventDataKey.LOCATION_HINT
+						);
 						callback.call(locationHint); // hint may be null (hint not set or expired)
 					} catch (DataReaderException e) {
 						returnError(callback, AdobeError.UNEXPECTED_ERROR); // hint value wrong type
-						Log.warning(LOG_TAG, LOG_SOURCE,  "Failed to parse getLocationHint value to String. %s", e.getLocalizedMessage());
+						Log.warning(
+							LOG_TAG,
+							LOG_SOURCE,
+							"Failed to parse getLocationHint value to String. %s",
+							e.getLocalizedMessage()
+						);
 					}
 				}
-				
+
 				@Override
 				public void fail(final AdobeError adobeError) {
 					returnError(callback, adobeError);
-					Log.debug(LOG_TAG, LOG_SOURCE, "Failed to dispatch %s event: %s.", EdgeConstants.EventName.REQUEST_LOCATION_HINT, adobeError.getErrorName());
+					Log.debug(
+						LOG_TAG,
+						LOG_SOURCE,
+						"Failed to dispatch %s event: %s.",
+						EdgeConstants.EventName.REQUEST_LOCATION_HINT,
+						adobeError.getErrorName()
+					);
 				}
-				
 			}
 		);
 	}
@@ -193,7 +214,7 @@ public class Edge {
 		)
 			.setEventData(requestData)
 			.build();
-		
+
 		MobileCore.dispatchEvent(event);
 	}
 

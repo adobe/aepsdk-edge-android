@@ -16,7 +16,6 @@ import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 import com.adobe.marketing.mobile.services.HitQueuing;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.util.DataReader;
-
 import java.util.Map;
 
 /**
@@ -64,10 +63,13 @@ class EdgeState {
 		if (hasBooted) {
 			return true;
 		}
-		
+
 		// Get Hub's shared state needed to check if Identity and Consent are registered
 		// If not set, return false and attempt bootup at next event
-		final SharedStateResult eventHubStateResult = sharedStateCallback.getSharedState(EdgeConstants.SharedState.HUB, null);
+		final SharedStateResult eventHubStateResult = sharedStateCallback.getSharedState(
+			EdgeConstants.SharedState.HUB,
+			null
+		);
 		if (eventHubStateResult == null || eventHubStateResult.getStatus() != SharedStateStatus.SET) {
 			return false;
 		}
@@ -93,7 +95,7 @@ class EdgeState {
 
 		hasBooted = true;
 		Log.debug(LOG_TAG, LOG_SOURCE, "Edge has successfully booted up");
-		
+
 		return hasBooted;
 	}
 
@@ -174,15 +176,25 @@ class EdgeState {
 		Map<String, Object> consentExtensionInfo = null;
 
 		if (registeredExtensionsWithHub != null) {
-			final Map<String, Object> extensions = DataReader.optTypedMap(Object.class, registeredExtensionsWithHub, EdgeConstants.SharedState.Hub.EXTENSIONS, null);
+			final Map<String, Object> extensions = DataReader.optTypedMap(
+				Object.class,
+				registeredExtensionsWithHub,
+				EdgeConstants.SharedState.Hub.EXTENSIONS,
+				null
+			);
 
 			if (extensions != null) {
-				consentExtensionInfo = DataReader.optTypedMap(Object.class, extensions, EdgeConstants.SharedState.CONSENT, null);
+				consentExtensionInfo =
+					DataReader.optTypedMap(Object.class, extensions, EdgeConstants.SharedState.CONSENT, null);
 			}
 		}
 
 		if (Utils.isNullOrEmpty(consentExtensionInfo)) {
-			Log.warning(LOG_TAG, LOG_SOURCE, "Consent extension is not registered yet, using default collect status (yes)");
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Consent extension is not registered yet, using default collect status (yes)"
+			);
 			updateCurrentConsent(EdgeConstants.Defaults.COLLECT_CONSENT_YES);
 		}
 		// otherwise keep consent pending until the consent preferences update event is received
@@ -195,7 +207,11 @@ class EdgeState {
 	 */
 	private void handleCollectConsentChange(final ConsentStatus status) {
 		if (hitQueue == null) {
-			Log.debug(LOG_TAG, LOG_SOURCE, "Unable to update hit queue with consent status. HitQueuing instance is null.");
+			Log.debug(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Unable to update hit queue with consent status. HitQueuing instance is null."
+			);
 			return;
 		}
 

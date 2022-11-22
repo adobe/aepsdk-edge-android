@@ -11,18 +11,9 @@
 
 package com.adobe.marketing.mobile;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
-import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import org.junit.Before;
-import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
@@ -39,7 +30,6 @@ public class EdgeExtensionListenerTests {
 		mockEdgeExtension = Mockito.mock(EdgeExtension.class);
 		MobileCore.start(null);
 	}
-
 	/* TODO revisit event listener tests to see if they can be reused
 	@Test
 	public void testHear_WhenParentExtensionNull() throws Exception {
