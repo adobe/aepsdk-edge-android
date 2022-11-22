@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile;
 
+import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;

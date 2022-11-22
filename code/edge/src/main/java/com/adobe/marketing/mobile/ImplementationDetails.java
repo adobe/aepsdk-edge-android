@@ -19,6 +19,7 @@ import static com.adobe.marketing.mobile.EdgeJson.Event.ImplementationDetails.NA
 import static com.adobe.marketing.mobile.EdgeJson.Event.ImplementationDetails.VALUE_UNKNOWN;
 import static com.adobe.marketing.mobile.EdgeJson.Event.ImplementationDetails.VERSION;
 
+import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.HashMap;
 import java.util.Map;
 

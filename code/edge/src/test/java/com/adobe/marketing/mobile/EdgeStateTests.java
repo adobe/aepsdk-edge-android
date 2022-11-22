@@ -44,7 +44,7 @@ public class EdgeStateTests {
 		mockSharedStateCallback =
 			new EdgeSharedStateCallback() {
 				@Override
-				public Map<String, Object> getSharedState(final String stateOwner, final Event event) {
+				public SharedStateResult getSharedState(final String stateOwner, final Event event) {
 					fail("EdgeState is not expected to call getSharedState.");
 					return null;
 				}
