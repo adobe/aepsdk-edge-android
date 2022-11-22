@@ -48,20 +48,6 @@ final class EventUtils {
 	}
 
 	/**
-	 * Checks if the provided {@code event} is of type {@link EdgeConstants.EventType#CONSENT} and source {@link EdgeConstants.EventSource#RESPONSE_CONTENT}.
-	 *
-	 * @param event current event to check
-	 * @return true if the type and source matches, false otherwise
-	 */
-	static boolean isConsentPreferencesUpdatedEvent(final Event event) {
-		return (
-			event != null &&
-			EdgeConstants.EventType.CONSENT.equalsIgnoreCase(event.getType()) &&
-			EdgeConstants.EventSource.RESPONSE_CONTENT.equalsIgnoreCase(event.getSource())
-		);
-	}
-
-	/**
 	 * Checks if the provided {@code event} is of type {@link EdgeConstants.EventType#EDGE_IDENTITY} and source {@link EdgeConstants.EventSource#RESET_COMPLETE}.
 	 *
 	 * @param event current event to check
@@ -73,61 +59,6 @@ final class EventUtils {
 			EdgeConstants.EventType.EDGE_IDENTITY.equalsIgnoreCase(event.getType()) &&
 			EdgeConstants.EventSource.RESET_COMPLETE.equalsIgnoreCase(event.getSource())
 		);
-	}
-
-	/**
-	 * Checks if the provided {@code event} is of type {@link EdgeConstants.EventType#EDGE} and source
-	 * {@link EdgeConstants.EventSource#REQUEST_IDENTITY} and the event data contains key of
-	 * {@link EdgeConstants.EventDataKey#LOCATION_HINT} with value {@code true}.
-	 *
-	 * @param event current event to check
-	 * @return true if the type, source, and key matches, false otherwise
-	 */
-	static boolean isGetLocationHintEvent(final Event event) {
-		if (
-			event != null &&
-			EdgeConstants.EventType.EDGE.equalsIgnoreCase(event.getType()) &&
-			EdgeConstants.EventSource.REQUEST_IDENTITY.equalsIgnoreCase(event.getSource()) &&
-			event.getEventData() != null &&
-			event.getEventData().containsKey(EdgeConstants.EventDataKey.LOCATION_HINT)
-		) {
-			try {
-				Boolean isHintEvent = (Boolean) event.getEventData().get(EdgeConstants.EventDataKey.LOCATION_HINT);
-				return isHintEvent != null && isHintEvent;
-			} catch (ClassCastException e) {
-				return false;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Checks if the provided {@code event} is of type {@link EdgeConstants.EventType#EDGE} and source
-	 * {@link EdgeConstants.EventSource#UPDATE_IDENTITY} and the event data contains key of
-	 * {@link EdgeConstants.EventDataKey#LOCATION_HINT}.
-	 *
-	 * @param event current event to check
-	 * @return true if the type and source matches, false otherwise
-	 */
-	static boolean isUpdateLocationHintEvent(final Event event) {
-		return (
-			event != null &&
-			EdgeConstants.EventType.EDGE.equalsIgnoreCase(event.getType()) &&
-			EdgeConstants.EventSource.UPDATE_IDENTITY.equalsIgnoreCase(event.getSource()) &&
-			event.getEventData() != null &&
-			event.getEventData().containsKey(EdgeConstants.EventDataKey.LOCATION_HINT)
-		);
-	}
-
-	/**
-	 * Checks if the provided {@code event} is null or if the event data is null/empty.
-	 *
-	 * @param event current event to check
-	 * @return true if event is null, event data is null or empty map
-	 */
-	static boolean isNullEventOrEmptyData(final Event event) {
-		return event == null || event.getEventData() == null || event.getEventData().isEmpty();
 	}
 
 	/**
@@ -188,28 +119,5 @@ final class EventUtils {
 		}
 
 		return assuranceIntegrationId;
-	}
-
-	/**
-	 * Checks if the provided {@code event} is a shared state update event for {@code stateOwnerName}
-	 *
-	 * @param stateOwnerName the shared state owner name; should not be null
-	 * @param event current event to check; should not be null
-	 * @return {@code boolean} indicating if it is the shared stage update for the provided {@code stateOwnerName}
-	 */
-	static boolean isSharedStateUpdateFor(final String stateOwnerName, final Event event) {
-		if (Utils.isNullOrEmpty(stateOwnerName) || event == null) {
-			return false;
-		}
-
-		String stateOwner;
-
-		try {
-			stateOwner = (String) event.getEventData().get(EdgeConstants.SharedState.STATE_OWNER);
-		} catch (ClassCastException e) {
-			return false;
-		}
-
-		return stateOwnerName.equals(stateOwner);
 	}
 }
