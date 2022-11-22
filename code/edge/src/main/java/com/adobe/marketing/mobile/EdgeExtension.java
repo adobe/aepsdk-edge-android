@@ -22,13 +22,13 @@ import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.services.PersistentHitQueue;
 import com.adobe.marketing.mobile.services.ServiceProvider;
-import java.util.Collection;
-import java.util.Collections;
+import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.StringUtils;
+
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Class {@code EdgeExtension} is an implementation of {@link Extension} and is responsible
@@ -39,15 +39,27 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 class EdgeExtension extends Extension {
 
 	private final String LOG_SOURCE = "EdgeExtension";
-	private final Object executorMutex = new Object();
 	/* used for creating the networkResponseHandler on demand */
-	private final Object mutex = new Object();
-	/* cached events in memory until required shared states are resolved */
-	private final ConcurrentLinkedQueue<Event> cachedEvents;
-	private NamedCollection dataStore;
+	private final Object networkResponseHandlerMutex = new Object();
 	private NetworkResponseHandler networkResponseHandler;
+	private NamedCollection dataStore;
 	private final HitQueuing hitQueue;
-
+	
+	/*
+	 * An {@code EdgeSharedStateCallback} to create and retrieve shared states.
+	 */
+	private final EdgeSharedStateCallback sharedStateCallback = new EdgeSharedStateCallback() {
+		@Override
+		public SharedStateResult getSharedState(final String stateOwner, final Event event) {
+			return getApi().getSharedState(stateOwner, event, false, SharedStateResolution.ANY);
+		}
+		
+		@Override
+		public void setSharedState(Map<String, Object> state, Event event) {
+			getApi().createSharedState(state, event);
+		}
+	};
+	
 	// package protected for testing
 	final EdgeState state;
 
@@ -77,27 +89,16 @@ class EdgeExtension extends Extension {
 	 */
 	protected EdgeExtension(final ExtensionApi extensionApi, final HitQueuing hitQueue) {
 		super(extensionApi);
-		EdgeSharedStateCallback sharedStateCallback = new EdgeSharedStateCallback() {
-			@Override
-			public SharedStateResult getSharedState(final String stateOwner, final Event event) {
-				return getApi().getSharedState(stateOwner, event, false, SharedStateResolution.ANY);
-			}
-
-			@Override
-			public void setSharedState(Map<String, Object> state, Event event) {
-				extensionApi.createSharedState(state, event);
-			}
-		};
-
-		final EdgeHitProcessor hitProcessor = new EdgeHitProcessor(
-			getNetworkResponseHandler(),
-			new EdgeNetworkService(ServiceProvider.getInstance().getNetworkService()),
-			getNamedCollection(),
-			sharedStateCallback,
-			new EdgeExtensionStateCallback()
-		);
-
+		
 		if (hitQueue == null) {
+			final EdgeHitProcessor hitProcessor = new EdgeHitProcessor(
+				getNetworkResponseHandler(),
+				new EdgeNetworkService(ServiceProvider.getInstance().getNetworkService()),
+				getNamedCollection(),
+				sharedStateCallback,
+				new EdgeExtensionStateCallback()
+			);
+		
 			final DataQueue dataQueue = ServiceProvider.getInstance().getDataQueueService().getDataQueue(getName());
 			this.hitQueue = new PersistentHitQueue(dataQueue, hitProcessor);
 		} else {
@@ -105,20 +106,26 @@ class EdgeExtension extends Extension {
 		}
 
 		state = new EdgeState(this.hitQueue, new EdgeProperties(getNamedCollection()), sharedStateCallback);
-		cachedEvents = new ConcurrentLinkedQueue<>();
-
+	}
+	
+	@NonNull
+	@Override
+	protected String getName() {
+		return EdgeConstants.EXTENSION_NAME;
+	}
+	
+	@Override
+	protected String getFriendlyName() {
+		return EdgeConstants.FRIENDLY_NAME;
+	}
+	
+	@Override
+	protected String getVersion() {
+		return EdgeConstants.EXTENSION_VERSION;
 	}
 
 	@Override
 	protected void onRegistered() {
-		// register a listener for shared state changes
-		getApi()
-			.registerEventListener(
-				EdgeConstants.EventType.ADOBE_HUB,
-				EdgeConstants.EventSource.ADOBE_SHARED_STATE,
-				this::handleSharedStateUpdate
-			);
-
 		// register a listener for Edge request events
 		getApi()
 			.registerEventListener(
@@ -168,50 +175,24 @@ class EdgeExtension extends Extension {
 			);
 	}
 
-	/**
-	 * Required override. Each extension must have a unique name within the application.
-	 * @return unique name of this extension
-	 */
-	@NonNull
 	@Override
-	protected String getName() {
-		return EdgeConstants.EXTENSION_NAME;
-	}
-	
-	@Override
-	protected String getFriendlyName() {
-		return EdgeConstants.FRIENDLY_NAME;
-	}
-
-	/**
-	 * Optional override.
-	 * @return the version of this extension
-	 */
-	@Override
-	protected String getVersion() {
-		return EdgeConstants.EXTENSION_VERSION;
-	}
-
-	/**
-	 * Handler for Shared State updates of the {@code EventHub} to be used to determine if Consent extension is registered on bootup
-	 * and updates on Configuration and Identity shared states to resume processing `cachedEvents`.
-	 *
-	 * @param event the update event; the event and the event data should not be null, checking in listener
-	 */
-	void handleSharedStateUpdate(@NonNull final Event event) {
-		if (EventUtils.isSharedStateUpdateFor(EdgeConstants.SharedState.HUB, event)) {
-			 SharedStateResult sharedStateResult = getApi().getSharedState(EdgeConstants.SharedState.HUB, event, false, SharedStateResolution.ANY);
-			 if (sharedStateResult.getStatus() == SharedStateStatus.SET) {
-				 state.bootupIfNeeded(sharedStateResult.getValue());
-			 }
+	public boolean readyForEvent(@NonNull Event event) {
+		if (!state.bootupIfNeeded()) {
+			return false;
 		}
-
-		if (
-			EventUtils.isSharedStateUpdateFor(EdgeConstants.SharedState.CONFIGURATION, event) ||
-			EventUtils.isSharedStateUpdateFor(EdgeConstants.SharedState.IDENTITY, event)
-		) {
-			processCachedEvents();
+		
+		if (EventUtils.isExperienceEvent(event) || EventUtils.isUpdateConsentEvent(event)) {
+			SharedStateResult configurationState = getApi().getSharedState(EdgeConstants.SharedState.CONFIGURATION, event, false, SharedStateResolution.ANY);
+			SharedStateResult identityState = getApi().getXDMSharedState(EdgeConstants.SharedState.IDENTITY, event, false, SharedStateResolution.ANY);
+			return configurationState != null && identityState != null && configurationState.getStatus() == SharedStateStatus.SET && identityState.getStatus() == SharedStateStatus.SET;
+		} else if (EventUtils.isResetComplete(event)) {
+			SharedStateResult configurationState = getApi().getSharedState(EdgeConstants.SharedState.CONFIGURATION, event, false, SharedStateResolution.ANY);
+			// use barrier to wait for EdgeIdentity to handle the reset
+			SharedStateResult identityState = getApi().getXDMSharedState(EdgeConstants.SharedState.IDENTITY, event, true, SharedStateResolution.ANY);
+			return configurationState != null && identityState != null && configurationState.getStatus() == SharedStateStatus.SET && identityState.getStatus() == SharedStateStatus.SET;
 		}
+		
+		return true;
 	}
 
 	/**
@@ -225,8 +206,7 @@ class EdgeExtension extends Extension {
 		if (shouldIgnore(event)) {
 			return;
 		}
-
-		processAddEvent(event);
+		processEdgeEvent(event);
 	}
 
 	/**
@@ -235,7 +215,7 @@ class EdgeExtension extends Extension {
 	 * @param event current event to process; the event and the event data should not be null, checking in listener
 	 */
 	void handleConsentUpdate(@NonNull final Event event) {
-		processAddEvent(event);
+		processEdgeEvent(event);
 	}
 
 	/**
@@ -253,7 +233,21 @@ class EdgeExtension extends Extension {
 	 * @param event current event to process
 	 */
 	void handleResetComplete(@NonNull final Event event) {
-		processAddEvent(event);
+		EdgeDataEntity entity = new EdgeDataEntity(event);
+		networkResponseHandler.setLastResetDate(event.getTimestamp()); // set last reset date
+		
+		if (hitQueue == null) {
+			Log.warning(LOG_TAG, LOG_SOURCE, "Hit queue is null, unable to queue reset complete event with id (%s).", event.getUniqueIdentifier());
+			return;
+		}
+		
+		hitQueue.queue(
+				new DataEntity(
+						event.getUniqueIdentifier(),
+						new Date(event.getTimestamp()),
+						EdgeDataEntitySerializer.serialize(entity)
+				)
+		);
 	}
 
 	/**
@@ -297,75 +291,43 @@ class EdgeExtension extends Extension {
 	}
 
 	/**
-	 * Adds an event to the event queue and starts processing the queue.
-	 * @param event the received event to be added in the events queue; should not be null
+	 * Processes an Experience Event or Consent Update Event.
 	 */
-	void processAddEvent(@NonNull final Event event) {
-		cachedEvents.add(event);
-		processCachedEvents();
-	}
+	void processEdgeEvent(@NonNull final Event event) {
+		Map<String, Object> configReady = getConfig(event);
 
-	/**
-	 * Processes the cached events in the order they were received.
-	 */
-	void processCachedEvents() {
-		while (!cachedEvents.isEmpty()) {
-			final Event event = cachedEvents.peek();
-
-			EdgeDataEntity entity;
-
-			if (EventUtils.isResetComplete(event)) {
-				entity = new EdgeDataEntity(event);
-				networkResponseHandler.setLastResetDate(event.getTimestamp()); // set last reset date
-			} else { // experience event / consent update
-				Map<String, Object> configReady = getConfig(event);
-
-				if (configReady == null) {
-					return; // wait for Configuration shared state
-				}
-
-				Map<String, Object> edgeConfig = EventUtils.getEdgeConfiguration(configReady);
-
-				if (
-					Utils.isNullOrEmpty((String) edgeConfig.get(EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID))
-				) {
-					// drop this event if configId is invalid (config id is a mandatory parameters for requests to Konductor)
-					Log.debug(LOG_TAG, LOG_SOURCE, "EdgeExtension - Missing edge.configId in Configuration, dropping event with unique id (%s)", event.getUniqueIdentifier());
-					cachedEvents.poll();
-					continue; // drop current, keep processing queued events
-				}
-
-				Map<String, Object> identityReady = getIdentity(event);
-
-				if (identityReady == null) {
-					return; // wait for Identity shared state
-				}
-
-				entity = new EdgeDataEntity(event, edgeConfig, identityReady);
-			}
-
-			if (hitQueue == null) {
-				Log.warning(LOG_TAG, LOG_SOURCE, "EdgeExtension - hit queue is null, unable to queue event with id (%s).", event.getUniqueIdentifier());
-				return;
-			}
-
-			hitQueue.queue(
-				new DataEntity(
-					event.getUniqueIdentifier(),
-					new Date(event.getTimestamp()),
-					EdgeDataEntitySerializer.serialize(entity)
-				)
-			);
-			cachedEvents.poll();
+		if (configReady == null) {
+			return; // Shouldn't get here as Configuration state is checked in readyForEvent
 		}
-	}
 
-	/**
-	 * Used only for testing
-	 * @return an unmodifiable collection of the cached {@code Events}
-	 */
-	Collection<Event> getCachedEvents() {
-		return Collections.unmodifiableCollection(this.cachedEvents);
+		Map<String, Object> edgeConfig = EventUtils.getEdgeConfiguration(configReady);
+		
+		if (StringUtils.isNullOrEmpty(DataReader.optString(edgeConfig, EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID, null))) {
+			// drop this event if configId is invalid (config id is a mandatory parameters for requests to Konductor)
+			Log.debug(LOG_TAG, LOG_SOURCE, "Missing edge.configId in Configuration, dropping event with unique id (%s)", event.getUniqueIdentifier());
+			return;
+		}
+
+		Map<String, Object> identityReady = getIdentity(event);
+
+		if (identityReady == null) {
+			return; // Shouldn't get here as Identity state is checked in readyForEvent
+		}
+
+		EdgeDataEntity entity = new EdgeDataEntity(event, edgeConfig, identityReady);
+
+		if (hitQueue == null) {
+			Log.warning(LOG_TAG, LOG_SOURCE, "Hit queue is null, unable to queue Edge event with id (%s).", event.getUniqueIdentifier());
+			return;
+		}
+
+		hitQueue.queue(
+			new DataEntity(
+				event.getUniqueIdentifier(),
+				new Date(event.getTimestamp()),
+				EdgeDataEntitySerializer.serialize(entity)
+			)
+		);
 	}
 
 	/**
@@ -376,8 +338,8 @@ class EdgeExtension extends Extension {
 	 */
 	private Map<String, Object> getConfig(final Event event) {
 		SharedStateResult sharedStateResult = getApi().getSharedState(EdgeConstants.SharedState.CONFIGURATION, event, false, SharedStateResolution.ANY);
-		if (sharedStateResult.getStatus() != SharedStateStatus.SET) {
-			Log.debug(LOG_TAG, LOG_SOURCE, "EdgeExtension - Configuration is pending, couldn't process event at this time, waiting...");
+		if (sharedStateResult == null || sharedStateResult.getStatus() != SharedStateStatus.SET) {
+			Log.debug(LOG_TAG, LOG_SOURCE, "Configuration is pending, couldn't process event at this time, waiting...");
 			return null;
 		}
 		
@@ -392,8 +354,8 @@ class EdgeExtension extends Extension {
 	 */
 	private Map<String, Object> getIdentity(final Event event) {
 		SharedStateResult sharedStateResult = getApi().getXDMSharedState(EdgeConstants.SharedState.IDENTITY, event, false, SharedStateResolution.ANY);
-		if (sharedStateResult.getStatus() != SharedStateStatus.SET) {
-			Log.debug(LOG_TAG, LOG_SOURCE, "EdgeExtension - Identity shared state is pending, could not process queued events at this time, waiting...");
+		if (sharedStateResult == null || sharedStateResult.getStatus() != SharedStateStatus.SET) {
+			Log.debug(LOG_TAG, LOG_SOURCE, "Identity shared state is pending, could not process queued events at this time, waiting...");
 			return null;
 		}
 		
@@ -410,7 +372,7 @@ class EdgeExtension extends Extension {
 		ConsentStatus consentForEvent = getConsentForEvent(event);
 
 		if (consentForEvent == ConsentStatus.NO) {
-			Log.debug(LOG_TAG, LOG_SOURCE, "EdgeExtension - Ignoring event with id %s due to collect consent setting (n).", event.getUniqueIdentifier());
+			Log.debug(LOG_TAG, LOG_SOURCE, "Ignoring event with id %s due to collect consent setting (n).", event.getUniqueIdentifier());
 			return true;
 		}
 
@@ -425,8 +387,8 @@ class EdgeExtension extends Extension {
 	 */
 	private ConsentStatus getConsentForEvent(final Event event) {
 		SharedStateResult sharedStateResult = getApi().getXDMSharedState(EdgeConstants.SharedState.CONSENT, event, false, SharedStateResolution.ANY);
-		if (sharedStateResult.getStatus() != SharedStateStatus.SET) {
-			Log.debug(LOG_TAG, LOG_SOURCE, "EdgeExtension - Consent XDM Shared state is unavailable for event %s, using current consent.", event.getUniqueIdentifier());
+		if (sharedStateResult == null || sharedStateResult.getStatus() != SharedStateStatus.SET) {
+			Log.debug(LOG_TAG, LOG_SOURCE, "Consent XDM Shared state is unavailable for event %s, using current consent.", event.getUniqueIdentifier());
 			return state.getCurrentCollectConsent();
 		}
 
@@ -443,7 +405,7 @@ class EdgeExtension extends Extension {
 	}
 
 	private NetworkResponseHandler getNetworkResponseHandler() {
-		synchronized (mutex) {
+		synchronized (networkResponseHandlerMutex) {
 			if (networkResponseHandler == null) {
 				networkResponseHandler =
 					new NetworkResponseHandler(getNamedCollection(), new EdgeExtensionStateCallback());
