@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile;
 
+import com.adobe.marketing.mobile.util.DataReader;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -78,19 +79,8 @@ final class EventUtils {
 		Map<String, Object> edgeConfig = new HashMap<>();
 
 		for (String configKey : configKeysWithStringValue) {
-			try {
-				final String configValue = (String) configSharedState.get(configKey);
-
-				if (!Utils.isNullOrEmpty(configValue)) {
-					edgeConfig.put(configKey, configValue);
-				}
-			} catch (ClassCastException e) {
-				MobileCore.log(
-					LoggingMode.DEBUG,
-					EdgeConstants.LOG_TAG,
-					"EventUtils - Unable to read '" + configKey + "' due to incorrect format, expected string"
-				);
-			}
+			final String configValue = DataReader.optString(configSharedState, configKey, null);
+			Utils.putIfNotEmpty(edgeConfig, configKey, configValue);
 		}
 
 		return edgeConfig;
