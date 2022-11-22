@@ -13,12 +13,20 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
+import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.DataReaderException;
+
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("unused")
 public class Edge {
-
+	private static final String LOG_SOURCE = "Edge";
+	private static final long CALLBACK_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(1);
+	public static final Class<? extends Extension> EXTENSION = EdgeExtension.class;
+	
 	private Edge() {}
 
 	/**
@@ -32,7 +40,9 @@ public class Edge {
 
 	/**
 	 * Registers the extension with the Mobile SDK. This method should be called only once in your application class.
+	 * @deprecated Use {@link MobileCore#registerExtensions(List, AdobeCallback)} with {@link Edge#EXTENSION} instead.
 	 */
+	@Deprecated
 	public static void registerExtension() {
 		MobileCore.registerExtension(
 			EdgeExtension.class,
@@ -58,21 +68,13 @@ public class Edge {
 	 */
 	public static void sendEvent(final ExperienceEvent experienceEvent, final EdgeCallback callback) {
 		if (experienceEvent == null) {
-			MobileCore.log(
-				LoggingMode.WARNING,
-				LOG_TAG,
-				"Edge - sendEvent API cannot make request, the ExperienceEvent should not be null."
-			);
+			Log.warning(LOG_TAG, LOG_SOURCE, "sendEvent API cannot make request, the ExperienceEvent should not be null.");
 			return;
 		}
 
 		// Note: iOS implementation ignores requests if XDM data is empty
 		if (Utils.isNullOrEmpty(experienceEvent.getXdmSchema())) {
-			MobileCore.log(
-				LoggingMode.WARNING,
-				LOG_TAG,
-				"Edge - sendEvent API cannot make request with null/empty XDM data."
-			);
+			Log.warning(LOG_TAG, LOG_SOURCE, "sendEvent API cannot make request with null/empty XDM data.");
 			return;
 		}
 
@@ -80,37 +82,21 @@ public class Edge {
 		final Map<String, Object> data = experienceEvent.toObjectMap();
 
 		if (Utils.isNullOrEmpty(data)) {
-			MobileCore.log(
-				LoggingMode.WARNING,
-				LOG_TAG,
-				"Edge - sendEvent API cannot make request with null/empty event data."
-			);
+			Log.warning(LOG_TAG, LOG_SOURCE, "sendEvent API cannot make request with null/empty event data.");
 			return;
 		}
 
 		Event event = new Event.Builder(
 			EdgeConstants.EventName.REQUEST_CONTENT,
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.REQUEST_CONTENT
+			EventType.EDGE,
+			EventSource.REQUEST_CONTENT
 		)
 			.setEventData(data)
 			.build();
 
-		ExtensionErrorCallback<ExtensionError> errorCallback = new ExtensionErrorCallback<ExtensionError>() {
-			@Override
-			public void error(final ExtensionError extensionError) {
-				MobileCore.log(
-					LoggingMode.WARNING,
-					LOG_TAG,
-					"Edge - There was an error while sending the request to Experience Edge: " +
-					extensionError.getErrorName()
-				);
-			}
-		};
-
 		// dispatch created event to the event hub & register response callback
 		CompletionCallbacksManager.getInstance().registerCallback(event.getUniqueIdentifier(), callback);
-		MobileCore.dispatchEvent(event, errorCallback);
+		MobileCore.dispatchEvent(event);
 	}
 
 	/**
@@ -126,11 +112,7 @@ public class Edge {
 	 */
 	public static void getLocationHint(final AdobeCallback<String> callback) {
 		if (callback == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"Edge - Unexpected null callback, provide a callback to receive current location hint."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Unexpected null callback, provide a callback to receive current location hint.");
 			return;
 		}
 
@@ -142,30 +124,16 @@ public class Edge {
 
 		final Event event = new Event.Builder(
 			EdgeConstants.EventName.REQUEST_LOCATION_HINT,
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.REQUEST_IDENTITY
+			EventType.EDGE,
+			EventSource.REQUEST_IDENTITY
 		)
 			.setEventData(requestData)
 			.build();
 
-		ExtensionErrorCallback<ExtensionError> errorCallback = new ExtensionErrorCallback<ExtensionError>() {
-			@Override
-			public void error(final ExtensionError extensionError) {
-				MobileCore.log(
-					LoggingMode.WARNING,
-					LOG_TAG,
-					String.format(
-						"Edge - There was an error while dispatching event '%s': %s",
-						EdgeConstants.EventName.REQUEST_LOCATION_HINT,
-						extensionError.getErrorName()
-					)
-				);
-			}
-		};
-
 		MobileCore.dispatchEventWithResponseCallback(
 			event,
-			new AdobeCallback<Event>() {
+			CALLBACK_TIMEOUT_MILLIS,
+			new AdobeCallbackWithError<Event>() {
 				@Override
 				public void call(Event responseEvent) {
 					if (responseEvent == null) {
@@ -181,20 +149,21 @@ public class Edge {
 					}
 
 					try {
-						String locationHint = (String) responseData.get(EdgeConstants.EventDataKey.LOCATION_HINT);
+						String locationHint = DataReader.getString(responseData, EdgeConstants.EventDataKey.LOCATION_HINT);
 						callback.call(locationHint); // hint may be null (hint not set or expired)
-					} catch (ClassCastException e) {
+					} catch (DataReaderException e) {
 						returnError(callback, AdobeError.UNEXPECTED_ERROR); // hint value wrong type
-						MobileCore.log(
-							LoggingMode.WARNING,
-							LOG_TAG,
-							"Edge - Failed to parse getLocationHint value to String. " + e.getLocalizedMessage()
-						);
-						return;
+						Log.warning(LOG_TAG, LOG_SOURCE,  "Failed to parse getLocationHint value to String. %s", e.getLocalizedMessage());
 					}
 				}
-			},
-			errorCallback
+				
+				@Override
+				public void fail(final AdobeError adobeError) {
+					returnError(callback, adobeError);
+					Log.debug(LOG_TAG, LOG_SOURCE, "Failed to dispatch %s event: %s.", EdgeConstants.EventName.REQUEST_LOCATION_HINT, adobeError.getErrorName());
+				}
+				
+			}
 		);
 	}
 
@@ -219,27 +188,13 @@ public class Edge {
 
 		final Event event = new Event.Builder(
 			EdgeConstants.EventName.UPDATE_LOCATION_HINT,
-			EdgeConstants.EventType.EDGE,
+			EventType.EDGE,
 			EdgeConstants.EventSource.UPDATE_IDENTITY
 		)
 			.setEventData(requestData)
 			.build();
-
-		ExtensionErrorCallback<ExtensionError> errorCallback = new ExtensionErrorCallback<ExtensionError>() {
-			@Override
-			public void error(final ExtensionError extensionError) {
-				MobileCore.log(
-					LoggingMode.WARNING,
-					LOG_TAG,
-					String.format(
-						"Edge - There was an error while dispatching event '%s': %s",
-						EdgeConstants.EventName.UPDATE_LOCATION_HINT,
-						extensionError.getErrorName()
-					)
-				);
-			}
-		};
-		MobileCore.dispatchEvent(event, errorCallback);
+		
+		MobileCore.dispatchEvent(event);
 	}
 
 	/**
