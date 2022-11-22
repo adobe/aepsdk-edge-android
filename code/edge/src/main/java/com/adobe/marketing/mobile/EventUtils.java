@@ -95,29 +95,4 @@ final class EventUtils {
 
 		return edgeConfig;
 	}
-
-	/**
-	 * Extracts {@code integrationid} from the Assurance shared state payload.
-	 *
-	 * @param assuranceSharedState shared state payload for Assurance
-	 * @return value of {@code integrationid} or null if not found or conversion to String failed.
-	 */
-	static String getAssuranceIntegrationId(final Map<String, Object> assuranceSharedState) {
-		String assuranceIntegrationId = null;
-
-		if (!Utils.isNullOrEmpty(assuranceSharedState)) {
-			try {
-				assuranceIntegrationId =
-					(String) assuranceSharedState.get(EdgeConstants.SharedState.Assurance.INTEGRATION_ID);
-			} catch (ClassCastException e) {
-				MobileCore.log(
-					LoggingMode.VERBOSE,
-					EdgeConstants.LOG_TAG,
-					"EventUtils - Unable to extract Assurance integration id due to incorrect format, expected String"
-				);
-			}
-		}
-
-		return assuranceIntegrationId;
-	}
 }
