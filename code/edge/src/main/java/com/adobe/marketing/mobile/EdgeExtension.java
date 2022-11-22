@@ -305,7 +305,7 @@ class EdgeExtension extends Extension {
 			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
-				"EdgeExtension - Failed to update location hint for request event '%s' with error '%s'.",
+				"Failed to update location hint for request event '%s' with error '%s'.",
 				event.getUniqueIdentifier(),
 				e.getLocalizedMessage()
 			);
