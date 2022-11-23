@@ -121,6 +121,20 @@ class EdgeExtension extends Extension {
 		return EdgeConstants.EXTENSION_VERSION;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * The following listeners are registered during this extension's registration.
+	 * <ul>
+	 *     <li> EventType {@link EdgeConstants.EventType#EDGE} and EventSource {@link EdgeConstants.EventSource#REQUEST_CONTENT}</li>
+	 *     <li> EventType {@link EdgeConstants.EventType#CONSENT} and EventSource {@link EdgeConstants.EventSource#RESPONSE_CONTENT}</li>
+	 *     <li> EventType {@link EdgeConstants.EventType#EDGE} and EventSource {@link EdgeConstants.EventSource#UPDATE_CONSENT}</li>
+	 *     <li> EventType {@link EdgeConstants.EventType#EDGE_IDENTITY} and EventSource {@link EdgeConstants.EventSource#RESET_COMPLETE}</li>
+	 *     <li> EventType {@link EdgeConstants.EventType#EDGE} and EventSource {@link EdgeConstants.EventSource#REQUEST_IDENTITY}</li>
+	 *     <li> EventType {@link EdgeConstants.EventType#EDGE} and EventSource {@link EdgeConstants.EventSource#UPDATE_IDENTITY}</li>
+	 * </ul>
+	 * </p>
+	 */
 	@Override
 	protected void onRegistered() {
 		// register a listener for Edge request events
