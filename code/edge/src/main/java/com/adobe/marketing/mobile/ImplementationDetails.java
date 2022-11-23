@@ -19,6 +19,7 @@ import static com.adobe.marketing.mobile.EdgeJson.Event.ImplementationDetails.NA
 import static com.adobe.marketing.mobile.EdgeJson.Event.ImplementationDetails.VALUE_UNKNOWN;
 import static com.adobe.marketing.mobile.EdgeJson.Event.ImplementationDetails.VERSION;
 
+import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.HashMap;
 import java.util.Map;
@@ -70,17 +71,7 @@ final class ImplementationDetails {
 			return VALUE_UNKNOWN;
 		}
 
-		String version = null;
-
-		try {
-			version = (String) eventHubState.get(EdgeConstants.SharedState.Hub.VERSION);
-		} catch (ClassCastException e) {
-			MobileCore.log(
-				LoggingMode.WARNING,
-				EdgeConstants.LOG_TAG,
-				"Unable to get Core version from Event Hub state due to invalid format, expected String"
-			);
-		}
+		String version = DataReader.optString(eventHubState, EdgeConstants.SharedState.Hub.VERSION, null);
 
 		return StringUtils.isNullOrEmpty(version) ? VALUE_UNKNOWN : version;
 	}
@@ -100,23 +91,13 @@ final class ImplementationDetails {
 			return WrapperType.NONE.getWrapperTag();
 		}
 
-		try {
-			Map<String, Object> wrapperDetails = (Map<String, Object>) eventHubState.get(
-				EdgeConstants.SharedState.Hub.WRAPPER
-			);
-
-			if (wrapperDetails != null && wrapperDetails.containsKey(EdgeConstants.SharedState.Hub.TYPE)) {
-				return (String) wrapperDetails.get(EdgeConstants.SharedState.Hub.TYPE);
-			}
-		} catch (ClassCastException e) {
-			MobileCore.log(
-				LoggingMode.WARNING,
-				EdgeConstants.LOG_TAG,
-				"Unable to get wrapper type from Event Hub state due to invalid format, expected Map. Using default value."
-			);
-		}
-
-		return null; // if "type" could not be parsed, return null
+		Map<String, Object> wrapperDetails = DataReader.optTypedMap(
+			Object.class,
+			eventHubState,
+			EdgeConstants.SharedState.Hub.WRAPPER,
+			null
+		);
+		return DataReader.optString(wrapperDetails, EdgeConstants.SharedState.Hub.TYPE, null); // if "type" could not be parsed, return null
 	}
 
 	/**
