@@ -18,16 +18,16 @@ import java.util.Map;
  */
 interface EdgeSharedStateCallback {
 	/**
-	 * Fetches the Shared State for the provided {@code event} from the specified {@code stateOwner}.
+	 * Retrieves the Shared State for the provided {@code event} from the specified {@code stateOwner}.
 	 *
 	 * @param stateOwner Shared state owner name
 	 * @param event current event for which to fetch the shared state; if null is passed, the latest shared state is returned
-	 * @return current shared state if found, null if shared state is pending or an error occurred
+	 * @return the {@code SharedStateResult}
 	 */
 	SharedStateResult getSharedState(final String stateOwner, final Event event);
 
 	/**
-	 * Sets a Shared State to the {@link EventHub}.
+	 * Sets a new shared state for this {@code Edge} extension at the given {@code event}.
 	 *
 	 * @param state the state data to share
 	 * @param event the {@link Event} used to version the shared state. If null is passed, the shared
