@@ -23,9 +23,10 @@ import java.util.concurrent.TimeUnit;
 @SuppressWarnings("unused")
 public class Edge {
 
+	public static final Class<? extends Extension> EXTENSION = EdgeExtension.class;
+
 	private static final String LOG_SOURCE = "Edge";
 	private static final long CALLBACK_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(1);
-	public static final Class<? extends Extension> EXTENSION = EdgeExtension.class;
 
 	private Edge() {}
 
