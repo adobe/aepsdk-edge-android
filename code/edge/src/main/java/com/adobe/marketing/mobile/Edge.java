@@ -26,7 +26,7 @@ public class Edge {
 	public static final Class<? extends Extension> EXTENSION = EdgeExtension.class;
 
 	private static final String LOG_SOURCE = "Edge";
-	private static final long CALLBACK_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(1);
+	private static final long CALLBACK_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5);
 
 	private Edge() {}
 
