@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile;
 
+import androidx.annotation.NonNull;
 import com.adobe.marketing.mobile.util.DataReader;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,44 +22,41 @@ import java.util.Map;
 final class EventUtils {
 
 	/**
-	 * Checks if the provided {@code event} is of type {@link EdgeConstants.EventType#EDGE} and source {@link EdgeConstants.EventSource#REQUEST_CONTENT}.
+	 * Checks if the provided {@code event} is of type {@link EventType#EDGE} and source {@link EventSource#REQUEST_CONTENT}.
 	 *
 	 * @param event the event to verify
 	 * @return true if both type and source match, false otherwise
 	 */
-	static boolean isExperienceEvent(final Event event) {
+	static boolean isExperienceEvent(@NonNull final Event event) {
 		return (
-			event != null &&
-			EdgeConstants.EventType.EDGE.equalsIgnoreCase(event.getType()) &&
-			EdgeConstants.EventSource.REQUEST_CONTENT.equalsIgnoreCase(event.getSource())
+			EventType.EDGE.equalsIgnoreCase(event.getType()) &&
+			EventSource.REQUEST_CONTENT.equalsIgnoreCase(event.getSource())
 		);
 	}
 
 	/**
-	 * Checks if the provided {@code event} is of type {@link EdgeConstants.EventType#EDGE} and source {@link EdgeConstants.EventSource#UPDATE_CONSENT}.
+	 * Checks if the provided {@code event} is of type {@link EventType#EDGE} and source {@link EventSource#UPDATE_CONSENT}.
 	 *
 	 * @param event the event to verify
 	 * @return true if both type and source match, false otherwise
 	 */
-	static boolean isUpdateConsentEvent(final Event event) {
+	static boolean isUpdateConsentEvent(@NonNull final Event event) {
 		return (
-			event != null &&
-			EdgeConstants.EventType.EDGE.equalsIgnoreCase(event.getType()) &&
-			EdgeConstants.EventSource.UPDATE_CONSENT.equalsIgnoreCase(event.getSource())
+			EventType.EDGE.equalsIgnoreCase(event.getType()) &&
+			EventSource.UPDATE_CONSENT.equalsIgnoreCase(event.getSource())
 		);
 	}
 
 	/**
-	 * Checks if the provided {@code event} is of type {@link EdgeConstants.EventType#EDGE_IDENTITY} and source {@link EdgeConstants.EventSource#RESET_COMPLETE}.
+	 * Checks if the provided {@code event} is of type {@link EventType#EDGE_IDENTITY} and source {@link EventSource#RESET_COMPLETE}.
 	 *
 	 * @param event current event to check
 	 * @return true if the type and source matches, false otherwise
 	 */
-	static boolean isResetComplete(final Event event) {
+	static boolean isResetComplete(@NonNull final Event event) {
 		return (
-			event != null &&
-			EdgeConstants.EventType.EDGE_IDENTITY.equalsIgnoreCase(event.getType()) &&
-			EdgeConstants.EventSource.RESET_COMPLETE.equalsIgnoreCase(event.getSource())
+			EventType.EDGE_IDENTITY.equalsIgnoreCase(event.getType()) &&
+			EventSource.RESET_COMPLETE.equalsIgnoreCase(event.getSource())
 		);
 	}
 
