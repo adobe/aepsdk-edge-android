@@ -64,7 +64,8 @@ class EdgeState {
 			return true;
 		}
 
-		// Get Hub's shared state needed to check if Identity and Consent are registered
+		// Get Hub's shared state needed to build Implementation Details from the Core version and
+		// wrapper type, and set the default consent if the Consent extension is not registered.
 		// If not set, return false and attempt bootup at next event
 		final SharedStateResult eventHubStateResult = sharedStateCallback.getSharedState(
 			EdgeConstants.SharedState.HUB,
