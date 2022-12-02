@@ -124,7 +124,7 @@ class EdgeExtension extends Extension {
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * The following listeners are registered during this extension's registration.
+	 * The following listeners are registered during this extension's registration:
 	 * <ul>
 	 *     <li> EventType {@link EdgeConstants.EventType#EDGE} and EventSource {@link EdgeConstants.EventSource#REQUEST_CONTENT}</li>
 	 *     <li> EventType {@link EdgeConstants.EventType#CONSENT} and EventSource {@link EdgeConstants.EventSource#RESPONSE_CONTENT}</li>
@@ -193,28 +193,10 @@ class EdgeExtension extends Extension {
 		}
 
 		if (EventUtils.isExperienceEvent(event) || EventUtils.isUpdateConsentEvent(event)) {
-			SharedStateResult configurationState = getApi()
-				.getSharedState(EdgeConstants.SharedState.CONFIGURATION, event, false, SharedStateResolution.ANY);
-			SharedStateResult identityState = getApi()
-				.getXDMSharedState(EdgeConstants.SharedState.IDENTITY, event, false, SharedStateResolution.ANY);
-			return (
-				configurationState != null &&
-				identityState != null &&
-				configurationState.getStatus() == SharedStateStatus.SET &&
-				identityState.getStatus() == SharedStateStatus.SET
-			);
+			return getConfigurationState(event) != null && getIdentityXDMState(event) != null;
 		} else if (EventUtils.isResetComplete(event)) {
-			SharedStateResult configurationState = getApi()
-				.getSharedState(EdgeConstants.SharedState.CONFIGURATION, event, false, SharedStateResolution.ANY);
 			// use barrier to wait for EdgeIdentity to handle the reset
-			SharedStateResult identityState = getApi()
-				.getXDMSharedState(EdgeConstants.SharedState.IDENTITY, event, true, SharedStateResolution.ANY);
-			return (
-				configurationState != null &&
-				identityState != null &&
-				configurationState.getStatus() == SharedStateStatus.SET &&
-				identityState.getStatus() == SharedStateStatus.SET
-			);
+			return getConfigurationState(event) != null && getIdentityXDMState(event, true) != null;
 		}
 
 		return true;
@@ -330,9 +312,15 @@ class EdgeExtension extends Extension {
 	 * Processes an Experience Event or Consent Update Event.
 	 */
 	void processEdgeEvent(@NonNull final Event event) {
-		Map<String, Object> configReady = getConfig(event);
+		Map<String, Object> configReady = getConfigurationState(event);
 
 		if (configReady == null) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Unable to process the event '%s', Configuration shared state is null.",
+				event.getUniqueIdentifier()
+			);
 			return; // Shouldn't get here as Configuration state is checked in readyForEvent
 		}
 
@@ -353,9 +341,15 @@ class EdgeExtension extends Extension {
 			return;
 		}
 
-		Map<String, Object> identityReady = getIdentity(event);
+		Map<String, Object> identityReady = getIdentityXDMState(event);
 
 		if (identityReady == null) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Unable to process the event '%s', Identity shared state is null.",
+				event.getUniqueIdentifier()
+			);
 			return; // Shouldn't get here as Identity state is checked in readyForEvent
 		}
 
@@ -386,11 +380,10 @@ class EdgeExtension extends Extension {
 	 * @param event current event to process
 	 * @return the Configuration shared state or null if it is pending
 	 */
-	private Map<String, Object> getConfig(final Event event) {
+	private Map<String, Object> getConfigurationState(final Event event) {
 		SharedStateResult sharedStateResult = getApi()
 			.getSharedState(EdgeConstants.SharedState.CONFIGURATION, event, false, SharedStateResolution.ANY);
 		if (sharedStateResult == null || sharedStateResult.getStatus() != SharedStateStatus.SET) {
-			Log.debug(LOG_TAG, LOG_SOURCE, "Configuration is pending, couldn't process event at this time, waiting...");
 			return null;
 		}
 
@@ -399,19 +392,23 @@ class EdgeExtension extends Extension {
 
 	/**
 	 * Retrieves Identity XDM Shared State for the provided event.
-	 *
 	 * @param event current event to process
 	 * @return the Identity shared state or null if it is pending
 	 */
-	private Map<String, Object> getIdentity(final Event event) {
+	private Map<String, Object> getIdentityXDMState(final Event event) {
+		return getIdentityXDMState(event, false);
+	}
+
+	/**
+	 * Retrieves Identity XDM Shared State for the provided event.
+	 * @param event current event to process
+	 * @param barrier if true, returns next Identity state at or past the {@code event}, but not the state before {@code event}.
+	 * @return the Identity shared state or null if it is pending
+	 */
+	private Map<String, Object> getIdentityXDMState(final Event event, final boolean barrier) {
 		SharedStateResult sharedStateResult = getApi()
-			.getXDMSharedState(EdgeConstants.SharedState.IDENTITY, event, false, SharedStateResolution.ANY);
+			.getXDMSharedState(EdgeConstants.SharedState.IDENTITY, event, barrier, SharedStateResolution.ANY);
 		if (sharedStateResult == null || sharedStateResult.getStatus() != SharedStateStatus.SET) {
-			Log.debug(
-				LOG_TAG,
-				LOG_SOURCE,
-				"Identity shared state is pending, could not process queued events at this time, waiting..."
-			);
 			return null;
 		}
 
