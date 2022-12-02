@@ -58,6 +58,7 @@ final class EdgeConstants {
 
 	static final class Defaults {
 
+		static final long API_CALLBACK_TIMEOUT_MILLIS = 5000L;
 		static final String REQUEST_CONFIG_RECORD_SEPARATOR = "\u0000";
 		static final String REQUEST_CONFIG_LINE_FEED = "\n";
 		static final int RETRY_INTERVAL_SECONDS = 5;

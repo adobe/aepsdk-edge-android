@@ -17,8 +17,8 @@ import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.DataReaderException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("unused")
 public class Edge {
@@ -26,7 +26,6 @@ public class Edge {
 	public static final Class<? extends Extension> EXTENSION = EdgeExtension.class;
 
 	private static final String LOG_SOURCE = "Edge";
-	private static final long CALLBACK_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5);
 
 	private Edge() {}
 
@@ -141,7 +140,7 @@ public class Edge {
 
 		MobileCore.dispatchEventWithResponseCallback(
 			event,
-			CALLBACK_TIMEOUT_MILLIS,
+			EdgeConstants.Defaults.API_CALLBACK_TIMEOUT_MILLIS,
 			new AdobeCallbackWithError<Event>() {
 				@Override
 				public void call(Event responseEvent) {
