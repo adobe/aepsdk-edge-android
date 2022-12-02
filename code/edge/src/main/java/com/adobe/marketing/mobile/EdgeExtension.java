@@ -213,7 +213,7 @@ class EdgeExtension extends Extension {
 		if (shouldIgnore(event)) {
 			return;
 		}
-		processEdgeEvent(event);
+		processAndQueueEvent(event);
 	}
 
 	/**
@@ -222,7 +222,7 @@ class EdgeExtension extends Extension {
 	 * @param event current event to process; the event and the event data should not be null, checking in listener
 	 */
 	void handleConsentUpdate(@NonNull final Event event) {
-		processEdgeEvent(event);
+		processAndQueueEvent(event);
 	}
 
 	/**
@@ -309,9 +309,9 @@ class EdgeExtension extends Extension {
 	}
 
 	/**
-	 * Processes an Experience Event or Consent Update Event.
+	 * Processes an Experience Event or Consent Update Event and add to the hit queue.
 	 */
-	void processEdgeEvent(@NonNull final Event event) {
+	void processAndQueueEvent(@NonNull final Event event) {
 		Map<String, Object> configReady = getConfigurationState(event);
 
 		if (configReady == null) {
