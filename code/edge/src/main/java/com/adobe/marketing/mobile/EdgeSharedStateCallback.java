@@ -27,11 +27,11 @@ interface EdgeSharedStateCallback {
 	SharedStateResult getSharedState(final String stateOwner, final Event event);
 
 	/**
-	 * Sets a new shared state for this {@code Edge} extension at the given {@code event}.
+	 * Create a new shared state for this {@code Edge} extension at the given {@code event}.
 	 *
 	 * @param state the state data to share
 	 * @param event the {@link Event} used to version the shared state. If null is passed, the shared
 	 *              state is versioned at the next available number.
 	 */
-	void setSharedState(final Map<String, Object> state, final Event event);
+	void createSharedState(final Map<String, Object> state, final Event event);
 }

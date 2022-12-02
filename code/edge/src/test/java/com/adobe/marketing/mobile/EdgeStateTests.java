@@ -50,7 +50,7 @@ public class EdgeStateTests {
 				}
 
 				@Override
-				public void setSharedState(final Map<String, Object> state, final Event event) {
+				public void createSharedState(final Map<String, Object> state, final Event event) {
 					mockSharedState = state;
 				}
 			};

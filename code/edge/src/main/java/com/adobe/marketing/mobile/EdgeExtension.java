@@ -53,7 +53,7 @@ class EdgeExtension extends Extension {
 		}
 
 		@Override
-		public void setSharedState(Map<String, Object> state, Event event) {
+		public void createSharedState(Map<String, Object> state, Event event) {
 			getApi().createSharedState(state, event);
 		}
 	};

@@ -262,7 +262,7 @@ public class EdgeHitProcessorTests {
 				}
 
 				@Override
-				public void setSharedState(final Map<String, Object> state, final Event event) {
+				public void createSharedState(final Map<String, Object> state, final Event event) {
 					// not called by hit processor
 				}
 			};

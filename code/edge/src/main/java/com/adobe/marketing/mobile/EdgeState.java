@@ -91,7 +91,7 @@ class EdgeState {
 			//             An extension should NOT mix creating shared states using null and using received events
 			//             as it can cause shared state generation to fail due to received events having potentially
 			//             lower event numbers than states using null.
-			sharedStateCallback.setSharedState(edgeProperties.toEventData(), null);
+			sharedStateCallback.createSharedState(edgeProperties.toEventData(), null);
 		}
 
 		hasBooted = true;
@@ -162,7 +162,7 @@ class EdgeState {
 				//             lower event numbers than states using null. If this extension later needs to create shared
 				//             states from received events, then this code must be refactored to also use received
 				//             events as the state version.
-				sharedStateCallback.setSharedState(edgeProperties.toEventData(), null);
+				sharedStateCallback.createSharedState(edgeProperties.toEventData(), null);
 			}
 		}
 	}
