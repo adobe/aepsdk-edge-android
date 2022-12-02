@@ -71,14 +71,14 @@ public class Edge {
 			Log.warning(
 				LOG_TAG,
 				LOG_SOURCE,
-				"sendEvent API cannot make request, the ExperienceEvent should not be null."
+				"sendEvent API cannot make the request, the ExperienceEvent should not be null."
 			);
 			return;
 		}
 
 		// Note: iOS implementation ignores requests if XDM data is empty
 		if (Utils.isNullOrEmpty(experienceEvent.getXdmSchema())) {
-			Log.warning(LOG_TAG, LOG_SOURCE, "sendEvent API cannot make request with null/empty XDM data.");
+			Log.warning(LOG_TAG, LOG_SOURCE, "sendEvent API cannot make the request with null/empty XDM data.");
 			return;
 		}
 
@@ -86,7 +86,7 @@ public class Edge {
 		final Map<String, Object> data = experienceEvent.toObjectMap();
 
 		if (Utils.isNullOrEmpty(data)) {
-			Log.warning(LOG_TAG, LOG_SOURCE, "sendEvent API cannot make request with null/empty event data.");
+			Log.warning(LOG_TAG, LOG_SOURCE, "sendEvent API cannot make the request with null/empty event data.");
 			return;
 		}
 
