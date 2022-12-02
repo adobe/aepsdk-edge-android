@@ -210,7 +210,7 @@ public class Edge {
 		final Event event = new Event.Builder(
 			EdgeConstants.EventName.UPDATE_LOCATION_HINT,
 			EventType.EDGE,
-			EdgeConstants.EventSource.UPDATE_IDENTITY
+			EventSource.UPDATE_IDENTITY
 		)
 			.setEventData(requestData)
 			.build();
