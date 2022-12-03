@@ -11,7 +11,11 @@
 
 package com.adobe.marketing.mobile;
 
+import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
+
+import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
+import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +26,7 @@ import java.util.TimeZone;
  */
 class EdgeProperties {
 
+	private final String LOG_SOURCE = "EdgeProperties";
 	private final NamedCollection namedCollection;
 
 	// Edge Network location hint and expiration date. Location hint is invalid after expiry date.
@@ -83,10 +88,10 @@ class EdgeProperties {
 	 */
 	void loadFromPersistence() {
 		if (namedCollection == null) {
-			MobileCore.log(
-				LoggingMode.WARNING,
-				EdgeConstants.LOG_TAG,
-				"EdgeProperties - Local Storage Service is null. Unable to load properties from persistence."
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Local Storage Service is null. Unable to load properties from persistence."
 			);
 			return;
 		}
@@ -108,10 +113,10 @@ class EdgeProperties {
 	 */
 	void saveToPersistence() {
 		if (namedCollection == null) {
-			MobileCore.log(
-				LoggingMode.WARNING,
-				EdgeConstants.LOG_TAG,
-				"EdgeProperties - Local Storage Service is null. Unable to save properties to persistence."
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Local Storage Service is null. Unable to save properties to persistence."
 			);
 			return;
 		}

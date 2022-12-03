@@ -15,6 +15,7 @@ import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.HttpMethod;
+import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NetworkCallback;
 import com.adobe.marketing.mobile.services.NetworkRequest;
 import com.adobe.marketing.mobile.services.Networking;
@@ -37,6 +38,8 @@ import org.json.JSONObject;
  * Network service for requests to the Adobe Edge Network.
  */
 class EdgeNetworkService {
+
+	private static final String LOG_SOURCE = "EdgeNetworkService";
 
 	/**
 	 * Edge Request Type.
@@ -339,7 +342,7 @@ class EdgeNetworkService {
 			countDownLatch.await();
 			return httpConnecting[0];
 		} catch (final InterruptedException | IllegalArgumentException e) {
-			Log.warning(LOG_TAG, "Connection failure for url (%s), error: (%s)", url, e);
+			Log.warning(LOG_TAG, LOG_SOURCE, "Connection failure for url (%s), error: (%s)", url, e);
 		}
 
 		return null;

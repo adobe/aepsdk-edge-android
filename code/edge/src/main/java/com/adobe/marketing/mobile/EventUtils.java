@@ -11,6 +11,8 @@
 
 package com.adobe.marketing.mobile;
 
+import androidx.annotation.NonNull;
+import com.adobe.marketing.mobile.util.DataReader;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,114 +22,42 @@ import java.util.Map;
 final class EventUtils {
 
 	/**
-	 * Checks if the provided {@code event} is of type {@link EdgeConstants.EventType#EDGE} and source {@link EdgeConstants.EventSource#REQUEST_CONTENT}.
+	 * Checks if the provided {@code event} is of type {@link EventType#EDGE} and source {@link EventSource#REQUEST_CONTENT}.
 	 *
 	 * @param event the event to verify
 	 * @return true if both type and source match, false otherwise
 	 */
-	static boolean isExperienceEvent(final Event event) {
+	static boolean isExperienceEvent(@NonNull final Event event) {
 		return (
-			event != null &&
-			EdgeConstants.EventType.EDGE.equalsIgnoreCase(event.getType()) &&
-			EdgeConstants.EventSource.REQUEST_CONTENT.equalsIgnoreCase(event.getSource())
+			EventType.EDGE.equalsIgnoreCase(event.getType()) &&
+			EventSource.REQUEST_CONTENT.equalsIgnoreCase(event.getSource())
 		);
 	}
 
 	/**
-	 * Checks if the provided {@code event} is of type {@link EdgeConstants.EventType#EDGE} and source {@link EdgeConstants.EventSource#UPDATE_CONSENT}.
+	 * Checks if the provided {@code event} is of type {@link EventType#EDGE} and source {@link EventSource#UPDATE_CONSENT}.
 	 *
 	 * @param event the event to verify
 	 * @return true if both type and source match, false otherwise
 	 */
-	static boolean isUpdateConsentEvent(final Event event) {
+	static boolean isUpdateConsentEvent(@NonNull final Event event) {
 		return (
-			event != null &&
-			EdgeConstants.EventType.EDGE.equalsIgnoreCase(event.getType()) &&
-			EdgeConstants.EventSource.UPDATE_CONSENT.equalsIgnoreCase(event.getSource())
+			EventType.EDGE.equalsIgnoreCase(event.getType()) &&
+			EventSource.UPDATE_CONSENT.equalsIgnoreCase(event.getSource())
 		);
 	}
 
 	/**
-	 * Checks if the provided {@code event} is of type {@link EdgeConstants.EventType#CONSENT} and source {@link EdgeConstants.EventSource#RESPONSE_CONTENT}.
+	 * Checks if the provided {@code event} is of type {@link EventType#EDGE_IDENTITY} and source {@link EventSource#RESET_COMPLETE}.
 	 *
 	 * @param event current event to check
 	 * @return true if the type and source matches, false otherwise
 	 */
-	static boolean isConsentPreferencesUpdatedEvent(final Event event) {
+	static boolean isResetComplete(@NonNull final Event event) {
 		return (
-			event != null &&
-			EdgeConstants.EventType.CONSENT.equalsIgnoreCase(event.getType()) &&
-			EdgeConstants.EventSource.RESPONSE_CONTENT.equalsIgnoreCase(event.getSource())
+			EventType.EDGE_IDENTITY.equalsIgnoreCase(event.getType()) &&
+			EventSource.RESET_COMPLETE.equalsIgnoreCase(event.getSource())
 		);
-	}
-
-	/**
-	 * Checks if the provided {@code event} is of type {@link EdgeConstants.EventType#EDGE_IDENTITY} and source {@link EdgeConstants.EventSource#RESET_COMPLETE}.
-	 *
-	 * @param event current event to check
-	 * @return true if the type and source matches, false otherwise
-	 */
-	static boolean isResetComplete(final Event event) {
-		return (
-			event != null &&
-			EdgeConstants.EventType.EDGE_IDENTITY.equalsIgnoreCase(event.getType()) &&
-			EdgeConstants.EventSource.RESET_COMPLETE.equalsIgnoreCase(event.getSource())
-		);
-	}
-
-	/**
-	 * Checks if the provided {@code event} is of type {@link EdgeConstants.EventType#EDGE} and source
-	 * {@link EdgeConstants.EventSource#REQUEST_IDENTITY} and the event data contains key of
-	 * {@link EdgeConstants.EventDataKey#LOCATION_HINT} with value {@code true}.
-	 *
-	 * @param event current event to check
-	 * @return true if the type, source, and key matches, false otherwise
-	 */
-	static boolean isGetLocationHintEvent(final Event event) {
-		if (
-			event != null &&
-			EdgeConstants.EventType.EDGE.equalsIgnoreCase(event.getType()) &&
-			EdgeConstants.EventSource.REQUEST_IDENTITY.equalsIgnoreCase(event.getSource()) &&
-			event.getEventData() != null &&
-			event.getEventData().containsKey(EdgeConstants.EventDataKey.LOCATION_HINT)
-		) {
-			try {
-				Boolean isHintEvent = (Boolean) event.getEventData().get(EdgeConstants.EventDataKey.LOCATION_HINT);
-				return isHintEvent != null && isHintEvent;
-			} catch (ClassCastException e) {
-				return false;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Checks if the provided {@code event} is of type {@link EdgeConstants.EventType#EDGE} and source
-	 * {@link EdgeConstants.EventSource#UPDATE_IDENTITY} and the event data contains key of
-	 * {@link EdgeConstants.EventDataKey#LOCATION_HINT}.
-	 *
-	 * @param event current event to check
-	 * @return true if the type and source matches, false otherwise
-	 */
-	static boolean isUpdateLocationHintEvent(final Event event) {
-		return (
-			event != null &&
-			EdgeConstants.EventType.EDGE.equalsIgnoreCase(event.getType()) &&
-			EdgeConstants.EventSource.UPDATE_IDENTITY.equalsIgnoreCase(event.getSource()) &&
-			event.getEventData() != null &&
-			event.getEventData().containsKey(EdgeConstants.EventDataKey.LOCATION_HINT)
-		);
-	}
-
-	/**
-	 * Checks if the provided {@code event} is null or if the event data is null/empty.
-	 *
-	 * @param event current event to check
-	 * @return true if event is null, event data is null or empty map
-	 */
-	static boolean isNullEventOrEmptyData(final Event event) {
-		return event == null || event.getEventData() == null || event.getEventData().isEmpty();
 	}
 
 	/**
@@ -147,69 +77,10 @@ final class EventUtils {
 		Map<String, Object> edgeConfig = new HashMap<>();
 
 		for (String configKey : configKeysWithStringValue) {
-			try {
-				final String configValue = (String) configSharedState.get(configKey);
-
-				if (!Utils.isNullOrEmpty(configValue)) {
-					edgeConfig.put(configKey, configValue);
-				}
-			} catch (ClassCastException e) {
-				MobileCore.log(
-					LoggingMode.DEBUG,
-					EdgeConstants.LOG_TAG,
-					"EventUtils - Unable to read '" + configKey + "' due to incorrect format, expected string"
-				);
-			}
+			final String configValue = DataReader.optString(configSharedState, configKey, null);
+			Utils.putIfNotEmpty(edgeConfig, configKey, configValue);
 		}
 
 		return edgeConfig;
-	}
-
-	/**
-	 * Extracts {@code integrationid} from the Assurance shared state payload.
-	 *
-	 * @param assuranceSharedState shared state payload for Assurance
-	 * @return value of {@code integrationid} or null if not found or conversion to String failed.
-	 */
-	static String getAssuranceIntegrationId(final Map<String, Object> assuranceSharedState) {
-		String assuranceIntegrationId = null;
-
-		if (!Utils.isNullOrEmpty(assuranceSharedState)) {
-			try {
-				assuranceIntegrationId =
-					(String) assuranceSharedState.get(EdgeConstants.SharedState.Assurance.INTEGRATION_ID);
-			} catch (ClassCastException e) {
-				MobileCore.log(
-					LoggingMode.VERBOSE,
-					EdgeConstants.LOG_TAG,
-					"EventUtils - Unable to extract Assurance integration id due to incorrect format, expected String"
-				);
-			}
-		}
-
-		return assuranceIntegrationId;
-	}
-
-	/**
-	 * Checks if the provided {@code event} is a shared state update event for {@code stateOwnerName}
-	 *
-	 * @param stateOwnerName the shared state owner name; should not be null
-	 * @param event current event to check; should not be null
-	 * @return {@code boolean} indicating if it is the shared stage update for the provided {@code stateOwnerName}
-	 */
-	static boolean isSharedStateUpdateFor(final String stateOwnerName, final Event event) {
-		if (Utils.isNullOrEmpty(stateOwnerName) || event == null) {
-			return false;
-		}
-
-		String stateOwner;
-
-		try {
-			stateOwner = (String) event.getEventData().get(EdgeConstants.SharedState.STATE_OWNER);
-		} catch (ClassCastException e) {
-			return false;
-		}
-
-		return stateOwnerName.equals(stateOwner);
 	}
 }

@@ -16,6 +16,8 @@ import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.HitProcessing;
 import com.adobe.marketing.mobile.services.NamedCollection;
+import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -302,13 +304,22 @@ class EdgeHitProcessor implements HitProcessing {
 		}
 
 		// get latest Assurance shared state
-		final Map<String, Object> assuranceSharedState = sharedStateCallback.getSharedState(
+		SharedStateResult assuranceStateResult = sharedStateCallback.getSharedState(
 			EdgeConstants.SharedState.ASSURANCE,
 			null
 		);
-		final String assuranceIntegrationId = EventUtils.getAssuranceIntegrationId(assuranceSharedState);
 
-		if (!Utils.isNullOrEmpty(assuranceIntegrationId)) {
+		if (assuranceStateResult == null || assuranceStateResult.getStatus() != SharedStateStatus.SET) {
+			return requestHeaders;
+		}
+
+		final String assuranceIntegrationId = DataReader.optString(
+			assuranceStateResult.getValue(),
+			EdgeConstants.SharedState.Assurance.INTEGRATION_ID,
+			null
+		);
+
+		if (!StringUtils.isNullOrEmpty(assuranceIntegrationId)) {
 			requestHeaders.put(EdgeConstants.NetworkKeys.HEADER_KEY_AEP_VALIDATION_TOKEN, assuranceIntegrationId);
 		}
 

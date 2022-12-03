@@ -14,7 +14,8 @@ package com.adobe.marketing.mobile;
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import com.adobe.marketing.mobile.services.HitQueuing;
-import java.util.HashMap;
+import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.DataReader;
 import java.util.Map;
 
 /**
@@ -22,6 +23,7 @@ import java.util.Map;
  */
 class EdgeState {
 
+	private final String LOG_SOURCE = "EdgeState";
 	private final Object mutex = new Object();
 	private ConsentStatus currentCollectConsent;
 	private final HitQueuing hitQueue;
@@ -55,11 +57,22 @@ class EdgeState {
 	 * <p>
 	 * Loads any persisted Edge properties and creates an initial shared state.
 	 *
-	 * @param registeredExtensionsWithHub the extensions registered with the Event Hub
+	 * @return true if bootup is complete
 	 */
-	void bootupIfNeeded(final Map<String, Object> registeredExtensionsWithHub) {
+	boolean bootupIfNeeded() {
 		if (hasBooted) {
-			return;
+			return true;
+		}
+
+		// Get Hub's shared state needed to build Implementation Details from the Core version and
+		// wrapper type, and set the default consent if the Consent extension is not registered.
+		// If not set, return false and attempt bootup at next event
+		final SharedStateResult eventHubStateResult = sharedStateCallback.getSharedState(
+			EdgeConstants.SharedState.HUB,
+			null
+		);
+		if (eventHubStateResult == null || eventHubStateResult.getStatus() != SharedStateStatus.SET) {
+			return false;
 		}
 
 		synchronized (mutex) {
@@ -69,20 +82,22 @@ class EdgeState {
 			// Parse shared state and build XDM Implementation Details
 			// Note, Implementation Details must be set before processing Consent and starting the Hit Queue
 			// so it is available in the EdgeHitProcessor
-			implementationDetails = ImplementationDetails.fromEventHubState(registeredExtensionsWithHub);
+			implementationDetails = ImplementationDetails.fromEventHubState(eventHubStateResult.getValue());
 
 			// If Consent is not registered, update Collect Consent to Yes
-			updateCollectConsentIfNotRegistered(registeredExtensionsWithHub);
+			updateCollectConsentIfNotRegistered(eventHubStateResult.getValue());
 
 			// Important - Using null Event here which creates a shared state at the next available Event number.
 			//             An extension should NOT mix creating shared states using null and using received events
 			//             as it can cause shared state generation to fail due to received events having potentially
 			//             lower event numbers than states using null.
-			sharedStateCallback.setSharedState(edgeProperties.toEventData(), null);
+			sharedStateCallback.createSharedState(edgeProperties.toEventData(), null);
 		}
 
 		hasBooted = true;
-		MobileCore.log(LoggingMode.DEBUG, EdgeConstants.LOG_TAG, "EdgeState - Edge has successfully booted up");
+		Log.debug(LOG_TAG, LOG_SOURCE, "Edge has successfully booted up");
+
+		return hasBooted;
 	}
 
 	/**
@@ -147,7 +162,7 @@ class EdgeState {
 				//             lower event numbers than states using null. If this extension later needs to create shared
 				//             states from received events, then this code must be refactored to also use received
 				//             events as the state version.
-				sharedStateCallback.setSharedState(edgeProperties.toEventData(), null);
+				sharedStateCallback.createSharedState(edgeProperties.toEventData(), null);
 			}
 		}
 	}
@@ -162,28 +177,24 @@ class EdgeState {
 		Map<String, Object> consentExtensionInfo = null;
 
 		if (registeredExtensionsWithHub != null) {
-			try {
-				final Map<String, Object> extensions = (HashMap<String, Object>) registeredExtensionsWithHub.get(
-					EdgeConstants.SharedState.Hub.EXTENSIONS
-				);
+			final Map<String, Object> extensions = DataReader.optTypedMap(
+				Object.class,
+				registeredExtensionsWithHub,
+				EdgeConstants.SharedState.Hub.EXTENSIONS,
+				null
+			);
 
-				if (extensions != null) {
-					consentExtensionInfo = (HashMap<String, Object>) extensions.get(EdgeConstants.SharedState.CONSENT);
-				}
-			} catch (ClassCastException e) {
-				MobileCore.log(
-					LoggingMode.DEBUG,
-					EdgeConstants.LOG_TAG,
-					"EdgeState - Unable to fetch com.adobe.edge.consent info from Hub State due to invalid format, expected Map"
-				);
+			if (extensions != null) {
+				consentExtensionInfo =
+					DataReader.optTypedMap(Object.class, extensions, EdgeConstants.SharedState.CONSENT, null);
 			}
 		}
 
 		if (Utils.isNullOrEmpty(consentExtensionInfo)) {
-			MobileCore.log(
-				LoggingMode.WARNING,
-				EdgeConstants.LOG_TAG,
-				"EdgeState - Consent extension is not registered yet, using default collect status (yes)"
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Consent extension is not registered yet, using default collect status (yes)"
 			);
 			updateCurrentConsent(EdgeConstants.Defaults.COLLECT_CONSENT_YES);
 		}
@@ -197,10 +208,10 @@ class EdgeState {
 	 */
 	private void handleCollectConsentChange(final ConsentStatus status) {
 		if (hitQueue == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
+			Log.debug(
 				LOG_TAG,
-				"EdgeState - Unable to update hit queue with consent status. HitQueuing instance is null."
+				LOG_SOURCE,
+				"Unable to update hit queue with consent status. HitQueuing instance is null."
 			);
 			return;
 		}
@@ -208,28 +219,16 @@ class EdgeState {
 		switch (status) {
 			case YES:
 				hitQueue.beginProcessing();
-				MobileCore.log(
-					LoggingMode.DEBUG,
-					LOG_TAG,
-					"EdgeState - Collect consent set to (y), resuming the Edge queue."
-				);
+				Log.debug(LOG_TAG, LOG_SOURCE, "Collect consent set to (y), resuming the Edge queue.");
 				break;
 			case NO:
 				hitQueue.clear();
 				hitQueue.beginProcessing();
-				MobileCore.log(
-					LoggingMode.DEBUG,
-					LOG_TAG,
-					"EdgeState - Collect consent set to (n), clearing the Edge queue."
-				);
+				Log.debug(LOG_TAG, LOG_SOURCE, "Collect consent set to (n), clearing the Edge queue.");
 				break;
 			case PENDING:
 				hitQueue.suspend();
-				MobileCore.log(
-					LoggingMode.DEBUG,
-					LOG_TAG,
-					"EdgeState - Collect consent is pending, suspending the Edge queue until (y/n)."
-				);
+				Log.debug(LOG_TAG, LOG_SOURCE, "Collect consent is pending, suspending the Edge queue until (y/n).");
 				break;
 		}
 	}

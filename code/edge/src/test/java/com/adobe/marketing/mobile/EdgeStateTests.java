@@ -44,13 +44,13 @@ public class EdgeStateTests {
 		mockSharedStateCallback =
 			new EdgeSharedStateCallback() {
 				@Override
-				public Map<String, Object> getSharedState(final String stateOwner, final Event event) {
+				public SharedStateResult getSharedState(final String stateOwner, final Event event) {
 					fail("EdgeState is not expected to call getSharedState.");
 					return null;
 				}
 
 				@Override
-				public void setSharedState(final Map<String, Object> state, final Event event) {
+				public void createSharedState(final Map<String, Object> state, final Event event) {
 					mockSharedState = state;
 				}
 			};
@@ -62,7 +62,7 @@ public class EdgeStateTests {
 	@Test
 	public void testBootupIfNeeded_LoadsPropertiesFromPersistence_AndCreatesSharedState_WithLocationHint() {
 		long expectedExpiryTimestamp = setLocationHintInMockDataStore("or2", 100);
-		state.bootupIfNeeded(null);
+		state.bootupIfNeeded();
 		assertEquals("or2", properties.getLocationHint());
 		assertNotNull(mockSharedState);
 		assertEquals("or2", mockSharedState.get(EdgeConstants.SharedState.Edge.LOCATION_HINT));
@@ -73,7 +73,7 @@ public class EdgeStateTests {
 		throws InterruptedException {
 		long expectedExpiryTimestamp = setLocationHintInMockDataStore("or2", 1);
 		Thread.sleep(1100); // wait for hint to expire
-		state.bootupIfNeeded(null);
+		state.bootupIfNeeded();
 		assertNull(properties.getLocationHint());
 		assertNotNull(mockSharedState);
 		assertTrue(mockSharedState.isEmpty()); // empty shared state created

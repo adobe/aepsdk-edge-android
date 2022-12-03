@@ -14,7 +14,7 @@ package com.adobe.marketing.mobile;
 final class EdgeConstants {
 
 	static final String EDGE_DATA_STORAGE = "EdgeDataStorage";
-	static final String EXTENSION_VERSION = "1.4.0";
+	static final String EXTENSION_VERSION = "2.0.0";
 	static final String EXTENSION_NAME = "com.adobe.edge";
 	static final String FRIENDLY_NAME = "Edge";
 	static final String LOG_TAG = FRIENDLY_NAME;
@@ -58,6 +58,7 @@ final class EdgeConstants {
 
 	static final class Defaults {
 
+		static final long API_CALLBACK_TIMEOUT_MILLIS = 5000L;
 		static final String REQUEST_CONFIG_RECORD_SEPARATOR = "\u0000";
 		static final String REQUEST_CONFIG_LINE_FEED = "\n";
 		static final int RETRY_INTERVAL_SECONDS = 5;

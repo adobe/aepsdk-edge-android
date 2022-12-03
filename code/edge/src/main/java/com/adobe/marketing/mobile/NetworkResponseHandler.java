@@ -13,7 +13,9 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
+import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
+import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +32,8 @@ import org.json.JSONObject;
  * response message and dispatching response content and/or error response content events and storing the response payload (if needed).
  */
 class NetworkResponseHandler {
+
+	private static final String LOG_SOURCE = "NetworkResponseHandler";
 
 	// the order of the request events matter for matching them with the response events
 	private final ConcurrentMap<String, List<WaitingEventContext>> sentEventsWaitingResponse;
@@ -57,7 +61,7 @@ class NetworkResponseHandler {
 			if (namedCollection != null) {
 				namedCollection.setLong(EdgeConstants.DataStoreKeys.RESET_IDENTITIES_DATE, lastResetDate);
 			} else {
-				Log.debug(LOG_TAG, "NetworkResponseHandler - Failed to set last reset date, data store is null.");
+				Log.debug(LOG_TAG, LOG_SOURCE, "Failed to set last reset date, data store is null.");
 			}
 		}
 	}
@@ -84,7 +88,8 @@ class NetworkResponseHandler {
 		if (sentEventsWaitingResponse.put(requestId, eventContexts) != null) {
 			Log.warning(
 				LOG_TAG,
-				"NetworkResponseHandler - Name collision for requestId (%s), events list is overwritten.",
+				LOG_SOURCE,
+				"Name collision for requestId (%s), events list is overwritten.",
 				requestId
 			);
 		}
@@ -378,8 +383,8 @@ class NetworkResponseHandler {
 			if (ignoreStorePayloads) {
 				Log.debug(
 					LOG_TAG,
-					"NetworkResponseHandler - Identities were reset recently, ignoring state:store payload for request with id: " +
-					requestId
+					LOG_SOURCE,
+					"Identities were reset recently, ignoring state:store payload for request with id: " + requestId
 				);
 			} else {
 				if (EdgeJson.Response.EventHandle.Store.TYPE.equals(handle.getType())) {
