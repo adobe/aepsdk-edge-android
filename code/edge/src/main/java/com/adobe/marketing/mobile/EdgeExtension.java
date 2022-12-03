@@ -309,7 +309,7 @@ class EdgeExtension extends Extension {
 	}
 
 	/**
-	 * Processes an Experience Event or Consent Update Event and add to the hit queue.
+	 * Processes an Experience Event or Consent Update Event and adds it to the hit queue.
 	 */
 	void processAndQueueEvent(@NonNull final Event event) {
 		Map<String, Object> configReady = getConfigurationState(event);
