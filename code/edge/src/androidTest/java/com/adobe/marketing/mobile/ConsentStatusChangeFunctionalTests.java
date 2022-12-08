@@ -51,12 +51,12 @@ public class ConsentStatusChangeFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
-		setExpectationEvent(EventType.HUB.getName(), EventSource.BOOTED.getName(), 1);
-		setExpectationEvent(EventType.CONFIGURATION.getName(), EventSource.REQUEST_CONTENT.getName(), 1);
-		setExpectationEvent(EventType.CONFIGURATION.getName(), EventSource.RESPONSE_CONTENT.getName(), 1);
+		setExpectationEvent(EventType.HUB, EventSource.BOOTED, 1);
+		setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
+		setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1);
 
 		// hub shared state update for 4 extensions Edge, Config, Identity, Hub)
-		setExpectationEvent(EventType.HUB.getName(), EventSource.SHARED_STATE.getName(), 4);
+		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 4);
 
 		HashMap<String, Object> config = new HashMap<String, Object>() {
 			{

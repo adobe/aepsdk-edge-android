@@ -624,11 +624,7 @@ public class RequestBuilderTest {
 	}
 
 	private List<Event> getSingleEvent(final Map<String, Object> eventData) {
-		final Event event = new Event.Builder(
-			"Request Builder Test Event",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.REQUEST_CONTENT
-		)
+		final Event event = new Event.Builder("Request Builder Test Event", EventType.EDGE, EventSource.REQUEST_CONTENT)
 			.setEventData(eventData)
 			.build();
 
@@ -643,11 +639,7 @@ public class RequestBuilderTest {
 		List<Event> events = new ArrayList<>(eventData.size());
 
 		for (Map<String, Object> data : eventData) {
-			Event event = new Event.Builder(
-				"Request Builder Test Event",
-				EdgeConstants.EventType.EDGE,
-				EdgeConstants.EventSource.REQUEST_CONTENT
-			)
+			Event event = new Event.Builder("Request Builder Test Event", EventType.EDGE, EventSource.REQUEST_CONTENT)
 				.setEventData(data)
 				.build();
 			events.add(event);

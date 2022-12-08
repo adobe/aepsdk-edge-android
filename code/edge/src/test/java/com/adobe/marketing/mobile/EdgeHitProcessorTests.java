@@ -96,8 +96,8 @@ public class EdgeHitProcessorTests {
 
 	private Event experienceEvent = new Event.Builder(
 		"test-experience-event",
-		EdgeConstants.EventType.EDGE,
-		EdgeConstants.EventSource.REQUEST_CONTENT
+		EventType.EDGE,
+		EventSource.REQUEST_CONTENT
 	)
 		.setEventData(
 			new HashMap<String, Object>() {
@@ -115,11 +115,7 @@ public class EdgeHitProcessorTests {
 		)
 		.build();
 
-	private Event consentEvent = new Event.Builder(
-		"test-consent-event",
-		EdgeConstants.EventType.EDGE,
-		EdgeConstants.EventSource.UPDATE_CONSENT
-	)
+	private Event consentEvent = new Event.Builder("test-consent-event", EventType.EDGE, EventSource.UPDATE_CONSENT)
 		.setEventData(
 			new HashMap<String, Object>() {
 				{
@@ -434,11 +430,7 @@ public class EdgeHitProcessorTests {
 	@Test
 	public void testProcessHit_onResetHit_clearsStatePayloads() throws InterruptedException {
 		// setup
-		final Event resetEvent = new Event.Builder(
-			"Reset Event",
-			EdgeConstants.EventType.EDGE_IDENTITY,
-			EdgeConstants.EventSource.RESET_COMPLETE
-		)
+		final Event resetEvent = new Event.Builder("Reset Event", EventType.EDGE_IDENTITY, EventSource.RESET_COMPLETE)
 			.build();
 		final EdgeDataEntity entity = new EdgeDataEntity(resetEvent);
 
@@ -514,11 +506,7 @@ public class EdgeHitProcessorTests {
 	@Test
 	public void testProcessHit_consentUpdateEvent_emptyData_doesNotSendNetworkRequest_returnsTrue() {
 		// setup
-		Event consentEvent = new Event.Builder(
-			"test-consent-event",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.UPDATE_CONSENT
-		)
+		Event consentEvent = new Event.Builder("test-consent-event", EventType.EDGE, EventSource.UPDATE_CONSENT)
 			.build();
 		EdgeDataEntity entity = new EdgeDataEntity(consentEvent, edgeConfig, identityMap);
 
@@ -529,11 +517,7 @@ public class EdgeHitProcessorTests {
 	@Test
 	public void testProcessHit_consentUpdateEvent_emptyPayloadDueToInvalidData_doesNotSendNetworkRequest_returnsTrue() {
 		// setup
-		Event consentEvent = new Event.Builder(
-			"test-consent-event",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.UPDATE_CONSENT
-		)
+		Event consentEvent = new Event.Builder("test-consent-event", EventType.EDGE, EventSource.UPDATE_CONSENT)
 			.setEventData(
 				new HashMap<String, Object>() {
 					{

@@ -64,20 +64,12 @@ public class SampleFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
-		FunctionalTestHelper.setExpectationEvent(EventType.HUB.getName(), EventSource.BOOTED.getName(), 1);
+		FunctionalTestHelper.setExpectationEvent(EventType.HUB, EventSource.BOOTED, 1);
 		// expectations for update config request&response events
-		FunctionalTestHelper.setExpectationEvent(
-			EventType.CONFIGURATION.getName(),
-			EventSource.REQUEST_CONTENT.getName(),
-			1
-		);
-		FunctionalTestHelper.setExpectationEvent(
-			EventType.CONFIGURATION.getName(),
-			EventSource.RESPONSE_CONTENT.getName(),
-			1
-		);
+		FunctionalTestHelper.setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
+		FunctionalTestHelper.setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1);
 		// hub shared state update Edge, EventHub, Configuration, and Identity
-		FunctionalTestHelper.setExpectationEvent(EventType.HUB.getName(), EventSource.SHARED_STATE.getName(), 4);
+		FunctionalTestHelper.setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 4);
 
 		HashMap<String, Object> config = new HashMap<String, Object>() {
 			{
@@ -188,12 +180,8 @@ public class SampleFunctionalTests {
 
 	@Test
 	public void testSample_AssertNetworkRequestAndResponseEvent() throws InterruptedException {
-		FunctionalTestHelper.setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.REQUEST_CONTENT,
-			1
-		);
-		FunctionalTestHelper.setExpectationEvent(FunctionalTestConstants.EventType.EDGE, "identity:exchange", 1);
+		FunctionalTestHelper.setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 1);
+		FunctionalTestHelper.setExpectationEvent(EventType.EDGE, "identity:exchange", 1);
 
 		final String responseBody =
 			"\u0000{\"requestId\":\"ded17427-c993-4182-8d94-2a169c1a23e2\",\"handle\":[{\"type\":\"identity:exchange\",\"payload\":[{\"type\":\"url\",\"id\":411,\"spec\":{\"url\":\"//cm.everesttech.net/cm/dd?d_uuid=42985602780892980519057012517360930936\",\"hideReferrer\":false,\"ttlMinutes\":10080}}]}]}\n";

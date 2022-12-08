@@ -77,10 +77,10 @@ public class NetworkResponseHandlerFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
-		setExpectationEvent(EventType.HUB.getName(), EventSource.BOOTED.getName(), 1);
-		setExpectationEvent(EventType.CONFIGURATION.getName(), EventSource.REQUEST_CONTENT.getName(), 1);
-		setExpectationEvent(EventType.CONFIGURATION.getName(), EventSource.RESPONSE_CONTENT.getName(), 1);
-		setExpectationEvent(EventType.HUB.getName(), EventSource.SHARED_STATE.getName(), 4);
+		setExpectationEvent(EventType.HUB, EventSource.BOOTED, 1);
+		setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
+		setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1);
+		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 4);
 
 		HashMap<String, Object> config = new HashMap<String, Object>() {
 			{
@@ -119,10 +119,7 @@ public class NetworkResponseHandlerFunctionalTests {
 	public void testProcessResponseOnError_WhenEmptyJsonError_doesNotHandleError() throws InterruptedException {
 		final String jsonError = "";
 		networkResponseHandler.processResponseOnError(jsonError, "123");
-		List<Event> dispatchEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT
-		);
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(0, dispatchEvents.size());
 	}
 
@@ -130,31 +127,20 @@ public class NetworkResponseHandlerFunctionalTests {
 	public void testProcessResponseOnError_WhenInvalidJsonError_doesNotHandleError() throws InterruptedException {
 		final String jsonError = "{ invalid json }";
 		networkResponseHandler.processResponseOnError(jsonError, "123");
-		List<Event> dispatchEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT
-		);
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(0, dispatchEvents.size());
 	}
 
 	@Test
 	public void testProcessResponseOnError_WhenGenericJsonError_dispatchesEvent() throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
 		final String jsonError =
 			"{\n" +
 			"\"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
 			"\"title\": \"Request to Data platform failed with an unknown exception\"" +
 			"\n}";
 		networkResponseHandler.processResponseOnError(jsonError, "123");
-		List<Event> dispatchEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT,
-			5000
-		);
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 5000);
 		assertEquals(1, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
@@ -166,11 +152,7 @@ public class NetworkResponseHandlerFunctionalTests {
 
 	@Test
 	public void testProcessResponseOnError_WhenOneEventJsonError_dispatchesEvent() throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
 		final String jsonError =
 			"{\n" +
 			"      \"requestId\": \"d81c93e5-7558-4996-a93c-489d550748b8\",\n" +
@@ -184,10 +166,7 @@ public class NetworkResponseHandlerFunctionalTests {
 			"      ]\n" +
 			"    }";
 		networkResponseHandler.processResponseOnError(jsonError, "123");
-		List<Event> dispatchEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT
-		);
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
@@ -203,11 +182,7 @@ public class NetworkResponseHandlerFunctionalTests {
 
 	@Test
 	public void testProcessResponseOnError_WhenValidEventIndex_dispatchesPairedEvent() throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
 		final String requestId = "123";
 		final String jsonError =
 			"{\n" +
@@ -232,10 +207,7 @@ public class NetworkResponseHandlerFunctionalTests {
 			}
 		);
 		networkResponseHandler.processResponseOnError(jsonError, requestId);
-		List<Event> dispatchEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT
-		);
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
@@ -250,11 +222,7 @@ public class NetworkResponseHandlerFunctionalTests {
 
 	@Test
 	public void testProcessResponseOnError_WhenUnknownEventIndex_doesNotCrash() throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
 		final String requestId = "123";
 		final String jsonError =
 			"{\n" +
@@ -279,10 +247,7 @@ public class NetworkResponseHandlerFunctionalTests {
 			}
 		);
 		networkResponseHandler.processResponseOnError(jsonError, requestId);
-		List<Event> dispatchEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT
-		);
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
@@ -296,11 +261,7 @@ public class NetworkResponseHandlerFunctionalTests {
 
 	@Test
 	public void testProcessResponseOnError_WhenUnknownRequestId_doesNotCrash() throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
 		final String requestId = "123";
 		final String jsonError =
 			"{\n" +
@@ -325,10 +286,7 @@ public class NetworkResponseHandlerFunctionalTests {
 			}
 		);
 		networkResponseHandler.processResponseOnError(jsonError, "567");
-		List<Event> dispatchEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT
-		);
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
@@ -342,11 +300,7 @@ public class NetworkResponseHandlerFunctionalTests {
 
 	@Test
 	public void testProcessResponseOnError_WhenTwoEventJsonError_dispatchesTwoEvents() throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT,
-			2
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 2);
 		final String requestId = "123";
 		final String jsonError =
 			"{\n" +
@@ -366,10 +320,7 @@ public class NetworkResponseHandlerFunctionalTests {
 			"      ]\n" +
 			"    }";
 		networkResponseHandler.processResponseOnError(jsonError, requestId);
-		List<Event> dispatchEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT
-		);
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(2, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData1 = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
@@ -398,10 +349,7 @@ public class NetworkResponseHandlerFunctionalTests {
 	public void testProcessResponseOnSuccess_WhenEmptyJsonResponse_doesNotDispatchEvent() throws InterruptedException {
 		final String jsonResponse = "";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
-		List<Event> dispatchEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.RESPONSE_CONTENT
-		);
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.RESPONSE_CONTENT);
 		assertEquals(0, dispatchEvents.size());
 	}
 
@@ -410,20 +358,13 @@ public class NetworkResponseHandlerFunctionalTests {
 		throws InterruptedException {
 		final String jsonResponse = "{ invalid json }";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
-		List<Event> dispatchEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.RESPONSE_CONTENT
-		);
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.RESPONSE_CONTENT);
 		assertEquals(0, dispatchEvents.size());
 	}
 
 	@Test
 	public void testProcessResponseOnSuccess_WhenOneEventHandle_dispatchesEvent() throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.RESPONSE_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.RESPONSE_CONTENT, 1);
 		final String jsonResponse =
 			"{\n" +
 			"      \"requestId\": \"d81c93e5-7558-4996-a93c-489d550748b8\",\n" +
@@ -442,7 +383,7 @@ public class NetworkResponseHandlerFunctionalTests {
 			"    }";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
-		List<Event> dispatchEvents = getDispatchedEventsWith(FunctionalTestConstants.EventType.EDGE, "state:store");
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "state:store");
 		assertEquals(1, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
@@ -457,11 +398,7 @@ public class NetworkResponseHandlerFunctionalTests {
 	@Test
 	public void testProcessResponseOnSuccess_WhenOneEventHandle_emptyEventHandleType_dispatchesEvent()
 		throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.RESPONSE_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.RESPONSE_CONTENT, 1);
 		final String jsonResponse =
 			"{\n" +
 			"      \"requestId\": \"d81c93e5-7558-4996-a93c-489d550748b8\",\n" +
@@ -480,10 +417,7 @@ public class NetworkResponseHandlerFunctionalTests {
 			"    }";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
-		List<Event> dispatchEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.RESPONSE_CONTENT
-		);
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.RESPONSE_CONTENT);
 		assertEquals(1, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
@@ -497,11 +431,7 @@ public class NetworkResponseHandlerFunctionalTests {
 	@Test
 	public void testProcessResponseOnSuccess_WhenOneEventHandle_nullEventHandleType_dispatchesEvent()
 		throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.RESPONSE_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.RESPONSE_CONTENT, 1);
 		final String jsonResponse =
 			"{\n" +
 			"      \"requestId\": \"d81c93e5-7558-4996-a93c-489d550748b8\",\n" +
@@ -519,10 +449,7 @@ public class NetworkResponseHandlerFunctionalTests {
 			"    }";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
-		List<Event> dispatchEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.RESPONSE_CONTENT
-		);
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.RESPONSE_CONTENT);
 		assertEquals(1, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
@@ -535,11 +462,7 @@ public class NetworkResponseHandlerFunctionalTests {
 
 	@Test
 	public void testProcessResponseOnSuccess_WhenTwoEventHandles_dispatchesTwoEvents() throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.RESPONSE_CONTENT,
-			2
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.RESPONSE_CONTENT, 2);
 		final String jsonResponse =
 			"{\n" +
 			"      \"requestId\": \"d81c93e5-7558-4996-a93c-489d550748b8\",\n" +
@@ -568,8 +491,8 @@ public class NetworkResponseHandlerFunctionalTests {
 			"    }";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
-		List<Event> dispatchEvents = getDispatchedEventsWith(FunctionalTestConstants.EventType.EDGE, "state:store");
-		dispatchEvents.addAll(getDispatchedEventsWith(FunctionalTestConstants.EventType.EDGE, "identity:persist"));
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "state:store");
+		dispatchEvents.addAll(getDispatchedEventsWith(EventType.EDGE, "identity:persist"));
 		assertEquals(2, dispatchEvents.size());
 
 		// verify event 1
@@ -593,11 +516,7 @@ public class NetworkResponseHandlerFunctionalTests {
 	@Test
 	public void testProcessResponseOnSuccess_WhenEventHandleWithEventIndex_dispatchesEventWithRequestEventId()
 		throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.RESPONSE_CONTENT,
-			2
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.RESPONSE_CONTENT, 2);
 		final String requestId = "123";
 		final String jsonResponse =
 			"{\n" +
@@ -635,8 +554,8 @@ public class NetworkResponseHandlerFunctionalTests {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, requestId);
 
 		// verify event 1
-		List<Event> dispatchEvents = getDispatchedEventsWith(FunctionalTestConstants.EventType.EDGE, "state:store");
-		dispatchEvents.addAll(getDispatchedEventsWith(FunctionalTestConstants.EventType.EDGE, "pairedeventexample"));
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "state:store");
+		dispatchEvents.addAll(getDispatchedEventsWith(EventType.EDGE, "pairedeventexample"));
 		assertEquals(2, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData1 = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
@@ -660,11 +579,7 @@ public class NetworkResponseHandlerFunctionalTests {
 	@Test
 	public void testProcessResponseOnSuccess_WhenEventHandleWithUnknownEventIndex_dispatchesUnpairedEvent()
 		throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.RESPONSE_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.RESPONSE_CONTENT, 1);
 		final String requestId = "123";
 		final String jsonResponse =
 			"{\n" +
@@ -693,10 +608,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		);
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, requestId);
 
-		List<Event> dispatchEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			"pairedeventexample"
-		);
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "pairedeventexample");
 		assertEquals(1, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
@@ -708,11 +620,7 @@ public class NetworkResponseHandlerFunctionalTests {
 
 	@Test
 	public void testProcessResponseOnSuccess_WhenUnknownRequestId_doesNotCrash() throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.RESPONSE_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.RESPONSE_CONTENT, 1);
 		final String requestId = "123";
 		final String jsonResponse =
 			"{\n" +
@@ -741,10 +649,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		);
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, requestId);
 
-		List<Event> dispatchEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			"pairedeventexample"
-		);
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "pairedeventexample");
 		assertEquals(1, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
@@ -760,16 +665,8 @@ public class NetworkResponseHandlerFunctionalTests {
 
 	@Test
 	public void testProcessResponseOnSuccess_WhenEventHandleAndError_dispatchesTwoEvents() throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.RESPONSE_CONTENT,
-			1
-		);
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.RESPONSE_CONTENT, 1);
+		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
 		final String requestId = "123";
 		final String jsonResponse =
 			"{\n" +
@@ -795,7 +692,7 @@ public class NetworkResponseHandlerFunctionalTests {
 
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, requestId);
 
-		List<Event> dispatchEvents = getDispatchedEventsWith(FunctionalTestConstants.EventType.EDGE, "state:store");
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "state:store");
 		assertEquals(1, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData1 = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
@@ -806,10 +703,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals("MCMID|29068398647607325310376254630528178721", flattenReceivedData1.get("payload[0].value"));
 		assertEquals("15552000", flattenReceivedData1.get("payload[0].maxAge"));
 
-		List<Event> dispatchErrorEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT
-		);
+		List<Event> dispatchErrorEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, dispatchErrorEvents.size());
 
 		Map<String, String> flattenReceivedData2 = FunctionalTestUtils.flattenMap(
@@ -824,11 +718,7 @@ public class NetworkResponseHandlerFunctionalTests {
 
 	@Test
 	public void testProcessResponseOnSuccess_WhenErrorAndWarning_dispatchesTwoEvents() throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT,
-			2
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 2);
 		final String requestId = "123";
 		final String jsonResponse =
 			"{\n" +
@@ -859,10 +749,7 @@ public class NetworkResponseHandlerFunctionalTests {
 
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, requestId);
 
-		List<Event> dispatchEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT
-		);
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(2, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData1 = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
@@ -890,11 +777,7 @@ public class NetworkResponseHandlerFunctionalTests {
 	@Test
 	public void testProcessResponseOnSuccess_WhenLocationHintResultEventHandle_dispatchesEvent()
 		throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.RESPONSE_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.RESPONSE_CONTENT, 1);
 		final String jsonResponse =
 			"{\n" +
 			"      \"requestId\": \"d81c93e5-7558-4996-a93c-489d550748b8\",\n" +
@@ -917,10 +800,7 @@ public class NetworkResponseHandlerFunctionalTests {
 			"    }";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
-		List<Event> dispatchEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			"locationHint:result"
-		);
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "locationHint:result");
 		assertEquals(1, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());

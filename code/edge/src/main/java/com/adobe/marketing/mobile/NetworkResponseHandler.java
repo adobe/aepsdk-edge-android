@@ -307,8 +307,8 @@ class NetworkResponseHandler {
 				eventDataResponse.put(EdgeConstants.EventDataKey.EDGE_REQUEST_ID, requestId);
 				Event responseEvent = new Event.Builder(
 					EdgeConstants.EventName.ERROR_RESPONSE_CONTENT,
-					EdgeConstants.EventType.EDGE,
-					EdgeConstants.EventSource.ERROR_RESPONSE_CONTENT
+					EventType.EDGE,
+					EventSource.ERROR_RESPONSE_CONTENT
 				)
 					.setEventData(eventDataResponse)
 					.build();
@@ -409,8 +409,8 @@ class NetworkResponseHandler {
 	 * @param requestId The request identifier associated with this response event, used for logging
 	 * @param isError indicates if this should be dispatched as an error or regular response content event
 	 * @param eventSource an optional {@link String} to be used as the event source.
-	 *        If {@code eventSource} is nil, either {@link EdgeConstants.EventSource#ERROR_RESPONSE_CONTENT} or
-	 *        {@link EdgeConstants.EventSource#RESPONSE_CONTENT} is used for the event source depending on {@code isError}.
+	 *        If {@code eventSource} is nil, either {@link EventSource#ERROR_RESPONSE_CONTENT} or
+	 *        {@link EventSource#RESPONSE_CONTENT} is used for the event source depending on {@code isError}.
 	 */
 	private void dispatchResponse(
 		final Map<String, Object> eventData,
@@ -422,9 +422,7 @@ class NetworkResponseHandler {
 			return;
 		}
 
-		String source = isError
-			? EdgeConstants.EventSource.ERROR_RESPONSE_CONTENT
-			: EdgeConstants.EventSource.RESPONSE_CONTENT;
+		String source = isError ? EventSource.ERROR_RESPONSE_CONTENT : EventSource.RESPONSE_CONTENT;
 
 		if (!Utils.isNullOrEmpty(eventSource)) {
 			source = eventSource;
@@ -443,7 +441,7 @@ class NetworkResponseHandler {
 		};
 		Event responseEvent = new Event.Builder(
 			isError ? EdgeConstants.EventName.ERROR_RESPONSE_CONTENT : EdgeConstants.EventName.RESPONSE_CONTENT,
-			EdgeConstants.EventType.EDGE,
+			EventType.EDGE,
 			source
 		)
 			.setEventData(eventData)

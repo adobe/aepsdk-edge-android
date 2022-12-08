@@ -50,8 +50,8 @@ public class NoConfigFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
-		setExpectationEvent(EventType.HUB.getName(), EventSource.BOOTED.getName(), 1);
-		setExpectationEvent(EventType.HUB.getName(), EventSource.SHARED_STATE.getName(), 2);
+		setExpectationEvent(EventType.HUB, EventSource.BOOTED, 1);
+		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 2);
 
 		Edge.registerExtension();
 		FakeIdentity.registerExtension();
@@ -101,11 +101,7 @@ public class NoConfigFunctionalTests {
 		final Map<String, Object> identityMap = Utils.toMap(jsonObject);
 
 		resetTestExpectations(); // reset received events
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.REQUEST_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 1);
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
 			.setXdmSchema(

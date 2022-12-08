@@ -126,64 +126,39 @@ class EdgeExtension extends Extension {
 	 * <p>
 	 * The following listeners are registered during this extension's registration:
 	 * <ul>
-	 *     <li> EventType {@link EdgeConstants.EventType#EDGE} and EventSource {@link EdgeConstants.EventSource#REQUEST_CONTENT}</li>
-	 *     <li> EventType {@link EdgeConstants.EventType#CONSENT} and EventSource {@link EdgeConstants.EventSource#RESPONSE_CONTENT}</li>
-	 *     <li> EventType {@link EdgeConstants.EventType#EDGE} and EventSource {@link EdgeConstants.EventSource#UPDATE_CONSENT}</li>
-	 *     <li> EventType {@link EdgeConstants.EventType#EDGE_IDENTITY} and EventSource {@link EdgeConstants.EventSource#RESET_COMPLETE}</li>
-	 *     <li> EventType {@link EdgeConstants.EventType#EDGE} and EventSource {@link EdgeConstants.EventSource#REQUEST_IDENTITY}</li>
-	 *     <li> EventType {@link EdgeConstants.EventType#EDGE} and EventSource {@link EdgeConstants.EventSource#UPDATE_IDENTITY}</li>
+	 *     <li> EventType {@link EventType#EDGE} and EventSource {@link EventSource#REQUEST_CONTENT}</li>
+	 *     <li> EventType {@link EventType#CONSENT} and EventSource {@link EventSource#RESPONSE_CONTENT}</li>
+	 *     <li> EventType {@link EventType#EDGE} and EventSource {@link EventSource#UPDATE_CONSENT}</li>
+	 *     <li> EventType {@link EventType#EDGE_IDENTITY} and EventSource {@link EventSource#RESET_COMPLETE}</li>
+	 *     <li> EventType {@link EventType#EDGE} and EventSource {@link EventSource#REQUEST_IDENTITY}</li>
+	 *     <li> EventType {@link EventType#EDGE} and EventSource {@link EventSource#UPDATE_IDENTITY}</li>
 	 * </ul>
 	 * </p>
 	 */
 	@Override
 	protected void onRegistered() {
 		// register a listener for Edge request events
-		getApi()
-			.registerEventListener(
-				EdgeConstants.EventType.EDGE,
-				EdgeConstants.EventSource.REQUEST_CONTENT,
-				this::handleExperienceEventRequest
-			);
+		getApi().registerEventListener(EventType.EDGE, EventSource.REQUEST_CONTENT, this::handleExperienceEventRequest);
 
 		// register listener for consent preferences updates to update the queue state
 		getApi()
 			.registerEventListener(
-				EdgeConstants.EventType.CONSENT,
-				EdgeConstants.EventSource.RESPONSE_CONTENT,
+				EventType.CONSENT,
+				EventSource.RESPONSE_CONTENT,
 				this::handleConsentPreferencesUpdate
 			);
 
 		// register listener for consent update request events
-		getApi()
-			.registerEventListener(
-				EdgeConstants.EventType.EDGE,
-				EdgeConstants.EventSource.UPDATE_CONSENT,
-				this::handleConsentUpdate
-			);
+		getApi().registerEventListener(EventType.EDGE, EventSource.UPDATE_CONSENT, this::handleConsentUpdate);
 
 		// register listener for identity reset complete
-		getApi()
-			.registerEventListener(
-				EdgeConstants.EventType.EDGE_IDENTITY,
-				EdgeConstants.EventSource.RESET_COMPLETE,
-				this::handleResetComplete
-			);
+		getApi().registerEventListener(EventType.EDGE_IDENTITY, EventSource.RESET_COMPLETE, this::handleResetComplete);
 
 		// register listener for edge get location hint
-		getApi()
-			.registerEventListener(
-				EdgeConstants.EventType.EDGE,
-				EdgeConstants.EventSource.REQUEST_IDENTITY,
-				this::handleGetLocationHint
-			);
+		getApi().registerEventListener(EventType.EDGE, EventSource.REQUEST_IDENTITY, this::handleGetLocationHint);
 
 		// register listener for edge update location hint
-		getApi()
-			.registerEventListener(
-				EdgeConstants.EventType.EDGE,
-				EdgeConstants.EventSource.UPDATE_IDENTITY,
-				this::handleSetLocationHint
-			);
+		getApi().registerEventListener(EventType.EDGE, EventSource.UPDATE_IDENTITY, this::handleSetLocationHint);
 	}
 
 	@Override
@@ -226,7 +201,7 @@ class EdgeExtension extends Extension {
 	}
 
 	/**
-	 * Handles the {@link EdgeConstants.EventType#CONSENT} - {@link EdgeConstants.EventSource#RESPONSE_CONTENT} event for the collect consent change
+	 * Handles the {@link EventType#CONSENT} - {@link EventSource#RESPONSE_CONTENT} event for the collect consent change
 	 *
 	 * @param event current event to process; the event and the event data should not be null, checking in listener
 	 */
@@ -235,7 +210,7 @@ class EdgeExtension extends Extension {
 	}
 
 	/**
-	 * Handles the {@link EdgeConstants.EventType#EDGE_IDENTITY} - {@link EdgeConstants.EventSource#RESET_COMPLETE} event for the identities reset completion
+	 * Handles the {@link EventType#EDGE_IDENTITY} - {@link EventSource#RESET_COMPLETE} event for the identities reset completion
 	 *
 	 * @param event current event to process
 	 */
@@ -263,15 +238,15 @@ class EdgeExtension extends Extension {
 	}
 
 	/**
-	 * Handles the {@link EdgeConstants.EventType#EDGE} - {@link EdgeConstants.EventSource#REQUEST_IDENTITY} event for getting the location hint.
+	 * Handles the {@link EventType#EDGE} - {@link EventSource#REQUEST_IDENTITY} event for getting the location hint.
 	 *
 	 * @param event current event to process
 	 */
 	void handleGetLocationHint(@NonNull final Event event) {
 		Event responseEvent = new Event.Builder(
 			EdgeConstants.EventName.RESPONSE_LOCATION_HINT,
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.RESPONSE_IDENTITY
+			EventType.EDGE,
+			EventSource.RESPONSE_IDENTITY
 		)
 			.setEventData(
 				new HashMap<String, Object>() {
@@ -287,7 +262,7 @@ class EdgeExtension extends Extension {
 	}
 
 	/**
-	 * Handles the {@link EdgeConstants.EventType#EDGE} - {@link EdgeConstants.EventSource#UPDATE_IDENTITY} event for setting the location hint.
+	 * Handles the {@link EventType#EDGE} - {@link EventSource#UPDATE_IDENTITY} event for setting the location hint.
 	 *
 	 * @param event current event to process
 	 */
