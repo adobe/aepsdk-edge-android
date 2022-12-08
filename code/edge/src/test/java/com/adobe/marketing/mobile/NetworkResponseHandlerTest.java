@@ -106,7 +106,7 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnError(jsonError, "123");
 
 		verifyStatic(MobileCore.class, times(0));
-		MobileCore.dispatchEvent(any(Event.class), any(ExtensionErrorCallback.class));
+		MobileCore.dispatchEvent(any(Event.class));
 	}
 
 	@Test
@@ -115,7 +115,7 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnError(jsonError, "123");
 
 		verifyStatic(MobileCore.class, times(0));
-		MobileCore.dispatchEvent(any(Event.class), any(ExtensionErrorCallback.class));
+		MobileCore.dispatchEvent(any(Event.class));
 	}
 
 	@Test
@@ -124,7 +124,7 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnError(jsonError, "123");
 
 		verifyStatic(MobileCore.class, times(0));
-		MobileCore.dispatchEvent(any(Event.class), any(ExtensionErrorCallback.class));
+		MobileCore.dispatchEvent(any(Event.class));
 	}
 
 	@Test
@@ -343,7 +343,7 @@ public class NetworkResponseHandlerTest {
 
 		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
 		verifyStatic(MobileCore.class, times(2));
-		MobileCore.dispatchEvent(eventArgCaptor.capture(), any(ExtensionErrorCallback.class));
+		MobileCore.dispatchEvent(eventArgCaptor.capture());
 
 		List<Event> returnedEvents = eventArgCaptor.getAllValues();
 		assertEquals(2, returnedEvents.size());
@@ -379,7 +379,7 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
 		verifyStatic(MobileCore.class, times(0));
-		MobileCore.dispatchEvent(any(Event.class), any(ExtensionErrorCallback.class));
+		MobileCore.dispatchEvent(any(Event.class));
 	}
 
 	@Test
@@ -388,7 +388,7 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
 		verifyStatic(MobileCore.class, times(0));
-		MobileCore.dispatchEvent(any(Event.class), any(ExtensionErrorCallback.class));
+		MobileCore.dispatchEvent(any(Event.class));
 	}
 
 	@Test
@@ -397,7 +397,7 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
 		verifyStatic(MobileCore.class, times(0));
-		MobileCore.dispatchEvent(any(Event.class), any(ExtensionErrorCallback.class));
+		MobileCore.dispatchEvent(any(Event.class));
 	}
 
 	@Test
@@ -593,7 +593,7 @@ public class NetworkResponseHandlerTest {
 
 		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
 		verifyStatic(MobileCore.class, times(2));
-		MobileCore.dispatchEvent(eventArgCaptor.capture(), any(ExtensionErrorCallback.class));
+		MobileCore.dispatchEvent(eventArgCaptor.capture());
 
 		List<Event> returnedEvents = eventArgCaptor.getAllValues();
 		assertEquals(2, returnedEvents.size());
@@ -688,7 +688,7 @@ public class NetworkResponseHandlerTest {
 
 		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
 		verifyStatic(MobileCore.class, times(2));
-		MobileCore.dispatchEvent(eventArgCaptor.capture(), any(ExtensionErrorCallback.class));
+		MobileCore.dispatchEvent(eventArgCaptor.capture());
 
 		List<Event> returnedEvents = eventArgCaptor.getAllValues();
 		assertEquals(2, returnedEvents.size());
@@ -865,7 +865,7 @@ public class NetworkResponseHandlerTest {
 
 		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
 		verifyStatic(MobileCore.class, times(2));
-		MobileCore.dispatchEvent(eventArgCaptor.capture(), any(ExtensionErrorCallback.class));
+		MobileCore.dispatchEvent(eventArgCaptor.capture());
 
 		List<Event> returnedEvents = eventArgCaptor.getAllValues();
 		assertEquals(2, returnedEvents.size());
@@ -937,7 +937,7 @@ public class NetworkResponseHandlerTest {
 
 		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
 		verifyStatic(MobileCore.class, times(2));
-		MobileCore.dispatchEvent(eventArgCaptor.capture(), any(ExtensionErrorCallback.class));
+		MobileCore.dispatchEvent(eventArgCaptor.capture());
 
 		List<Event> returnedEvents = eventArgCaptor.getAllValues();
 		assertEquals(2, returnedEvents.size());
@@ -1763,7 +1763,7 @@ public class NetworkResponseHandlerTest {
 	private void assertResponseErrorEventWithData(final Map<String, Object> expectedEventData) {
 		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
 		verifyStatic(MobileCore.class, times(1));
-		MobileCore.dispatchEvent(eventArgCaptor.capture(), any(ExtensionErrorCallback.class));
+		MobileCore.dispatchEvent(eventArgCaptor.capture());
 
 		Event returnedEvent = eventArgCaptor.getValue();
 		assertNotNull(returnedEvent);
@@ -1779,7 +1779,7 @@ public class NetworkResponseHandlerTest {
 	) {
 		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
 		verifyStatic(MobileCore.class, times(1));
-		MobileCore.dispatchEvent(eventArgCaptor.capture(), any(ExtensionErrorCallback.class));
+		MobileCore.dispatchEvent(eventArgCaptor.capture());
 
 		Event returnedEvent = eventArgCaptor.getValue();
 		assertNotNull(returnedEvent);

@@ -102,8 +102,8 @@ public class SampleFunctionalTests {
 	public void testSample_AssertUnexpectedEvents() throws InterruptedException {
 		// set event expectations specifying the event type, source and the count (count should be > 0)
 		FunctionalTestHelper.setExpectationEvent("eventType", "eventSource", 2);
-		MobileCore.dispatchEvent(event1, null);
-		MobileCore.dispatchEvent(event1, null);
+		MobileCore.dispatchEvent(event1);
+		MobileCore.dispatchEvent(event1);
 
 		// assert that no unexpected event was received
 		FunctionalTestHelper.assertUnexpectedEvents();
@@ -121,9 +121,9 @@ public class SampleFunctionalTests {
 				}
 			)
 			.build();
-		MobileCore.dispatchEvent(event1, null);
-		MobileCore.dispatchEvent(unexpectedEvent, null);
-		MobileCore.dispatchEvent(event1, null);
+		MobileCore.dispatchEvent(event1);
+		MobileCore.dispatchEvent(unexpectedEvent);
+		MobileCore.dispatchEvent(event1);
 
 		// assert all expected events were received and ignore any unexpected events
 		// when ignoreUnexpectedEvents is set on false, an extra assertUnexpectedEvents step is performed
@@ -132,9 +132,9 @@ public class SampleFunctionalTests {
 
 	@Test
 	public void testSample_DispatchedEvents() throws InterruptedException {
-		MobileCore.dispatchEvent(event1, null); // eventType and eventSource
-		MobileCore.dispatchEvent(event2, null); // eventType and eventSource
-		MobileCore.dispatchEvent(event3, null); // unexpectedType and unexpectedSource
+		MobileCore.dispatchEvent(event1); // eventType and eventSource
+		MobileCore.dispatchEvent(event2); // eventType and eventSource
+		MobileCore.dispatchEvent(event3); // unexpectedType and unexpectedSource
 
 		// assert on count and data for events of a certain type, source
 		List<Event> dispatchedEvents = FunctionalTestHelper.getDispatchedEventsWith("eventType", "eventSource");

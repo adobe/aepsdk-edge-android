@@ -551,23 +551,23 @@ public class FunctionalTestHelper {
 		final Map<String, Object> sharedState = new HashMap<>();
 		MobileCore.dispatchEventWithResponseCallback(
 			event,
-			new AdobeCallback<Event>() {
+			5000,
+			new AdobeCallbackWithError<Event>() {
 				@Override
-				public void call(Event event) {
+				public void call(final Event event) {
 					if (event.getEventData() != null) {
 						sharedState.putAll(event.getEventData());
 					}
 
 					latch.countDown();
 				}
-			},
-			new ExtensionErrorCallback<ExtensionError>() {
+
 				@Override
-				public void error(ExtensionError extensionError) {
+				public void fail(final AdobeError adobeError) {
 					MobileCore.log(
 						LoggingMode.ERROR,
 						TAG,
-						"Failed to get shared state for " + stateOwner + ": " + extensionError
+						"Failed to get shared state for " + stateOwner + ": " + adobeError
 					);
 				}
 			}

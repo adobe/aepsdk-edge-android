@@ -381,11 +381,7 @@ public class EdgeExtensionTest {
 		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
 
 		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-		MobileCore.dispatchResponseEvent(
-			responseEventCaptor.capture(),
-			requestEventCaptor.capture(),
-			any(ExtensionErrorCallback.class)
-		);
+		MobileCore.dispatchEvent(responseEventCaptor.capture());
 
 		final Event responseEvent = responseEventCaptor.getAllValues().get(0);
 		assertEquals("com.adobe.eventtype.edge", responseEvent.getType());
@@ -401,14 +397,9 @@ public class EdgeExtensionTest {
 		edgeExtension.handleGetLocationHint(getHintEvent);
 
 		final ArgumentCaptor<Event> responseEventCaptor = ArgumentCaptor.forClass(Event.class);
-		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
 
 		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-		MobileCore.dispatchResponseEvent(
-			responseEventCaptor.capture(),
-			requestEventCaptor.capture(),
-			any(ExtensionErrorCallback.class)
-		);
+		MobileCore.dispatchEvent(responseEventCaptor.capture());
 
 		final Event responseEvent = responseEventCaptor.getAllValues().get(0);
 		assertEquals("com.adobe.eventtype.edge", responseEvent.getType());
@@ -427,14 +418,9 @@ public class EdgeExtensionTest {
 		edgeExtension.handleGetLocationHint(getHintEvent);
 
 		final ArgumentCaptor<Event> responseEventCaptor = ArgumentCaptor.forClass(Event.class);
-		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
 
 		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-		MobileCore.dispatchResponseEvent(
-			responseEventCaptor.capture(),
-			requestEventCaptor.capture(),
-			any(ExtensionErrorCallback.class)
-		);
+		MobileCore.dispatchEvent(responseEventCaptor.capture());
 
 		final Event responseEvent = responseEventCaptor.getAllValues().get(0);
 		assertEquals("com.adobe.eventtype.edge", responseEvent.getType());

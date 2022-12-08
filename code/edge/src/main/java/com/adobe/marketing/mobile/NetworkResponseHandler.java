@@ -276,18 +276,6 @@ class NetworkResponseHandler {
 				"NetworkResponseHandler - Processing server error response: " + json.toString(2)
 			);
 
-			ExtensionErrorCallback<ExtensionError> dispatchErrorCallback = new ExtensionErrorCallback<ExtensionError>() {
-				@Override
-				public void error(ExtensionError extensionError) {
-					MobileCore.log(
-						LoggingMode.WARNING,
-						LOG_TAG,
-						"NetworkResponseHandler - An error occurred while dispatching edge response event with data: " +
-						jsonError
-					);
-				}
-			};
-
 			/*
 			 * Note: if the Edge Network error doesn't have an eventIndex it means that this error is
 			 * a generic request error, otherwise it is an event specific error. There can be multiple
@@ -312,7 +300,7 @@ class NetworkResponseHandler {
 				)
 					.setEventData(eventDataResponse)
 					.build();
-				MobileCore.dispatchEvent(responseEvent, dispatchErrorCallback);
+				MobileCore.dispatchEvent(responseEvent);
 			}
 		} catch (JSONException e) {
 			MobileCore.log(
@@ -428,17 +416,6 @@ class NetworkResponseHandler {
 			source = eventSource;
 		}
 
-		ExtensionErrorCallback<ExtensionError> dispatchErrorCallback = new ExtensionErrorCallback<ExtensionError>() {
-			@Override
-			public void error(ExtensionError extensionError) {
-				MobileCore.log(
-					LoggingMode.WARNING,
-					LOG_TAG,
-					"NetworkResponseHandler - An error occurred while dispatching edge response event for request id: " +
-					requestId
-				);
-			}
-		};
 		Event responseEvent = new Event.Builder(
 			isError ? EdgeConstants.EventName.ERROR_RESPONSE_CONTENT : EdgeConstants.EventName.RESPONSE_CONTENT,
 			EventType.EDGE,
@@ -447,7 +424,7 @@ class NetworkResponseHandler {
 			.setEventData(eventData)
 			.build();
 
-		MobileCore.dispatchEvent(responseEvent, dispatchErrorCallback);
+		MobileCore.dispatchEvent(responseEvent);
 	}
 
 	/**
