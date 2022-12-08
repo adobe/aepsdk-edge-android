@@ -101,11 +101,7 @@ public class NoConfigFunctionalTests {
 		final Map<String, Object> identityMap = Utils.toMap(jsonObject);
 
 		resetTestExpectations(); // reset received events
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.REQUEST_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 1);
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
 			.setXdmSchema(

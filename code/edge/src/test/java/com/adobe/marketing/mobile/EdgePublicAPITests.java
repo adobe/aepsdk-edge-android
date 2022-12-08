@@ -128,8 +128,8 @@ public class EdgePublicAPITests {
 
 		Event responseEvent = new Event.Builder(
 			EdgeConstants.EventName.RESPONSE_LOCATION_HINT,
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.RESPONSE_IDENTITY
+			EventType.EDGE,
+			EventSource.RESPONSE_IDENTITY
 		)
 			.setEventData(
 				new HashMap<String, Object>() {
@@ -180,8 +180,8 @@ public class EdgePublicAPITests {
 
 		Event responseEvent = new Event.Builder(
 			EdgeConstants.EventName.RESPONSE_LOCATION_HINT,
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.RESPONSE_IDENTITY
+			EventType.EDGE,
+			EventSource.RESPONSE_IDENTITY
 		)
 			.setEventData(
 				new HashMap<String, Object>() {
@@ -269,8 +269,8 @@ public class EdgePublicAPITests {
 
 		Event responseEvent = new Event.Builder(
 			EdgeConstants.EventName.RESPONSE_LOCATION_HINT,
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.RESPONSE_IDENTITY
+			EventType.EDGE,
+			EventSource.RESPONSE_IDENTITY
 		)
 			.setEventData(null)
 			.build();
@@ -315,8 +315,8 @@ public class EdgePublicAPITests {
 
 		Event responseEvent = new Event.Builder(
 			EdgeConstants.EventName.RESPONSE_LOCATION_HINT,
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.RESPONSE_IDENTITY
+			EventType.EDGE,
+			EventSource.RESPONSE_IDENTITY
 		)
 			.setEventData(
 				new HashMap<String, Object>() {
@@ -367,8 +367,8 @@ public class EdgePublicAPITests {
 
 		Event responseEvent = new Event.Builder(
 			EdgeConstants.EventName.RESPONSE_LOCATION_HINT,
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.RESPONSE_IDENTITY
+			EventType.EDGE,
+			EventSource.RESPONSE_IDENTITY
 		)
 			.setEventData(
 				new HashMap<String, Object>() {

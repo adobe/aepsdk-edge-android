@@ -36,8 +36,8 @@ public class EdgeExtensionListenerTests {
 		// setup
 		Event event = new Event.Builder(
 			"Edge Request Content",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.REQUEST_CONTENT
+			EventType.EDGE,
+			EventSource.REQUEST_CONTENT
 		)
 			.build();
 		doReturn(null).when(listener).getParentExtension();
@@ -71,8 +71,8 @@ public class EdgeExtensionListenerTests {
 		// setup
 		Event event = new Event.Builder(
 			"Edge Request Content",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.REQUEST_CONTENT
+			EventType.EDGE,
+			EventSource.REQUEST_CONTENT
 		)
 			.setEventData(
 				new HashMap<String, Object>() {
@@ -98,8 +98,8 @@ public class EdgeExtensionListenerTests {
 		// setup
 		Event event = new Event.Builder(
 			"Edge Request Content",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.REQUEST_CONTENT
+			EventType.EDGE,
+			EventSource.REQUEST_CONTENT
 		)
 			.setEventData(new HashMap<String, Object>())
 			.build();
@@ -119,8 +119,8 @@ public class EdgeExtensionListenerTests {
 		// setup
 		Event event = new Event.Builder(
 			"Edge Update Consent",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.UPDATE_CONSENT
+			EventType.EDGE,
+			EventSource.UPDATE_CONSENT
 		)
 			.setEventData(
 				new HashMap<String, Object>() {
@@ -146,8 +146,8 @@ public class EdgeExtensionListenerTests {
 		// setup
 		Event event = new Event.Builder(
 			"Edge Update Consent",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.UPDATE_CONSENT
+			EventType.EDGE,
+			EventSource.UPDATE_CONSENT
 		)
 			.setEventData(new HashMap<String, Object>())
 			.build();
@@ -167,8 +167,8 @@ public class EdgeExtensionListenerTests {
 		// setup
 		Event event = new Event.Builder(
 			"Consent preferences",
-			EdgeConstants.EventType.CONSENT,
-			EdgeConstants.EventSource.RESPONSE_CONTENT
+			EventType.CONSENT,
+			EventSource.RESPONSE_CONTENT
 		)
 			.setEventData(
 				new HashMap<String, Object>() {
@@ -194,8 +194,8 @@ public class EdgeExtensionListenerTests {
 		// setup
 		Event event = new Event.Builder(
 			"Consent preferences",
-			EdgeConstants.EventType.CONSENT,
-			EdgeConstants.EventSource.RESPONSE_CONTENT
+			EventType.CONSENT,
+			EventSource.RESPONSE_CONTENT
 		)
 			.build();
 		doReturn(testExecutor).when(mockEdgeExtension).getExecutor();
@@ -214,8 +214,8 @@ public class EdgeExtensionListenerTests {
 		// setup
 		Event event = new Event.Builder(
 			"Shared State Update",
-			EdgeConstants.EventType.ADOBE_HUB,
-			EdgeConstants.EventSource.ADOBE_SHARED_STATE
+			EventType.HUB,
+			EventSource.SHARED_STATE
 		)
 			.setEventData(
 				new HashMap<String, Object>() {
@@ -241,8 +241,8 @@ public class EdgeExtensionListenerTests {
 		// setup
 		Event event = new Event.Builder(
 			"Edge Identity Reset Complete",
-			EdgeConstants.EventType.EDGE_IDENTITY,
-			EdgeConstants.EventSource.RESET_COMPLETE
+			EventType.EDGE_IDENTITY,
+			EventSource.RESET_COMPLETE
 		)
 			.build();
 		doReturn(testExecutor).when(mockEdgeExtension).getExecutor();
@@ -261,8 +261,8 @@ public class EdgeExtensionListenerTests {
 		// setup
 		Event event = new Event.Builder(
 			"Shared State Update",
-			EdgeConstants.EventType.ADOBE_HUB,
-			EdgeConstants.EventSource.ADOBE_SHARED_STATE
+			EventType.HUB,
+			EventSource.SHARED_STATE
 		)
 			.setEventData(new HashMap<String, Object>())
 			.build();
@@ -282,8 +282,8 @@ public class EdgeExtensionListenerTests {
 		// setup
 		Event event = new Event.Builder(
 			"Edge Get Location Hint",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.REQUEST_IDENTITY
+			EventType.EDGE,
+			EventSource.REQUEST_IDENTITY
 		)
 			.setEventData(
 				new HashMap<String, Object>() {
@@ -309,8 +309,8 @@ public class EdgeExtensionListenerTests {
 		// setup
 		Event event = new Event.Builder(
 			"Edge Get Location Hint",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.REQUEST_IDENTITY
+			EventType.EDGE,
+			EventSource.REQUEST_IDENTITY
 		)
 			.setEventData(
 				new HashMap<String, Object>() {
@@ -336,8 +336,8 @@ public class EdgeExtensionListenerTests {
 		// setup
 		Event event = new Event.Builder(
 			"Edge Get Location Hint",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.REQUEST_IDENTITY
+			EventType.EDGE,
+			EventSource.REQUEST_IDENTITY
 		)
 			.setEventData(
 				new HashMap<String, Object>() {
@@ -363,8 +363,8 @@ public class EdgeExtensionListenerTests {
 		// setup
 		Event event = new Event.Builder(
 			"Edge Get Location Hint",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.REQUEST_IDENTITY
+			EventType.EDGE,
+			EventSource.REQUEST_IDENTITY
 		)
 			.setEventData(new HashMap<String, Object>())
 			.build();
@@ -384,8 +384,8 @@ public class EdgeExtensionListenerTests {
 		// setup
 		Event event = new Event.Builder(
 			"Edge Get Location Hint",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.REQUEST_IDENTITY
+			EventType.EDGE,
+			EventSource.REQUEST_IDENTITY
 		)
 			.build();
 		doReturn(testExecutor).when(mockEdgeExtension).getExecutor();
@@ -404,8 +404,8 @@ public class EdgeExtensionListenerTests {
 		// setup
 		Event event = new Event.Builder(
 			"Edge Set Location Hint",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.UPDATE_IDENTITY
+			EventType.EDGE,
+			EventSource.UPDATE_IDENTITY
 		)
 			.setEventData(
 				new HashMap<String, Object>() {
@@ -431,8 +431,8 @@ public class EdgeExtensionListenerTests {
 		// setup
 		Event event = new Event.Builder(
 			"Edge Set Location Hint",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.UPDATE_IDENTITY
+			EventType.EDGE,
+			EventSource.UPDATE_IDENTITY
 		)
 			.setEventData(
 				new HashMap<String, Object>() {
@@ -458,8 +458,8 @@ public class EdgeExtensionListenerTests {
 		// setup
 		Event event = new Event.Builder(
 			"Edge Set Location Hint",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.UPDATE_IDENTITY
+			EventType.EDGE,
+			EventSource.UPDATE_IDENTITY
 		)
 			.setEventData(new HashMap<String, Object>())
 			.build();
@@ -479,8 +479,8 @@ public class EdgeExtensionListenerTests {
 		// setup
 		Event event = new Event.Builder(
 			"Edge Set Location Hint",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.UPDATE_IDENTITY
+			EventType.EDGE,
+			EventSource.UPDATE_IDENTITY
 		)
 			.build();
 		doReturn(testExecutor).when(mockEdgeExtension).getExecutor();

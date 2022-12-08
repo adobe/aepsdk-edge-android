@@ -48,11 +48,7 @@ public class EdgeExtensionTest {
 		}
 	};
 
-	private Event event1 = new Event.Builder(
-		"event1",
-		EdgeConstants.EventType.EDGE,
-		EdgeConstants.EventSource.REQUEST_CONTENT
-	)
+	private Event event1 = new Event.Builder("event1", EventType.EDGE, EventSource.REQUEST_CONTENT)
 		.setEventData(
 			new HashMap<String, Object>() {
 				{
@@ -62,11 +58,7 @@ public class EdgeExtensionTest {
 		)
 		.build();
 
-	private Event getHintEvent = new Event.Builder(
-		"Get Location Hint",
-		EdgeConstants.EventType.EDGE,
-		EdgeConstants.EventSource.REQUEST_IDENTITY
-	)
+	private Event getHintEvent = new Event.Builder("Get Location Hint", EventType.EDGE, EventSource.REQUEST_IDENTITY)
 		.setEventData(
 			new HashMap<String, Object>() {
 				{
@@ -198,7 +190,7 @@ public class EdgeExtensionTest {
 	@Test
 	public void testHandleConsentUpdate_queues() {
 		edgeExtension.handleConsentUpdate(
-			new Event.Builder("Consent update", EdgeConstants.EventType.EDGE, EdgeConstants.EventSource.UPDATE_CONSENT)
+			new Event.Builder("Consent update", EventType.EDGE, EventSource.UPDATE_CONSENT)
 				.setEventData(getConsentsData(ConsentStatus.YES))
 				.build()
 		);
@@ -212,11 +204,7 @@ public class EdgeExtensionTest {
 	@Test
 	public void testHandlePreferencesUpdate_validData() {
 		edgeExtension.handleConsentPreferencesUpdate(
-			new Event.Builder(
-				"Consent update",
-				EdgeConstants.EventType.CONSENT,
-				EdgeConstants.EventSource.RESPONSE_CONTENT
-			)
+			new Event.Builder("Consent update", EventType.CONSENT, EventSource.RESPONSE_CONTENT)
 				.setEventData(getConsentsData(ConsentStatus.YES))
 				.build()
 		);
@@ -239,11 +227,7 @@ public class EdgeExtensionTest {
 		)
 			.thenReturn(getHubExtensions(false));
 		edgeExtension.handleSharedStateUpdate(
-			new Event.Builder(
-				"Shared State update",
-				EdgeConstants.EventType.ADOBE_HUB,
-				EdgeConstants.EventSource.ADOBE_SHARED_STATE
-			)
+			new Event.Builder("Shared State update", EventType.HUB, EventSource.SHARED_STATE)
 				.setEventData(
 					new HashMap<String, Object>() {
 						{
@@ -268,11 +252,7 @@ public class EdgeExtensionTest {
 		)
 			.thenReturn(getHubExtensions(true));
 		edgeExtension.handleSharedStateUpdate(
-			new Event.Builder(
-				"Shared State update",
-				EdgeConstants.EventType.ADOBE_HUB,
-				EdgeConstants.EventSource.ADOBE_SHARED_STATE
-			)
+			new Event.Builder("Shared State update", EventType.HUB, EventSource.SHARED_STATE)
 				.setEventData(
 					new HashMap<String, Object>() {
 						{
@@ -297,11 +277,7 @@ public class EdgeExtensionTest {
 		)
 			.thenReturn(getHubExtensions(true));
 		edgeExtension.handleSharedStateUpdate(
-			new Event.Builder(
-				"Shared State update",
-				EdgeConstants.EventType.ADOBE_HUB,
-				EdgeConstants.EventSource.ADOBE_SHARED_STATE
-			)
+			new Event.Builder("Shared State update", EventType.HUB, EventSource.SHARED_STATE)
 				.setEventData(
 					new HashMap<String, Object>() {
 						{
@@ -469,11 +445,7 @@ public class EdgeExtensionTest {
 
 	@Test
 	public void testhandleSetLocationHint_whenValueHint_setsHint() {
-		final Event requestEvent = new Event.Builder(
-			"Set Location Hint",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.UPDATE_IDENTITY
-		)
+		final Event requestEvent = new Event.Builder("Set Location Hint", EventType.EDGE, EventSource.UPDATE_IDENTITY)
 			.setEventData(
 				new HashMap<String, Object>() {
 					{
@@ -491,11 +463,7 @@ public class EdgeExtensionTest {
 	@Test
 	public void testhandleSetLocationHint_whenEmptyHint_clearsHint() {
 		state.setLocationHint("or2", 1800);
-		final Event requestEvent = new Event.Builder(
-			"Set Location Hint",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.UPDATE_IDENTITY
-		)
+		final Event requestEvent = new Event.Builder("Set Location Hint", EventType.EDGE, EventSource.UPDATE_IDENTITY)
 			.setEventData(
 				new HashMap<String, Object>() {
 					{
@@ -513,11 +481,7 @@ public class EdgeExtensionTest {
 	@Test
 	public void testhandleSetLocationHint_whenNullHint_clearsHint() {
 		state.setLocationHint("or2", 1800);
-		final Event requestEvent = new Event.Builder(
-			"Set Location Hint",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.UPDATE_IDENTITY
-		)
+		final Event requestEvent = new Event.Builder("Set Location Hint", EventType.EDGE, EventSource.UPDATE_IDENTITY)
 			.setEventData(
 				new HashMap<String, Object>() {
 					{

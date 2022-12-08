@@ -19,31 +19,6 @@ final class EdgeConstants {
 	static final String FRIENDLY_NAME = "Edge";
 	static final String LOG_TAG = FRIENDLY_NAME;
 
-	static final class EventSource {
-
-		static final String REQUEST_CONTENT = "com.adobe.eventSource.requestContent";
-		static final String RESPONSE_CONTENT = "com.adobe.eventSource.responseContent";
-		static final String ERROR_RESPONSE_CONTENT = "com.adobe.eventSource.errorResponseContent";
-		static final String ADOBE_SHARED_STATE = "com.adobe.eventSource.sharedState";
-		static final String UPDATE_CONSENT = "com.adobe.eventSource.updateConsent";
-		static final String RESET_COMPLETE = "com.adobe.eventSource.resetComplete";
-		static final String REQUEST_IDENTITY = "com.adobe.eventSource.requestIdentity";
-		static final String RESPONSE_IDENTITY = "com.adobe.eventSource.responseIdentity";
-		static final String UPDATE_IDENTITY = "com.adobe.eventSource.updateIdentity";
-
-		private EventSource() {}
-	}
-
-	static final class EventType {
-
-		static final String EDGE = "com.adobe.eventType.edge";
-		static final String CONSENT = "com.adobe.eventType.edgeConsent";
-		static final String ADOBE_HUB = "com.adobe.eventType.hub";
-		static final String EDGE_IDENTITY = "com.adobe.eventType.edgeIdentity";
-
-		private EventType() {}
-	}
-
 	static final class EventName {
 
 		static final String REQUEST_CONTENT = "AEP Request Event";

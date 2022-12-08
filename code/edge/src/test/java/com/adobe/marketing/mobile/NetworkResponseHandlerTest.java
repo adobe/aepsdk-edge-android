@@ -441,12 +441,7 @@ public class NetworkResponseHandlerTest {
 
 	@Test
 	public void testProcessResponseOnSuccess_beforeReset_doesNotSavePayloads() {
-		final Event event = new Event.Builder(
-			"test Event",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.REQUEST_CONTENT
-		)
-			.build();
+		final Event event = new Event.Builder("test Event", EventType.EDGE, EventSource.REQUEST_CONTENT).build();
 		networkResponseHandler.addWaitingEvent("123", event);
 		final long resetTime = event.getTimestamp() + 10; // reset received after event was queued, ignore its state store
 		networkResponseHandler.setLastResetDate(resetTime);
@@ -475,12 +470,7 @@ public class NetworkResponseHandlerTest {
 
 	@Test
 	public void testProcessResponseOnSuccess_afterReset_doesSavePayloads() {
-		final Event event = new Event.Builder(
-			"test Event",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.REQUEST_CONTENT
-		)
-			.build();
+		final Event event = new Event.Builder("test Event", EventType.EDGE, EventSource.REQUEST_CONTENT).build();
 		networkResponseHandler.addWaitingEvent("123", event);
 		final long resetTime = event.getTimestamp() - 10; // reset received before event was queued, save its state store
 		networkResponseHandler.setLastResetDate(resetTime);
@@ -510,12 +500,7 @@ public class NetworkResponseHandlerTest {
 
 	@Test
 	public void testProcessResponseOnSuccess_beforePersistedReset_doesNotSavePayloads() {
-		final Event event = new Event.Builder(
-			"test Event",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.REQUEST_CONTENT
-		)
-			.build();
+		final Event event = new Event.Builder("test Event", EventType.EDGE, EventSource.REQUEST_CONTENT).build();
 		final long resetTime = event.getTimestamp() + 10; // reset received after event was queued, ignore its state store
 
 		when(mockNamedCollection.getLong(EdgeConstants.DataStoreKeys.RESET_IDENTITIES_DATE, 0)).thenReturn(resetTime);
@@ -546,12 +531,7 @@ public class NetworkResponseHandlerTest {
 
 	@Test
 	public void testProcessResponseOnSuccess_afterPersistedReset_doesSavePayloads() {
-		final Event event = new Event.Builder(
-			"test Event",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.REQUEST_CONTENT
-		)
-			.build();
+		final Event event = new Event.Builder("test Event", EventType.EDGE, EventSource.REQUEST_CONTENT).build();
 		final long resetTime = event.getTimestamp() - 10; // reset received before event was queued, save its state store
 		mockNamedCollection.setLong(EdgeConstants.DataStoreKeys.RESET_IDENTITIES_DATE, resetTime);
 
@@ -1417,12 +1397,7 @@ public class NetworkResponseHandlerTest {
 
 	@Test
 	public void testProcessResponseOnSuccess_beforeReset_doesNotSetLocationHint() {
-		final Event event = new Event.Builder(
-			"test Event",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.REQUEST_CONTENT
-		)
-			.build();
+		final Event event = new Event.Builder("test Event", EventType.EDGE, EventSource.REQUEST_CONTENT).build();
 		networkResponseHandler.addWaitingEvent("123", event);
 		final long resetTime = event.getTimestamp() + 10;
 		networkResponseHandler.setLastResetDate(resetTime);
@@ -1451,12 +1426,7 @@ public class NetworkResponseHandlerTest {
 
 	@Test
 	public void testProcessResponseOnSuccess_afterReset_setsLocationHint() {
-		final Event event = new Event.Builder(
-			"test Event",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.REQUEST_CONTENT
-		)
-			.build();
+		final Event event = new Event.Builder("test Event", EventType.EDGE, EventSource.REQUEST_CONTENT).build();
 		networkResponseHandler.addWaitingEvent("123", event);
 		final long resetTime = event.getTimestamp() - 10;
 		networkResponseHandler.setLastResetDate(resetTime);
@@ -1485,12 +1455,7 @@ public class NetworkResponseHandlerTest {
 
 	@Test
 	public void testProcessResponseOnSuccess_beforePersistedReset_doesNotSetLocationHint() {
-		final Event event = new Event.Builder(
-			"test Event",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.REQUEST_CONTENT
-		)
-			.build();
+		final Event event = new Event.Builder("test Event", EventType.EDGE, EventSource.REQUEST_CONTENT).build();
 		final long resetTime = event.getTimestamp() + 10;
 		when(mockNamedCollection.getLong(EdgeConstants.DataStoreKeys.RESET_IDENTITIES_DATE, 0)).thenReturn(resetTime);
 		// reset response handler to load persisted reset time
@@ -1521,12 +1486,7 @@ public class NetworkResponseHandlerTest {
 
 	@Test
 	public void testProcessResponseOnSuccess_afterPersistedReset_setsLocationHint() {
-		final Event event = new Event.Builder(
-			"test Event",
-			EdgeConstants.EventType.EDGE,
-			EdgeConstants.EventSource.REQUEST_CONTENT
-		)
-			.build();
+		final Event event = new Event.Builder("test Event", EventType.EDGE, EventSource.REQUEST_CONTENT).build();
 		final long resetTime = event.getTimestamp() - 10;
 
 		mockNamedCollection.setLong(EdgeConstants.DataStoreKeys.RESET_IDENTITIES_DATE, resetTime);

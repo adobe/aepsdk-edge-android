@@ -107,11 +107,7 @@ public class EdgeFunctionalTests {
 
 	@Test
 	public void testSendEvent_withXDMData_sendsCorrectRequestEvent() throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.REQUEST_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 1);
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
 			.setXdmSchema(
@@ -146,10 +142,7 @@ public class EdgeFunctionalTests {
 
 		// verify
 		assertExpectedEvents(false);
-		List<Event> resultEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.REQUEST_CONTENT
-		);
+		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
 		assertEquals(1, resultEvents.size());
 		Map<String, Object> eventData = resultEvents.get(0).getEventData();
 		assertNotNull(eventData);
@@ -167,11 +160,7 @@ public class EdgeFunctionalTests {
 
 	@Test
 	public void testSendEvent_withXDMDataAndCustomData_sendsCorrectRequestEvent() throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.REQUEST_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 1);
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
 			.setXdmSchema(
@@ -213,10 +202,7 @@ public class EdgeFunctionalTests {
 
 		// verify
 		assertExpectedEvents(false);
-		List<Event> resultEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.REQUEST_CONTENT
-		);
+		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
 		assertEquals(1, resultEvents.size());
 		Map<String, Object> eventData = resultEvents.get(0).getEventData();
 		assertNotNull(eventData);
@@ -235,11 +221,7 @@ public class EdgeFunctionalTests {
 
 	@Test
 	public void testSendEvent_withXDMDataAndNullData_sendsCorrectRequestEvent() throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.REQUEST_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 1);
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
 			.setXdmSchema(
@@ -255,10 +237,7 @@ public class EdgeFunctionalTests {
 
 		// verify
 		assertExpectedEvents(false);
-		List<Event> resultEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.REQUEST_CONTENT
-		);
+		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
 		assertEquals(1, resultEvents.size());
 		Map<String, Object> eventData = resultEvents.get(0).getEventData();
 		assertNotNull(eventData);
@@ -726,7 +705,7 @@ public class EdgeFunctionalTests {
 			"\u0000{\"requestId\": \"0000-4a4e-1111-bf5c-abcd\",\"handle\": [{\"payload\": [{\"key\": \"kndctr_testOrg_AdobeOrg_identity\",\"value\": \"hashed_value\",\"maxAge\": 34128000},{\"key\": \"kndctr_testOrg_AdobeOrg_consent_check\",\"value\": \"1\",\"maxAge\": 7200},{\"key\": \"expired_key\",\"value\": \"1\",\"maxAge\": 0}],\"type\": \"state:store\"}]}\n";
 		HttpConnecting responseConnection = createNetworkResponse(storeResponseBody, 200);
 		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
-		setExpectationEvent(FunctionalTestConstants.EventType.EDGE, "state:store", 1);
+		setExpectationEvent(EventType.EDGE, "state:store", 1);
 
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
@@ -746,7 +725,7 @@ public class EdgeFunctionalTests {
 		// send a new event, should contain previously stored store data
 		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
-		setExpectationEvent(FunctionalTestConstants.EventType.EDGE, "state:store", 1);
+		setExpectationEvent(EventType.EDGE, "state:store", 1);
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		resultRequests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, TIMEOUT_MILLIS);
@@ -786,11 +765,7 @@ public class EdgeFunctionalTests {
 		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 
 		// send the reset event before
-		final Event resetEvent = new Event.Builder(
-			"resetEvent",
-			EdgeConstants.EventType.EDGE_IDENTITY,
-			EdgeConstants.EventSource.RESET_COMPLETE
-		)
+		final Event resetEvent = new Event.Builder("resetEvent", EventType.EDGE_IDENTITY, EventSource.RESET_COMPLETE)
 			.build();
 		MobileCore.dispatchEvent(resetEvent, null);
 
@@ -798,7 +773,7 @@ public class EdgeFunctionalTests {
 			"\u0000{\"requestId\": \"0000-4a4e-1111-bf5c-abcd\",\"handle\": [{\"payload\": [{\"key\": \"kndctr_testOrg_AdobeOrg_identity\",\"value\": \"hashed_value\",\"maxAge\": 34128000},{\"key\": \"kndctr_testOrg_AdobeOrg_consent_check\",\"value\": \"1\",\"maxAge\": 7200},{\"key\": \"expired_key\",\"value\": \"1\",\"maxAge\": 0}],\"type\": \"state:store\"}]}\n";
 		HttpConnecting responseConnection = createNetworkResponse(storeResponseBody, 200);
 		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
-		setExpectationEvent(FunctionalTestConstants.EventType.EDGE, "state:store", 1);
+		setExpectationEvent(EventType.EDGE, "state:store", 1);
 
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
@@ -818,7 +793,7 @@ public class EdgeFunctionalTests {
 		// send a new event, should contain previously stored store data
 		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
-		setExpectationEvent(FunctionalTestConstants.EventType.EDGE, "state:store", 1);
+		setExpectationEvent(EventType.EDGE, "state:store", 1);
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		resultRequests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, TIMEOUT_MILLIS);
@@ -860,7 +835,7 @@ public class EdgeFunctionalTests {
 			"\u0000{\"requestId\": \"0000-4a4e-1111-bf5c-abcd\",\"handle\": [{\"payload\": [{\"key\": \"kndctr_testOrg_AdobeOrg_identity\",\"value\": \"hashed_value\",\"maxAge\": 34128000},{\"key\": \"kndctr_testOrg_AdobeOrg_consent_check\",\"value\": \"1\",\"maxAge\": 7200},{\"key\": \"expired_key\",\"value\": \"1\",\"maxAge\": 0}],\"type\": \"state:store\"}]}\n";
 		HttpConnecting responseConnection = createNetworkResponse(storeResponseBody, 200);
 		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
-		setExpectationEvent(FunctionalTestConstants.EventType.EDGE, "state:store", 1);
+		setExpectationEvent(EventType.EDGE, "state:store", 1);
 
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
@@ -878,18 +853,14 @@ public class EdgeFunctionalTests {
 		resetTestExpectations();
 
 		// send the reset event in-between
-		final Event resetEvent = new Event.Builder(
-			"resetEvent",
-			EdgeConstants.EventType.EDGE_IDENTITY,
-			EdgeConstants.EventSource.RESET_COMPLETE
-		)
+		final Event resetEvent = new Event.Builder("resetEvent", EventType.EDGE_IDENTITY, EventSource.RESET_COMPLETE)
 			.build();
 		MobileCore.dispatchEvent(resetEvent, null);
 
 		// send a new event, should contain previously stored store data
 		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
-		setExpectationEvent(FunctionalTestConstants.EventType.EDGE, "state:store", 1);
+		setExpectationEvent(EventType.EDGE, "state:store", 1);
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		resultRequests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, TIMEOUT_MILLIS);
@@ -908,12 +879,8 @@ public class EdgeFunctionalTests {
 	@Test
 	public void testSendEvent_receivesResponseEventHandle_sendsResponseEvent_pairedWithTheRequestEventId()
 		throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.REQUEST_CONTENT,
-			1
-		);
-		setExpectationEvent(FunctionalTestConstants.EventType.EDGE, "personalization:decisions", 1);
+		setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 1);
+		setExpectationEvent(EventType.EDGE, "personalization:decisions", 1);
 
 		final String responseBody =
 			"\u0000{\"requestId\": \"0ee43289-4a4e-469a-bf5c-1d8186919a26\",\"handle\": [{\"payload\": [{\"id\": \"AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9\",\"scope\": \"buttonColor\",\"items\": [{                           \"schema\": \"https://ns.adobe.com/personalization/json-content-item\",\"data\": {\"content\": {\"value\": \"#D41DBA\"}}}]}],\"type\": \"personalization:decisions\",\"eventIndex\": 0}]}\n";
@@ -934,17 +901,11 @@ public class EdgeFunctionalTests {
 		assertEquals(1, resultRequests.size());
 		String requestId = resultRequests.get(0).queryParam("requestId");
 
-		List<Event> requestEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.REQUEST_CONTENT
-		);
+		List<Event> requestEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
 		assertEquals(1, requestEvents.size());
 		String requestEventUuid = requestEvents.get(0).getUniqueIdentifier();
 
-		List<Event> responseEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			"personalization:decisions"
-		);
+		List<Event> responseEvents = getDispatchedEventsWith(EventType.EDGE, "personalization:decisions");
 		assertEquals(1, responseEvents.size());
 		Map<String, Object> responseEventData = responseEvents.get(0).getEventData();
 		assertNotNull(responseEventData);
@@ -969,16 +930,8 @@ public class EdgeFunctionalTests {
 	@Test
 	public void testSendEvent_receivesResponseEventWarning_sendsErrorResponseEvent_pairedWithTheRequestEventId()
 		throws InterruptedException {
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.REQUEST_CONTENT,
-			1
-		);
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 1);
+		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
 
 		final String responseBody =
 			"\u0000{\"requestId\": \"0ee43289-4a4e-469a-bf5c-1d8186919a26\",\"handle\": [],\"warnings\": [{\"eventIndex\": 0,\"code\": \"personalization:0\",\"message\": \"Failed due to unrecoverable system error\"}]}\n";
@@ -1009,17 +962,11 @@ public class EdgeFunctionalTests {
 		assertEquals(1, resultRequests.size());
 		String requestId = resultRequests.get(0).queryParam("requestId");
 
-		List<Event> requestEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.REQUEST_CONTENT
-		);
+		List<Event> requestEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
 		assertEquals(1, requestEvents.size());
 		String requestEventUuid = requestEvents.get(0).getUniqueIdentifier();
 
-		List<Event> errorResponseEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT
-		);
+		List<Event> errorResponseEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, errorResponseEvents.size());
 		Map<String, Object> responseEventData = errorResponseEvents.get(0).getEventData();
 		assertNotNull(responseEventData);
@@ -1048,7 +995,7 @@ public class EdgeFunctionalTests {
 		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 		setExpectationNetworkRequest(EXEDGE_INTERACT_OR2_LOC_URL_STRING, POST, 1);
 
-		setExpectationEvent(FunctionalTestConstants.EventType.EDGE, "locationHint:result", 1);
+		setExpectationEvent(EventType.EDGE, "locationHint:result", 1);
 
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
@@ -1079,7 +1026,7 @@ public class EdgeFunctionalTests {
 		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 2);
 
-		setExpectationEvent(FunctionalTestConstants.EventType.EDGE, "locationHint:result", 1);
+		setExpectationEvent(EventType.EDGE, "locationHint:result", 1);
 
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 		Thread.sleep(1500); // wait for hint to expire
@@ -1382,11 +1329,7 @@ public class EdgeFunctionalTests {
 		responseConnection = createNetworkResponse(edgeResponse, 200);
 		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
 
 		assertNetworkRequestCount();
 		assertExpectedEvents(true);
@@ -1421,11 +1364,7 @@ public class EdgeFunctionalTests {
 		HttpConnecting responseConnection = createNetworkResponse(null, edgeResponse, 503, null, null);
 		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.REQUEST_CONTENT,
-			2
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 2);
 
 		ExperienceEvent event = new ExperienceEvent.Builder()
 			.setXdmSchema(
@@ -1467,11 +1406,7 @@ public class EdgeFunctionalTests {
 		responseConnection = createNetworkResponse(edgeResponse, 200);
 		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 2);
 		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT,
-			2
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 2);
 
 		assertNetworkRequestCount();
 		assertExpectedEvents(false);
@@ -1487,26 +1422,15 @@ public class EdgeFunctionalTests {
 		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.REQUEST_CONTENT,
-			1
-		);
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT,
-			2
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 1);
+		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 2);
 
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		assertNetworkRequestCount();
 		assertExpectedEvents(false);
 
-		List<Event> resultEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT
-		);
+		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(2, resultEvents.size());
 
 		Map<String, String> eventData1 = FunctionalTestUtils.flattenMap(resultEvents.get(0).getEventData());
@@ -1556,26 +1480,15 @@ public class EdgeFunctionalTests {
 		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.REQUEST_CONTENT,
-			1
-		);
-		setExpectationEvent(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT,
-			1
-		);
+		setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 1);
+		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
 
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		assertNetworkRequestCount();
 		assertExpectedEvents(false);
 
-		List<Event> resultEvents = getDispatchedEventsWith(
-			FunctionalTestConstants.EventType.EDGE,
-			FunctionalTestConstants.EventSource.ERROR_RESPONSE_CONTENT
-		);
+		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, resultEvents.size());
 
 		Map<String, String> eventData = FunctionalTestUtils.flattenMap(resultEvents.get(0).getEventData());
