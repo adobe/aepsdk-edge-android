@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile;
 
+import com.adobe.marketing.mobile.services.Log;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,6 +21,8 @@ import org.json.JSONObject;
  * An update Consent request payload.
  */
 class EdgeConsentUpdate {
+
+	private static final String LOG_SOURCE = "EdgeConsentUpdate";
 
 	private RequestMetadata metadata;
 	private QueryOptions query;
@@ -68,10 +71,10 @@ class EdgeConsentUpdate {
 	 */
 	JSONObject asJsonObject() {
 		if (Utils.isNullOrEmpty(consents)) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
+			Log.debug(
 				EdgeConstants.LOG_TAG,
-				"EdgeConsentUpdate - Invalid consent update request, consents payload was null/empty."
+				LOG_SOURCE,
+				"Invalid consent update request, consents payload was null/empty."
 			);
 			return null;
 		}

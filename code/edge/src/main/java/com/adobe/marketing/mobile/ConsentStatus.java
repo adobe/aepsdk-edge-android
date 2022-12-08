@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile;
 
+import com.adobe.marketing.mobile.services.Log;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,6 +23,7 @@ enum ConsentStatus {
 	NO("n"),
 	PENDING("p");
 
+	private static final String LOG_SOURCE = "ConsentStatus";
 	private final String value;
 
 	ConsentStatus(final String value) {
@@ -78,10 +80,10 @@ enum ConsentStatus {
 			}
 		} catch (ClassCastException e) {
 			// if collect consent not set yet, use default (pending)
-			MobileCore.log(
-				LoggingMode.VERBOSE,
+			Log.trace(
 				EdgeConstants.LOG_TAG,
-				"ConsentStatus - Failed to read collect consent from event data, defaulting to (p)"
+				LOG_SOURCE,
+				"Failed to read collect consent from event data, defaulting to (p)"
 			);
 			return EdgeConstants.Defaults.COLLECT_CONSENT_PENDING;
 		}

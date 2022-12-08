@@ -13,6 +13,7 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
+import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.xdm.Schema;
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,6 +21,8 @@ import java.util.Map;
 
 @SuppressWarnings("unused")
 public final class ExperienceEvent {
+
+	private static final String LOG_SOURCE = "ExperienceEvent";
 
 	private Map<String, Object> data;
 	private Map<String, Object> xdmData;
@@ -137,10 +140,10 @@ public final class ExperienceEvent {
 			throwIfAlreadyBuilt();
 
 			if (experienceEvent.xdmData == null) {
-				MobileCore.log(
-					LoggingMode.WARNING,
+				Log.warning(
 					LOG_TAG,
-					"ExperienceEvent - Unable to create the ExperienceEvent without required 'XdmSchema', use setXdmSchema API to set it."
+					LOG_SOURCE,
+					"Unable to create the ExperienceEvent without required 'XdmSchema', use setXdmSchema API to set it."
 				);
 				return null;
 			}

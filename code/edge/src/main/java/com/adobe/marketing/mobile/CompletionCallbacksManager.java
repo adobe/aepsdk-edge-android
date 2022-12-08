@@ -13,6 +13,7 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
+import com.adobe.marketing.mobile.services.Log;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,6 +24,8 @@ import java.util.concurrent.ConcurrentMap;
  * and get notified once a response is received from the Adobe Experience Edge
  */
 class CompletionCallbacksManager {
+
+	private static final String LOG_SOURCE = "CompletionCallbacksManager";
 
 	private final ConcurrentMap<String, EdgeCallback> completionCallbacks;
 
@@ -64,19 +67,11 @@ class CompletionCallbacksManager {
 		}
 
 		if (Utils.isNullOrEmpty(requestEventId)) {
-			MobileCore.log(
-				LoggingMode.WARNING,
-				LOG_TAG,
-				"CompletionCallbacksManager - Failed to register response callback because of null/empty event id."
-			);
+			Log.warning(LOG_TAG, LOG_SOURCE, "Failed to register response callback because of null/empty event id.");
 			return;
 		}
 
-		MobileCore.log(
-			LoggingMode.VERBOSE,
-			LOG_TAG,
-			"CompletionCallbacksManager - Registering callback for Edge response with unique id " + requestEventId
-		);
+		Log.trace(LOG_TAG, LOG_SOURCE, "Registering callback for Edge response with unique id " + requestEventId);
 		completionCallbacks.put(requestEventId, callback);
 	}
 
@@ -96,11 +91,10 @@ class CompletionCallbacksManager {
 		if (callback != null) {
 			final List<EdgeEventHandle> handles = edgeEventHandles.get(requestEventId);
 			callback.onComplete(handles != null ? handles : new ArrayList<>());
-			MobileCore.log(
-				LoggingMode.VERBOSE,
+			Log.trace(
 				LOG_TAG,
-				"CompletionCallbacksManager - Removing callback for Edge response with request event id " +
-				requestEventId
+				LOG_SOURCE,
+				"Removing callback for Edge response with request event id " + requestEventId
 			);
 		}
 
