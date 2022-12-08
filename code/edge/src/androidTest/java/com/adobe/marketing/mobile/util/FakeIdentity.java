@@ -11,17 +11,16 @@
 
 package com.adobe.marketing.mobile.util;
 
+import com.adobe.marketing.mobile.Extension;
 import com.adobe.marketing.mobile.ExtensionApi;
-import com.adobe.marketing.mobile.ExtensionError;
-import com.adobe.marketing.mobile.ExtensionErrorCallback;
-import com.adobe.marketing.mobile.LoggingMode;
-import com.adobe.marketing.mobile.MobileCore;
 
 /**
  * A fake Identity extension. Test cases can use this extension to act in place of the real
  * Identity extension by setting an Identity shared state in the Event Hub.
  */
 public class FakeIdentity extends FakeExtension {
+
+	public static final Class<? extends Extension> EXTENSION = FakeIdentity.class;
 
 	// Add a static const to retrieve the event type in tests
 	public static final String EVENT_TYPE = "com.adobe.eventType.fakeIdentity";
@@ -46,24 +45,5 @@ public class FakeIdentity extends FakeExtension {
 	@Override
 	protected String getName() {
 		return "com.adobe.edge.identity";
-	}
-
-	/**
-	 * Register this fake Identity extension with the Event Hub.
-	 */
-	public static void registerExtension() {
-		MobileCore.registerExtension(
-			FakeIdentity.class,
-			new ExtensionErrorCallback<ExtensionError>() {
-				@Override
-				public void error(ExtensionError extensionError) {
-					MobileCore.log(
-						LoggingMode.ERROR,
-						"FakeIdentity",
-						"There was an error registering the Fake Identity extension: " + extensionError.getErrorName()
-					);
-				}
-			}
-		);
 	}
 }

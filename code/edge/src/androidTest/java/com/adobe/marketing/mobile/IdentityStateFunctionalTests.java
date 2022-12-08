@@ -22,6 +22,7 @@ import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.FakeIdentity;
 import com.adobe.marketing.mobile.util.FunctionalTestConstants;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,12 +61,10 @@ public class IdentityStateFunctionalTests {
 		};
 		MobileCore.updateConfiguration(config);
 
-		Edge.registerExtension();
-		FakeIdentity.registerExtension();
-
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.start(
-			new AdobeCallback() {
+		MobileCore.registerExtensions(
+			Arrays.asList(Edge.EXTENSION, FakeIdentity.EXTENSION),
+			new AdobeCallback<Object>() {
 				@Override
 				public void call(Object o) {
 					latch.countDown();
