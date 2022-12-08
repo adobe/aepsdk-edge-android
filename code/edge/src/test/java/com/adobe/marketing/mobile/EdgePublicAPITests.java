@@ -51,7 +51,7 @@ public class EdgePublicAPITests {
 		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
 
 		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-		MobileCore.dispatchEvent(requestEventCaptor.capture(), any(ExtensionErrorCallback.class));
+		MobileCore.dispatchEvent(requestEventCaptor.capture());
 
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals("com.adobe.eventtype.edge", requestEvent.getType());
@@ -67,7 +67,7 @@ public class EdgePublicAPITests {
 		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
 
 		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-		MobileCore.dispatchEvent(requestEventCaptor.capture(), any(ExtensionErrorCallback.class));
+		MobileCore.dispatchEvent(requestEventCaptor.capture());
 
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals("com.adobe.eventtype.edge", requestEvent.getType());
@@ -83,7 +83,7 @@ public class EdgePublicAPITests {
 		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
 
 		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-		MobileCore.dispatchEvent(requestEventCaptor.capture(), any(ExtensionErrorCallback.class));
+		MobileCore.dispatchEvent(requestEventCaptor.capture());
 
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals("com.adobe.eventtype.edge", requestEvent.getType());
@@ -116,8 +116,8 @@ public class EdgePublicAPITests {
 		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
 		MobileCore.dispatchEventWithResponseCallback(
 			requestEventCaptor.capture(),
-			any(AdobeCallback.class),
-			any(ExtensionErrorCallback.class)
+			any(),
+			any(AdobeCallbackWithError.class)
 		);
 
 		final Event requestEvent = requestEventCaptor.getValue();
@@ -138,9 +138,10 @@ public class EdgePublicAPITests {
 					}
 				}
 			)
+			.inResponseToEvent(requestEvent)
 			.build();
 
-		MobileCore.dispatchResponseEvent(responseEvent, requestEvent, null);
+		MobileCore.dispatchEvent(responseEvent);
 		latch.await(2000, TimeUnit.MILLISECONDS);
 	}
 
@@ -168,8 +169,8 @@ public class EdgePublicAPITests {
 		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
 		MobileCore.dispatchEventWithResponseCallback(
 			requestEventCaptor.capture(),
-			any(AdobeCallback.class),
-			any(ExtensionErrorCallback.class)
+			any(),
+			any(AdobeCallbackWithError.class)
 		);
 
 		final Event requestEvent = requestEventCaptor.getValue();
@@ -190,9 +191,10 @@ public class EdgePublicAPITests {
 					}
 				}
 			)
+			.inResponseToEvent(requestEvent)
 			.build();
 
-		MobileCore.dispatchResponseEvent(responseEvent, requestEvent, null);
+		MobileCore.dispatchEvent(responseEvent);
 		latch.await(2000, TimeUnit.MILLISECONDS);
 	}
 
@@ -220,8 +222,8 @@ public class EdgePublicAPITests {
 		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
 		MobileCore.dispatchEventWithResponseCallback(
 			requestEventCaptor.capture(),
-			any(AdobeCallback.class),
-			any(ExtensionErrorCallback.class)
+			any(),
+			any(AdobeCallbackWithError.class)
 		);
 
 		final Event requestEvent = requestEventCaptor.getValue();
@@ -257,8 +259,8 @@ public class EdgePublicAPITests {
 		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
 		MobileCore.dispatchEventWithResponseCallback(
 			requestEventCaptor.capture(),
-			any(AdobeCallback.class),
-			any(ExtensionErrorCallback.class)
+			any(),
+			any(AdobeCallbackWithError.class)
 		);
 
 		final Event requestEvent = requestEventCaptor.getValue();
@@ -273,9 +275,10 @@ public class EdgePublicAPITests {
 			EventSource.RESPONSE_IDENTITY
 		)
 			.setEventData(null)
+			.inResponseToEvent(requestEvent)
 			.build();
 
-		MobileCore.dispatchResponseEvent(responseEvent, requestEvent, null);
+		MobileCore.dispatchEvent(responseEvent);
 		latch.await(2000, TimeUnit.MILLISECONDS);
 	}
 
@@ -303,8 +306,8 @@ public class EdgePublicAPITests {
 		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
 		MobileCore.dispatchEventWithResponseCallback(
 			requestEventCaptor.capture(),
-			any(AdobeCallback.class),
-			any(ExtensionErrorCallback.class)
+			any(),
+			any(AdobeCallbackWithError.class)
 		);
 
 		final Event requestEvent = requestEventCaptor.getValue();
@@ -325,9 +328,10 @@ public class EdgePublicAPITests {
 					}
 				}
 			)
+			.inResponseToEvent(requestEvent)
 			.build();
 
-		MobileCore.dispatchResponseEvent(responseEvent, requestEvent, null);
+		MobileCore.dispatchEvent(responseEvent);
 		latch.await(2000, TimeUnit.MILLISECONDS);
 	}
 
@@ -355,8 +359,8 @@ public class EdgePublicAPITests {
 		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
 		MobileCore.dispatchEventWithResponseCallback(
 			requestEventCaptor.capture(),
-			any(AdobeCallback.class),
-			any(ExtensionErrorCallback.class)
+			any(),
+			any(AdobeCallbackWithError.class)
 		);
 
 		final Event requestEvent = requestEventCaptor.getValue();
@@ -377,9 +381,10 @@ public class EdgePublicAPITests {
 					}
 				}
 			)
+			.inResponseToEvent(requestEvent)
 			.build();
 
-		MobileCore.dispatchResponseEvent(responseEvent, requestEvent, null);
+		MobileCore.dispatchEvent(responseEvent);
 		latch.await(2000, TimeUnit.MILLISECONDS);
 	}
 }

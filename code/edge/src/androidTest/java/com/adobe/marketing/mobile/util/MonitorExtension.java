@@ -80,15 +80,7 @@ public class MonitorExtension extends Extension {
 			FunctionalTestConstants.EventSource.UNREGISTER
 		)
 			.build();
-		MobileCore.dispatchEvent(
-			event,
-			new ExtensionErrorCallback<ExtensionError>() {
-				@Override
-				public void error(ExtensionError extensionError) {
-					MobileCore.log(LoggingMode.ERROR, LOG_TAG, "Failed to unregister Monitor extension.");
-				}
-			}
-		);
+		MobileCore.dispatchEvent(event);
 	}
 
 	/**
@@ -180,8 +172,9 @@ public class MonitorExtension extends Extension {
 			FunctionalTestConstants.EventSource.SHARED_STATE_RESPONSE
 		)
 			.setEventData(sharedState)
+			.inResponseToEvent(event)
 			.build();
-		MobileCore.dispatchResponseEvent(responseEvent, event, null);
+		MobileCore.dispatchEvent(responseEvent);
 	}
 
 	/**

@@ -767,7 +767,7 @@ public class EdgeFunctionalTests {
 		// send the reset event before
 		final Event resetEvent = new Event.Builder("resetEvent", EventType.EDGE_IDENTITY, EventSource.RESET_COMPLETE)
 			.build();
-		MobileCore.dispatchEvent(resetEvent, null);
+		MobileCore.dispatchEvent(resetEvent);
 
 		final String storeResponseBody =
 			"\u0000{\"requestId\": \"0000-4a4e-1111-bf5c-abcd\",\"handle\": [{\"payload\": [{\"key\": \"kndctr_testOrg_AdobeOrg_identity\",\"value\": \"hashed_value\",\"maxAge\": 34128000},{\"key\": \"kndctr_testOrg_AdobeOrg_consent_check\",\"value\": \"1\",\"maxAge\": 7200},{\"key\": \"expired_key\",\"value\": \"1\",\"maxAge\": 0}],\"type\": \"state:store\"}]}\n";
@@ -855,7 +855,7 @@ public class EdgeFunctionalTests {
 		// send the reset event in-between
 		final Event resetEvent = new Event.Builder("resetEvent", EventType.EDGE_IDENTITY, EventSource.RESET_COMPLETE)
 			.build();
-		MobileCore.dispatchEvent(resetEvent, null);
+		MobileCore.dispatchEvent(resetEvent);
 
 		// send a new event, should contain previously stored store data
 		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);

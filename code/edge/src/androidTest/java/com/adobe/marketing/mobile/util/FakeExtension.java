@@ -11,7 +11,8 @@
 
 package com.adobe.marketing.mobile.util;
 
-import com.adobe.marketing.mobile.AdobeCallback;
+import com.adobe.marketing.mobile.AdobeCallbackWithError;
+import com.adobe.marketing.mobile.AdobeError;
 import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.Extension;
 import com.adobe.marketing.mobile.ExtensionApi;
@@ -82,19 +83,19 @@ abstract class FakeExtension extends Extension {
 			.build();
 		MobileCore.dispatchEventWithResponseCallback(
 			event,
-			new AdobeCallback<Event>() {
+			5000,
+			new AdobeCallbackWithError<Event>() {
 				@Override
-				public void call(Event event) {
+				public void call(final Event event) {
 					latch.countDown();
 				}
-			},
-			new ExtensionErrorCallback<ExtensionError>() {
+
 				@Override
-				public void error(ExtensionError extensionError) {
+				public void fail(final AdobeError adobeError) {
 					MobileCore.log(
 						LoggingMode.WARNING,
 						LOG_TAG,
-						"Failed to dispatch set shared state event: " + extensionError
+						"Failed to dispatch set shared state event: " + adobeError
 					);
 				}
 			}
@@ -117,19 +118,19 @@ abstract class FakeExtension extends Extension {
 			.build();
 		MobileCore.dispatchEventWithResponseCallback(
 			event,
-			new AdobeCallback<Event>() {
+			5000,
+			new AdobeCallbackWithError<Event>() {
 				@Override
-				public void call(Event event) {
+				public void call(final Event event) {
 					latch.countDown();
 				}
-			},
-			new ExtensionErrorCallback<ExtensionError>() {
+
 				@Override
-				public void error(ExtensionError extensionError) {
+				public void fail(final AdobeError adobeError) {
 					MobileCore.log(
 						LoggingMode.WARNING,
 						LOG_TAG,
-						"Failed to dispatch XDM set shared state event: " + extensionError
+						"Failed to dispatch XDM set shared state event: " + adobeError
 					);
 				}
 			}
@@ -153,21 +154,9 @@ abstract class FakeExtension extends Extension {
 			);
 
 		Event responseEvent = new Event.Builder("Set Shared State Response", getEventType(), EVENT_SOURCE_RESPONSE)
+			.inResponseToEvent(event)
 			.build();
-		MobileCore.dispatchResponseEvent(
-			responseEvent,
-			event,
-			new ExtensionErrorCallback<ExtensionError>() {
-				@Override
-				public void error(ExtensionError extensionError) {
-					MobileCore.log(
-						LoggingMode.WARNING,
-						LOG_TAG,
-						"Failed to dispatch response event: " + extensionError
-					);
-				}
-			}
-		);
+		getApi().dispatch(responseEvent);
 	}
 
 	public void setXDMSharedState(final Event event) {
@@ -185,21 +174,9 @@ abstract class FakeExtension extends Extension {
 			);
 
 		Event responseEvent = new Event.Builder("Set XDM Shared State Response", getEventType(), EVENT_SOURCE_RESPONSE)
+			.inResponseToEvent(event)
 			.build();
-		MobileCore.dispatchResponseEvent(
-			responseEvent,
-			event,
-			new ExtensionErrorCallback<ExtensionError>() {
-				@Override
-				public void error(ExtensionError extensionError) {
-					MobileCore.log(
-						LoggingMode.WARNING,
-						LOG_TAG,
-						"Failed to dispatch response event: " + extensionError
-					);
-				}
-			}
-		);
+		getApi().dispatch(responseEvent);
 	}
 
 	static class FakeExtensionListener extends ExtensionListener {
