@@ -50,8 +50,8 @@ public class NoConfigFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
-		setExpectationEvent(EventType.HUB.getName(), EventSource.BOOTED.getName(), 1);
-		setExpectationEvent(EventType.HUB.getName(), EventSource.SHARED_STATE.getName(), 2);
+		setExpectationEvent(EventType.HUB, EventSource.BOOTED, 1);
+		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 2);
 
 		Edge.registerExtension();
 		FakeIdentity.registerExtension();

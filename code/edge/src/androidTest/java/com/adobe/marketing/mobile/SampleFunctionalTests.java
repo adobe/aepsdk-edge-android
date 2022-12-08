@@ -64,20 +64,12 @@ public class SampleFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
-		FunctionalTestHelper.setExpectationEvent(EventType.HUB.getName(), EventSource.BOOTED.getName(), 1);
+		FunctionalTestHelper.setExpectationEvent(EventType.HUB, EventSource.BOOTED, 1);
 		// expectations for update config request&response events
-		FunctionalTestHelper.setExpectationEvent(
-			EventType.CONFIGURATION.getName(),
-			EventSource.REQUEST_CONTENT.getName(),
-			1
-		);
-		FunctionalTestHelper.setExpectationEvent(
-			EventType.CONFIGURATION.getName(),
-			EventSource.RESPONSE_CONTENT.getName(),
-			1
-		);
+		FunctionalTestHelper.setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
+		FunctionalTestHelper.setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1);
 		// hub shared state update Edge, EventHub, Configuration, and Identity
-		FunctionalTestHelper.setExpectationEvent(EventType.HUB.getName(), EventSource.SHARED_STATE.getName(), 4);
+		FunctionalTestHelper.setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 4);
 
 		HashMap<String, Object> config = new HashMap<String, Object>() {
 			{

@@ -172,20 +172,20 @@ public class RestartFunctionalTests {
 	 * @throws Exception
 	 */
 	public void setupCore(final boolean restart) throws Exception {
-		setExpectationEvent(EventType.HUB.getName(), EventSource.BOOTED.getName(), 1);
+		setExpectationEvent(EventType.HUB, EventSource.BOOTED, 1);
 
 		if (restart) {
 			// On restart, expect Consent to load preferences from persistence and dispatch them to Hub
-			setExpectationEvent("com.adobe.eventtype.edgeconsent", EventSource.RESPONSE_CONTENT.getName(), 1);
+			setExpectationEvent(EventType.CONSENT, EventSource.RESPONSE_CONTENT, 1);
 		} else {
-			setExpectationEvent(EventType.CONFIGURATION.getName(), EventSource.REQUEST_CONTENT.getName(), 1);
+			setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
 		}
 
-		setExpectationEvent(EventType.CONFIGURATION.getName(), EventSource.RESPONSE_CONTENT.getName(), 1);
+		setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1);
 
 		// hub shared state update for extensions Edge, Config, Consent, Identity, Hub)
 		// Expect 4 shared state events on clean start. On restart, Consent also sets a shared state
-		setExpectationEvent(EventType.HUB.getName(), EventSource.SHARED_STATE.getName(), restart ? 5 : 4);
+		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, restart ? 5 : 4);
 
 		MonitorExtension.registerExtension();
 		Edge.registerExtension();
