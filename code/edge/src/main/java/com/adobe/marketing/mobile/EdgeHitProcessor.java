@@ -15,6 +15,7 @@ import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.HitProcessing;
+import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.StringUtils;
@@ -30,6 +31,8 @@ import org.json.JSONObject;
  * Handles the processing of {@link EdgeDataEntity}s, sending network requests.
  */
 class EdgeHitProcessor implements HitProcessing {
+
+	private static final String LOG_SOURCE = "EdgeHitProcessor";
 
 	private final NetworkResponseHandler networkResponseHandler;
 	private final NamedCollection namedCollection;
@@ -77,11 +80,7 @@ class EdgeHitProcessor implements HitProcessing {
 		EdgeDataEntity entity = EdgeDataEntitySerializer.deserialize(dataEntity.getData());
 
 		if (entity == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"EdgeHitProcessor - Unable to deserialize DataEntity to EdgeDataEntity. Dropping the hit."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Unable to deserialize DataEntity to EdgeDataEntity. Dropping the hit.");
 			return true;
 		}
 
@@ -131,23 +130,19 @@ class EdgeHitProcessor implements HitProcessing {
 					networkResponseHandler.addWaitingEvents(edgeHit.getRequestId(), listOfEvents);
 					return sendNetworkRequest(dataEntity.getUniqueIdentifier(), edgeHit, requestHeaders);
 				} else {
-					MobileCore.log(
-						LoggingMode.DEBUG,
+					Log.debug(
 						LOG_TAG,
-						String.format(
-							"EdgeHitProcessor - Failed to build the request payload, dropping current event (%s).",
-							entity.getEvent().getUniqueIdentifier()
-						)
+						LOG_SOURCE,
+						"Failed to build the request payload, dropping current event (%s).",
+						entity.getEvent().getUniqueIdentifier()
 					);
 				}
 			} catch (Exception e) {
-				MobileCore.log(
-					LoggingMode.WARNING,
+				Log.warning(
 					LOG_TAG,
-					String.format(
-						"EdgeHitProcessor - Failed to parse JSON requestPayload for event id (%s), skipping.",
-						entity.getEvent().getUniqueIdentifier()
-					)
+					LOG_SOURCE,
+					"Failed to parse JSON requestPayload for event id (%s), skipping.",
+					entity.getEvent().getUniqueIdentifier()
 				);
 			}
 		} else if (EventUtils.isUpdateConsentEvent(entity.getEvent())) {
@@ -171,13 +166,11 @@ class EdgeHitProcessor implements HitProcessing {
 				networkResponseHandler.addWaitingEvent(edgeHit.getRequestId(), entity.getEvent());
 				return sendNetworkRequest(dataEntity.getUniqueIdentifier(), edgeHit, requestHeaders);
 			} else {
-				MobileCore.log(
-					LoggingMode.DEBUG,
+				Log.debug(
 					LOG_TAG,
-					String.format(
-						"EdgeHitProcessor - Failed to build the consent payload, dropping current event (%s).",
-						entity.getEvent().getUniqueIdentifier()
-					)
+					LOG_SOURCE,
+					"Failed to build the consent payload, dropping current event (%s).",
+					entity.getEvent().getUniqueIdentifier()
 				);
 			}
 		} else if (EventUtils.isResetComplete(entity.getEvent())) {
@@ -199,11 +192,7 @@ class EdgeHitProcessor implements HitProcessing {
 	 */
 	boolean sendNetworkRequest(final String entityId, final EdgeHit edgeHit, final Map<String, String> requestHeaders) {
 		if (edgeHit == null || edgeHit.getPayload() == null || edgeHit.getPayload().length() == 0) {
-			MobileCore.log(
-				LoggingMode.WARNING,
-				LOG_TAG,
-				"EdgeHitProcessor - Request body was null/empty, dropping this request"
-			);
+			Log.warning(LOG_TAG, LOG_SOURCE, "Request body was null/empty, dropping this request");
 			return true;
 		}
 
@@ -239,26 +228,22 @@ class EdgeHitProcessor implements HitProcessing {
 		);
 
 		try {
-			MobileCore.log(
-				LoggingMode.DEBUG,
+			Log.debug(
 				LOG_TAG,
-				String.format(
-					"EdgeHitProcessor - Sending network request with id (%s) to URL '%s' with body:\n%s",
-					edgeHit.getRequestId(),
-					url,
-					edgeHit.getPayload().toString(2)
-				)
+				LOG_SOURCE,
+				"Sending network request with id (%s) to URL '%s' with body:\n%s",
+				edgeHit.getRequestId(),
+				url,
+				edgeHit.getPayload().toString(2)
 			);
 		} catch (JSONException e) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
+			Log.debug(
 				LOG_TAG,
-				String.format(
-					"EdgeHitProcessor - Sending network request with id (%s) to URL '%s'\nError parsing JSON request: %s",
-					edgeHit.getRequestId(),
-					url,
-					e.getLocalizedMessage()
-				)
+				LOG_SOURCE,
+				"Sending network request with id (%s) to URL '%s'\nError parsing JSON request: %s",
+				edgeHit.getRequestId(),
+				url,
+				e.getLocalizedMessage()
 			);
 		}
 
@@ -295,10 +280,10 @@ class EdgeHitProcessor implements HitProcessing {
 		final Map<String, String> requestHeaders = new HashMap<>();
 
 		if (sharedStateCallback == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
+			Log.debug(
 				LOG_TAG,
-				"EdgeHitProcessor - Unexpected null sharedStateCallback, unable to fetch Assurance shared state."
+				LOG_SOURCE,
+				"Unexpected null sharedStateCallback, unable to fetch Assurance shared state."
 			);
 			return requestHeaders;
 		}

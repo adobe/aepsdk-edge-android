@@ -11,12 +11,14 @@
 
 package com.adobe.marketing.mobile;
 
+import com.adobe.marketing.mobile.services.Log;
 import java.util.Map;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 class EdgeDataEntitySerializer {
 
+	private static final String LOG_SOURCE = "EdgeDataEntitySerializer";
 	private static final String CONFIGURATION_KEY = "configuration";
 	private static final String IDENTITY_MAP_KEY = "identityMap";
 	private static final String EVENT_KEY = "event";
@@ -42,9 +44,9 @@ class EdgeDataEntitySerializer {
 
 			return serializedEntity.toString();
 		} catch (JSONException e) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				EdgeConstants.FRIENDLY_NAME,
+			Log.debug(
+				EdgeConstants.LOG_TAG,
+				LOG_SOURCE,
 				"Failed to serialize EdgeDataEntity to string: " + e.getLocalizedMessage()
 			);
 		}
@@ -85,9 +87,9 @@ class EdgeDataEntitySerializer {
 
 			return new EdgeDataEntity(event, configuration, identityMap);
 		} catch (JSONException | IllegalArgumentException e) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				EdgeConstants.FRIENDLY_NAME,
+			Log.debug(
+				EdgeConstants.LOG_TAG,
+				LOG_SOURCE,
 				"Failed to deserialize string to EdgeDataEntity: " + e.getLocalizedMessage()
 			);
 		}

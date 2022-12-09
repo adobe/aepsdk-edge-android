@@ -13,6 +13,7 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
+import com.adobe.marketing.mobile.services.Log;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -23,6 +24,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 final class Utils {
+
+	private static final String LOG_SOURCE = "Utils";
 
 	private Utils() {}
 
@@ -119,11 +122,7 @@ final class Utils {
 			try {
 				value = jsonObject.get(nextKey);
 			} catch (JSONException e) {
-				MobileCore.log(
-					LoggingMode.DEBUG,
-					LOG_TAG,
-					"Utils(toMap) - Unable to convert jsonObject to Map for key " + nextKey + ", skipping."
-				);
+				Log.debug(LOG_TAG, LOG_SOURCE, "Unable to convert jsonObject to Map for key %s skipping.", nextKey);
 			}
 
 			if (value == null) {
@@ -166,11 +165,7 @@ final class Utils {
 			try {
 				value = jsonArray.get(i);
 			} catch (JSONException e) {
-				MobileCore.log(
-					LoggingMode.DEBUG,
-					LOG_TAG,
-					"Utils(toList) - Unable to convert jsonObject to List for index " + i + ", skipping."
-				);
+				Log.debug(LOG_TAG, LOG_SOURCE, "Unable to convert jsonObject to List for index %d skipping.", i);
 			}
 
 			if (value == null) {
@@ -207,11 +202,7 @@ final class Utils {
 			try {
 				value = jsonArray.get(i);
 			} catch (JSONException e) {
-				MobileCore.log(
-					LoggingMode.DEBUG,
-					LOG_TAG,
-					"Utils(toListOfMaps) - Unable to convert jsonObject to List for index " + i + ", skipping."
-				);
+				Log.debug(LOG_TAG, LOG_SOURCE, "Unable to convert jsonObject to List for index %d skipping.", i);
 			}
 
 			if (value == null) {
@@ -243,11 +234,7 @@ final class Utils {
 		try {
 			return Utils.toMap(new JSONObject(map));
 		} catch (NullPointerException e) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"Utils(deepCopy) - Unable to deep copy map, json string invalid."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Unable to deep copy map, json string invalid.");
 		}
 
 		return null;

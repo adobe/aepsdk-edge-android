@@ -144,7 +144,7 @@ class EdgeNetworkService {
 		final ResponseCallback responseCallback
 	) {
 		if (Utils.isNullOrEmpty(url)) {
-			MobileCore.log(LoggingMode.ERROR, LOG_TAG, "EdgeNetworkService - Could not send request to a null url");
+			Log.error(LOG_TAG, LOG_SOURCE, "Could not send request to a null url");
 
 			if (responseCallback != null) {
 				responseCallback.onComplete();
@@ -156,21 +156,17 @@ class EdgeNetworkService {
 		HttpConnecting connection = doConnect(url, jsonRequest, requestHeaders);
 
 		if (connection == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"EdgeNetworkService - Network request returned null connection."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Network request returned null connection.");
 			return new RetryResult(Retry.YES);
 		}
 
 		RetryResult retryResult = new RetryResult(Retry.NO);
 
 		if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
+			Log.debug(
 				LOG_TAG,
-				"EdgeNetworkService - Interact connection to Experience Edge successful. Response message: " +
+				LOG_SOURCE,
+				"Interact connection to Experience Edge successful. Response message: " +
 				connection.getResponseMessage()
 			);
 
@@ -185,28 +181,26 @@ class EdgeNetworkService {
 			);
 		} else if (connection.getResponseCode() == HttpURLConnection.HTTP_NO_CONTENT) {
 			// Successful collect requests do not return content
-			MobileCore.log(
-				LoggingMode.DEBUG,
+			Log.debug(
 				LOG_TAG,
-				"EdgeNetworkService - Interact connection to Experience Edge successful. Response message: " +
+				LOG_SOURCE,
+				"Interact connection to Experience Edge successful. Response message: " +
 				connection.getResponseMessage()
 			);
 		} else if (recoverableNetworkErrorCodes.contains(connection.getResponseCode())) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
+			Log.debug(
 				LOG_TAG,
-				String.format(
-					"EdgeNetworkService - Connection to Experience Edge returned recoverable error code (%d). Response message: %s",
-					connection.getResponseCode(),
-					connection.getResponseMessage()
-				)
+				LOG_SOURCE,
+				"Connection to Experience Edge returned recoverable error code (%d). Response message: %s",
+				connection.getResponseCode(),
+				connection.getResponseMessage()
 			);
 			retryResult = new RetryResult(Retry.YES, computeRetryInterval(connection));
 		} else if (connection.getResponseCode() == 207) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
+			Log.debug(
 				LOG_TAG,
-				"EdgeNetworkService - Interact connection to Experience Edge successful but encountered non-fatal errors/warnings. Response message: " +
+				LOG_SOURCE,
+				"Interact connection to Experience Edge successful but encountered non-fatal errors/warnings. Response message: %s",
 				connection.getResponseMessage()
 			);
 
@@ -220,14 +214,12 @@ class EdgeNetworkService {
 				responseCallback
 			);
 		} else {
-			MobileCore.log(
-				LoggingMode.WARNING,
+			Log.warning(
 				LOG_TAG,
-				String.format(
-					"EdgeNetworkService - Connection to Experience Edge returned unrecoverable error code (%d). Response message: %s",
-					connection.getResponseCode(),
-					connection.getResponseMessage()
-				)
+				LOG_SOURCE,
+				"Connection to Experience Edge returned unrecoverable error code (%d). Response message: %s",
+				connection.getResponseCode(),
+				connection.getResponseMessage()
 			);
 			handleError(connection.getErrorStream(), responseCallback);
 		}
@@ -253,14 +245,12 @@ class EdgeNetworkService {
 			try {
 				return Integer.parseInt(header);
 			} catch (NumberFormatException e) {
-				MobileCore.log(
-					LoggingMode.DEBUG,
+				Log.debug(
 					LOG_TAG,
-					String.format(
-						"EdgeNetworkService - Failed to parse Retry-After header with value of '%s' to an int with error: %s",
-						header,
-						e.getLocalizedMessage()
-					)
+					LOG_SOURCE,
+					"Failed to parse Retry-After header with value of '%s' to an int with error: %s",
+					header,
+					e.getLocalizedMessage()
 				);
 			}
 		}
@@ -315,7 +305,7 @@ class EdgeNetworkService {
 			headers.putAll(requestHeaders);
 		}
 
-		MobileCore.log(LoggingMode.VERBOSE, LOG_TAG, "HTTP Headers: " + headers);
+		Log.trace(LOG_TAG, LOG_SOURCE, "HTTP Headers: " + headers);
 		NetworkRequest networkRequest = new NetworkRequest(
 			url,
 			HttpMethod.POST,
@@ -366,20 +356,12 @@ class EdgeNetworkService {
 		final ResponseCallback responseCallback
 	) {
 		if (responseCallback == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"EdgeNetworkService - Callback is null, processing of response content aborted."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Callback is null, processing of response content aborted.");
 			return;
 		}
 
 		if (inputStream == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"EdgeNetworkService - Network response contains no data, InputStream is null."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Network response contains no data, InputStream is null.");
 			return;
 		}
 
@@ -407,38 +389,22 @@ class EdgeNetworkService {
 		final ResponseCallback responseCallback
 	) {
 		if (inputStream == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"EdgeNetworkService - Network response contains no data, InputStream is null."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Network response contains no data, InputStream is null.");
 			return;
 		}
 
 		if (recordSeparator == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"EdgeNetworkService - record separator is null, processing of response content aborted."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "record separator is null, processing of response content aborted.");
 			return;
 		}
 
 		if (lineFeedDelimiter == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"EdgeNetworkService - line feed is null, processing of response content aborted."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "line feed is null, processing of response content aborted.");
 			return;
 		}
 
 		if (responseCallback == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"EdgeNetworkService - Callback is null, processing of response content aborted."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Callback is null, processing of response content aborted.");
 			return;
 		}
 
@@ -462,20 +428,12 @@ class EdgeNetworkService {
 	 */
 	void handleNonStreamingResponse(final InputStream inputStream, final ResponseCallback responseCallback) {
 		if (responseCallback == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"EdgeNetworkService - Callback is null, processing of response content aborted."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Callback is null, processing of response content aborted.");
 			return;
 		}
 
 		if (inputStream == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"EdgeNetworkService - Network response contains no data, InputStream is null."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Network response contains no data, InputStream is null.");
 			return;
 		}
 
@@ -491,20 +449,12 @@ class EdgeNetworkService {
 	 */
 	private void handleError(final InputStream inputStream, final ResponseCallback responseCallback) {
 		if (responseCallback == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"EdgeNetworkService - Callback is null, processing of error content aborted."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Callback is null, processing of error content aborted.");
 			return;
 		}
 
 		if (inputStream == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"EdgeNetworkService - Network response contains no data, error InputStream is null."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Network response contains no data, error InputStream is null.");
 			responseCallback.onError(composeGenericErrorAsJson(null));
 			return;
 		}
@@ -526,10 +476,10 @@ class EdgeNetworkService {
 			}
 		} catch (JSONException e) {
 			responseStr = composeGenericErrorAsJson(responseStr);
-			MobileCore.log(
-				LoggingMode.WARNING,
+			Log.warning(
 				LOG_TAG,
-				"EdgeNetworkService - Network response has Content-Type application/json, but cannot be parsed as JSON, returning generic error"
+				LOG_SOURCE,
+				"Network response has Content-Type application/json, but cannot be parsed as JSON, returning generic error"
 			);
 		}
 
@@ -570,11 +520,7 @@ class EdgeNetworkService {
 			json.put(EdgeJson.Response.Error.TITLE, errorMessage);
 			json.put(EdgeJson.Response.Error.TYPE, DEFAULT_NAMESPACE);
 		} catch (JSONException e) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"EdgeNetworkService - failed to create the generic error json " + e.getLocalizedMessage()
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Failed to create the generic error json " + e.getLocalizedMessage());
 		}
 
 		return json.toString();
@@ -589,11 +535,7 @@ class EdgeNetworkService {
 	 */
 	private String readInputStream(final InputStream inputStream) {
 		if (inputStream == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"EdgeNetworkService - Network response contains no data, InputStream is null."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Network response contains no data, InputStream is null.");
 			return null;
 		}
 
@@ -613,11 +555,7 @@ class EdgeNetworkService {
 
 			return stringBuilder.toString();
 		} catch (IOException e) {
-			MobileCore.log(
-				LoggingMode.WARNING,
-				LOG_TAG,
-				"EdgeNetworkService - Exception reading network error response: " + e.getLocalizedMessage()
-			);
+			Log.warning(LOG_TAG, LOG_SOURCE, "Exception reading network error response: " + e.getLocalizedMessage());
 			return composeGenericErrorAsJson(e.getMessage());
 		}
 	}

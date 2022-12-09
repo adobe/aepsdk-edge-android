@@ -11,6 +11,9 @@
 
 package com.adobe.marketing.mobile;
 
+import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
+
+import com.adobe.marketing.mobile.services.Log;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +25,7 @@ import org.json.JSONObject;
  */
 class EdgeRequest {
 
-	private static final String LOG_TAG = "EdgeRequest";
+	private static final String LOG_SOURCE = "EdgeRequest";
 
 	private static final String JSON_KEY_XDM = "xdm";
 	private static final String JSON_KEY_EVENTS = "events";
@@ -60,7 +63,7 @@ class EdgeRequest {
 	 */
 	JSONObject asJsonObject(final List<Map<String, Object>> serializedEvents) {
 		if (serializedEvents == null || serializedEvents.isEmpty()) {
-			MobileCore.log(LoggingMode.WARNING, LOG_TAG, "Unable to create Edge Request with no Events.");
+			Log.warning(LOG_TAG, LOG_SOURCE, "Unable to create Edge Request with no Events.");
 			return null;
 		}
 
