@@ -13,8 +13,10 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
+import androidx.annotation.NonNull;
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.HitProcessing;
+import com.adobe.marketing.mobile.services.HitProcessingResult;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.DataReader;
@@ -56,32 +58,28 @@ class EdgeHitProcessor implements HitProcessing {
 	}
 
 	@Override
-	public int retryInterval(final DataEntity dataEntity) {
-		if (dataEntity == null) {
-			return EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS;
-		}
-
+	public int retryInterval(@NonNull final DataEntity dataEntity) {
 		Integer retryInterval = entityRetryIntervalMapping.get(dataEntity.getUniqueIdentifier());
 		return retryInterval != null ? retryInterval : EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS;
 	}
 
 	/**
-	 * Send network requests out with the data encapsulated in {@link DataEntity}. If configuration is null, the processing is paused.
+	 * Send network requests out with the data encapsulated in {@link DataEntity}.
+	 * If configuration is null, the processing is paused.
 	 *
 	 * @param dataEntity the {@code DataEntity} to be processed at this time; should not be null
-	 * @return true when the {@code entity} was processed and it can e removed from the queue, false when the processing failed and the {@code entity} should be retried at a later point.
+	 * @param processingResult the {@code HitProcessingResult} callback to be invoked with the result of the processing. Returns:
+	 * 							true when the {@code entity} was processed and it can e removed from the queue,
+	 *							false when the processing failed and the {@code entity} should be retried at a later point.
 	 */
 	@Override
-	public boolean processHit(final DataEntity dataEntity) {
-		if (dataEntity == null) {
-			return true;
-		}
-
+	public void processHit(@NonNull final DataEntity dataEntity, @NonNull final HitProcessingResult processingResult) {
 		EdgeDataEntity entity = EdgeDataEntitySerializer.deserialize(dataEntity.getData());
 
 		if (entity == null) {
 			Log.debug(LOG_TAG, LOG_SOURCE, "Unable to deserialize DataEntity to EdgeDataEntity. Dropping the hit.");
-			return true;
+			processingResult.complete(true);
+			return;
 		}
 
 		// Add in Identity Map at request (global) level
@@ -128,7 +126,10 @@ class EdgeHitProcessor implements HitProcessing {
 					// NOTE: the order of these events need to be maintained as they were sent in the network request
 					// otherwise the response callback cannot be matched
 					networkResponseHandler.addWaitingEvents(edgeHit.getRequestId(), listOfEvents);
-					return sendNetworkRequest(dataEntity.getUniqueIdentifier(), edgeHit, requestHeaders);
+					processingResult.complete(
+						sendNetworkRequest(dataEntity.getUniqueIdentifier(), edgeHit, requestHeaders)
+					);
+					return;
 				} else {
 					Log.debug(
 						LOG_TAG,
@@ -164,7 +165,10 @@ class EdgeHitProcessor implements HitProcessing {
 				);
 
 				networkResponseHandler.addWaitingEvent(edgeHit.getRequestId(), entity.getEvent());
-				return sendNetworkRequest(dataEntity.getUniqueIdentifier(), edgeHit, requestHeaders);
+				processingResult.complete(
+					sendNetworkRequest(dataEntity.getUniqueIdentifier(), edgeHit, requestHeaders)
+				);
+				return;
 			} else {
 				Log.debug(
 					LOG_TAG,
@@ -179,7 +183,7 @@ class EdgeHitProcessor implements HitProcessing {
 			payloadManager.deleteAllStorePayloads();
 		}
 
-		return true; // Request complete, don't retry hit
+		processingResult.complete(true); // Request complete, don't retry hit
 	}
 
 	/**

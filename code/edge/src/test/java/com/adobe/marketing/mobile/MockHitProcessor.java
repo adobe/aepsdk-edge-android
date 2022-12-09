@@ -12,6 +12,7 @@
 package com.adobe.marketing.mobile;
 
 import com.adobe.marketing.mobile.services.DataEntity;
+import com.adobe.marketing.mobile.services.HitProcessingResult;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,8 +29,8 @@ class MockHitProcessor extends EdgeHitProcessor {
 	}
 
 	@Override
-	public boolean processHit(final DataEntity entity) {
+	public void processHit(final DataEntity entity, final HitProcessingResult processingResult) {
 		processHitParams.add(entity);
-		return processHitReturns;
+		processingResult.complete(processHitReturns);
 	}
 }

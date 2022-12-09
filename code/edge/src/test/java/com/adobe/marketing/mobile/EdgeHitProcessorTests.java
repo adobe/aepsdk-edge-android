@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isA;
@@ -31,11 +32,14 @@ import static org.powermock.api.mockito.PowerMockito.when;
 import static org.powermock.api.mockito.PowerMockito.whenNew;
 
 import com.adobe.marketing.mobile.services.DataEntity;
+import com.adobe.marketing.mobile.services.HitProcessingResult;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
@@ -183,6 +187,7 @@ public class EdgeHitProcessorTests {
 	private EdgeSharedStateCallback mockSharedStateCallback;
 	private Map<String, Object> edgeConfig;
 	private Map<String, Object> assuranceSharedState;
+	private CountDownLatch latchOfOne;
 
 	@Mock
 	EdgeNetworkService mockEdgeNetworkService;
@@ -234,6 +239,7 @@ public class EdgeHitProcessorTests {
 					}
 				}
 			);
+		latchOfOne = new CountDownLatch(1);
 	}
 
 	private void setUpDefaultSharedStates() {
@@ -248,10 +254,10 @@ public class EdgeHitProcessorTests {
 		mockSharedStateCallback =
 			new EdgeSharedStateCallback() {
 				@Override
-				public Map<String, Object> getSharedState(final String stateOwner, final Event event) {
+				public SharedStateResult getSharedState(final String stateOwner, final Event event) {
 					if (EdgeConstants.SharedState.ASSURANCE.equals(stateOwner)) {
 						assertNull(event); // assert always fetches latest assurance shared state
-						return assuranceSharedState;
+						return new SharedStateResult(SharedStateStatus.SET, assuranceSharedState);
 					}
 
 					return null;
@@ -435,7 +441,22 @@ public class EdgeHitProcessorTests {
 		final EdgeDataEntity entity = new EdgeDataEntity(resetEvent);
 
 		// test
-		hitProcessor.processHit(new DataEntity(EdgeDataEntitySerializer.serialize(entity)));
+		hitProcessor.processHit(
+			new DataEntity(EdgeDataEntitySerializer.serialize(entity)),
+			new HitProcessingResult() {
+				@Override
+				public void complete(boolean result) {
+					assertTrue(result);
+					latchOfOne.countDown();
+				}
+			}
+		);
+
+		try {
+			latchOfOne.await(200, TimeUnit.MILLISECONDS);
+		} catch (InterruptedException e) {
+			fail("No HitProcessingResult was received for hitProcessor.processHit");
+		}
 
 		// verify state store cleared
 		verify(mockNamedCollection, times(1)).remove(EdgeConstants.DataStoreKeys.STORE_PAYLOADS);
@@ -541,47 +562,13 @@ public class EdgeHitProcessorTests {
 					put(EdgeConstants.SharedState.Assurance.INTEGRATION_ID, "abc|123");
 				}
 			};
-
-		when(
-			mockEdgeNetworkService.buildUrl(
-				any(EdgeNetworkService.RequestType.class),
-				any(EdgeEndpoint.class),
-				anyString(),
-				anyString()
-			)
-		)
-			.thenReturn("https://test.com");
-		when(
-			mockEdgeNetworkService.doRequest(
-				anyString(),
-				anyString(),
-				ArgumentMatchers.<String, String>anyMap(),
-				any(EdgeNetworkService.ResponseCallback.class)
-			)
-		)
-			.thenReturn(new RetryResult(EdgeNetworkService.Retry.NO));
+		Map<String, String> expectedHeaders = new HashMap<>();
+		expectedHeaders.put(EdgeConstants.NetworkKeys.HEADER_KEY_AEP_VALIDATION_TOKEN, "abc|123");
 
 		EdgeDataEntity entity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap);
 
 		// test
-		boolean success = hitProcessor.processHit(new DataEntity(EdgeDataEntitySerializer.serialize(entity)));
-
-		// verify
-		assertTrue(success);
-
-		ArgumentCaptor<Map<String, String>> headersCaptor = ArgumentCaptor.forClass(HashMap.class);
-		verify(mockEdgeNetworkService, times(1))
-			.doRequest(
-				anyString(),
-				anyString(),
-				headersCaptor.capture(),
-				any(EdgeNetworkService.ResponseCallback.class)
-			);
-		assertEquals(1, headersCaptor.getValue().size());
-		assertEquals(
-			"abc|123",
-			headersCaptor.getValue().get(EdgeConstants.NetworkKeys.HEADER_KEY_AEP_VALIDATION_TOKEN)
-		);
+		assertProcessHit(entity, true, expectedHeaders, true);
 	}
 
 	@Test
@@ -593,88 +580,22 @@ public class EdgeHitProcessorTests {
 					put(EdgeConstants.SharedState.Assurance.INTEGRATION_ID, "abc|123");
 				}
 			};
-
-		when(
-			mockEdgeNetworkService.buildUrl(
-				any(EdgeNetworkService.RequestType.class),
-				any(EdgeEndpoint.class),
-				anyString(),
-				anyString()
-			)
-		)
-			.thenReturn("https://test.com");
-		when(
-			mockEdgeNetworkService.doRequest(
-				anyString(),
-				anyString(),
-				ArgumentMatchers.<String, String>anyMap(),
-				any(EdgeNetworkService.ResponseCallback.class)
-			)
-		)
-			.thenReturn(new RetryResult(EdgeNetworkService.Retry.NO));
-
 		EdgeDataEntity entity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap);
-
-		// test
 		hitProcessor =
 			new EdgeHitProcessor(mockNetworkResponseHandler, mockEdgeNetworkService, mockNamedCollection, null, null);
-		boolean success = hitProcessor.processHit(new DataEntity(EdgeDataEntitySerializer.serialize(entity)));
 
-		// verify
-		assertTrue(success);
-
-		ArgumentCaptor<Map<String, String>> headersCaptor = ArgumentCaptor.forClass(HashMap.class);
-		verify(mockEdgeNetworkService, times(1))
-			.doRequest(
-				anyString(),
-				anyString(),
-				headersCaptor.capture(),
-				any(EdgeNetworkService.ResponseCallback.class)
-			);
-		assertEquals(0, headersCaptor.getValue().size());
+		// test
+		assertProcessHit(entity, true, null, true);
 	}
 
 	@Test
 	public void testProcessHit_assuranceDisabled_doesNotSendAssuranceHeader() {
 		// setup
 		assuranceSharedState = null;
-
-		when(
-			mockEdgeNetworkService.buildUrl(
-				any(EdgeNetworkService.RequestType.class),
-				any(EdgeEndpoint.class),
-				anyString(),
-				anyString()
-			)
-		)
-			.thenReturn("https://test.com");
-		when(
-			mockEdgeNetworkService.doRequest(
-				anyString(),
-				anyString(),
-				ArgumentMatchers.<String, String>anyMap(),
-				any(EdgeNetworkService.ResponseCallback.class)
-			)
-		)
-			.thenReturn(new RetryResult(EdgeNetworkService.Retry.NO));
-
 		EdgeDataEntity entity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap);
 
 		// test
-		boolean success = hitProcessor.processHit(new DataEntity(EdgeDataEntitySerializer.serialize(entity)));
-
-		// verify
-		assertTrue(success);
-
-		ArgumentCaptor<Map<String, String>> headersCaptor = ArgumentCaptor.forClass(HashMap.class);
-		verify(mockEdgeNetworkService, times(1))
-			.doRequest(
-				anyString(),
-				anyString(),
-				headersCaptor.capture(),
-				any(EdgeNetworkService.ResponseCallback.class)
-			);
-		assertEquals(0, headersCaptor.getValue().size());
+		assertProcessHit(entity, true, null, true);
 	}
 
 	@Test
@@ -978,47 +899,21 @@ public class EdgeHitProcessorTests {
 	@Test
 	public void testProcessHit_setsRetryInterval() {
 		final int retryInterval = 10;
-		when(
-			mockEdgeNetworkService.buildUrl(
-				any(EdgeNetworkService.RequestType.class),
-				any(EdgeEndpoint.class),
-				anyString(),
-				anyString()
-			)
-		)
-			.thenReturn("https://test.com");
-		when(
-			mockEdgeNetworkService.doRequest(
-				anyString(),
-				anyString(),
-				ArgumentMatchers.<String, String>anyMap(),
-				any(EdgeNetworkService.ResponseCallback.class)
-			)
-		)
-			.thenReturn(new RetryResult(EdgeNetworkService.Retry.YES, retryInterval));
+		mockNetworkServiceResponse("https://test.com", new RetryResult(EdgeNetworkService.Retry.YES, retryInterval));
 
 		// test & verify
 		EdgeDataEntity entity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap);
 		DataEntity dataEntity = new DataEntity(EdgeDataEntitySerializer.serialize(entity));
-		boolean success = hitProcessor.processHit(dataEntity);
-		assertFalse(success); // retry is YES so processHit should return false
+
+		assertProcessHitResult(dataEntity, false); // retry is YES so processHit should return false
 
 		// verify retry interval was set
 		assertEquals(retryInterval, hitProcessor.retryInterval(dataEntity));
 
 		// Now send hit again but return NO retry and success result
-		when(
-			mockEdgeNetworkService.doRequest(
-				anyString(),
-				anyString(),
-				ArgumentMatchers.<String, String>anyMap(),
-				any(EdgeNetworkService.ResponseCallback.class)
-			)
-		)
-			.thenReturn(new RetryResult(EdgeNetworkService.Retry.NO));
+		mockNetworkServiceResponse("https://test.com", new RetryResult(EdgeNetworkService.Retry.NO));
 
-		success = hitProcessor.processHit(dataEntity);
-		assertTrue(success); // retry is NO so processHit should return true
+		assertProcessHitResult(dataEntity, true); // retry is NO so processHit should return true
 
 		// verify retry interval was removed
 		assertEquals(EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS, hitProcessor.retryInterval(dataEntity));
@@ -1026,24 +921,7 @@ public class EdgeHitProcessorTests {
 
 	@Test
 	public void testProcessHit_experienceEvent_sendsImplementationDetails() throws Exception {
-		when(
-			mockEdgeNetworkService.buildUrl(
-				any(EdgeNetworkService.RequestType.class),
-				any(EdgeEndpoint.class),
-				anyString(),
-				anyString()
-			)
-		)
-			.thenReturn("https://test.com");
-		when(
-			mockEdgeNetworkService.doRequest(
-				anyString(),
-				anyString(),
-				ArgumentMatchers.<String, String>anyMap(),
-				any(EdgeNetworkService.ResponseCallback.class)
-			)
-		)
-			.thenReturn(new RetryResult(EdgeNetworkService.Retry.NO));
+		mockNetworkServiceResponse("https://test.com", new RetryResult(EdgeNetworkService.Retry.NO));
 
 		EdgeDataEntity entity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap);
 
@@ -1071,23 +949,20 @@ public class EdgeHitProcessorTests {
 					}
 				}
 			);
-		boolean success = hitProcessor.processHit(new DataEntity(EdgeDataEntitySerializer.serialize(entity)));
+		assertProcessHitResult(new DataEntity(EdgeDataEntitySerializer.serialize(entity)), true);
 
-		// verify
-		assertTrue(success);
-
-		ArgumentCaptor<String> paylodCaptor = ArgumentCaptor.forClass(String.class);
+		ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
 		verify(mockEdgeNetworkService, times(1))
 			.doRequest(
 				anyString(),
-				paylodCaptor.capture(),
+				payloadCaptor.capture(),
 				ArgumentMatchers.<String, String>anyMap(),
 				any(EdgeNetworkService.ResponseCallback.class)
 			);
 
-		assertTrue(paylodCaptor.getValue().contains("implementationdetails"));
+		assertTrue(payloadCaptor.getValue().contains("implementationdetails"));
 
-		JSONObject requestJson = new JSONObject(paylodCaptor.getValue());
+		JSONObject requestJson = new JSONObject(payloadCaptor.getValue());
 		assertNotNull(requestJson);
 		JSONObject xdmJson = requestJson.getJSONObject("xdm");
 		assertNotNull(xdmJson);
@@ -1101,68 +976,31 @@ public class EdgeHitProcessorTests {
 
 	@Test
 	public void testProcessHit_nullStateCallback_doesNotSendImplementationDetails() {
-		when(
-			mockEdgeNetworkService.buildUrl(
-				any(EdgeNetworkService.RequestType.class),
-				any(EdgeEndpoint.class),
-				anyString(),
-				anyString()
-			)
-		)
-			.thenReturn("https://test.com");
-		when(
-			mockEdgeNetworkService.doRequest(
-				anyString(),
-				anyString(),
-				ArgumentMatchers.<String, String>anyMap(),
-				any(EdgeNetworkService.ResponseCallback.class)
-			)
-		)
-			.thenReturn(new RetryResult(EdgeNetworkService.Retry.NO));
+		mockNetworkServiceResponse("https://test.com", new RetryResult(EdgeNetworkService.Retry.NO));
 
 		EdgeDataEntity entity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap);
 
 		// test
 		hitProcessor =
 			new EdgeHitProcessor(mockNetworkResponseHandler, mockEdgeNetworkService, mockNamedCollection, null, null);
-		boolean success = hitProcessor.processHit(new DataEntity(EdgeDataEntitySerializer.serialize(entity)));
 
-		// verify
-		assertTrue(success);
+		assertProcessHitResult(new DataEntity(EdgeDataEntitySerializer.serialize(entity)), true);
 
-		ArgumentCaptor<String> paylodCaptor = ArgumentCaptor.forClass(String.class);
+		ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
 		verify(mockEdgeNetworkService, times(1))
 			.doRequest(
 				anyString(),
-				paylodCaptor.capture(),
-				ArgumentMatchers.<String, String>anyMap(),
+				payloadCaptor.capture(),
+				ArgumentMatchers.anyMap(),
 				any(EdgeNetworkService.ResponseCallback.class)
 			);
 
-		assertFalse(paylodCaptor.getValue().contains("implementationdetails"));
+		assertFalse(payloadCaptor.getValue().contains("implementationdetails"));
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_doesNotSendImplementationDetails() {
-		when(
-			mockEdgeNetworkService.buildUrl(
-				any(EdgeNetworkService.RequestType.class),
-				any(EdgeEndpoint.class),
-				anyString(),
-				anyString()
-			)
-		)
-			.thenReturn("https://test.com");
-		when(
-			mockEdgeNetworkService.doRequest(
-				anyString(),
-				anyString(),
-				ArgumentMatchers.<String, String>anyMap(),
-				any(EdgeNetworkService.ResponseCallback.class)
-			)
-		)
-			.thenReturn(new RetryResult(EdgeNetworkService.Retry.NO));
-
+		mockNetworkServiceResponse("https://test.com", new RetryResult(EdgeNetworkService.Retry.NO));
 		EdgeDataEntity entity = new EdgeDataEntity(consentEvent, edgeConfig, identityMap);
 
 		// test
@@ -1189,21 +1027,60 @@ public class EdgeHitProcessorTests {
 					}
 				}
 			);
-		boolean success = hitProcessor.processHit(new DataEntity(EdgeDataEntitySerializer.serialize(entity)));
+		hitProcessor.processHit(
+			new DataEntity(EdgeDataEntitySerializer.serialize(entity)),
+			success -> {
+				assertTrue(success);
+				latchOfOne.countDown();
+			}
+		);
 
-		// verify
-		assertTrue(success);
+		try {
+			latchOfOne.await(200, TimeUnit.MILLISECONDS);
+		} catch (InterruptedException e) {
+			fail("No HitProcessingResult was received for hitProcessor.processHit");
+		}
 
-		ArgumentCaptor<String> paylodCaptor = ArgumentCaptor.forClass(String.class);
+		ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
 		verify(mockEdgeNetworkService, times(1))
 			.doRequest(
 				anyString(),
-				paylodCaptor.capture(),
-				ArgumentMatchers.<String, String>anyMap(),
+				payloadCaptor.capture(),
+				ArgumentMatchers.anyMap(),
 				any(EdgeNetworkService.ResponseCallback.class)
 			);
 
-		assertFalse(paylodCaptor.getValue().contains("implementationdetails"));
+		assertFalse(payloadCaptor.getValue().contains("implementationdetails"));
+	}
+
+	void assertProcessHitResult(final DataEntity entity, final boolean expectedHitProcessingResult) {
+		hitProcessor.processHit(
+			entity,
+			success -> {
+				assertEquals(expectedHitProcessingResult, success);
+				latchOfOne.countDown();
+			}
+		);
+
+		try {
+			latchOfOne.await(200, TimeUnit.MILLISECONDS);
+		} catch (InterruptedException e) {
+			fail("No HitProcessingResult was received for hitProcessor.processHit");
+		}
+	}
+
+	void assertProcessHit(
+		final EdgeDataEntity entity,
+		final boolean sendsNetworkRequest,
+		final Map<String, String> withHeaders,
+		final boolean returns
+	) {
+		assertProcessHit(
+			entity,
+			sendsNetworkRequest ? new RetryResult(EdgeNetworkService.Retry.NO) : null,
+			withHeaders,
+			returns
+		);
 	}
 
 	void assertProcessHit(final EdgeDataEntity entity, final boolean sendsNetworkRequest, final boolean returns) {
@@ -1211,6 +1088,15 @@ public class EdgeHitProcessorTests {
 	}
 
 	void assertProcessHit(final EdgeDataEntity entity, final RetryResult networkResult, final boolean returns) {
+		assertProcessHit(entity, networkResult, null, returns);
+	}
+
+	void assertProcessHit(
+		final EdgeDataEntity entity,
+		final RetryResult networkResult,
+		final Map<String, String> withHeaders,
+		final boolean returns
+	) {
 		if (networkResult != null) {
 			when(
 				mockEdgeNetworkService.buildUrl(
@@ -1221,6 +1107,7 @@ public class EdgeHitProcessorTests {
 				)
 			)
 				.thenReturn("https://test.com");
+
 			when(
 				mockEdgeNetworkService.doRequest(
 					anyString(),
@@ -1233,24 +1120,38 @@ public class EdgeHitProcessorTests {
 		}
 
 		// test & verify
-		boolean success = hitProcessor.processHit(new DataEntity(EdgeDataEntitySerializer.serialize(entity)));
-		assertEquals(
-			String.format("Expected processHit to return %s, but it was %s", returns, success),
-			returns,
-			success
+		hitProcessor.processHit(
+			new DataEntity(EdgeDataEntitySerializer.serialize(entity)),
+			success -> {
+				assertEquals(
+					String.format("Expected processHit to return %s, but it was %s", returns, success),
+					returns,
+					success
+				);
+				latchOfOne.countDown();
+			}
 		);
 
+		try {
+			latchOfOne.await(200, TimeUnit.MILLISECONDS);
+		} catch (InterruptedException e) {
+			fail("No HitProcessingResult was received for hitProcessor.processHit");
+		}
+
 		if (networkResult != null) {
+			ArgumentCaptor<Map<String, String>> headersCaptor = ArgumentCaptor.forClass(HashMap.class);
 			ArgumentCaptor<EdgeNetworkService.ResponseCallback> callbackArgCaptor = ArgumentCaptor.forClass(
 				EdgeNetworkService.ResponseCallback.class
 			);
 			verify(mockEdgeNetworkService, times(1))
-				.doRequest(
-					anyString(),
-					anyString(),
-					ArgumentMatchers.<String, String>anyMap(),
-					callbackArgCaptor.capture()
-				);
+				.doRequest(anyString(), anyString(), headersCaptor.capture(), callbackArgCaptor.capture());
+
+			if (withHeaders == null || withHeaders.isEmpty()) {
+				assertEquals(0, headersCaptor.getValue().size());
+			} else {
+				assertEquals(withHeaders.size(), headersCaptor.getValue().size());
+				assertEquals(withHeaders, headersCaptor.getValue());
+			}
 			callbackArgCaptor.getValue().onComplete(); // simulates this is done by the doRequest method
 		} else {
 			verify(mockEdgeNetworkService, times(0))
@@ -1261,6 +1162,27 @@ public class EdgeHitProcessorTests {
 					any(EdgeNetworkService.ResponseCallback.class)
 				);
 		}
+	}
+
+	private void mockNetworkServiceResponse(final String returnBuildUrl, final RetryResult returnRetry) {
+		when(
+			mockEdgeNetworkService.buildUrl(
+				any(EdgeNetworkService.RequestType.class),
+				any(EdgeEndpoint.class),
+				anyString(),
+				anyString()
+			)
+		)
+			.thenReturn(returnBuildUrl);
+		when(
+			mockEdgeNetworkService.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.<String, String>anyMap(),
+				any(EdgeNetworkService.ResponseCallback.class)
+			)
+		)
+			.thenReturn(returnRetry);
 	}
 
 	private void assertProcessHitEndpoint(
@@ -1294,11 +1216,19 @@ public class EdgeHitProcessorTests {
 
 		EdgeDataEntity entity = new EdgeDataEntity(event, edgeConfig, identityMap);
 
-		// test
-		boolean success = hitProcessor.processHit(new DataEntity(EdgeDataEntitySerializer.serialize(entity)));
+		hitProcessor.processHit(
+			new DataEntity(EdgeDataEntitySerializer.serialize(entity)),
+			success -> {
+				assertTrue(success);
+				latchOfOne.countDown();
+			}
+		);
 
-		// verify
-		assertTrue(success);
+		try {
+			latchOfOne.await(200, TimeUnit.MILLISECONDS);
+		} catch (InterruptedException e) {
+			fail("No HitProcessingResult was received for hitProcessor.processHit");
+		}
 
 		ArgumentCaptor<EdgeEndpoint> envCaptor = ArgumentCaptor.forClass(EdgeEndpoint.class);
 		ArgumentCaptor<EdgeNetworkService.RequestType> requestTypeCaptor = ArgumentCaptor.forClass(
@@ -1313,31 +1243,31 @@ public class EdgeHitProcessorTests {
 	private JSONObject getOneEventJson() {
 		try {
 			return new JSONObject(
-				"{\n" +
-				"  \"environment\": {\n" +
-				"    \"operatingSystem\": \"iOS\"\n" +
-				"  },\n" +
-				"  \"application\": {\n" +
-				"    \"id\": \"A123\"\n" +
-				"  },\n" +
-				"  \"events\": [\n" +
-				"    {\n" +
-				"      \"xdm\": {\n" +
-				"        \"eventType\": \"commerce.purchases\",\n" +
-				"        \"_id\": \"0db631a2-5017-4502-967b-4fc67e184be6\",\n" +
-				"        \"commerce\": {\n" +
-				"          \"purchases\": {\n" +
-				"            \"value\": 1\n" +
-				"          },\n" +
-				"          \"order\": {\n" +
-				"            \"priceTotal\": 20,\n" +
-				"            \"currencyCode\": \"RON\"\n" +
-				"          }\n" +
-				"        },\n" +
-				"        \"timestamp\": \"2020-04-17T13:09:23-07:00\"\n" +
-				"      }\n" +
-				"    }\n" +
-				"  ]\n" +
+				"{" +
+				"  \"environment\": {" +
+				"    \"operatingSystem\": \"iOS\"" +
+				"  }," +
+				"  \"application\": {" +
+				"    \"id\": \"A123\"" +
+				"  }," +
+				"  \"events\": [" +
+				"    {" +
+				"      \"xdm\": {" +
+				"        \"eventType\": \"commerce.purchases\"," +
+				"        \"_id\": \"0db631a2-5017-4502-967b-4fc67e184be6\"," +
+				"        \"commerce\": {" +
+				"          \"purchases\": {" +
+				"            \"value\": 1" +
+				"          }," +
+				"          \"order\": {" +
+				"            \"priceTotal\": 20," +
+				"            \"currencyCode\": \"RON\"" +
+				"          }" +
+				"        }," +
+				"        \"timestamp\": \"2020-04-17T13:09:23-07:00\"" +
+				"      }" +
+				"    }" +
+				"  ]" +
 				"}"
 			);
 		} catch (JSONException e) {
@@ -1350,18 +1280,18 @@ public class EdgeHitProcessorTests {
 	private JSONObject getConsentPayloadJson() {
 		try {
 			return new JSONObject(
-				"{\n" +
-				"  \"consent\": [\n" +
-				"	{\n" +
-				"    \"standard\": \"Adobe\",\n" +
-				"    \"version\": \"2.0\",\n" +
-				"    \"value\": {\n" +
-				"    	\"collect\": {\n" +
-				"    		\"val\": \"y\"\n" +
-				"  		},\n" +
-				"  	  }\n" +
-				"  	}\n" +
-				"  	]\n" +
+				"{" +
+				"  \"consent\": [" +
+				"	{" +
+				"    \"standard\": \"Adobe\"," +
+				"    \"version\": \"2.0\"," +
+				"    \"value\": {" +
+				"    	\"collect\": {" +
+				"    		\"val\": \"y\"" +
+				"  		}," +
+				"  	  }" +
+				"  	}" +
+				"  	]" +
 				"}"
 			);
 		} catch (JSONException e) {
