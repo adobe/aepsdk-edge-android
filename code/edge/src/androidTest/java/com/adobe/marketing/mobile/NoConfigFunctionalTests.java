@@ -24,6 +24,7 @@ import com.adobe.marketing.mobile.util.FakeIdentity;
 import com.adobe.marketing.mobile.util.FunctionalTestConstants;
 import com.adobe.marketing.mobile.util.FunctionalTestUtils;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,12 +54,10 @@ public class NoConfigFunctionalTests {
 		setExpectationEvent(EventType.HUB, EventSource.BOOTED, 1);
 		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 2);
 
-		Edge.registerExtension();
-		FakeIdentity.registerExtension();
-
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.start(
-			new AdobeCallback() {
+		MobileCore.registerExtensions(
+			Arrays.asList(Edge.EXTENSION, FakeIdentity.EXTENSION),
+			new AdobeCallback<Object>() {
 				@Override
 				public void call(Object o) {
 					latch.countDown();

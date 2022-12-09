@@ -11,12 +11,12 @@
 
 package com.adobe.marketing.mobile.util;
 
+import androidx.annotation.NonNull;
 import com.adobe.marketing.mobile.Event;
+import com.adobe.marketing.mobile.EventSource;
+import com.adobe.marketing.mobile.EventType;
 import com.adobe.marketing.mobile.Extension;
 import com.adobe.marketing.mobile.ExtensionApi;
-import com.adobe.marketing.mobile.ExtensionError;
-import com.adobe.marketing.mobile.ExtensionErrorCallback;
-import com.adobe.marketing.mobile.ExtensionListener;
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
 import java.util.ArrayList;
@@ -27,6 +27,7 @@ import java.util.Objects;
 
 public class MonitorExtension extends Extension {
 
+	public static final Class<? extends Extension> EXTENSION = MonitorExtension.class;
 	private static final String LOG_TAG = "MonitorExtension";
 
 	private static final Map<EventSpec, List<Event>> receivedEvents = new HashMap<>();
@@ -34,39 +35,29 @@ public class MonitorExtension extends Extension {
 
 	protected MonitorExtension(ExtensionApi extensionApi) {
 		super(extensionApi);
-		extensionApi.registerWildcardListener(
-			MonitorListener.class,
-			new ExtensionErrorCallback<ExtensionError>() {
-				@Override
-				public void error(ExtensionError extensionError) {
-					MobileCore.log(
-						LoggingMode.ERROR,
-						LOG_TAG,
-						"There was an error registering Extension Listener: " + extensionError.getErrorName()
-					);
-				}
-			}
-		);
 	}
 
+	@NonNull
 	@Override
 	protected String getName() {
 		return "MonitorExtension";
 	}
 
+	@Override
+	protected void onRegistered() {
+		super.onRegistered();
+		getApi().registerEventListener(EventType.WILDCARD, EventSource.WILDCARD, this::wildcardProcessor);
+	}
+
 	public static void registerExtension() {
 		MobileCore.registerExtension(
 			MonitorExtension.class,
-			new ExtensionErrorCallback<ExtensionError>() {
-				@Override
-				public void error(ExtensionError extensionError) {
-					MobileCore.log(
-						LoggingMode.ERROR,
-						LOG_TAG,
-						"There was an error registering the Monitor extension: " + extensionError.getErrorName()
-					);
-				}
-			}
+			extensionError ->
+				MobileCore.log(
+					LoggingMode.ERROR,
+					LOG_TAG,
+					"There was an error registering the Monitor extension: " + extensionError.getErrorName()
+				)
 		);
 	}
 
@@ -118,7 +109,7 @@ public class MonitorExtension extends Extension {
 	 * All other events are added to the map of received events. If the event is in the map
 	 * of expected events, its latch is counted down.
 	 *
-	 * @param event
+	 * @param event current event to be processed
 	 */
 	public void wildcardProcessor(final Event event) {
 		if (FunctionalTestConstants.EventType.MONITOR.equalsIgnoreCase(event.getType())) {
@@ -149,7 +140,7 @@ public class MonitorExtension extends Extension {
 	/**
 	 * Processor which retrieves and dispatches the shared state for the state owner specified
 	 * in the request.
-	 * @param event
+	 * @param event current event to be processed
 	 */
 	private void processSharedStateRequest(final Event event) {
 		Map<String, Object> eventData = event.getEventData();
@@ -179,35 +170,11 @@ public class MonitorExtension extends Extension {
 
 	/**
 	 * Processor which unregisters this extension.
-	 * @param event
+	 * @param event current event to be processed
 	 */
 	private void processUnregisterRequest(final Event event) {
 		MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Unregistering the Monitor Extension.");
 		getApi().unregisterExtension();
-	}
-
-	/**
-	 * Listener class
-	 */
-	public static class MonitorListener extends ExtensionListener {
-
-		protected MonitorListener(ExtensionApi extension, String type, String source) {
-			super(extension, type, source);
-		}
-
-		@Override
-		public void hear(Event event) {
-			MonitorExtension extension = getParentExtension();
-
-			if (extension != null) {
-				extension.wildcardProcessor(event);
-			}
-		}
-
-		@Override
-		protected MonitorExtension getParentExtension() {
-			return (MonitorExtension) super.getParentExtension();
-		}
 	}
 
 	/**
@@ -232,6 +199,7 @@ public class MonitorExtension extends Extension {
 			this.type = type.toLowerCase();
 		}
 
+		@NonNull
 		@Override
 		public String toString() {
 			return "type '" + type + "' and source '" + source + "'";
