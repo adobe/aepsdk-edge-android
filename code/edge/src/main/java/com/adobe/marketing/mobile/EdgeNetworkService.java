@@ -197,10 +197,10 @@ class EdgeNetworkService {
 			);
 			retryResult = new RetryResult(Retry.YES, computeRetryInterval(connection));
 		} else if (connection.getResponseCode() == 207) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
+			Log.debug(
 				LOG_TAG,
-				"EdgeNetworkService - Interact connection to Experience Edge successful but encountered non-fatal errors/warnings. Response message: " +
+				LOG_SOURCE,
+				"Interact connection to Experience Edge successful but encountered non-fatal errors/warnings. Response message: %s",
 				connection.getResponseMessage()
 			);
 

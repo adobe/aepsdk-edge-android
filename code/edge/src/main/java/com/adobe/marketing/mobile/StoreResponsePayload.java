@@ -13,6 +13,7 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
+import com.adobe.marketing.mobile.services.Log;
 import java.util.Calendar;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -21,6 +22,8 @@ import org.json.JSONObject;
  * Contains a store payload with its expiring information. Use this class when serializing to local storage.
  */
 class StoreResponsePayload {
+
+	private static final String LOG_SOURCE = "StoreResponsePayload";
 
 	private final String key;
 	private final String value;
@@ -61,10 +64,11 @@ class StoreResponsePayload {
 			jsonObject.put(EdgeJson.Response.EventHandle.Store.MAX_AGE, maxAgeSeconds);
 			jsonObject.put(EdgeJson.Response.EventHandle.Store.EXPIRY_DATE, expiryTimestampMilliseconds);
 		} catch (JSONException e) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
+			Log.debug(
 				LOG_TAG,
-				"StoreResponsePayload - Failed to create the json object from payload: " + e.getLocalizedMessage()
+				LOG_SOURCE,
+				"Failed to create the json object from payload: %s",
+				e.getLocalizedMessage()
 			);
 			return null;
 		}
@@ -74,10 +78,10 @@ class StoreResponsePayload {
 
 	static StoreResponsePayload fromJsonObject(final JSONObject jsonObject) {
 		if (jsonObject == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
+			Log.debug(
 				LOG_TAG,
-				"StoreResponsePayload - Failed to create the payload from the map, StoreResponsePayload is null or empty"
+				LOG_SOURCE,
+				"Failed to create the payload from the map, StoreResponsePayload is null or empty"
 			);
 			return null;
 		}
@@ -93,37 +97,38 @@ class StoreResponsePayload {
 			maxAge = jsonObject.optInt(EdgeJson.Response.EventHandle.Store.MAX_AGE, Integer.MIN_VALUE);
 			expiryDate = jsonObject.optLong(EdgeJson.Response.EventHandle.Store.EXPIRY_DATE, Long.MIN_VALUE);
 		} catch (JSONException e) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
+			Log.debug(
 				LOG_TAG,
-				"StoreResponsePayload - Failed to create the json object from payload: " + e.getLocalizedMessage()
+				LOG_SOURCE,
+				"Failed to create the json object from payload: %s",
+				e.getLocalizedMessage()
 			);
 			return null;
 		}
 
 		if (key == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
+			Log.debug(
 				LOG_TAG,
-				"StoreResponsePayload - Failed to create the payload from payload json object, key does not exist in the payload"
+				LOG_SOURCE,
+				"Failed to create the payload from payload json object, key does not exist in the payload"
 			);
 			return null;
 		}
 
 		if (value == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
+			Log.debug(
 				LOG_TAG,
-				"StoreResponsePayload - Failed to create the payload from payload json object, value does not exist in the payload"
+				LOG_SOURCE,
+				"Failed to create the payload from payload json object, value does not exist in the payload"
 			);
 			return null;
 		}
 
 		if (maxAge == Integer.MIN_VALUE) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
+			Log.debug(
 				LOG_TAG,
-				"StoreResponsePayload - Failed to create the payload from payload json object, maxAge does not exist in the payload"
+				LOG_SOURCE,
+				"Failed to create the payload from payload json object, maxAge does not exist in the payload"
 			);
 			return null;
 		}

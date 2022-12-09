@@ -13,6 +13,7 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
+import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -25,6 +26,8 @@ import java.util.TimeZone;
 import org.json.JSONObject;
 
 class RequestBuilder {
+
+	private static final String LOG_SOURCE = "RequestBuilder";
 
 	// Note: Response streaming is enabled when both streamingRecordSeparator and streamingLineFeed are non nil.
 	// Control character used before each response fragment.
@@ -121,20 +124,16 @@ class RequestBuilder {
 	 */
 	JSONObject getConsentPayload(final Event event) {
 		if (event == null || Utils.isNullOrEmpty(event.getEventData())) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
+			Log.debug(
 				LOG_TAG,
+				LOG_SOURCE,
 				"RequestBuilder - Unable to process the consent update request, event/event data is null"
 			);
 			return null;
 		}
 
 		if (!event.getEventData().containsKey(EdgeConstants.EventDataKey.CONSENTS)) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"RequestBuilder - Unable to process the consent update request, no consents data"
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Unable to process the consent update request, no consents data");
 			return null;
 		}
 
@@ -143,11 +142,7 @@ class RequestBuilder {
 		try {
 			consentMap = (Map<String, Object>) event.getEventData().get(EdgeConstants.EventDataKey.CONSENTS);
 		} catch (ClassCastException e) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"RequestBuilder - Failed to read consents from event data, not a map"
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Failed to read consents from event data, not a map");
 			return null;
 		}
 
@@ -164,11 +159,7 @@ class RequestBuilder {
 				consents.setIdentityMap((Map<String, Object>) xdmPayloads.get(EdgeConstants.EventDataKey.IDENTITY_MAP));
 			}
 		} catch (ClassCastException e) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"RequestBuilder - Failed to read IdentityMap from request payload, not a map"
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Failed to read IdentityMap from request payload, not a map");
 		}
 
 		// Enable response streaming
@@ -237,10 +228,10 @@ class RequestBuilder {
 		try {
 			timestampFromPayload = (String) xdm.get(EdgeJson.Event.Xdm.TIMESTAMP);
 		} catch (ClassCastException e) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
+			Log.debug(
 				LOG_TAG,
-				"RequestBuilder - Unable to read the timestamp from the XDM payload due to unexpected format. Expected String."
+				LOG_SOURCE,
+				"Unable to read the timestamp from the XDM payload due to unexpected format. Expected String."
 			);
 		}
 

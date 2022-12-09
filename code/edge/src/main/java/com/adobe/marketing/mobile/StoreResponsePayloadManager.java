@@ -13,6 +13,7 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
+import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,6 +23,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 class StoreResponsePayloadManager {
+
+	private static final String LOG_SOURCE = "StoreResponsePayloadManager";
 
 	private final NamedCollection namedCollection;
 
@@ -37,22 +40,14 @@ class StoreResponsePayloadManager {
 	 */
 	Map<String, StoreResponsePayload> getActiveStores() {
 		if (namedCollection == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"StoreResponsePayloadManager - Cannot get active stores, dataStore is null."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Cannot get active stores, dataStore is null.");
 			return null;
 		}
 
 		Map<String, String> serializedPayloads = namedCollection.getMap(EdgeConstants.DataStoreKeys.STORE_PAYLOADS);
 
 		if (serializedPayloads == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"StoreResponsePayloadManager - Cannot get active stores, serializedPayloads is null."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Cannot get active stores, serializedPayloads is null.");
 			return null;
 		}
 
@@ -65,10 +60,10 @@ class StoreResponsePayloadManager {
 			try {
 				payload = StoreResponsePayload.fromJsonObject(new JSONObject(serializedPayload));
 			} catch (JSONException e) {
-				MobileCore.log(
-					LoggingMode.DEBUG,
+				Log.debug(
 					LOG_TAG,
-					"StoreResponsePayloadManager - Failed to convert JSON object to StoreResponsePayload: " +
+					LOG_SOURCE,
+					"Failed to convert JSON object to StoreResponsePayload: %s",
 					e.getLocalizedMessage()
 				);
 				continue;
@@ -94,20 +89,12 @@ class StoreResponsePayloadManager {
 	 */
 	void saveStorePayloads(final List<Map<String, Object>> responsePayloads) {
 		if (namedCollection == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"StoreResponsePayloadManager - Cannot save stores, dataStore is null."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Cannot save stores, dataStore is null.");
 			return;
 		}
 
 		if (responsePayloads == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"StoreResponsePayloadManager - Cannot save stores, responsePayloads is null."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Cannot save stores, responsePayloads is null.");
 			return;
 		}
 
@@ -143,31 +130,19 @@ class StoreResponsePayloadManager {
 	 */
 	void deleteStoreResponses(final ArrayList<String> keys) {
 		if (namedCollection == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"StoreResponsePayloadManager - Cannot delete stores, dataStore is null."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Cannot delete stores, dataStore is null.");
 			return;
 		}
 
 		if (keys == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"StoreResponsePayloadManager - Cannot delete stores, keys is null."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Cannot delete stores, keys is null.");
 			return;
 		}
 
 		Map<String, String> serializedPayloads = namedCollection.getMap(EdgeConstants.DataStoreKeys.STORE_PAYLOADS);
 
 		if (serializedPayloads == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"StoreResponsePayloadManager - Cannot delete stores, data store is null."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Cannot delete stores, data store is null.");
 			return;
 		}
 
@@ -183,11 +158,7 @@ class StoreResponsePayloadManager {
 	 */
 	void deleteAllStorePayloads() {
 		if (namedCollection == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"StoreResponsePayloadManager - Cannot delete the store payloads, dataStore is null."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Cannot delete the store payloads, dataStore is null.");
 			return;
 		}
 

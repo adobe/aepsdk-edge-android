@@ -11,6 +11,9 @@
 
 package com.adobe.marketing.mobile;
 
+import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
+
+import com.adobe.marketing.mobile.services.Log;
 import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -22,16 +25,12 @@ import org.json.JSONObject;
 class StateMetadata {
 
 	private static final String JSON_KEY_ENTRIES = "entries";
-	private static final String LOG_TAG = "StateMetadata";
+	private static final String LOG_SOURCE = "StateMetadata";
 	private final JSONObject metadataPayload = new JSONObject();
 
 	StateMetadata(final Map<String, StoreResponsePayload> payloadMap) {
 		if (payloadMap == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"StateMetadata - Cannot init StateMetadata, payloadMap is null."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Cannot init StateMetadata, payloadMap is null.");
 			return;
 		}
 
@@ -52,11 +51,7 @@ class StateMetadata {
 				metadataPayload.put(JSON_KEY_ENTRIES, payloadArray);
 			}
 		} catch (JSONException e) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"StateMetadata - Could not add payload array to entries: " + e.getLocalizedMessage()
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Could not add payload array to entries: %s", e.getLocalizedMessage());
 		}
 	}
 

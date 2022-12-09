@@ -11,6 +11,9 @@
 
 package com.adobe.marketing.mobile;
 
+import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
+
+import com.adobe.marketing.mobile.services.Log;
 import java.util.HashMap;
 import java.util.Map;
 import org.json.JSONObject;
@@ -19,6 +22,8 @@ import org.json.JSONObject;
  * Metadata for Edge Network.
  */
 class KonductorConfig {
+
+	private static final String LOG_SOURCE = "KonductorConfig";
 
 	private static final String JSON_KEY_GATEWAY = "konductorConfig";
 	private static final String JSON_KEY_STREAMING = "streaming";
@@ -85,11 +90,7 @@ class KonductorConfig {
 		try {
 			metadataObject = new JSONObject(jsonRequest).optJSONObject(EdgeJson.Event.METADATA);
 		} catch (Exception e) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				EdgeConstants.LOG_TAG,
-				"KonductorConfig - Failed to read KonductorConfig from json request."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Failed to read KonductorConfig from json request.");
 			return null;
 		}
 

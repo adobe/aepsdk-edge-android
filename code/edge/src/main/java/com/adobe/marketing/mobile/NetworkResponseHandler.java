@@ -184,11 +184,7 @@ class NetworkResponseHandler {
 	 */
 	void processResponseOnSuccess(final String jsonResponse, final String requestId) {
 		if (jsonResponse == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"NetworkResponseHandler - Received null response content for request id (" + requestId + ")."
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Received null response content for request id (%s)", requestId);
 			return;
 		}
 
@@ -196,21 +192,15 @@ class NetworkResponseHandler {
 
 		try {
 			json = new JSONObject(jsonResponse);
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"NetworkResponseHandler - Received server response:\n" + json.toString(2)
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Received server response:\n%s", json.toString(2));
 		} catch (JSONException e) {
-			MobileCore.log(
-				LoggingMode.WARNING,
+			Log.warning(
 				LOG_TAG,
-				String.format(
-					"NetworkResponseHandler - The conversion to JSONObject failed for server response: (%s), request id (%s) with error: %s",
-					jsonResponse,
-					requestId,
-					e.getLocalizedMessage()
-				)
+				LOG_SOURCE,
+				"The conversion to JSONObject failed for server response: (%s), request id (%s) with error: %s",
+				jsonResponse,
+				requestId,
+				e.getLocalizedMessage()
 			);
 			return;
 		}
@@ -260,21 +250,13 @@ class NetworkResponseHandler {
 	 */
 	void processResponseOnError(final String jsonError, final String requestId) {
 		if (jsonError == null) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"NetworkResponseHandler - received null error response content, request id (" + requestId + ")"
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Received null error response content, request id (%s)", requestId);
 			return;
 		}
 
 		try {
 			JSONObject json = new JSONObject(jsonError);
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				LOG_TAG,
-				"NetworkResponseHandler - Processing server error response: " + json.toString(2)
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "Processing server error response: %s", json.toString(2));
 
 			/*
 			 * Note: if the Edge Network error doesn't have an eventIndex it means that this error is
@@ -303,15 +285,13 @@ class NetworkResponseHandler {
 				MobileCore.dispatchEvent(responseEvent);
 			}
 		} catch (JSONException e) {
-			MobileCore.log(
-				LoggingMode.WARNING,
+			Log.warning(
 				LOG_TAG,
-				String.format(
-					"NetworkResponseHandler - The conversion to JSONObject failed for server response: (%s), request id (%s) with error: %s",
-					jsonError,
-					requestId,
-					e.getLocalizedMessage()
-				)
+				LOG_SOURCE,
+				"The conversion to JSONObject failed for server response: (%s), request id (%s) with error: %s",
+				jsonError,
+				requestId,
+				e.getLocalizedMessage()
 			);
 		}
 	}
@@ -330,20 +310,12 @@ class NetworkResponseHandler {
 		final boolean ignoreStorePayloads
 	) {
 		if (Utils.isNullOrEmpty(eventHandleArray)) {
-			MobileCore.log(
-				LoggingMode.VERBOSE,
-				LOG_TAG,
-				"NetworkResponseHandler - Received null/empty event handle array, nothing to handle"
-			);
+			Log.trace(LOG_TAG, LOG_SOURCE, "Received null/empty event handle array, nothing to handle");
 			return;
 		}
 
 		int size = eventHandleArray.length();
-		MobileCore.log(
-			LoggingMode.VERBOSE,
-			LOG_TAG,
-			"NetworkResponseHandler - Processing " + size + " event handle(s) for request id: " + requestId
-		);
+		Log.trace(LOG_TAG, LOG_SOURCE, "Processing %d event handle(s) for request id: %s", size, requestId);
 
 		for (int i = 0; i < size; i++) {
 			JSONObject jsonEventHandle = null;
@@ -351,14 +323,12 @@ class NetworkResponseHandler {
 			try {
 				jsonEventHandle = eventHandleArray.getJSONObject(i);
 			} catch (JSONException e) {
-				MobileCore.log(
-					LoggingMode.VERBOSE,
+				Log.trace(
 					LOG_TAG,
-					String.format(
-						"NetworkResponseHandler - Event handle with index %d was not processed due to JSONException: %s",
-						i,
-						e.getLocalizedMessage()
-					)
+					LOG_SOURCE,
+					"Event handle with index %d was not processed due to JSONException: %s",
+					i,
+					e.getLocalizedMessage()
 				);
 			}
 
@@ -517,10 +487,10 @@ class NetworkResponseHandler {
 						edgeStateCallback.setLocationHint(hint, ttlSeconds);
 					}
 				} catch (ClassCastException e) {
-					MobileCore.log(
-						LoggingMode.WARNING,
+					Log.warning(
 						LOG_TAG,
-						"NetworkResponseHandler - Failed to parse 'locationHint:result' for scope 'EdgeNetwork': " +
+						LOG_SOURCE,
+						"Failed to parse 'locationHint:result' for scope 'EdgeNetwork': %s",
 						e.getLocalizedMessage()
 					);
 				}
@@ -540,20 +510,12 @@ class NetworkResponseHandler {
 	 */
 	private void dispatchEventErrors(final JSONArray errorsArray, final boolean isError, final String requestId) {
 		if (Utils.isNullOrEmpty(errorsArray)) {
-			MobileCore.log(
-				LoggingMode.VERBOSE,
-				LOG_TAG,
-				"NetworkResponseHandler - Received null/empty errors array, nothing to handle"
-			);
+			Log.trace(LOG_TAG, LOG_SOURCE, "Received null/empty errors array, nothing to handle");
 			return;
 		}
 
 		int size = errorsArray.length();
-		MobileCore.log(
-			LoggingMode.VERBOSE,
-			LOG_TAG,
-			"NetworkResponseHandler - Processing " + size + " error(s) for request id: " + requestId
-		);
+		Log.trace(LOG_TAG, LOG_SOURCE, "Processing %d error(s) for request id: %s", size, requestId);
 
 		for (int i = 0; i < size; i++) {
 			JSONObject currentError = null;
@@ -561,12 +523,11 @@ class NetworkResponseHandler {
 			try {
 				currentError = errorsArray.getJSONObject(i);
 			} catch (JSONException e) {
-				MobileCore.log(
-					LoggingMode.VERBOSE,
+				Log.trace(
 					LOG_TAG,
-					"NetworkResponseHandler - Event error with index " +
-					i +
-					" was not processed due to JSONException: " +
+					LOG_SOURCE,
+					"Event error with index %d was not processed due to JSONException: %s",
+					i,
 					e.getLocalizedMessage()
 				);
 			}
@@ -611,14 +572,23 @@ class NetworkResponseHandler {
 			errorToLog = error.toString();
 		}
 
-		MobileCore.log(
-			loggingMode,
-			LOG_TAG,
-			"NetworkResponseHandler - Received event error for request id (" +
-			requestId +
-			"), error details:\n" +
-			errorToLog
-		);
+		if (isError) {
+			Log.error(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Received event error for request id (%s), error details:\n %s",
+				requestId,
+				errorToLog
+			);
+		} else {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Received event error for request id (%s), error details:\n %s",
+				requestId,
+				errorToLog
+			);
+		}
 	}
 
 	/**
