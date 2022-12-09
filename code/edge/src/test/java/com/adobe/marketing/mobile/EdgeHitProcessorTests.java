@@ -94,7 +94,7 @@ public class EdgeHitProcessorTests {
 	// Location hint value returned by EdgeStateCallback
 	private String locationHitResult = null;
 
-	private Event experienceEvent = new Event.Builder(
+	private final Event experienceEvent = new Event.Builder(
 		"test-experience-event",
 		EventType.EDGE,
 		EventSource.REQUEST_CONTENT

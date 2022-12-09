@@ -18,6 +18,7 @@ public class FunctionalTestConstants {
 	public static final String EVENT_NAME_ERROR_RESPONSE_CONTENT = "AEP Error Response";
 	public static final int NETWORK_REQUEST_MAX_RETRIES = 5;
 	public static final String EDGE_DATA_STORAGE = "EdgeDataStorage";
+	public static final String LOG_TAG = "FunctionalTestsFramework";
 
 	// Event type and sources used by Monitor Extension
 	public class EventType {

@@ -11,14 +11,16 @@
 
 package com.adobe.marketing.mobile.util;
 
+import static com.adobe.marketing.mobile.util.FunctionalTestConstants.LOG_TAG;
+
 import androidx.annotation.NonNull;
 import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.EventSource;
 import com.adobe.marketing.mobile.EventType;
 import com.adobe.marketing.mobile.Extension;
 import com.adobe.marketing.mobile.ExtensionApi;
-import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
+import com.adobe.marketing.mobile.services.Log;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,7 +30,7 @@ import java.util.Objects;
 public class MonitorExtension extends Extension {
 
 	public static final Class<? extends Extension> EXTENSION = MonitorExtension.class;
-	private static final String LOG_TAG = "MonitorExtension";
+	private static final String LOG_SOURCE = "MonitorExtension";
 
 	private static final Map<EventSpec, List<Event>> receivedEvents = new HashMap<>();
 	private static final Map<EventSpec, ADBCountDownLatch> expectedEvents = new HashMap<>();
@@ -52,12 +54,14 @@ public class MonitorExtension extends Extension {
 	public static void registerExtension() {
 		MobileCore.registerExtension(
 			MonitorExtension.class,
-			extensionError ->
-				MobileCore.log(
-					LoggingMode.ERROR,
+			extensionError -> {
+				Log.error(
 					LOG_TAG,
-					"There was an error registering the Monitor extension: " + extensionError.getErrorName()
-				)
+					LOG_SOURCE,
+					"There was an error registering the Monitor extension: %s",
+					extensionError.getErrorName()
+				);
+			}
 		);
 	}
 
@@ -97,7 +101,7 @@ public class MonitorExtension extends Extension {
 	 * Resets the map of received and expected events.
 	 */
 	public static void reset() {
-		MobileCore.log(LoggingMode.VERBOSE, LOG_TAG, "Reset expected and received events.");
+		Log.trace(LOG_TAG, LOG_SOURCE, "Reset expected and received events.");
 		receivedEvents.clear();
 		expectedEvents.clear();
 	}
@@ -124,7 +128,7 @@ public class MonitorExtension extends Extension {
 
 		EventSpec eventSpec = new EventSpec(event.getSource(), event.getType());
 
-		MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Received and processing event " + eventSpec);
+		Log.debug(LOG_TAG, LOG_SOURCE, "Received and processing event %s", eventSpec.toString());
 
 		if (!receivedEvents.containsKey(eventSpec)) {
 			receivedEvents.put(eventSpec, new ArrayList<Event>());
@@ -173,7 +177,7 @@ public class MonitorExtension extends Extension {
 	 * @param event current event to be processed
 	 */
 	private void processUnregisterRequest(final Event event) {
-		MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Unregistering the Monitor Extension.");
+		Log.debug(LOG_TAG, LOG_SOURCE, "Unregistering the Monitor Extension.");
 		getApi().unregisterExtension();
 	}
 

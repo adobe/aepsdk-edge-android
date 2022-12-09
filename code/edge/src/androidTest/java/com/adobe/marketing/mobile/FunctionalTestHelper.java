@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile;
 
+import static com.adobe.marketing.mobile.util.FunctionalTestConstants.LOG_TAG;
 import static com.adobe.marketing.mobile.util.MonitorExtension.EventSpec;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -55,7 +56,7 @@ import org.junit.runners.model.Statement;
 
 public class FunctionalTestHelper {
 
-	private static final String TAG = "FunctionalTestHelper";
+	private static final String LOG_SOURCE = "FunctionalTestHelper";
 
 	private static final FunctionalTestNetworkService testNetworkService = new FunctionalTestNetworkService();
 	private static Application defaultApplication;
@@ -80,6 +81,8 @@ public class FunctionalTestHelper {
 	 */
 	public static class SetupCoreRule implements TestRule {
 
+		private static final String LOG_SOURCE = "SetupCoreRule";
+
 		@Override
 		public Statement apply(final Statement base, final Description description) {
 			return new Statement() {
@@ -96,20 +99,16 @@ public class FunctionalTestHelper {
 					MobileCore.setApplication(defaultApplication);
 					FunctionalTestDataStoreService.clearStores();
 					clearAllDatastores();
-					MobileCore.log(LoggingMode.DEBUG, "SetupCoreRule", "Execute '" + description.getMethodName() + "'");
+					Log.debug(LOG_TAG, LOG_SOURCE, "Execute '%s'", description.getMethodName());
 
 					try {
 						base.evaluate();
 					} catch (Throwable e) {
-						MobileCore.log(LoggingMode.DEBUG, "SetupCoreRule", "Wait after test failure.");
+						Log.debug(LOG_TAG, LOG_SOURCE, "Wait after test failure.");
 						throw e; // rethrow test failure
 					} finally {
 						// After test execution
-						MobileCore.log(
-							LoggingMode.DEBUG,
-							"SetupCoreRule",
-							"Finished '" + description.getMethodName() + "'"
-						);
+						Log.debug(LOG_TAG, LOG_SOURCE, "Finished '%s'", description.getMethodName());
 						waitForThreads(5000); // wait to allow thread to run after test execution
 						Core core = MobileCore.getCore();
 
@@ -228,16 +227,12 @@ public class FunctionalTestHelper {
 		Set<Thread> threadSet = getEligibleThreads();
 
 		while (threadSet.size() > 0 && ((System.currentTimeMillis() - startTime) < timeoutTestMillis)) {
-			MobileCore.log(
-				LoggingMode.DEBUG,
-				TAG,
-				"waitForThreads - Still waiting for " + threadSet.size() + " thread(s)"
-			);
+			Log.debug(LOG_TAG, LOG_SOURCE, "waitForThreads - Still waiting for " + threadSet.size() + " thread(s)");
 
 			for (Thread t : threadSet) {
-				MobileCore.log(
-					LoggingMode.DEBUG,
-					TAG,
+				Log.debug(
+					LOG_TAG,
+					LOG_SOURCE,
 					"waitForThreads - Waiting for thread " + t.getName() + " (" + t.getId() + ")"
 				);
 				boolean done = false;
@@ -260,15 +255,15 @@ public class FunctionalTestHelper {
 				}
 
 				if (timedOut) {
-					MobileCore.log(
-						LoggingMode.DEBUG,
-						TAG,
+					Log.debug(
+						LOG_TAG,
+						LOG_SOURCE,
 						"waitForThreads - Timeout out waiting for thread " + t.getName() + " (" + t.getId() + ")"
 					);
 				} else {
-					MobileCore.log(
-						LoggingMode.DEBUG,
-						TAG,
+					Log.debug(
+						LOG_TAG,
+						LOG_SOURCE,
 						"waitForThreads - Done waiting for thread " + t.getName() + " (" + t.getId() + ")"
 					);
 				}
@@ -277,7 +272,7 @@ public class FunctionalTestHelper {
 			threadSet = getEligibleThreads();
 		}
 
-		MobileCore.log(LoggingMode.DEBUG, TAG, "waitForThreads - All known SDK threads are terminated.");
+		Log.debug(LOG_TAG, LOG_SOURCE, "waitForThreads - All known SDK threads are terminated.");
 	}
 
 	/**
@@ -327,11 +322,7 @@ public class FunctionalTestHelper {
 	 * Resets the network and event test expectations.
 	 */
 	public static void resetTestExpectations() {
-		MobileCore.log(
-			LoggingMode.DEBUG,
-			TAG,
-			"Resetting functional test expectations for events and network requests"
-		);
+		Log.debug(LOG_TAG, LOG_SOURCE, "Resetting functional test expectations for events and network requests");
 
 		if (testNetworkService != null) {
 			testNetworkService.reset();
@@ -454,12 +445,11 @@ public class FunctionalTestHelper {
 						receivedEvent.getValue().size()
 					)
 				);
-				MobileCore.log(
-					LoggingMode.DEBUG,
-					TAG,
-					"Received unexpected event with type: " +
-					receivedEvent.getKey().type +
-					" source: " +
+				Log.debug(
+					LOG_TAG,
+					LOG_SOURCE,
+					"Received unexpected event with type: %s  source: %s",
+					receivedEvent.getKey().type,
 					receivedEvent.getKey().source
 				);
 			}
@@ -564,10 +554,12 @@ public class FunctionalTestHelper {
 
 				@Override
 				public void fail(final AdobeError adobeError) {
-					MobileCore.log(
-						LoggingMode.ERROR,
-						TAG,
-						"Failed to get shared state for " + stateOwner + ": " + adobeError
+					Log.debug(
+						LOG_TAG,
+						LOG_SOURCE,
+						"Failed to get shared state for %s: %s",
+						stateOwner,
+						adobeError.getErrorName()
 					);
 				}
 			}
