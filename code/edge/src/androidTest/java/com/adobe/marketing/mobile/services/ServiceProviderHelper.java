@@ -21,7 +21,7 @@ import java.io.File;
  */
 public class ServiceProviderHelper {
 
-	private static String LOG_SOURCE = "ServiceProviderHelper";
+	private static final String LOG_SOURCE = "ServiceProviderHelper";
 
 	/**
 	 * Reset the {@link ServiceProvider}.

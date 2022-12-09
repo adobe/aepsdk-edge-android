@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  */
 abstract class FakeExtension extends Extension {
 
-	private static String LOG_SOURCE = "FakeExtension";
+	private static final String LOG_SOURCE = "FakeExtension";
 	private static final String EVENT_SOURCE_SET_STATE = "com.adobe.eventSource.setState";
 	private static final String EVENT_SOURCE_SET_STATE_XDM = "com.adobe.eventSource.setState.xdm";
 	private static final String EVENT_SOURCE_RESPONSE = "com.adobe.eventSource.response";

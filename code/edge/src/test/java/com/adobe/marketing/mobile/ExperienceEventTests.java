@@ -27,9 +27,9 @@ import org.junit.Test;
 @SuppressWarnings("unchecked")
 public class ExperienceEventTests {
 
-	private String xdmKey = "xdm";
-	private String dataKey = "data";
-	private String datasetKey = "datasetId";
+	private final String xdmKey = "xdm";
+	private final String dataKey = "data";
+	private final String datasetKey = "datasetId";
 
 	private Map<String, Object> generateXdmData() {
 		Map<String, Object> xdmData = new HashMap<>();
