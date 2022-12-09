@@ -46,15 +46,12 @@ public class Edge {
 	public static void registerExtension() {
 		MobileCore.registerExtension(
 			EdgeExtension.class,
-			new ExtensionErrorCallback<ExtensionError>() {
-				@Override
-				public void error(ExtensionError extensionError) {
-					Log.error(
-						LOG_TAG,
-						LOG_SOURCE,
-						"There was an error registering the Edge extension: " + extensionError.getErrorName()
-					);
-				}
+			extensionError -> {
+				Log.error(
+          LOG_TAG,
+          LOG_SOURCE,
+          "There was an error registering the Edge extension: " + extensionError.getErrorName()
+				);
 			}
 		);
 	}

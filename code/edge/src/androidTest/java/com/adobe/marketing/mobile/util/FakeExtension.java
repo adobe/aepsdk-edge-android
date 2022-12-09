@@ -16,9 +16,6 @@ import com.adobe.marketing.mobile.AdobeError;
 import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.Extension;
 import com.adobe.marketing.mobile.ExtensionApi;
-import com.adobe.marketing.mobile.ExtensionError;
-import com.adobe.marketing.mobile.ExtensionErrorCallback;
-import com.adobe.marketing.mobile.ExtensionListener;
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
 import java.util.Map;
@@ -38,29 +35,14 @@ abstract class FakeExtension extends Extension {
 
 	protected FakeExtension(ExtensionApi extensionApi) {
 		super(extensionApi);
-		extensionApi.registerEventListener(
-			getEventType(),
-			EVENT_SOURCE_SET_STATE,
-			FakeExtensionListener.class,
-			new ExtensionErrorCallback<ExtensionError>() {
-				@Override
-				public void error(ExtensionError extensionError) {
-					MobileCore.log(LoggingMode.WARNING, LOG_TAG, "Failed to register listener: " + extensionError);
-				}
-			}
-		);
+	}
 
-		extensionApi.registerEventListener(
-			getEventType(),
-			EVENT_SOURCE_SET_STATE_XDM,
-			FakeExtensionListener.class,
-			new ExtensionErrorCallback<ExtensionError>() {
-				@Override
-				public void error(ExtensionError extensionError) {
-					MobileCore.log(LoggingMode.WARNING, LOG_TAG, "Failed to register listener: " + extensionError);
-				}
-			}
-		);
+	@Override
+	protected void onRegistered() {
+		super.onRegistered();
+
+		getApi().registerEventListener(getEventType(), EVENT_SOURCE_SET_STATE, this::setSharedState);
+		getApi().registerEventListener(getEventType(), EVENT_SOURCE_SET_STATE_XDM, this::setXDMSharedState);
 	}
 
 	/**
@@ -141,17 +123,7 @@ abstract class FakeExtension extends Extension {
 
 	public void setSharedState(final Event event) {
 		Map<String, Object> eventData = event.getEventData();
-		getApi()
-			.setSharedEventState(
-				eventData,
-				event,
-				new ExtensionErrorCallback<ExtensionError>() {
-					@Override
-					public void error(ExtensionError extensionError) {
-						MobileCore.log(LoggingMode.WARNING, LOG_TAG, "Failed to create shared state: " + event);
-					}
-				}
-			);
+		getApi().createSharedState(eventData, event);
 
 		Event responseEvent = new Event.Builder("Set Shared State Response", getEventType(), EVENT_SOURCE_RESPONSE)
 			.inResponseToEvent(event)
@@ -161,48 +133,11 @@ abstract class FakeExtension extends Extension {
 
 	public void setXDMSharedState(final Event event) {
 		Map<String, Object> eventData = event.getEventData();
-		getApi()
-			.setXDMSharedEventState(
-				eventData,
-				event,
-				new ExtensionErrorCallback<ExtensionError>() {
-					@Override
-					public void error(ExtensionError extensionError) {
-						MobileCore.log(LoggingMode.WARNING, LOG_TAG, "Failed to create XDM shared state: " + event);
-					}
-				}
-			);
+		getApi().createXDMSharedState(eventData, event);
 
 		Event responseEvent = new Event.Builder("Set XDM Shared State Response", getEventType(), EVENT_SOURCE_RESPONSE)
 			.inResponseToEvent(event)
 			.build();
 		getApi().dispatch(responseEvent);
-	}
-
-	static class FakeExtensionListener extends ExtensionListener {
-
-		protected FakeExtensionListener(ExtensionApi extension, String type, String source) {
-			super(extension, type, source);
-		}
-
-		@Override
-		public void hear(Event event) {
-			FakeExtension parentExtension = getParentExtension();
-
-			if (parentExtension == null) {
-				return;
-			}
-
-			if (event.getSource().equalsIgnoreCase(EVENT_SOURCE_SET_STATE)) {
-				parentExtension.setSharedState(event);
-			} else if (event.getSource().equalsIgnoreCase(EVENT_SOURCE_SET_STATE_XDM)) {
-				parentExtension.setXDMSharedState(event);
-			}
-		}
-
-		@Override
-		protected FakeExtension getParentExtension() {
-			return (FakeExtension) super.getParentExtension();
-		}
 	}
 }

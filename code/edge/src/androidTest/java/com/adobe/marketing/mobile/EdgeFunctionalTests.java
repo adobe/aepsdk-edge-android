@@ -86,14 +86,7 @@ public class EdgeFunctionalTests {
 		Identity.registerExtension();
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.start(
-			new AdobeCallback() {
-				@Override
-				public void call(Object o) {
-					latch.countDown();
-				}
-			}
-		);
+		MobileCore.start((AdobeCallback) o -> latch.countDown());
 
 		latch.await();
 

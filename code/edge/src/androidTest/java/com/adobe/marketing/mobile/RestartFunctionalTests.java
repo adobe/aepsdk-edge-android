@@ -194,21 +194,18 @@ public class RestartFunctionalTests {
 
 		final CountDownLatch latch = new CountDownLatch(1);
 		MobileCore.start(
-			new AdobeCallback() {
-				@Override
-				public void call(Object o) {
-					if (!restart) {
-						// Set configuration on clean start. On restart Configuration will load from persistence.
-						HashMap<String, Object> config = new HashMap<String, Object>() {
-							{
-								put("edge.configId", CONFIG_ID);
-							}
-						};
-						MobileCore.updateConfiguration(config);
-					}
-
-					latch.countDown();
+			(AdobeCallback) o -> {
+				if (!restart) {
+					// Set configuration on clean start. On restart Configuration will load from persistence.
+					HashMap<String, Object> config = new HashMap<String, Object>() {
+						{
+							put("edge.configId", CONFIG_ID);
+						}
+					};
+					MobileCore.updateConfiguration(config);
 				}
+
+				latch.countDown();
 			}
 		);
 
@@ -267,14 +264,7 @@ public class RestartFunctionalTests {
 
 	private void getConsentsSync() throws Exception {
 		final ADBCountDownLatch latch = new ADBCountDownLatch(1);
-		Consent.getConsents(
-			new AdobeCallback<Map<String, Object>>() {
-				@Override
-				public void call(Map<String, Object> stringObjectMap) {
-					latch.countDown();
-				}
-			}
-		);
+		Consent.getConsents(stringObjectMap -> latch.countDown());
 
 		latch.await(2000, TimeUnit.MILLISECONDS);
 	}

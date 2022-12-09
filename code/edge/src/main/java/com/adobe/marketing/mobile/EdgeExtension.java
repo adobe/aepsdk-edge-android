@@ -137,6 +137,8 @@ class EdgeExtension extends Extension {
 	 */
 	@Override
 	protected void onRegistered() {
+		super.onRegistered();
+
 		// register a listener for Edge request events
 		getApi().registerEventListener(EventType.EDGE, EventSource.REQUEST_CONTENT, this::handleExperienceEventRequest);
 
