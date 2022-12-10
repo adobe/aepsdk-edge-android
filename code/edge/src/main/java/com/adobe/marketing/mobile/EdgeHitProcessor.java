@@ -74,7 +74,7 @@ class EdgeHitProcessor implements HitProcessing {
 	 */
 	@Override
 	public void processHit(@NonNull final DataEntity dataEntity, @NonNull final HitProcessingResult processingResult) {
-		EdgeDataEntity entity = EdgeDataEntitySerializer.deserialize(dataEntity.getData());
+		EdgeDataEntity entity = EdgeDataEntity.fromDataEntity(dataEntity);
 
 		if (entity == null) {
 			Log.debug(LOG_TAG, LOG_SOURCE, "Unable to deserialize DataEntity to EdgeDataEntity. Dropping the hit.");

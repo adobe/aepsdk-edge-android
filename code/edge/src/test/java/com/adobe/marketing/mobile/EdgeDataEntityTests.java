@@ -18,6 +18,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import com.adobe.marketing.mobile.services.DataEntity;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -110,7 +111,7 @@ public class EdgeDataEntityTests {
 	}
 
 	@Test
-	public void testSerializeDeserialize() {
+	public void testToFromDataEntity() {
 		Event event = new Event.Builder("name", "type", "source")
 			.setEventData(
 				new HashMap<String, Object>() {
@@ -149,9 +150,11 @@ public class EdgeDataEntityTests {
 		};
 
 		EdgeDataEntity entity = new EdgeDataEntity(event, configuration, identityMap);
-		String serializedEntity = EdgeDataEntitySerializer.serialize(entity);
-		EdgeDataEntity deserializedEntity = EdgeDataEntitySerializer.deserialize(serializedEntity);
+		DataEntity serializedEntity = entity.toDataEntity();
+		assertNotNull(serializedEntity);
 
+		EdgeDataEntity deserializedEntity = EdgeDataEntity.fromDataEntity(serializedEntity);
+		assertNotNull(deserializedEntity);
 		assertNotNull(deserializedEntity.getEvent());
 		assertNotNull(deserializedEntity.getConfiguration());
 		assertNotNull(deserializedEntity.getIdentityMap());
@@ -173,10 +176,13 @@ public class EdgeDataEntityTests {
 	}
 
 	@Test
-	public void testSerializeDeserialize_withNullIdentityMap_withNullConfiguration() {
+	public void testToFromDataEntity_withNullIdentityMap_withNullConfiguration() {
 		EdgeDataEntity entity = new EdgeDataEntity(event, null, null);
-		String serializedEntity = EdgeDataEntitySerializer.serialize(entity);
-		EdgeDataEntity deserializedEntity = EdgeDataEntitySerializer.deserialize(serializedEntity);
+		DataEntity serializedEntity = entity.toDataEntity();
+		assertNotNull(serializedEntity);
+
+		EdgeDataEntity deserializedEntity = EdgeDataEntity.fromDataEntity(serializedEntity);
+		assertNotNull(deserializedEntity);
 
 		assertNotNull(deserializedEntity.getEvent());
 		assertNotNull(deserializedEntity.getConfiguration());
@@ -199,22 +205,17 @@ public class EdgeDataEntityTests {
 	}
 
 	@Test
-	public void testSerializeNullEntity_returnsNull() {
-		assertNull(EdgeDataEntitySerializer.serialize(null));
+	public void testFromDataEntity_whenDataEntityWithNullData_returnsNull() {
+		assertNull(EdgeDataEntity.fromDataEntity(new DataEntity(null)));
 	}
 
 	@Test
-	public void testDeserializeNullEntity_returnsNull() {
-		assertNull(EdgeDataEntitySerializer.deserialize(null));
+	public void testFromDataEntity_whenDataEntityWithEmptyData_returnsNull() {
+		assertNull(EdgeDataEntity.fromDataEntity(new DataEntity("")));
 	}
 
 	@Test
-	public void testDeserializeEmptyEntity_returnsNull() {
-		assertNull(EdgeDataEntitySerializer.deserialize(""));
-	}
-
-	@Test
-	public void testDeserializeInvalidJSONEntity_returnsNull() {
-		assertNull(EdgeDataEntitySerializer.deserialize("abc"));
+	public void testFromDataEntity_whenInvalidDataEntity_returnsNull() {
+		assertNull(EdgeDataEntity.fromDataEntity(new DataEntity("abc")));
 	}
 }

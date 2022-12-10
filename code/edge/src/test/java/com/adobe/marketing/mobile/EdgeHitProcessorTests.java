@@ -32,7 +32,6 @@ import static org.powermock.api.mockito.PowerMockito.when;
 import static org.powermock.api.mockito.PowerMockito.whenNew;
 
 import com.adobe.marketing.mobile.services.DataEntity;
-import com.adobe.marketing.mobile.services.HitProcessingResult;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
@@ -291,7 +291,7 @@ public class EdgeHitProcessorTests {
 			mockEdgeNetworkService.doRequest(
 				anyString(),
 				anyString(),
-				ArgumentMatchers.<String, String>anyMap(),
+				ArgumentMatchers.anyMap(),
 				any(EdgeNetworkService.ResponseCallback.class)
 			)
 		)
@@ -317,7 +317,7 @@ public class EdgeHitProcessorTests {
 		mockEdgeNetworkService.doRequest(
 			anyString(),
 			anyString(),
-			ArgumentMatchers.<String, String>anyMap(),
+			ArgumentMatchers.anyMap(),
 			callbackArgCaptor.capture()
 		);
 		callbackArgCaptor.getValue().onComplete();
@@ -349,7 +349,7 @@ public class EdgeHitProcessorTests {
 			mockEdgeNetworkService.doRequest(
 				anyString(),
 				anyString(),
-				ArgumentMatchers.<String, String>anyMap(),
+				ArgumentMatchers.anyMap(),
 				any(EdgeNetworkService.ResponseCallback.class)
 			)
 		)
@@ -368,7 +368,7 @@ public class EdgeHitProcessorTests {
 		mockEdgeNetworkService.doRequest(
 			anyString(),
 			anyString(),
-			ArgumentMatchers.<String, String>anyMap(),
+			ArgumentMatchers.anyMap(),
 			callbackArgCaptor.capture()
 		);
 		callbackArgCaptor.getValue().onComplete(); // simulates this is done by the doRequest method
@@ -411,7 +411,7 @@ public class EdgeHitProcessorTests {
 			mockEdgeNetworkService.doRequest(
 				anyString(),
 				anyString(),
-				ArgumentMatchers.<String, String>anyMap(),
+				ArgumentMatchers.anyMap(),
 				any(EdgeNetworkService.ResponseCallback.class)
 			)
 		)
@@ -423,7 +423,7 @@ public class EdgeHitProcessorTests {
 		mockEdgeNetworkService.doRequest(
 			anyString(),
 			anyString(),
-			ArgumentMatchers.<String, String>anyMap(),
+			ArgumentMatchers.anyMap(),
 			callbackArgCaptor.capture()
 		);
 		callbackArgCaptor.getValue().onComplete();
@@ -438,17 +438,15 @@ public class EdgeHitProcessorTests {
 		// setup
 		final Event resetEvent = new Event.Builder("Reset Event", EventType.EDGE_IDENTITY, EventSource.RESET_COMPLETE)
 			.build();
-		final EdgeDataEntity entity = new EdgeDataEntity(resetEvent);
+		final DataEntity dataEntity = new EdgeDataEntity(resetEvent).toDataEntity();
+		assertNotNull(dataEntity);
 
 		// test
 		hitProcessor.processHit(
-			new DataEntity(EdgeDataEntitySerializer.serialize(entity)),
-			new HitProcessingResult() {
-				@Override
-				public void complete(boolean result) {
-					assertTrue(result);
-					latchOfOne.countDown();
-				}
+			dataEntity,
+			result -> {
+				assertTrue(result);
+				latchOfOne.countDown();
 			}
 		);
 
@@ -462,15 +460,7 @@ public class EdgeHitProcessorTests {
 		verify(mockNamedCollection, times(1)).remove(EdgeConstants.DataStoreKeys.STORE_PAYLOADS);
 	}
 
-	// Test boolean processHit(final EdgeDataEntity entity)
-	@Test
-	public void testProcessHit_nullEdgeEntityData_removesHit() {
-		// Tests that when `entity` is null, hit is removed from the queue
-
-		// test
-		assertProcessHit(null, false, true);
-	}
-
+	// Test void processHit(@NonNull final DataEntity dataEntity, @NonNull final HitProcessingResult processingResult)
 	@Test
 	public void testProcessHit_badHit_decodeFails() {
 		// Tests that when a `DataEntity` with bad data is passed, that it is not retried and is removed from the queue
@@ -902,8 +892,8 @@ public class EdgeHitProcessorTests {
 		mockNetworkServiceResponse("https://test.com", new RetryResult(EdgeNetworkService.Retry.YES, retryInterval));
 
 		// test & verify
-		EdgeDataEntity entity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap);
-		DataEntity dataEntity = new DataEntity(EdgeDataEntitySerializer.serialize(entity));
+		DataEntity dataEntity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap).toDataEntity();
+		assertNotNull(dataEntity);
 
 		assertProcessHitResult(dataEntity, false); // retry is YES so processHit should return false
 
@@ -923,8 +913,7 @@ public class EdgeHitProcessorTests {
 	public void testProcessHit_experienceEvent_sendsImplementationDetails() throws Exception {
 		mockNetworkServiceResponse("https://test.com", new RetryResult(EdgeNetworkService.Retry.NO));
 
-		EdgeDataEntity entity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap);
-
+		DataEntity dataEntity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap).toDataEntity();
 		// test
 		hitProcessor =
 			new EdgeHitProcessor(
@@ -949,14 +938,14 @@ public class EdgeHitProcessorTests {
 					}
 				}
 			);
-		assertProcessHitResult(new DataEntity(EdgeDataEntitySerializer.serialize(entity)), true);
+		assertProcessHitResult(dataEntity, true);
 
 		ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
 		verify(mockEdgeNetworkService, times(1))
 			.doRequest(
 				anyString(),
 				payloadCaptor.capture(),
-				ArgumentMatchers.<String, String>anyMap(),
+				ArgumentMatchers.anyMap(),
 				any(EdgeNetworkService.ResponseCallback.class)
 			);
 
@@ -978,13 +967,14 @@ public class EdgeHitProcessorTests {
 	public void testProcessHit_nullStateCallback_doesNotSendImplementationDetails() {
 		mockNetworkServiceResponse("https://test.com", new RetryResult(EdgeNetworkService.Retry.NO));
 
-		EdgeDataEntity entity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap);
+		DataEntity dataEntity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap).toDataEntity();
+		assertNotNull(dataEntity);
 
-		// test
 		hitProcessor =
 			new EdgeHitProcessor(mockNetworkResponseHandler, mockEdgeNetworkService, mockNamedCollection, null, null);
 
-		assertProcessHitResult(new DataEntity(EdgeDataEntitySerializer.serialize(entity)), true);
+		// test
+		assertProcessHitResult(dataEntity, true);
 
 		ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
 		verify(mockEdgeNetworkService, times(1))
@@ -1001,9 +991,9 @@ public class EdgeHitProcessorTests {
 	@Test
 	public void testProcessHit_consentEvent_doesNotSendImplementationDetails() {
 		mockNetworkServiceResponse("https://test.com", new RetryResult(EdgeNetworkService.Retry.NO));
-		EdgeDataEntity entity = new EdgeDataEntity(consentEvent, edgeConfig, identityMap);
+		DataEntity dataEntity = new EdgeDataEntity(consentEvent, edgeConfig, identityMap).toDataEntity();
+		assertNotNull(dataEntity);
 
-		// test
 		hitProcessor =
 			new EdgeHitProcessor(
 				mockNetworkResponseHandler,
@@ -1027,8 +1017,10 @@ public class EdgeHitProcessorTests {
 					}
 				}
 			);
+
+		// test
 		hitProcessor.processHit(
-			new DataEntity(EdgeDataEntitySerializer.serialize(entity)),
+			dataEntity,
 			success -> {
 				assertTrue(success);
 				latchOfOne.countDown();
@@ -1053,7 +1045,7 @@ public class EdgeHitProcessorTests {
 		assertFalse(payloadCaptor.getValue().contains("implementationdetails"));
 	}
 
-	void assertProcessHitResult(final DataEntity entity, final boolean expectedHitProcessingResult) {
+	void assertProcessHitResult(@NotNull final DataEntity entity, final boolean expectedHitProcessingResult) {
 		hitProcessor.processHit(
 			entity,
 			success -> {
@@ -1070,7 +1062,7 @@ public class EdgeHitProcessorTests {
 	}
 
 	void assertProcessHit(
-		final EdgeDataEntity entity,
+		@NotNull final EdgeDataEntity entity,
 		final boolean sendsNetworkRequest,
 		final Map<String, String> withHeaders,
 		final boolean returns
@@ -1112,7 +1104,7 @@ public class EdgeHitProcessorTests {
 				mockEdgeNetworkService.doRequest(
 					anyString(),
 					anyString(),
-					ArgumentMatchers.<String, String>anyMap(),
+					ArgumentMatchers.anyMap(),
 					any(EdgeNetworkService.ResponseCallback.class)
 				)
 			)
@@ -1120,8 +1112,10 @@ public class EdgeHitProcessorTests {
 		}
 
 		// test & verify
+		DataEntity dataEntity = entity.toDataEntity();
+		assertNotNull(dataEntity);
 		hitProcessor.processHit(
-			new DataEntity(EdgeDataEntitySerializer.serialize(entity)),
+			dataEntity,
 			success -> {
 				assertEquals(
 					String.format("Expected processHit to return %s, but it was %s", returns, success),
@@ -1158,7 +1152,7 @@ public class EdgeHitProcessorTests {
 				.doRequest(
 					anyString(),
 					anyString(),
-					ArgumentMatchers.<String, String>anyMap(),
+					ArgumentMatchers.anyMap(),
 					any(EdgeNetworkService.ResponseCallback.class)
 				);
 		}
@@ -1178,7 +1172,7 @@ public class EdgeHitProcessorTests {
 			mockEdgeNetworkService.doRequest(
 				anyString(),
 				anyString(),
-				ArgumentMatchers.<String, String>anyMap(),
+				ArgumentMatchers.anyMap(),
 				any(EdgeNetworkService.ResponseCallback.class)
 			)
 		)
@@ -1193,7 +1187,7 @@ public class EdgeHitProcessorTests {
 		final EdgeNetworkService.RequestType expectedRequestType
 	) {
 		// setup
-		edgeConfig = new HashMap<String, Object>();
+		edgeConfig = new HashMap<>();
 		edgeConfig.put("edge.configId", "works");
 
 		if (environment != null) {
@@ -1214,10 +1208,11 @@ public class EdgeHitProcessorTests {
 		)
 			.thenReturn("https://test.com");
 
-		EdgeDataEntity entity = new EdgeDataEntity(event, edgeConfig, identityMap);
+		DataEntity dataEntity = new EdgeDataEntity(event, edgeConfig, identityMap).toDataEntity();
+		assertNotNull(dataEntity);
 
 		hitProcessor.processHit(
-			new DataEntity(EdgeDataEntitySerializer.serialize(entity)),
+			dataEntity,
 			success -> {
 				assertTrue(success);
 				latchOfOne.countDown();
