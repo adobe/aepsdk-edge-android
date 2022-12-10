@@ -24,6 +24,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -371,7 +372,7 @@ public class EdgeHitProcessorTests {
 		callbackArgCaptor.getValue().onComplete(); // simulates this is done by the doRequest method
 		verify(mockNetworkResponseHandler);
 		mockNetworkResponseHandler.removeWaitingEvents(hit.getRequestId());
-		verify(mockResponseCallbackHandler, times(0));
+		verify(mockResponseCallbackHandler, never());
 		mockResponseCallbackHandler.unregisterCallback(anyString());
 	}
 
@@ -1145,7 +1146,7 @@ public class EdgeHitProcessorTests {
 			}
 			callbackArgCaptor.getValue().onComplete(); // simulates this is done by the doRequest method
 		} else {
-			verify(mockEdgeNetworkService, times(0))
+			verify(mockEdgeNetworkService, never())
 				.doRequest(
 					anyString(),
 					anyString(),

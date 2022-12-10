@@ -20,6 +20,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -111,7 +112,7 @@ public class NetworkResponseHandlerTest {
 		final String jsonError = null;
 		networkResponseHandler.processResponseOnError(jsonError, "123");
 
-		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), times(0));
+		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), never());
 	}
 
 	@Test
@@ -119,7 +120,7 @@ public class NetworkResponseHandlerTest {
 		final String jsonError = "";
 		networkResponseHandler.processResponseOnError(jsonError, "123");
 
-		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), times(0));
+		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), never());
 	}
 
 	@Test
@@ -127,7 +128,7 @@ public class NetworkResponseHandlerTest {
 		final String jsonError = "{ invalid json }";
 		networkResponseHandler.processResponseOnError(jsonError, "123");
 
-		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), times(0));
+		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), never());
 	}
 
 	@Test
@@ -380,7 +381,7 @@ public class NetworkResponseHandlerTest {
 		final String jsonResponse = null;
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
-		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), times(0));
+		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), never());
 	}
 
 	@Test
@@ -388,7 +389,7 @@ public class NetworkResponseHandlerTest {
 		final String jsonResponse = "";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
-		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), times(0));
+		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), never());
 	}
 
 	@Test
@@ -396,7 +397,7 @@ public class NetworkResponseHandlerTest {
 		final String jsonResponse = "{ invalid json }";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
-		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), times(0));
+		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), never());
 	}
 
 	@Test
@@ -464,7 +465,7 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
 		// verify
-		verify(mockNamedCollection, times(0)).setMap(eq(EdgeConstants.DataStoreKeys.STORE_PAYLOADS), any(Map.class));
+		verify(mockNamedCollection, never()).setMap(eq(EdgeConstants.DataStoreKeys.STORE_PAYLOADS), any(Map.class));
 	}
 
 	@Test
@@ -525,7 +526,7 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
 		// verify
-		verify(mockNamedCollection, times(0)).setMap(eq(EdgeConstants.DataStoreKeys.STORE_PAYLOADS), any(Map.class));
+		verify(mockNamedCollection, never()).setMap(eq(EdgeConstants.DataStoreKeys.STORE_PAYLOADS), any(Map.class));
 	}
 
 	@Test
