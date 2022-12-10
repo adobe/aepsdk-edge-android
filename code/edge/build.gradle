@@ -241,9 +241,8 @@ dependencies {
 
     testImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
     testImplementation "org.mockito:mockito-core:${rootProject.ext.mockitoCoreVersion}"
+    testImplementation "org.mockito:mockito-inline:${rootProject.ext.mockitoCoreVersion}"
     testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.12.7'
-    testImplementation 'org.powermock:powermock-api-mockito2:2.0.0'
-    testImplementation 'org.powermock:powermock-module-junit4:2.0.0'
     testImplementation 'org.json:json:20180813'
 
     androidTestImplementation 'com.adobe.marketing.mobile:edgeidentity:1.+'

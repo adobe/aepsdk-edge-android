@@ -17,7 +17,7 @@ import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNotSame;
 import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.fail;
-import static org.powermock.api.mockito.PowerMockito.when;
+import static org.mockito.Mockito.when;
 
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -41,11 +41,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({ NamedCollection.class })
+@RunWith(MockitoJUnitRunner.class)
 public class RequestBuilderTest {
 
 	static final String IDENTITY_MAP_KEY = "identityMap";
@@ -68,7 +66,7 @@ public class RequestBuilderTest {
 
 	@Test
 	public void getPayloadWithExperienceEvents_returnsNull_whenEventsListIsEmpty() {
-		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(new ArrayList<Event>());
+		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(new ArrayList<>());
 		assertNull(payload);
 	}
 
@@ -699,7 +697,6 @@ public class RequestBuilderTest {
 		return mapper.readValue(builder.toString(), Map.class);
 	}
 
-	@SuppressWarnings("unchecked")
 	private Map<String, Object> getExperienceEventData(final String value) throws IOException {
 		return getExperienceEventData(value, null);
 	}

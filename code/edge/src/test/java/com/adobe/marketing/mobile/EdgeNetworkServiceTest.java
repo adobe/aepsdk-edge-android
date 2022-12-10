@@ -36,9 +36,9 @@ import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
-@RunWith(PowerMockRunner.class)
+@RunWith(MockitoJUnitRunner.class)
 public class EdgeNetworkServiceTest {
 
 	private static final int DEFAULT_TIMEOUT = 5;
@@ -205,7 +205,7 @@ public class EdgeNetworkServiceTest {
 
 		// test
 		networkService = new EdgeNetworkService(mockNetworkService);
-		RetryResult retryResult = networkService.doRequest(url, jsonRequest, null, null);
+		networkService.doRequest(url, jsonRequest, null, null);
 
 		// verify
 		assertNetworkRequestsEqual(
