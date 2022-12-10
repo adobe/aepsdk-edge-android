@@ -15,33 +15,34 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 
-import android.app.Application;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.MockedStatic;
+import org.mockito.junit.MockitoJUnitRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({ MobileCore.class })
+@RunWith(MockitoJUnitRunner.class)
 public class EdgePublicAPITests {
 
-	@Mock
-	Application mockApplication;
+	private MockedStatic<MobileCore> mockCore;
 
 	@Before
 	public void setup() throws Exception {
-		PowerMockito.mockStatic(MobileCore.class);
-		Mockito.when(MobileCore.getApplication()).thenReturn(mockApplication);
+		mockCore = mockStatic(MobileCore.class);
+	}
+
+	@After
+	public void tearDown() {
+		mockCore.close();
 	}
 
 	@Test
@@ -49,13 +50,11 @@ public class EdgePublicAPITests {
 		Edge.setLocationHint("or2");
 
 		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
-
-		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-		MobileCore.dispatchEvent(requestEventCaptor.capture());
+		mockCore.verify(() -> MobileCore.dispatchEvent(requestEventCaptor.capture()), times(1));
 
 		final Event requestEvent = requestEventCaptor.getValue();
-		assertEquals("com.adobe.eventtype.edge", requestEvent.getType());
-		assertEquals("com.adobe.eventsource.updateidentity", requestEvent.getSource());
+		assertEquals(EventType.EDGE, requestEvent.getType());
+		assertEquals(EventSource.UPDATE_IDENTITY, requestEvent.getSource());
 		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
 		assertEquals("or2", requestEvent.getEventData().get("locationHint"));
 	}
@@ -65,13 +64,11 @@ public class EdgePublicAPITests {
 		Edge.setLocationHint(null);
 
 		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
-
-		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-		MobileCore.dispatchEvent(requestEventCaptor.capture());
+		mockCore.verify(() -> MobileCore.dispatchEvent(requestEventCaptor.capture()), times(1));
 
 		final Event requestEvent = requestEventCaptor.getValue();
-		assertEquals("com.adobe.eventtype.edge", requestEvent.getType());
-		assertEquals("com.adobe.eventsource.updateidentity", requestEvent.getSource());
+		assertEquals(EventType.EDGE, requestEvent.getType());
+		assertEquals(EventSource.UPDATE_IDENTITY, requestEvent.getSource());
 		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
 		assertNull(requestEvent.getEventData().get("locationHint"));
 	}
@@ -81,13 +78,11 @@ public class EdgePublicAPITests {
 		Edge.setLocationHint("");
 
 		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
-
-		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-		MobileCore.dispatchEvent(requestEventCaptor.capture());
+		mockCore.verify(() -> MobileCore.dispatchEvent(requestEventCaptor.capture()), times(1));
 
 		final Event requestEvent = requestEventCaptor.getValue();
-		assertEquals("com.adobe.eventtype.edge", requestEvent.getType());
-		assertEquals("com.adobe.eventsource.updateidentity", requestEvent.getSource());
+		assertEquals(EventType.EDGE, requestEvent.getType());
+		assertEquals(EventSource.UPDATE_IDENTITY, requestEvent.getSource());
 		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
 		assertEquals("", requestEvent.getEventData().get("locationHint"));
 	}
@@ -112,17 +107,19 @@ public class EdgePublicAPITests {
 		);
 
 		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
-
-		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-		MobileCore.dispatchEventWithResponseCallback(
-			requestEventCaptor.capture(),
-			any(),
-			any(AdobeCallbackWithError.class)
+		mockCore.verify(
+			() ->
+				MobileCore.dispatchEventWithResponseCallback(
+					requestEventCaptor.capture(),
+					any(Long.class),
+					any(AdobeCallbackWithError.class)
+				),
+			times(1)
 		);
 
 		final Event requestEvent = requestEventCaptor.getValue();
-		assertEquals("com.adobe.eventtype.edge", requestEvent.getType());
-		assertEquals("com.adobe.eventsource.requestidentity", requestEvent.getSource());
+		assertEquals(EventType.EDGE, requestEvent.getType());
+		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
 		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
 		assertEquals(true, requestEvent.getEventData().get("locationHint"));
 
@@ -165,17 +162,19 @@ public class EdgePublicAPITests {
 		);
 
 		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
-
-		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-		MobileCore.dispatchEventWithResponseCallback(
-			requestEventCaptor.capture(),
-			any(),
-			any(AdobeCallbackWithError.class)
+		mockCore.verify(
+			() ->
+				MobileCore.dispatchEventWithResponseCallback(
+					requestEventCaptor.capture(),
+					any(Long.class),
+					any(AdobeCallbackWithError.class)
+				),
+			times(1)
 		);
 
 		final Event requestEvent = requestEventCaptor.getValue();
-		assertEquals("com.adobe.eventtype.edge", requestEvent.getType());
-		assertEquals("com.adobe.eventsource.requestidentity", requestEvent.getSource());
+		assertEquals(EventType.EDGE, requestEvent.getType());
+		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
 		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
 		assertEquals(true, requestEvent.getEventData().get("locationHint"));
 
@@ -218,21 +217,26 @@ public class EdgePublicAPITests {
 		);
 
 		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
-
-		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-		MobileCore.dispatchEventWithResponseCallback(
-			requestEventCaptor.capture(),
-			any(),
-			any(AdobeCallbackWithError.class)
+		mockCore.verify(
+			() ->
+				MobileCore.dispatchEventWithResponseCallback(
+					requestEventCaptor.capture(),
+					any(Long.class),
+					any(AdobeCallbackWithError.class)
+				),
+			times(1)
 		);
 
 		final Event requestEvent = requestEventCaptor.getValue();
-		assertEquals("com.adobe.eventtype.edge", requestEvent.getType());
-		assertEquals("com.adobe.eventsource.requestidentity", requestEvent.getSource());
+		assertEquals(EventType.EDGE, requestEvent.getType());
+		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
 		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
 		assertEquals(true, requestEvent.getEventData().get("locationHint"));
 
-		latch.await(2000, TimeUnit.MILLISECONDS);
+		// todo:
+		// 1. check assertTrue(latch.await(5500, TimeUnit.MILLISECONDS));
+		// 2. assert on timeout value
+		latch.await(5500, TimeUnit.MILLISECONDS);
 	}
 
 	@Test
@@ -255,17 +259,19 @@ public class EdgePublicAPITests {
 		);
 
 		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
-
-		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-		MobileCore.dispatchEventWithResponseCallback(
-			requestEventCaptor.capture(),
-			any(),
-			any(AdobeCallbackWithError.class)
+		mockCore.verify(
+			() ->
+				MobileCore.dispatchEventWithResponseCallback(
+					requestEventCaptor.capture(),
+					any(Long.class),
+					any(AdobeCallbackWithError.class)
+				),
+			times(1)
 		);
 
 		final Event requestEvent = requestEventCaptor.getValue();
-		assertEquals("com.adobe.eventtype.edge", requestEvent.getType());
-		assertEquals("com.adobe.eventsource.requestidentity", requestEvent.getSource());
+		assertEquals(EventType.EDGE, requestEvent.getType());
+		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
 		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
 		assertEquals(true, requestEvent.getEventData().get("locationHint"));
 
@@ -302,17 +308,19 @@ public class EdgePublicAPITests {
 		);
 
 		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
-
-		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-		MobileCore.dispatchEventWithResponseCallback(
-			requestEventCaptor.capture(),
-			any(),
-			any(AdobeCallbackWithError.class)
+		mockCore.verify(
+			() ->
+				MobileCore.dispatchEventWithResponseCallback(
+					requestEventCaptor.capture(),
+					any(Long.class),
+					any(AdobeCallbackWithError.class)
+				),
+			times(1)
 		);
 
 		final Event requestEvent = requestEventCaptor.getValue();
-		assertEquals("com.adobe.eventtype.edge", requestEvent.getType());
-		assertEquals("com.adobe.eventsource.requestidentity", requestEvent.getSource());
+		assertEquals(EventType.EDGE, requestEvent.getType());
+		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
 		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
 		assertEquals(true, requestEvent.getEventData().get("locationHint"));
 
@@ -355,17 +363,19 @@ public class EdgePublicAPITests {
 		);
 
 		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
-
-		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-		MobileCore.dispatchEventWithResponseCallback(
-			requestEventCaptor.capture(),
-			any(),
-			any(AdobeCallbackWithError.class)
+		mockCore.verify(
+			() ->
+				MobileCore.dispatchEventWithResponseCallback(
+					requestEventCaptor.capture(),
+					any(Long.class),
+					any(AdobeCallbackWithError.class)
+				),
+			times(1)
 		);
 
 		final Event requestEvent = requestEventCaptor.getValue();
-		assertEquals("com.adobe.eventtype.edge", requestEvent.getType());
-		assertEquals("com.adobe.eventsource.requestidentity", requestEvent.getSource());
+		assertEquals(EventType.EDGE, requestEvent.getType());
+		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
 		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
 		assertEquals(true, requestEvent.getEventData().get("locationHint"));
 
