@@ -42,13 +42,13 @@ public class EdgeExtensionTest {
 	private EdgeExtension edgeExtension;
 	private EdgeState state;
 	private MockHitQueue mockQueue;
-	private Map<String, Object> configData = new HashMap<String, Object>() {
+	private final Map<String, Object> configData = new HashMap<String, Object>() {
 		{
 			put(EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID, "123");
 		}
 	};
 
-	private Event event1 = new Event.Builder("event1", EventType.EDGE, EventSource.REQUEST_CONTENT)
+	private final Event event1 = new Event.Builder("event1", EventType.EDGE, EventSource.REQUEST_CONTENT)
 		.setEventData(
 			new HashMap<String, Object>() {
 				{
@@ -58,7 +58,11 @@ public class EdgeExtensionTest {
 		)
 		.build();
 
-	private Event getHintEvent = new Event.Builder("Get Location Hint", EventType.EDGE, EventSource.REQUEST_IDENTITY)
+	private final Event getHintEvent = new Event.Builder(
+		"Get Location Hint",
+		EventType.EDGE,
+		EventSource.REQUEST_IDENTITY
+	)
 		.setEventData(
 			new HashMap<String, Object>() {
 				{

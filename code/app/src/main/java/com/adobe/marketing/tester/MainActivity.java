@@ -14,7 +14,6 @@ package com.adobe.marketing.tester;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -24,21 +23,18 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
-import com.adobe.marketing.mobile.AdobeCallback;
 import com.adobe.marketing.mobile.AdobeCallbackWithError;
 import com.adobe.marketing.mobile.AdobeError;
 import com.adobe.marketing.mobile.Assurance;
 import com.adobe.marketing.mobile.Edge;
-import com.adobe.marketing.mobile.EdgeCallback;
-import com.adobe.marketing.mobile.EdgeEventHandle;
 import com.adobe.marketing.mobile.ExperienceEvent;
-import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.edge.consent.Consent;
 import com.adobe.marketing.mobile.edge.identity.AuthenticatedState;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.edge.identity.IdentityItem;
 import com.adobe.marketing.mobile.edge.identity.IdentityMap;
+import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.xdm.Commerce;
 import com.adobe.marketing.mobile.xdm.MobileSDKCommerceSchema;
 import com.adobe.marketing.mobile.xdm.Order;
@@ -53,7 +49,8 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
 
-	private static final String LOG_TAG = "MainActivity";
+	private static final String LOG_TAG = "TestApp";
+	private static final String LOG_SOURCE = "MainActivity";
 	private boolean hasSpinnerBooted = false;
 
 	// List of Location Hint values used in drop-down spinner
@@ -126,7 +123,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
 		if (data != null) {
 			Assurance.startSession(data.toString());
-			MobileCore.log(LoggingMode.VERBOSE, LOG_TAG, "Deep link received " + data);
+			Log.trace(LOG_TAG, LOG_SOURCE, "Deep link received " + data);
 		}
 
 		// Set up drop-down spinner to select location hint passed to setLocationHint api
@@ -216,29 +213,21 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 		ExperienceEvent event = new ExperienceEvent.Builder().setXdmSchema(xdmData).setData(eventData).build();
 		Edge.sendEvent(
 			event,
-			new EdgeCallback() {
-				@Override
-				public void onComplete(final List<EdgeEventHandle> handles) {
-					MobileCore.log(LoggingMode.VERBOSE, LOG_TAG, "Data received in the callback, updating UI");
+			handles -> {
+				Log.trace(LOG_TAG, LOG_SOURCE, "Data received in the callback, updating UI");
 
-					if (handles == null) {
-						return;
-					}
-
-					view.post(
-						new Runnable() {
-							@Override
-							public void run() {
-								if (textViewGetData != null) {
-									Gson gson = new GsonBuilder().setPrettyPrinting().create();
-									String json = gson.toJson(handles);
-									Log.d(LOG_TAG, String.format("Received Edge event handle are : %s", json));
-									updateTextView(json, view);
-								}
-							}
-						}
-					);
+				if (handles == null) {
+					return;
 				}
+
+				view.post(() -> {
+					if (textViewGetData != null) {
+						Gson gson = new GsonBuilder().setPrettyPrinting().create();
+						String json = gson.toJson(handles);
+						Log.debug(LOG_TAG, LOG_SOURCE, String.format("Received Edge event handle are : %s", json));
+						updateTextView(json, view);
+					}
+				});
 			}
 		);
 	}
@@ -256,17 +245,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 	}
 
 	public void getConsentAPIClicked(final View view) {
-		Consent.getConsents(
-			new AdobeCallback<Map<String, Object>>() {
-				@Override
-				public void call(Map<String, Object> map) {
-					Gson gson = new GsonBuilder().setPrettyPrinting().create();
-					String json = gson.toJson(map);
-					Log.d(LOG_TAG, String.format("Received Consent from API = %s", json));
-					updateTextView(json, view);
-				}
-			}
-		);
+		Consent.getConsents(map -> {
+			Gson gson = new GsonBuilder().setPrettyPrinting().create();
+			String json = gson.toJson(map);
+			Log.debug(LOG_TAG, LOG_SOURCE, String.format("Received Consent from API = %s", json));
+			updateTextView(json, view);
+		});
 	}
 
 	public void updateIdentitiesClicked(final View view) {
@@ -283,17 +267,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 	}
 
 	public void getIdentitiesClicked(final View view) {
-		Identity.getIdentities(
-			new AdobeCallback<IdentityMap>() {
-				@Override
-				public void call(final IdentityMap map) {
-					Gson gson = new GsonBuilder().setPrettyPrinting().create();
-					String json = gson.toJson(map);
-					Log.d(LOG_TAG, String.format("Received Identities from API = %s", json));
-					updateTextView(json, view);
-				}
-			}
-		);
+		Identity.getIdentities(map -> {
+			Gson gson = new GsonBuilder().setPrettyPrinting().create();
+			String json = gson.toJson(map);
+			Log.debug(LOG_TAG, LOG_SOURCE, String.format("Received Identities from API = %s", json));
+			updateTextView(json, view);
+		});
 	}
 
 	public void resetIdentitiesClicked(final View view) {
@@ -314,14 +293,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 					// update selected value in spinner
 					final LocationHint hint = LocationHint.fromString(s);
 					final Spinner setHintSpinner = findViewById(R.id.set_hint_spinner);
-					setHintSpinner.post(
-						new Runnable() {
-							@Override
-							public void run() {
-								setHintSpinner.setSelection(hint.ordinal());
-							}
-						}
-					);
+					setHintSpinner.post(() -> setHintSpinner.setSelection(hint.ordinal()));
 				}
 			}
 		);
@@ -388,15 +360,10 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
 	private void updateTextView(final String jsonString, final View view) {
 		final TextView textViewGetData = findViewById(R.id.tvGetData);
-		view.post(
-			new Runnable() {
-				@Override
-				public void run() {
-					if (textViewGetData != null) {
-						textViewGetData.setText(jsonString);
-					}
-				}
+		view.post(() -> {
+			if (textViewGetData != null) {
+				textViewGetData.setText(jsonString);
 			}
-		);
+		});
 	}
 }

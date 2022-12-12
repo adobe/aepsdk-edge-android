@@ -11,8 +11,8 @@
 
 package com.adobe.marketing.mobile.services;
 
-import com.adobe.marketing.mobile.LoggingMode;
-import com.adobe.marketing.mobile.MobileCore;
+import static com.adobe.marketing.mobile.util.FunctionalTestConstants.LOG_TAG;
+
 import com.adobe.marketing.mobile.util.ADBCountDownLatch;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 public class FunctionalTestNetworkService implements Networking {
 
-	private static final String TAG = "FunctionalTestNetworkService";
+	private static final String LOG_SOURCE = "FunctionalTestNetworkService";
 	private final Map<TestableNetworkRequest, List<TestableNetworkRequest>> receivedTestableNetworkRequests;
 	private final Map<TestableNetworkRequest, HttpConnecting> responseMatchers;
 	private final Map<TestableNetworkRequest, ADBCountDownLatch> expectedTestableNetworkRequests;
@@ -68,7 +68,7 @@ public class FunctionalTestNetworkService implements Networking {
 	}
 
 	public void reset() {
-		MobileCore.log(LoggingMode.VERBOSE, TAG, "Reset received and expected network requests.");
+		Log.trace(LOG_TAG, LOG_SOURCE, "Reset received and expected network requests.");
 		receivedTestableNetworkRequests.clear();
 		responseMatchers.clear();
 		expectedTestableNetworkRequests.clear();
@@ -124,14 +124,12 @@ public class FunctionalTestNetworkService implements Networking {
 
 	@Override
 	public void connectAsync(NetworkRequest networkRequest, NetworkCallback resultCallback) {
-		MobileCore.log(
-			LoggingMode.VERBOSE,
-			TAG,
-			String.format(
-				"Received connectUrlAsync to URL '%s' and HttpMethod '%s'.",
-				networkRequest.getUrl(),
-				networkRequest.getMethod().name()
-			)
+		Log.trace(
+			LOG_TAG,
+			LOG_SOURCE,
+			"Received connectUrlAsync to URL '%s' and HttpMethod '%s'.",
+			networkRequest.getUrl(),
+			networkRequest.getMethod().name()
 		);
 		HttpConnecting response = setNetworkRequest(
 			new TestableNetworkRequest(

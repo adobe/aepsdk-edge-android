@@ -48,9 +48,9 @@ public class Edge {
 			EdgeExtension.class,
 			extensionError -> {
 				Log.error(
-          LOG_TAG,
-          LOG_SOURCE,
-          "There was an error registering the Edge extension: " + extensionError.getErrorName()
+					LOG_TAG,
+					LOG_SOURCE,
+					"There was an error registering the Edge extension: " + extensionError.getErrorName()
 				);
 			}
 		);
