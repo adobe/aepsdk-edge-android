@@ -11,13 +11,26 @@
 
 package com.adobe.marketing.mobile;
 
+import com.adobe.marketing.mobile.services.DataEntity;
+import com.adobe.marketing.mobile.services.Log;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Class that encapsulates the data to be queued persistently for the {@link EdgeExtension}
  */
 final class EdgeDataEntity {
+
+	private static final String LOG_SOURCE = "EdgeDataEntity";
+
+	private static final String CONFIGURATION_KEY = "configuration";
+	private static final String IDENTITY_MAP_KEY = "identityMap";
+	private static final String EVENT_KEY = "event";
 
 	private final Event event;
 	private final Map<String, Object> configuration;
@@ -72,5 +85,78 @@ final class EdgeDataEntity {
 	 */
 	Map<String, Object> getIdentityMap() {
 		return Collections.unmodifiableMap(identityMap);
+	}
+
+	/**
+	 * Serializes this to a {@code DataEntity}.
+	 * @return serialized {@code EdgeDataEntity} or null if it could not be serialized.
+	 */
+	@Nullable
+	DataEntity toDataEntity() {
+		try {
+			JSONObject serializedEntity = new JSONObject();
+			serializedEntity.put(EVENT_KEY, new JSONObject(EventCoder.encode(this.event)));
+			serializedEntity.put(CONFIGURATION_KEY, new JSONObject(this.configuration));
+			serializedEntity.put(IDENTITY_MAP_KEY, new JSONObject(this.identityMap));
+
+			return new DataEntity(
+				event.getUniqueIdentifier(),
+				new Date(event.getTimestamp()),
+				serializedEntity.toString()
+			);
+		} catch (JSONException e) {
+			Log.debug(
+				EdgeConstants.LOG_TAG,
+				LOG_SOURCE,
+				"Failed to serialize EdgeDataEntity to DataEntity: " + e.getLocalizedMessage()
+			);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Deserializes a {@code DataEntity} to a {@code EdgeDataEntity}.
+	 * @param dataEntity {@code DataEntity} to be processed
+	 * @return a deserialized {@code EdgeDataEntity} instance or null if it
+	 * could not be deserialized to an {@code EdgeDataEntity}
+	 */
+	@Nullable
+	static EdgeDataEntity fromDataEntity(@NotNull final DataEntity dataEntity) {
+		String entity = dataEntity.getData();
+		if (entity == null || entity.isEmpty()) {
+			return null;
+		}
+
+		try {
+			JSONObject serializedEntity = new JSONObject(entity);
+
+			Map<String, Object> configuration = null;
+
+			if (serializedEntity.has(CONFIGURATION_KEY)) {
+				JSONObject configObj = serializedEntity.getJSONObject(CONFIGURATION_KEY);
+				configuration = Utils.toMap(configObj);
+			}
+
+			Map<String, Object> identityMap = null;
+
+			if (serializedEntity.has(IDENTITY_MAP_KEY)) {
+				JSONObject identityObj = serializedEntity.getJSONObject(IDENTITY_MAP_KEY);
+				identityMap = Utils.toMap(identityObj);
+			}
+
+			String eventString = serializedEntity.getJSONObject(EVENT_KEY).toString();
+			Event event = EventCoder.decode(eventString);
+
+			return new EdgeDataEntity(event, configuration, identityMap);
+		} catch (JSONException | IllegalArgumentException e) {
+			Log.debug(
+				EdgeConstants.LOG_TAG,
+				LOG_SOURCE,
+				"Failed to deserialize DataEntity to EdgeDataEntity: " + e.getLocalizedMessage()
+			);
+		}
+
+		return null;
 	}
 }

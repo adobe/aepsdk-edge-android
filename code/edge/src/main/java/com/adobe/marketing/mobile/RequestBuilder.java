@@ -15,6 +15,8 @@ import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
+import com.adobe.marketing.mobile.util.CloneFailedException;
+import com.adobe.marketing.mobile.util.EventDataUtils;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -194,13 +196,22 @@ class RequestBuilder {
 		List<Map<String, Object>> experienceEvents = new ArrayList<>();
 
 		for (Event e : events) {
-			Map<String, Object> data = e.getEventData();
-
-			if (!Utils.isNullOrEmpty(data)) {
-				setDatasetIdToExperienceEvent(data);
-				setTimestampToExperienceEvent(data, e);
-				setEventIdToExperienceEvent(data, e);
-				experienceEvents.add(data);
+			try {
+				Map<String, Object> data = EventDataUtils.clone(e.getEventData());
+				if (!Utils.isNullOrEmpty(data)) {
+					setDatasetIdToExperienceEvent(data);
+					setTimestampToExperienceEvent(data, e);
+					setEventIdToExperienceEvent(data, e);
+					experienceEvents.add(data);
+				}
+			} catch (CloneFailedException ex) {
+				Log.warning(
+					LOG_TAG,
+					LOG_SOURCE,
+					"Failed to extract and clone data for an experience event (id: %s), skipping. Exception details: %s",
+					e.getUniqueIdentifier(),
+					ex.getLocalizedMessage()
+				);
 			}
 		}
 

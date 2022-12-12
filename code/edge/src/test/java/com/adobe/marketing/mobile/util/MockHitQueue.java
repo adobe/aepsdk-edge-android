@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * Mock class used for testing with {@link PersistentHitQueue}
  */
-public class MockHitQueue implements HitQueuing {
+public class MockHitQueue extends HitQueuing {
 
 	List<DataEntity> queueParams = new ArrayList<>();
 	boolean wasClearCalled = false;

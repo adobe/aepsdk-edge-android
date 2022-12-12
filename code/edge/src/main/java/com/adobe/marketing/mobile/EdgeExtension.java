@@ -14,7 +14,6 @@ package com.adobe.marketing.mobile;
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import androidx.annotation.NonNull;
-import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.DataQueue;
 import com.adobe.marketing.mobile.services.HitQueuing;
 import com.adobe.marketing.mobile.services.Log;
@@ -23,7 +22,6 @@ import com.adobe.marketing.mobile.services.PersistentHitQueue;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.StringUtils;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -217,7 +215,6 @@ class EdgeExtension extends Extension {
 	 * @param event current event to process
 	 */
 	void handleResetComplete(@NonNull final Event event) {
-		EdgeDataEntity entity = new EdgeDataEntity(event);
 		networkResponseHandler.setLastResetDate(event.getTimestamp()); // set last reset date
 
 		if (hitQueue == null) {
@@ -230,13 +227,8 @@ class EdgeExtension extends Extension {
 			return;
 		}
 
-		hitQueue.queue(
-			new DataEntity(
-				event.getUniqueIdentifier(),
-				new Date(event.getTimestamp()),
-				EdgeDataEntitySerializer.serialize(entity)
-			)
-		);
+		EdgeDataEntity entity = new EdgeDataEntity(event);
+		hitQueue.queue(entity.toDataEntity());
 	}
 
 	/**
@@ -330,8 +322,6 @@ class EdgeExtension extends Extension {
 			return; // Shouldn't get here as Identity state is checked in readyForEvent
 		}
 
-		EdgeDataEntity entity = new EdgeDataEntity(event, edgeConfig, identityReady);
-
 		if (hitQueue == null) {
 			Log.warning(
 				LOG_TAG,
@@ -342,13 +332,8 @@ class EdgeExtension extends Extension {
 			return;
 		}
 
-		hitQueue.queue(
-			new DataEntity(
-				event.getUniqueIdentifier(),
-				new Date(event.getTimestamp()),
-				EdgeDataEntitySerializer.serialize(entity)
-			)
-		);
+		EdgeDataEntity entity = new EdgeDataEntity(event, edgeConfig, identityReady);
+		hitQueue.queue(entity.toDataEntity());
 	}
 
 	/**
