@@ -1090,25 +1090,7 @@ public class EdgeHitProcessorTests {
 		final boolean returns
 	) {
 		if (networkResult != null) {
-			when(
-				mockEdgeNetworkService.buildUrl(
-					any(EdgeNetworkService.RequestType.class),
-					any(EdgeEndpoint.class),
-					anyString(),
-					anyString()
-				)
-			)
-				.thenReturn("https://test.com");
-
-			when(
-				mockEdgeNetworkService.doRequest(
-					anyString(),
-					anyString(),
-					ArgumentMatchers.anyMap(),
-					any(EdgeNetworkService.ResponseCallback.class)
-				)
-			)
-				.thenReturn(networkResult);
+			mockNetworkServiceResponse("https://test.com", networkResult);
 		}
 
 		// test & verify
