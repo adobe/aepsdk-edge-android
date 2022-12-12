@@ -27,7 +27,7 @@ public class FakeNamedCollection implements NamedCollection {
 
 	@Override
 	public int getInt(String key, int fallback) {
-		return (int) dataStore.get(key);
+		return dataStore.containsKey(key) ? (int) dataStore.get(key) : fallback;
 	}
 
 	@Override
@@ -57,7 +57,7 @@ public class FakeNamedCollection implements NamedCollection {
 
 	@Override
 	public long getLong(String key, long fallback) {
-		return (long) dataStore.get(key);
+		return dataStore.containsKey(key) ? (long) dataStore.get(key) : fallback;
 	}
 
 	@Override
@@ -67,7 +67,7 @@ public class FakeNamedCollection implements NamedCollection {
 
 	@Override
 	public float getFloat(String key, float fallback) {
-		return (float) dataStore.get(key);
+		return dataStore.containsKey(key) ? (float) dataStore.get(key) : fallback;
 	}
 
 	@Override
@@ -87,7 +87,7 @@ public class FakeNamedCollection implements NamedCollection {
 
 	@Override
 	public Map<String, String> getMap(String key) {
-		return (Map<String, String>) dataStore.get(key);
+		return dataStore.containsKey(key) ? (Map<String, String>) dataStore.get(key) : null;
 	}
 
 	@Override
