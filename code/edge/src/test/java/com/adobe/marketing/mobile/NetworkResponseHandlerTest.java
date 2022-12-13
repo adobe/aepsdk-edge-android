@@ -1702,6 +1702,7 @@ public class NetworkResponseHandlerTest {
 			return;
 		}
 
+		// todo: fix me with new log format
 		MobileCore.log(logModeArgCaptor.capture(), any(String.class), logMessageArgCaptor.capture());
 		List<LoggingMode> actualLogMode = logModeArgCaptor.getAllValues();
 		List<String> actualLogMessages = logMessageArgCaptor.getAllValues();

@@ -23,8 +23,8 @@ import org.junit.Test;
 
 public class EdgeExtensionVersionTest {
 
-	private static String GRADLE_PROPERTIES_PATH = "../gradle.properties";
-	private static String PROPERTY_MODULE_VERSION = "moduleVersion";
+	private static final String GRADLE_PROPERTIES_PATH = "../gradle.properties";
+	private static final String PROPERTY_MODULE_VERSION = "moduleVersion";
 
 	@Test
 	public void extensionVersion_verifyModuleVersionInPropertiesFile_asEqual() {

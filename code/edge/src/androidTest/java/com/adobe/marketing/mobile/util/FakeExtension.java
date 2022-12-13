@@ -11,13 +11,15 @@
 
 package com.adobe.marketing.mobile.util;
 
+import static com.adobe.marketing.mobile.util.FunctionalTestConstants.LOG_TAG;
+
 import com.adobe.marketing.mobile.AdobeCallbackWithError;
 import com.adobe.marketing.mobile.AdobeError;
 import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.Extension;
 import com.adobe.marketing.mobile.ExtensionApi;
-import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
+import com.adobe.marketing.mobile.services.Log;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -28,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  */
 abstract class FakeExtension extends Extension {
 
-	private static String LOG_TAG = "FakeExtension";
+	private static final String LOG_SOURCE = "FakeExtension";
 	private static final String EVENT_SOURCE_SET_STATE = "com.adobe.eventSource.setState";
 	private static final String EVENT_SOURCE_SET_STATE_XDM = "com.adobe.eventSource.setState.xdm";
 	private static final String EVENT_SOURCE_RESPONSE = "com.adobe.eventSource.response";
@@ -74,10 +76,11 @@ abstract class FakeExtension extends Extension {
 
 				@Override
 				public void fail(final AdobeError adobeError) {
-					MobileCore.log(
-						LoggingMode.WARNING,
+					Log.warning(
 						LOG_TAG,
-						"Failed to dispatch set shared state event: " + adobeError
+						LOG_SOURCE,
+						"Failed to dispatch set shared state event: %s",
+						adobeError.getErrorName()
 					);
 				}
 			}
@@ -109,10 +112,11 @@ abstract class FakeExtension extends Extension {
 
 				@Override
 				public void fail(final AdobeError adobeError) {
-					MobileCore.log(
-						LoggingMode.WARNING,
+					Log.warning(
 						LOG_TAG,
-						"Failed to dispatch XDM set shared state event: " + adobeError
+						LOG_SOURCE,
+						"Failed to dispatch XDM set shared state event: %s",
+						adobeError.getErrorName()
 					);
 				}
 			}

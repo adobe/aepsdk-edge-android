@@ -26,13 +26,13 @@ import org.junit.Test;
 
 public class EdgeDataEntityTests {
 
-	private Event event = new Event.Builder("test", "all", "things").build();
-	private Map<String, Object> edgeConfig = new HashMap<String, Object>() {
+	private final Event event = new Event.Builder("test", "all", "things").build();
+	private final Map<String, Object> edgeConfig = new HashMap<String, Object>() {
 		{
 			put("edge.configId", "sample");
 		}
 	};
-	private Map<String, Object> identityMap = new HashMap<String, Object>() {
+	private final Map<String, Object> identityMap = new HashMap<String, Object>() {
 		{
 			put("identityMap", "example");
 		}

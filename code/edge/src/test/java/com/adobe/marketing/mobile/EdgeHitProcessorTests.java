@@ -95,7 +95,7 @@ public class EdgeHitProcessorTests {
 	// Location hint value returned by EdgeStateCallback
 	private String locationHitResult = null;
 
-	private Event experienceEvent = new Event.Builder(
+	private final Event experienceEvent = new Event.Builder(
 		"test-experience-event",
 		EventType.EDGE,
 		EventSource.REQUEST_CONTENT
@@ -116,7 +116,11 @@ public class EdgeHitProcessorTests {
 		)
 		.build();
 
-	private Event consentEvent = new Event.Builder("test-consent-event", EventType.EDGE, EventSource.UPDATE_CONSENT)
+	private final Event consentEvent = new Event.Builder(
+		"test-consent-event",
+		EventType.EDGE,
+		EventSource.UPDATE_CONSENT
+	)
 		.setEventData(
 			new HashMap<String, Object>() {
 				{
@@ -140,7 +144,7 @@ public class EdgeHitProcessorTests {
 		)
 		.build();
 
-	private Map<String, Object> identityMap = new HashMap<String, Object>() {
+	private final Map<String, Object> identityMap = new HashMap<String, Object>() {
 		{
 			put(
 				"identityMap",
@@ -166,7 +170,7 @@ public class EdgeHitProcessorTests {
 		}
 	};
 
-	private Map<String, Object> implementationDetails = new HashMap<String, Object>() {
+	private final Map<String, Object> implementationDetails = new HashMap<String, Object>() {
 		{
 			put(
 				"implementationdetails",
@@ -1088,25 +1092,7 @@ public class EdgeHitProcessorTests {
 		final boolean returns
 	) {
 		if (networkResult != null) {
-			when(
-				mockEdgeNetworkService.buildUrl(
-					any(EdgeNetworkService.RequestType.class),
-					any(EdgeEndpoint.class),
-					anyString(),
-					anyString()
-				)
-			)
-				.thenReturn("https://test.com");
-
-			when(
-				mockEdgeNetworkService.doRequest(
-					anyString(),
-					anyString(),
-					ArgumentMatchers.anyMap(),
-					any(EdgeNetworkService.ResponseCallback.class)
-				)
-			)
-				.thenReturn(networkResult);
+			mockNetworkServiceResponse("https://test.com", networkResult);
 		}
 
 		// test & verify

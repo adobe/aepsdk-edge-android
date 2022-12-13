@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile;
 
+import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.xdm.Schema;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,7 +21,7 @@ import java.util.Map;
  */
 class TestExperienceEventSchema implements Schema {
 
-	private static final String LOG_TAG = "TestExperienceEventSchema";
+	private static final String LOG_SOURCE = "TestExperienceEventSchema";
 
 	private Map<String, Object> identityMap;
 	private Map<String, Object> placeContext;
@@ -256,9 +257,9 @@ class TestExperienceEventSchema implements Schema {
 
 			// The SDK considers EventType a required property
 			if (Utils.isNullOrEmpty(experienceEventContextData.eventType)) {
-				MobileCore.log(
-					LoggingMode.WARNING,
-					LOG_TAG,
+				Log.warning(
+					"UnitTestsFramework",
+					LOG_SOURCE,
 					"Unable to create TestExperienceEventSchema without required 'eventType', use setEventType API to set it."
 				);
 				return null;

@@ -69,7 +69,7 @@ class EdgeHitProcessor implements HitProcessing {
 	 *
 	 * @param dataEntity the {@code DataEntity} to be processed at this time; should not be null
 	 * @param processingResult the {@code HitProcessingResult} callback to be invoked with the result of the processing. Returns:
-	 * 							true when the {@code entity} was processed and it can e removed from the queue,
+	 * 							true when the {@code entity} was processed and it can be removed from the queue,
 	 *							false when the processing failed and the {@code entity} should be retried at a later point.
 	 */
 	@Override
