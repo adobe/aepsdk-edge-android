@@ -18,6 +18,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,6 +38,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.After;
@@ -84,17 +87,6 @@ public class NetworkResponseHandlerTest {
 	NamedCollection mockNamedCollection;
 
 	MockedStatic<MobileCore> mockCore;
-
-	class TestMobileCoreLog {
-
-		String logMessage;
-		LoggingMode loggingMode;
-
-		TestMobileCoreLog(final LoggingMode logMode, final String message) {
-			this.loggingMode = logMode;
-			this.logMessage = message;
-		}
-	}
 
 	@Before
 	public void setup() {
@@ -1277,6 +1269,7 @@ public class NetworkResponseHandlerTest {
 
 	@Test
 	public void testProcessResponseOnSuccess_WhenErrorAndWarning_logsTheTwoEvents() {
+		MockedStatic<Log> mockLogService = mockStatic(Log.class);
 		final String jsonResponse =
 			"{\n" +
 			"      \"requestId\": \"d81c93e5-7558-4996-a93c-489d550748b8\",\n" +
@@ -1298,30 +1291,27 @@ public class NetworkResponseHandlerTest {
 			"    }";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
-		List<TestMobileCoreLog> expectedLogs = new ArrayList<>();
-		expectedLogs.add(
-			new TestMobileCoreLog(
-				LoggingMode.ERROR,
-				"Received event error for request id (123), error details:\n" +
-				"{\n" +
-				"  \"eventIndex\": 2,\n" +
-				"  \"title\": \"Failed to process personalization event\",\n" +
-				"  \"status\": 503\n" +
-				"}"
-			)
+		List<String> expectedErrorLogs = new ArrayList<>();
+		expectedErrorLogs.add(
+			"Received event error for request id (123), error details:\n " +
+			"{\n" +
+			"  \"eventIndex\": 2,\n" +
+			"  \"title\": \"Failed to process personalization event\",\n" +
+			"  \"status\": 503\n" +
+			"}"
 		);
-		expectedLogs.add(
-			new TestMobileCoreLog(
-				LoggingMode.WARNING,
-				"Received event error for request id (123), error details:\n" +
-				"{\n" +
-				"  \"eventIndex\": 10,\n" +
-				"  \"title\": \"Some Informative stuff here\",\n" +
-				"  \"status\": 202\n" +
-				"}"
-			)
+		List<String> expectedWarningLogs = new ArrayList<>();
+		expectedWarningLogs.add(
+			"Received event error for request id (123), error details:\n " +
+			"{\n" +
+			"  \"eventIndex\": 10,\n" +
+			"  \"title\": \"Some Informative stuff here\",\n" +
+			"  \"status\": 202\n" +
+			"}"
 		);
-		assertLogs(6, expectedLogs);
+		assertErrorLogs(mockLogService, expectedErrorLogs);
+		assertWarningLogs(mockLogService, expectedWarningLogs);
+		mockLogService.close();
 	}
 
 	// ---------------------------------------------------------------------------------------------
@@ -1682,54 +1672,63 @@ public class NetworkResponseHandlerTest {
 	}
 
 	@Test
-	public void testSetLastResetDate_persitsTimestamp() {
+	public void testSetLastResetDate_persistsTimestamp() {
 		final long lastResetDate = 1;
 		networkResponseHandler.setLastResetDate(lastResetDate);
 
 		verify(mockNamedCollection, times(1)).setLong(EdgeConstants.DataStoreKeys.RESET_IDENTITIES_DATE, lastResetDate);
 	}
 
-	void assertLogs(final int logCallsNo, final List<TestMobileCoreLog> expectedLogs) {
-		assertNotNull(expectedLogs);
-		assertTrue("logCallsNo cannot be lower than 0", logCallsNo >= 0);
-
-		ArgumentCaptor<LoggingMode> logModeArgCaptor = ArgumentCaptor.forClass(LoggingMode.class);
+	/**
+	 * Asserts the Log.error API received the {@code expectedLogs} number and exact log messages.
+	 */
+	private void assertErrorLogs(final MockedStatic<Log> mockLogService, @NotNull final List<String> expectedLogs) {
 		ArgumentCaptor<String> logMessageArgCaptor = ArgumentCaptor.forClass(String.class);
-		// todo: fix log asserts
-		// verifyStatic(MobileCore.class, times(logCallsNo));
 
-		if (expectedLogs.size() == 0) {
+		mockLogService.verify(
+			() -> Log.error(anyString(), anyString(), logMessageArgCaptor.capture(), any()),
+			times(expectedLogs.size())
+		);
+
+		assertEqualLogMessages(expectedLogs, logMessageArgCaptor.getAllValues());
+	}
+
+	/**
+	 * Asserts the Log.warning API received the {@code expectedLogs} number and exact log messages.
+	 */
+	private void assertWarningLogs(final MockedStatic<Log> mockLogService, @NotNull final List<String> expectedLogs) {
+		ArgumentCaptor<String> logMessageArgCaptor = ArgumentCaptor.forClass(String.class);
+
+		mockLogService.verify(
+			() -> Log.warning(anyString(), anyString(), logMessageArgCaptor.capture(), any()),
+			times(expectedLogs.size())
+		);
+
+		assertEqualLogMessages(expectedLogs, logMessageArgCaptor.getAllValues());
+	}
+
+	private void assertEqualLogMessages(final List<String> expectedLogs, final List<String> actualLogs) {
+		if (expectedLogs == null || expectedLogs.size() == 0) {
 			return;
 		}
 
-		// todo: fix me with new log format
-		MobileCore.log(logModeArgCaptor.capture(), any(String.class), logMessageArgCaptor.capture());
-		List<LoggingMode> actualLogMode = logModeArgCaptor.getAllValues();
-		List<String> actualLogMessages = logMessageArgCaptor.getAllValues();
+		if (actualLogs == null || actualLogs.isEmpty()) {
+			fail(String.format("actualLogs were empty, expected %d entries", expectedLogs.size()));
+			return;
+		}
 
-		for (TestMobileCoreLog log : expectedLogs) {
-			int index = 0;
+		for (String log : expectedLogs) {
 			boolean found = false;
 
-			for (String actualMessage : actualLogMessages) {
-				if (actualMessage != null && actualMessage.contains(log.logMessage)) {
-					assertFalse(
-						"Log message found multiple times (" + log.logMessage + "), expected to find it once",
-						found
-					);
+			for (String actualMessage : actualLogs) {
+				if (actualMessage != null && actualMessage.contains(log)) {
+					assertFalse("Log message found multiple times (" + log + "), expected to find it once", found);
 
 					found = true;
-					assertEquals(
-						"Log level is incorrect for message (" + log.logMessage + ")",
-						log.loggingMode,
-						actualLogMode.get(index)
-					);
 				}
-
-				index++;
 			}
 
-			assertTrue("Log message not found (" + log.logMessage + ")", found);
+			assertTrue("Log message not found (" + log + ")", found);
 		}
 	}
 
