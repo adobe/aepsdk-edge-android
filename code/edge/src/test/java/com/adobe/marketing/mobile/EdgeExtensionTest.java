@@ -12,15 +12,11 @@
 package com.adobe.marketing.mobile;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.powermock.api.mockito.PowerMockito.when;
+import static org.mockito.Mockito.when;
 
-import android.app.Application;
 import com.adobe.marketing.mobile.util.MockHitQueue;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,15 +24,10 @@ import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({ MobileCore.class, ExtensionApi.class, EdgeExtension.class })
+@RunWith(MockitoJUnitRunner.class)
 public class EdgeExtensionTest {
 
 	private EdgeExtension edgeExtension;
@@ -91,13 +82,10 @@ public class EdgeExtensionTest {
 	@Mock
 	ExtensionApi mockExtensionApi;
 
-	@Mock
-	Application mockApplication;
-
 	@Before
 	public void setup() throws Exception {
-		PowerMockito.mockStatic(MobileCore.class);
-		Mockito.when(MobileCore.getApplication()).thenReturn(mockApplication);
+		// todo:
+		//  PowerMockito.mockStatic(MobileCore.class);
 
 		mockQueue = new MockHitQueue();
 		edgeExtension = new EdgeExtension(mockExtensionApi, mockQueue);
