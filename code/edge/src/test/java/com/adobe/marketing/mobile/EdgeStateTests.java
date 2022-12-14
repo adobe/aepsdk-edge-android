@@ -18,8 +18,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.adobe.marketing.mobile.services.HitQueuing;
 import com.adobe.marketing.mobile.util.FakeNamedCollection;
-import com.adobe.marketing.mobile.util.MockHitQueue;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,21 +28,23 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
 
 public class EdgeStateTests {
 
 	private EdgeState state;
 	private EdgeProperties properties;
 	private FakeNamedCollection fakeNamedCollection;
-	private MockHitQueue mockHitQueue;
 
 	private EdgeSharedStateCallback mockSharedStateCallback;
 	private Map<String, Object> mockSharedState;
 
+	@Mock
+	HitQueuing mockHitQueue;
+
 	@Before
 	public void setUp() {
 		fakeNamedCollection = new FakeNamedCollection();
-		mockHitQueue = new MockHitQueue();
 
 		mockSharedStateCallback =
 			new EdgeSharedStateCallback() {

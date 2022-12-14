@@ -13,16 +13,20 @@ package com.adobe.marketing.mobile;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.adobe.marketing.mobile.util.MockHitQueue;
+import com.adobe.marketing.mobile.services.DataEntity;
+import com.adobe.marketing.mobile.services.HitQueuing;
 import java.util.HashMap;
 import java.util.Map;
 import org.json.JSONObject;
@@ -38,7 +42,6 @@ public class EdgeExtensionTest {
 
 	private EdgeExtension edgeExtension;
 	private EdgeState state;
-	private MockHitQueue mockQueue;
 	private final Map<String, Object> configData = new HashMap<String, Object>() {
 		{
 			put(EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID, "123");
@@ -88,17 +91,16 @@ public class EdgeExtensionTest {
 	@Mock
 	ExtensionApi mockExtensionApi;
 
+	@Mock
+	HitQueuing mockQueue;
+
 	@Before
 	public void setup() throws Exception {
-		mockQueue = new MockHitQueue();
 		edgeExtension = new EdgeExtension(mockExtensionApi, mockQueue);
 		state = edgeExtension.state;
 		mockSharedStates(null, null, null); // default return null, to be set in test if needed
-		JSONObject test = new JSONObject();
-		test.put("test", "case");
 
-		final JSONObject jsonObject = new JSONObject(jsonStr);
-		identityState = Utils.toMap(jsonObject);
+		identityState = Utils.toMap(new JSONObject(jsonStr));
 	}
 
 	@Test
@@ -112,8 +114,7 @@ public class EdgeExtensionTest {
 		edgeExtension.handleExperienceEventRequest(event1);
 
 		//verify
-		assertTrue(mockQueue.wasQueueCalled);
-		assertEquals(1, mockQueue.getCachedEntities().size());
+		verifyEventQueued(event1);
 		verifyGetSharedStateCalls(1, 1, 1);
 	}
 
@@ -128,7 +129,7 @@ public class EdgeExtensionTest {
 		edgeExtension.handleExperienceEventRequest(event1);
 
 		//verify
-		assertFalse(mockQueue.wasQueueCalled);
+		verify(mockQueue, never()).queue(any(DataEntity.class));
 		verifyGetSharedStateCalls(0, 0, 1);
 	}
 
@@ -143,8 +144,7 @@ public class EdgeExtensionTest {
 		edgeExtension.handleExperienceEventRequest(event1);
 
 		//verify
-		assertTrue(mockQueue.wasQueueCalled);
-		assertEquals(1, mockQueue.getCachedEntities().size());
+		verifyEventQueued(event1);
 		verifyGetSharedStateCalls(1, 1, 1);
 	}
 
@@ -162,21 +162,23 @@ public class EdgeExtensionTest {
 		edgeExtension.handleExperienceEventRequest(event1);
 
 		//verify
-		assertEquals(1, mockQueue.getCachedEntities().size());
+		verifyEventQueued(event1);
+		reset(mockQueue);
 
 		// test current consent no
 		state.updateCurrentConsent(ConsentStatus.NO);
 		edgeExtension.handleExperienceEventRequest(event1);
 
 		//verify
-		assertEquals(1, mockQueue.getCachedEntities().size());
+		verify(mockQueue, never()).queue(any(DataEntity.class));
+		reset(mockQueue);
 
 		// test current consent yes
 		state.updateCurrentConsent(ConsentStatus.YES);
 		edgeExtension.handleExperienceEventRequest(event1);
 
 		//verify
-		assertEquals(2, mockQueue.getCachedEntities().size());
+		verifyEventQueued(event1);
 	}
 
 	@Test
@@ -192,8 +194,7 @@ public class EdgeExtensionTest {
 		);
 
 		//verify
-		assertFalse(mockQueue.wasQueueCalled);
-		assertEquals(0, mockQueue.getCachedEntities().size());
+		verify(mockQueue, never()).queue(any(DataEntity.class));
 	}
 
 	// Tests for void handleConsentUpdate(final Event event)
@@ -205,14 +206,12 @@ public class EdgeExtensionTest {
 			new SharedStateResult(SharedStateStatus.SET, identityState),
 			null // consent data taken from current event and not from shared state in this case
 		);
-		edgeExtension.handleConsentUpdate(
-			new Event.Builder("Consent update", EventType.EDGE, EventSource.UPDATE_CONSENT)
-				.setEventData(getConsentsData(ConsentStatus.YES))
-				.build()
-		);
+		Event consentUpdate = new Event.Builder("Consent update", EventType.EDGE, EventSource.UPDATE_CONSENT)
+			.setEventData(getConsentsData(ConsentStatus.YES))
+			.build();
+		edgeExtension.handleConsentUpdate(consentUpdate);
 
-		assertEquals(1, mockQueue.getCachedEntities().size());
-
+		verifyEventQueued(consentUpdate);
 		verifyGetSharedStateCalls(1, 1, 0);
 	}
 
@@ -229,8 +228,7 @@ public class EdgeExtensionTest {
 		);
 
 		//verify
-		assertFalse(mockQueue.wasQueueCalled);
-		assertEquals(0, mockQueue.getCachedEntities().size());
+		verify(mockQueue, never()).queue(any(DataEntity.class));
 	}
 
 	@Test
@@ -251,7 +249,7 @@ public class EdgeExtensionTest {
 		edgeExtension.processAndQueueEvent(event1);
 
 		//verify
-		assertEquals(0, mockQueue.getCachedEntities().size());
+		verify(mockQueue, never()).queue(any(DataEntity.class));
 	}
 
 	// Tests for void handleConsentPreferencesUpdate(final Event event)
@@ -264,7 +262,8 @@ public class EdgeExtensionTest {
 				.build()
 		);
 
-		assertEquals(0, mockQueue.getCachedEntities().size());
+		// verify
+		verify(mockQueue, never()).queue(any(DataEntity.class));
 		assertEquals(ConsentStatus.YES, state.getCurrentCollectConsent());
 	}
 
@@ -278,7 +277,8 @@ public class EdgeExtensionTest {
 			new Event.Builder("Consent update", EventType.CONSENT, EventSource.RESPONSE_CONTENT).build()
 		);
 
-		assertEquals(0, mockQueue.getCachedEntities().size());
+		// verify
+		verify(mockQueue, never()).queue(any(DataEntity.class));
 		assertEquals(ConsentStatus.YES, state.getCurrentCollectConsent());
 	}
 
@@ -296,7 +296,8 @@ public class EdgeExtensionTest {
 				.build()
 		);
 
-		assertEquals(0, mockQueue.getCachedEntities().size());
+		// verify
+		verify(mockQueue, never()).queue(any(DataEntity.class));
 		assertEquals(ConsentStatus.PENDING, state.getCurrentCollectConsent());
 	}
 
@@ -557,6 +558,14 @@ public class EdgeExtensionTest {
 			)
 		)
 			.thenReturn(consent);
+	}
+
+	private void verifyEventQueued(final Event expectedEvent) {
+		final ArgumentCaptor<DataEntity> entityCaptor = ArgumentCaptor.forClass(DataEntity.class);
+		verify(mockQueue, times(1)).queue(entityCaptor.capture());
+		EdgeDataEntity edgeEntity = EdgeDataEntity.fromDataEntity(entityCaptor.getValue());
+		assertNotNull(edgeEntity);
+		assertEquals(expectedEvent.getName(), edgeEntity.getEvent().getName());
 	}
 
 	private void verifyGetSharedStateCalls(final int configTimes, final int identityTimes, final int consentTimes) {
