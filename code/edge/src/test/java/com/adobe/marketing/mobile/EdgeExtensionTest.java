@@ -13,6 +13,7 @@ package com.adobe.marketing.mobile;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -28,6 +29,7 @@ import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
@@ -298,8 +300,8 @@ public class EdgeExtensionTest {
 		assertEquals(ConsentStatus.PENDING, state.getCurrentCollectConsent());
 	}
 
- Tests for void handleSharedStateUpdate(final Event event)
- testHear_sharedStateUpdate_whenEmptyData - see EdgeExtensionListenerTests
+	// Tests for void handleSharedStateUpdate(final Event event)
+	// testHear_sharedStateUpdate_whenEmptyData - see EdgeExtensionListenerTests
 
 	@Test
 	public void testHandleSharedStateUpdate_hubSharedState_consentNotRegistered() {
@@ -382,7 +384,6 @@ public class EdgeExtensionTest {
 		assertEquals("1.0.0+" + EdgeConstants.EXTENSION_VERSION, details.get("version"));
 		assertEquals(EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE, details.get("name"));
 	}
-
 
 	@Test
 	public void testReadyForEvent_whenNotBootedUp_waits_returnsFalse() {
@@ -474,25 +475,22 @@ public class EdgeExtensionTest {
 		assertTrue(edgeExtension.readyForEvent(event1));
 	}
 
-
 	@Test
 	public void testHandleGetLocationHint_dispatchesResponseWithHintValue() {
 		state.setLocationHint("or2", 1800);
 		edgeExtension.handleGetLocationHint(getHintEvent);
 
 		final ArgumentCaptor<Event> responseEventCaptor = ArgumentCaptor.forClass(Event.class);
-		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
 
-		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-		MobileCore.dispatchEvent(responseEventCaptor.capture());
+		verify(mockExtensionApi, times(1)).dispatch(responseEventCaptor.capture());
 
 		final Event responseEvent = responseEventCaptor.getAllValues().get(0);
-		assertEquals("com.adobe.eventtype.edge", responseEvent.getType());
-		assertEquals("com.adobe.eventsource.responseidentity", responseEvent.getSource());
-		assertTrue(responseEvent.getEventData().containsKey("locationHint"));
+		assertEquals(EventType.EDGE, responseEvent.getType());
+		assertEquals(EventSource.RESPONSE_IDENTITY, responseEvent.getSource());
+		assertEquals(getHintEvent.getUniqueIdentifier(), responseEvent.getResponseID()); // verifies in response to request event
 
-		final String hint = (String) responseEvent.getEventData().get("locationHint");
-		assertEquals("or2", hint);
+		assertTrue(responseEvent.getEventData().containsKey("locationHint"));
+		assertEquals("or2", (String) responseEvent.getEventData().get("locationHint"));
 	}
 
 	@Test
@@ -500,14 +498,11 @@ public class EdgeExtensionTest {
 		edgeExtension.handleGetLocationHint(getHintEvent);
 
 		final ArgumentCaptor<Event> responseEventCaptor = ArgumentCaptor.forClass(Event.class);
-
-		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-		MobileCore.dispatchEvent(responseEventCaptor.capture());
+		verify(mockExtensionApi, times(1)).dispatch(responseEventCaptor.capture());
 
 		final Event responseEvent = responseEventCaptor.getAllValues().get(0);
-		assertEquals("com.adobe.eventtype.edge", responseEvent.getType());
-		assertEquals("com.adobe.eventsource.responseidentity", responseEvent.getSource());
-		assertTrue(responseEvent.getEventData().containsKey("locationHint"));
+		assertEquals(EventType.EDGE, responseEvent.getType());
+		assertEquals(EventSource.RESPONSE_IDENTITY, responseEvent.getSource());
 
 		assertTrue(responseEvent.getEventData().containsKey("locationHint"));
 		assertNull(responseEvent.getEventData().get("locationHint")); // no hint set returns null
@@ -521,19 +516,18 @@ public class EdgeExtensionTest {
 		edgeExtension.handleGetLocationHint(getHintEvent);
 
 		final ArgumentCaptor<Event> responseEventCaptor = ArgumentCaptor.forClass(Event.class);
-
-		PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-		MobileCore.dispatchEvent(responseEventCaptor.capture());
+		verify(mockExtensionApi, times(1)).dispatch(responseEventCaptor.capture());
 
 		final Event responseEvent = responseEventCaptor.getAllValues().get(0);
-		assertEquals("com.adobe.eventtype.edge", responseEvent.getType());
-		assertEquals("com.adobe.eventsource.responseidentity", responseEvent.getSource());
+		assertEquals(EventType.EDGE, responseEvent.getType());
+		assertEquals(EventSource.RESPONSE_IDENTITY, responseEvent.getSource());
+
 		assertTrue(responseEvent.getEventData().containsKey("locationHint"));
 		assertNull(responseEvent.getEventData().get("locationHint")); // expired hint returns null
 	}
 
 	@Test
-	public void testhandleSetLocationHint_whenValueHint_setsHint() {
+	public void testHandleSetLocationHint_whenValueHint_setsHint() {
 		final Event requestEvent = new Event.Builder("Set Location Hint", EventType.EDGE, EventSource.UPDATE_IDENTITY)
 			.setEventData(
 				new HashMap<String, Object>() {
@@ -550,7 +544,7 @@ public class EdgeExtensionTest {
 	}
 
 	@Test
-	public void testhandleSetLocationHint_whenEmptyHint_clearsHint() {
+	public void testHandleSetLocationHint_whenEmptyHint_clearsHint() {
 		state.setLocationHint("or2", 1800);
 		final Event requestEvent = new Event.Builder("Set Location Hint", EventType.EDGE, EventSource.UPDATE_IDENTITY)
 			.setEventData(
@@ -568,7 +562,7 @@ public class EdgeExtensionTest {
 	}
 
 	@Test
-	public void testhandleSetLocationHint_whenNullHint_clearsHint() {
+	public void testHandleSetLocationHint_whenNullHint_clearsHint() {
 		state.setLocationHint("or2", 1800);
 		final Event requestEvent = new Event.Builder("Set Location Hint", EventType.EDGE, EventSource.UPDATE_IDENTITY)
 			.setEventData(
@@ -583,6 +577,35 @@ public class EdgeExtensionTest {
 		edgeExtension.handleSetLocationHint(requestEvent);
 
 		assertNull(state.getLocationHint());
+	}
+
+	@Test
+	public void testHandleSetLocationHint_whenEmptyEventData_ignoresEvent() {
+		state.setLocationHint("or2", 1800);
+		final Event requestEvent = new Event.Builder("Set Location Hint", EventType.EDGE, EventSource.UPDATE_IDENTITY)
+			.build();
+
+		edgeExtension.handleSetLocationHint(requestEvent);
+
+		assertEquals("or2", state.getLocationHint());
+	}
+
+	@Test
+	public void testHandleSetLocationHint_whenInvalidLocationHintType_doesNotCrash() {
+		state.setLocationHint("or2", 1800);
+		final Event requestEvent = new Event.Builder("Set Location Hint", EventType.EDGE, EventSource.UPDATE_IDENTITY)
+			.setEventData(
+				new HashMap<String, Object>() {
+					{
+						put("locationHint", true);
+					}
+				}
+			)
+			.build();
+
+		edgeExtension.handleSetLocationHint(requestEvent);
+
+		assertEquals("or2", state.getLocationHint());
 	}
 
 	private void mockSharedStates(

@@ -22,6 +22,7 @@ import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.services.PersistentHitQueue;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.DataReaderException;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.HashMap;
 import java.util.List;
@@ -292,11 +293,20 @@ class EdgeExtension extends Extension {
 	 */
 	void handleSetLocationHint(@NonNull final Event event) {
 		final Map<String, Object> eventData = event.getEventData();
+		if (Utils.isNullOrEmpty(eventData)) {
+			Log.trace(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Location Hint update request event with id %s contained no data, ignoring.",
+				event.getUniqueIdentifier()
+			);
+			return;
+		}
 
 		try {
-			final String hint = (String) eventData.get(EdgeConstants.EventDataKey.LOCATION_HINT);
+			final String hint = DataReader.getString(eventData, EdgeConstants.EventDataKey.LOCATION_HINT);
 			state.setLocationHint(hint, EdgeConstants.Defaults.LOCATION_HINT_TTL_SEC);
-		} catch (ClassCastException e) {
+		} catch (DataReaderException e) {
 			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
