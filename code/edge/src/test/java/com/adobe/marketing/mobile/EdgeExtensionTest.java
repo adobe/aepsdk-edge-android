@@ -300,91 +300,6 @@ public class EdgeExtensionTest {
 		assertEquals(ConsentStatus.PENDING, state.getCurrentCollectConsent());
 	}
 
-	// Tests for void handleSharedStateUpdate(final Event event)
-	// testHear_sharedStateUpdate_whenEmptyData - see EdgeExtensionListenerTests
-
-	@Test
-	public void testHandleSharedStateUpdate_hubSharedState_consentNotRegistered() {
-		when(
-			mockExtensionApi.getXDMSharedEventState(
-				eq(EdgeConstants.SharedState.HUB),
-				any(Event.class),
-				isNull(ExtensionErrorCallback.class)
-			)
-		)
-			.thenReturn(getHubExtensions(false));
-		edgeExtension.handleSharedStateUpdate(
-			new Event.Builder("Shared State update", EventType.HUB, EventSource.SHARED_STATE)
-				.setEventData(
-					new HashMap<String, Object>() {
-						{
-							put("stateowner", EdgeConstants.SharedState.HUB);
-						}
-					}
-				)
-				.build()
-		);
-
-		assertEquals(ConsentStatus.YES, state.getCurrentCollectConsent());
-	}
-
-	@Test
-	public void testHandleSharedStateUpdate_hubSharedState_consentRegistered() {
-		when(
-			mockExtensionApi.getSharedEventState(
-				eq(EdgeConstants.SharedState.HUB),
-				any(Event.class),
-				isNull(ExtensionErrorCallback.class)
-			)
-		)
-			.thenReturn(getHubExtensions(true));
-		edgeExtension.handleSharedStateUpdate(
-			new Event.Builder("Shared State update", EventType.HUB, EventSource.SHARED_STATE)
-				.setEventData(
-					new HashMap<String, Object>() {
-						{
-							put("stateowner", EdgeConstants.SharedState.HUB);
-						}
-					}
-				)
-				.build()
-		);
-
-		assertEquals(ConsentStatus.PENDING, state.getCurrentCollectConsent());
-	}
-
-	@Test
-	public void testHandleSharedStateUpdate_hubSharedState_setsImplementationDetails() throws Exception {
-		when(
-			mockExtensionApi.getSharedEventState(
-				eq(EdgeConstants.SharedState.HUB),
-				any(Event.class),
-				isNull(ExtensionErrorCallback.class)
-			)
-		)
-			.thenReturn(getHubExtensions(true));
-		edgeExtension.handleSharedStateUpdate(
-			new Event.Builder("Shared State update", EventType.HUB, EventSource.SHARED_STATE)
-				.setEventData(
-					new HashMap<String, Object>() {
-						{
-							put("stateowner", EdgeConstants.SharedState.HUB);
-						}
-					}
-				)
-				.build()
-		);
-
-		assertNotNull(state.getImplementationDetails());
-		Map<String, Object> details = (Map<String, Object>) state
-			.getImplementationDetails()
-			.get("implementationDetails");
-		assertNotNull(details);
-		assertEquals("app", details.get("environment"));
-		assertEquals("1.0.0+" + EdgeConstants.EXTENSION_VERSION, details.get("version"));
-		assertEquals(EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE, details.get("name"));
-	}
-
 	@Test
 	public void testReadyForEvent_whenNotBootedUp_waits_returnsFalse() {
 		// setup: bootupIfNeeded waits for HUB shared state
@@ -717,7 +632,7 @@ public class EdgeExtensionTest {
 	 * Mocks the hub shared state payload for registered extensions. To be used when testing consent extension registration checks
 	 */
 	private Map<String, Object> getHubExtensions(final boolean consentRegistered) {
-		final Map<String, Object> registeredExtensions = new HashMap<String, Object>();
+		final Map<String, Object> registeredExtensions = new HashMap<>();
 
 		if (consentRegistered) {
 			registeredExtensions.put(

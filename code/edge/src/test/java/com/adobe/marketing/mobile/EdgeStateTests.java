@@ -201,7 +201,7 @@ public class EdgeStateTests {
 						return null;
 					}
 
-					return new SharedStateResult(SharedStateStatus.SET, getMockEventHubSharedState());
+					return new SharedStateResult(SharedStateStatus.SET, getMockEventHubSharedState(false));
 				}
 
 				@Override
@@ -251,6 +251,87 @@ public class EdgeStateTests {
 		assertTrue(createSharedStateCalled.await(200, TimeUnit.MILLISECONDS));
 		assertNotNull(mockSharedState);
 		assertTrue(mockSharedState.isEmpty()); // empty shared state created
+	}
+
+	@Test
+	public void testBootupIfNeeded_whenConsentNotRegistered_updatesConsentYes() {
+		mockSharedStateCallback =
+			new EdgeSharedStateCallback() {
+				@Override
+				public SharedStateResult getSharedState(final String stateOwner, final Event event) {
+					if (!EdgeConstants.SharedState.HUB.equals(stateOwner)) {
+						fail("Unexpected getSharedState call for " + stateOwner);
+						return null;
+					}
+
+					return new SharedStateResult(SharedStateStatus.SET, getMockEventHubSharedState(false));
+				}
+
+				@Override
+				public void createSharedState(final Map<String, Object> state, final Event event) {
+					mockSharedState = state;
+				}
+			};
+		state = new EdgeState(mockHitQueue, properties, mockSharedStateCallback);
+
+		assertTrue(state.bootupIfNeeded());
+		assertEquals(ConsentStatus.YES, state.getCurrentCollectConsent());
+	}
+
+	@Test
+	public void testBootupIfNeeded_whenConsentRegistered_keepsConsentPendingAndWaits() {
+		mockSharedStateCallback =
+			new EdgeSharedStateCallback() {
+				@Override
+				public SharedStateResult getSharedState(final String stateOwner, final Event event) {
+					if (!EdgeConstants.SharedState.HUB.equals(stateOwner)) {
+						fail("Unexpected getSharedState call for " + stateOwner);
+						return null;
+					}
+
+					return new SharedStateResult(SharedStateStatus.SET, getMockEventHubSharedState(true));
+				}
+
+				@Override
+				public void createSharedState(final Map<String, Object> state, final Event event) {
+					mockSharedState = state;
+				}
+			};
+		state = new EdgeState(mockHitQueue, properties, mockSharedStateCallback);
+
+		assertTrue(state.bootupIfNeeded());
+		assertEquals(ConsentStatus.PENDING, state.getCurrentCollectConsent());
+	}
+
+	@Test
+	public void testBootupIfNeeded_whenHubSharedState_updatesImplementationDetails() {
+		mockSharedStateCallback =
+			new EdgeSharedStateCallback() {
+				@Override
+				public SharedStateResult getSharedState(final String stateOwner, final Event event) {
+					if (!EdgeConstants.SharedState.HUB.equals(stateOwner)) {
+						fail("Unexpected getSharedState call for " + stateOwner);
+						return null;
+					}
+
+					return new SharedStateResult(SharedStateStatus.SET, getMockEventHubSharedState(true));
+				}
+
+				@Override
+				public void createSharedState(final Map<String, Object> state, final Event event) {
+					mockSharedState = state;
+				}
+			};
+		state = new EdgeState(mockHitQueue, properties, mockSharedStateCallback);
+		state.bootupIfNeeded();
+		assertNotNull(state.getImplementationDetails());
+		Map<String, Object> details = (Map<String, Object>) state
+			.getImplementationDetails()
+			.get("implementationDetails");
+		assertNotNull(details);
+		assertEquals("app", details.get("environment"));
+		assertEquals("2.0.0+" + EdgeConstants.EXTENSION_VERSION, details.get("version"));
+		assertEquals(EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE, details.get("name"));
 	}
 
 	@Test
@@ -367,7 +448,7 @@ public class EdgeStateTests {
 		return calendar.getTimeInMillis();
 	}
 
-	private Map<String, Object> getMockEventHubSharedState() {
+	private Map<String, Object> getMockEventHubSharedState(final boolean consentRegistered) {
 		Map<String, Object> hubState = new HashMap<>();
 		hubState.put("version", "2.0.0");
 		hubState.put(
@@ -379,31 +460,36 @@ public class EdgeStateTests {
 				}
 			}
 		);
-		hubState.put(
-			"extensions",
+		final Map<String, Object> registeredExtensions = new HashMap<>();
+		registeredExtensions.put(
+			EdgeConstants.SharedState.CONFIGURATION,
 			new HashMap<String, Object>() {
 				{
-					put(
-						"com.adobe.module.configuration",
-						new HashMap<String, Object>() {
-							{
-								put("version", "2.0.0");
-								put("friendlyName", "Configuration");
-							}
-						}
-					);
-					put(
-						"com.adobe.edge",
-						new HashMap<String, Object>() {
-							{
-								put("version", "2.0.0");
-								put("friendlyName", "Edge");
-							}
-						}
-					);
+					put("version", "2.0.0");
+					put("friendlyName", "Configuration");
 				}
 			}
 		);
+		registeredExtensions.put(
+			EdgeConstants.EXTENSION_NAME,
+			new HashMap<String, Object>() {
+				{
+					put("version", "2.0.0");
+					put("friendlyName", "Edge");
+				}
+			}
+		);
+		if (consentRegistered) {
+			registeredExtensions.put(
+				EdgeConstants.SharedState.CONSENT,
+				new HashMap<String, Object>() {
+					{
+						put("version", "2.0.0");
+					}
+				}
+			);
+		}
+		hubState.put("extensions", registeredExtensions);
 		return hubState;
 	}
 }
