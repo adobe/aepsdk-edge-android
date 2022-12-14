@@ -12,9 +12,13 @@
 package com.adobe.marketing.mobile;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.adobe.marketing.mobile.util.MockHitQueue;
@@ -84,13 +88,10 @@ public class EdgeExtensionTest {
 
 	@Before
 	public void setup() throws Exception {
-		// todo:
-		//  PowerMockito.mockStatic(MobileCore.class);
-
 		mockQueue = new MockHitQueue();
 		edgeExtension = new EdgeExtension(mockExtensionApi, mockQueue);
 		state = edgeExtension.state;
-		mockSharedStates(null, null); // default return null, to be set in test if needed
+		mockSharedStates(null, null, null); // default return null, to be set in test if needed
 		JSONObject test = new JSONObject();
 		test.put("test", "case");
 
@@ -99,102 +100,162 @@ public class EdgeExtensionTest {
 	}
 
 	@Test
-	public void testHandleExperienceEventRequest_queued() {
-		edgeExtension.handleExperienceEventRequest(event1);
-		edgeExtension.handleExperienceEventRequest(event1);
-		edgeExtension.handleExperienceEventRequest(event1);
+	public void testHandleExperienceEventRequest_whenCollectConsentYes_queues() {
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			new SharedStateResult(SharedStateStatus.SET, getConsentsData(ConsentStatus.YES))
+		);
+
 		edgeExtension.handleExperienceEventRequest(event1);
 
 		//verify
-		assertEquals(4, edgeExtension.getCachedEvents().size());
+		assertTrue(mockQueue.wasQueueCalled);
+		assertEquals(1, mockQueue.getCachedEntities().size());
+		verifyGetSharedStateCalls(1, 1, 1);
 	}
 
 	@Test
-	public void testHandleExperienceEventRequest_whenCollectConsentNo_doesNotQueue() throws Exception {
-		when(
-			mockExtensionApi.getXDMSharedEventState(
-				eq(EdgeConstants.SharedState.CONSENT),
-				any(Event.class),
-				isNull(ExtensionErrorCallback.class)
-			)
-		)
-			.thenReturn(getConsentsData(ConsentStatus.NO));
+	public void testHandleExperienceEventRequest_whenCollectConsentNo_doesNotQueue() {
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			new SharedStateResult(SharedStateStatus.SET, getConsentsData(ConsentStatus.NO))
+		);
 
 		edgeExtension.handleExperienceEventRequest(event1);
 
 		//verify
-		assertEquals(0, edgeExtension.getCachedEvents().size());
+		assertFalse(mockQueue.wasQueueCalled);
+		verifyGetSharedStateCalls(0, 0, 1);
 	}
 
 	@Test
-	public void testHandleExperienceEventRequest_whenCollectConsentPending_queues() throws Exception {
-		when(
-			mockExtensionApi.getXDMSharedEventState(
-				eq(EdgeConstants.SharedState.CONSENT),
-				any(Event.class),
-				isNull(ExtensionErrorCallback.class)
-			)
-		)
-			.thenReturn(getConsentsData(ConsentStatus.PENDING));
+	public void testHandleExperienceEventRequest_whenCollectConsentPending_queues() {
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			new SharedStateResult(SharedStateStatus.SET, getConsentsData(ConsentStatus.PENDING))
+		);
 
 		edgeExtension.handleExperienceEventRequest(event1);
 
 		//verify
-		assertEquals(1, edgeExtension.getCachedEvents().size());
+		assertTrue(mockQueue.wasQueueCalled);
+		assertEquals(1, mockQueue.getCachedEntities().size());
+		verifyGetSharedStateCalls(1, 1, 1);
 	}
 
 	@Test
 	public void testHandleExperienceEventRequest_whenConsentSharedStateNull_usesCurrentConsent() throws Exception {
-		when(
-			mockExtensionApi.getXDMSharedEventState(
-				eq(EdgeConstants.SharedState.CONSENT),
-				any(Event.class),
-				isNull(ExtensionErrorCallback.class)
-			)
-		)
-			.thenReturn(null);
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			null
+		);
 
+		// todo: verify this
 		// test current consent yes
 		state.updateCurrentConsent(ConsentStatus.YES);
 		edgeExtension.handleExperienceEventRequest(event1);
 
 		//verify
-		assertEquals(1, edgeExtension.getCachedEvents().size());
+		assertEquals(1, mockQueue.getCachedEntities().size());
 
 		// test current consent no
 		state.updateCurrentConsent(ConsentStatus.NO);
 		edgeExtension.handleExperienceEventRequest(event1);
 
 		//verify
-		assertEquals(1, edgeExtension.getCachedEvents().size());
+		assertEquals(1, mockQueue.getCachedEntities().size());
 
 		// test current consent yes
 		state.updateCurrentConsent(ConsentStatus.YES);
 		edgeExtension.handleExperienceEventRequest(event1);
 
 		//verify
-		assertEquals(2, edgeExtension.getCachedEvents().size());
+		assertEquals(2, mockQueue.getCachedEntities().size());
+	}
+
+	@Test
+	public void testHandleExperienceEventRequest_whenEmptyEventData_ignoresEvent() {
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			null
+		);
+
+		edgeExtension.handleExperienceEventRequest(
+			new Event.Builder("event1", EventType.EDGE, EventSource.REQUEST_CONTENT).build()
+		);
+
+		//verify
+		assertFalse(mockQueue.wasQueueCalled);
+		assertEquals(0, mockQueue.getCachedEntities().size());
 	}
 
 	// Tests for void handleConsentUpdate(final Event event)
-	// testHear_edgeUpdateConsent_whenEmptyData - see EdgeExtensionListenerTests
 
 	@Test
 	public void testHandleConsentUpdate_queues() {
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			null // consent data taken from current event and not from shared state in this case
+		);
 		edgeExtension.handleConsentUpdate(
 			new Event.Builder("Consent update", EventType.EDGE, EventSource.UPDATE_CONSENT)
 				.setEventData(getConsentsData(ConsentStatus.YES))
 				.build()
 		);
 
-		assertEquals(1, edgeExtension.getCachedEvents().size());
+		assertEquals(1, mockQueue.getCachedEntities().size());
+
+		verifyGetSharedStateCalls(1, 1, 0);
+	}
+
+	@Test
+	public void testHandleConsentUpdate_whenEmptyEventData_ignoresEvent() {
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			null
+		);
+
+		edgeExtension.handleConsentUpdate(
+			new Event.Builder("Consent update", EventType.EDGE, EventSource.UPDATE_CONSENT).build()
+		);
+
+		//verify
+		assertFalse(mockQueue.wasQueueCalled);
+		assertEquals(0, mockQueue.getCachedEntities().size());
+	}
+
+	@Test
+	public void testProcessAndQueueEvent_whenConfigIdMissing_dropsEvent() {
+		mockSharedStates(
+			new SharedStateResult(
+				SharedStateStatus.SET,
+				new HashMap<String, Object>() {
+					{
+						put("test", "missingEdgeConfigId");
+					}
+				}
+			),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			null
+		);
+
+		edgeExtension.processAndQueueEvent(event1);
+
+		//verify
+		assertEquals(0, mockQueue.getCachedEntities().size());
 	}
 
 	// Tests for void handleConsentPreferencesUpdate(final Event event)
-	// testHear_consentPreferencesUpdated_whenEmptyData - see EdgeExtensionListenerTests
 
 	@Test
-	public void testHandlePreferencesUpdate_validData() {
+	public void testHandlePreferencesUpdate_validData_readsConsentStatus() {
 		edgeExtension.handleConsentPreferencesUpdate(
 			new Event.Builder("Consent update", EventType.CONSENT, EventSource.RESPONSE_CONTENT)
 				.setEventData(getConsentsData(ConsentStatus.YES))
@@ -205,8 +266,40 @@ public class EdgeExtensionTest {
 		assertEquals(ConsentStatus.YES, state.getCurrentCollectConsent());
 	}
 
-	// Tests for void handleSharedStateUpdate(final Event event)
-	// testHear_sharedStateUpdate_whenEmptyData - see EdgeExtensionListenerTests
+	@Test
+	public void testHandlePreferencesUpdate_whenEmptyEventData_ignoresEvent() {
+		// set consent preferences yes
+		state.updateCurrentConsent(ConsentStatus.YES);
+
+		//
+		edgeExtension.handleConsentPreferencesUpdate(
+			new Event.Builder("Consent update", EventType.CONSENT, EventSource.RESPONSE_CONTENT).build()
+		);
+
+		assertEquals(0, mockQueue.getCachedEntities().size());
+		assertEquals(ConsentStatus.YES, state.getCurrentCollectConsent());
+	}
+
+	@Test
+	public void testHandlePreferencesUpdate_invalidPayloadFormat_setsDefaultConsentPending() {
+		edgeExtension.handleConsentPreferencesUpdate(
+			new Event.Builder("Consent update", EventType.CONSENT, EventSource.RESPONSE_CONTENT)
+				.setEventData(
+					new HashMap<String, Object>() {
+						{
+							put("consents", "I am a string and not a map");
+						}
+					}
+				)
+				.build()
+		);
+
+		assertEquals(0, mockQueue.getCachedEntities().size());
+		assertEquals(ConsentStatus.PENDING, state.getCurrentCollectConsent());
+	}
+
+ Tests for void handleSharedStateUpdate(final Event event)
+ testHear_sharedStateUpdate_whenEmptyData - see EdgeExtensionListenerTests
 
 	@Test
 	public void testHandleSharedStateUpdate_hubSharedState_consentNotRegistered() {
@@ -290,79 +383,97 @@ public class EdgeExtensionTest {
 		assertEquals(EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE, details.get("name"));
 	}
 
-	@Test
-	public void testProcessAddEvent_nullEvent_doesNotCrash() {
-		edgeExtension.processAddEvent(null);
-
-		//verify
-		assertEquals(0, edgeExtension.getCachedEvents().size());
-		assertEquals(0, mockQueue.getCachedEntities().size());
-	}
 
 	@Test
-	public void testProcessCachedEvents_resetComplete_doesNotWaitForConfigIdentity() {
-		edgeExtension.processAddEvent(
-			new Event.Builder("test", "com.adobe.eventType.edgeIdentity", "com.adobe.eventSource.resetComplete").build()
-		);
-		edgeExtension.processCachedEvents();
-
-		//verify
-		assertEquals(0, edgeExtension.getCachedEvents().size());
-		assertEquals(1, mockQueue.getCachedEntities().size());
-	}
-
-	@Test
-	public void testProcessCachedEvents_otherEvents_waitsForConfig() {
-		edgeExtension.processAddEvent(event1);
-		edgeExtension.processCachedEvents();
-
-		//verify
-		assertEquals(1, edgeExtension.getCachedEvents().size());
-		assertEquals(0, mockQueue.getCachedEntities().size());
-	}
-
-	@Test
-	public void testProcessCachedEvents_otherEvents_waitsForIdentity() {
-		mockSharedStates(configData, null);
-
-		edgeExtension.processAddEvent(event1);
-		edgeExtension.processCachedEvents();
-
-		//verify
-		assertEquals(1, edgeExtension.getCachedEvents().size());
-		assertEquals(0, mockQueue.getCachedEntities().size());
-	}
-
-	@Test
-	public void testProcessCachedEvents_otherEvents_whenConfigIdMissing_dropsEvent() {
+	public void testReadyForEvent_whenNotBootedUp_waits_returnsFalse() {
+		// setup: bootupIfNeeded waits for HUB shared state
+		mockHubSharedState(new SharedStateResult(SharedStateStatus.PENDING, null));
 		mockSharedStates(
-			new HashMap<String, Object>() {
-				{
-					put("test", "missingEdgeConfigId");
-				}
-			},
-			identityState
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			null
 		);
-
-		edgeExtension.processAddEvent(event1);
-		edgeExtension.processCachedEvents();
-
-		//verify
-		assertEquals(0, edgeExtension.getCachedEvents().size());
-		assertEquals(0, mockQueue.getCachedEntities().size());
+		assertFalse(edgeExtension.readyForEvent(event1));
 	}
 
 	@Test
-	public void testProcessCachedEvents_otherEvents_happy() {
-		mockSharedStates(configData, identityState);
+	public void testReadyForEvent_resetIdentityComplete_waitsForConfig_returnsFalse() {
+		// setup: mock hub shared state for bootupIfNeeded
+		mockHubSharedState(new SharedStateResult(SharedStateStatus.SET, getHubExtensions(true)));
+		mockSharedStates(new SharedStateResult(SharedStateStatus.PENDING, null), null, null);
+		Event resetCompleteEvent = new Event.Builder(
+			"test reset complete",
+			EventType.EDGE_IDENTITY,
+			EventSource.RESET_COMPLETE
+		)
+			.build();
+		assertFalse(edgeExtension.readyForEvent(resetCompleteEvent));
+	}
 
-		edgeExtension.processAddEvent(event1);
-		edgeExtension.processCachedEvents();
+	@Test
+	public void testReadyForEvent_resetIdentityComplete_waitsForIdentity_returnsFalse() {
+		// setup: mock hub shared state for bootupIfNeeded
+		mockHubSharedState(new SharedStateResult(SharedStateStatus.SET, getHubExtensions(true)));
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.PENDING, null),
+			null
+		);
+		Event resetCompleteEvent = new Event.Builder(
+			"test reset complete",
+			EventType.EDGE_IDENTITY,
+			EventSource.RESET_COMPLETE
+		)
+			.build();
+		assertFalse(edgeExtension.readyForEvent(resetCompleteEvent));
+	}
+
+	@Test
+	public void testReadyForEvent_resetIdentityComplete_withConfigAndIdentity_returnsTrue() {
+		// setup: mock hub shared state for bootupIfNeeded
+		mockHubSharedState(new SharedStateResult(SharedStateStatus.SET, getHubExtensions(true)));
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			null
+		);
+		Event resetCompleteEvent = new Event.Builder(
+			"test reset complete",
+			EventType.EDGE_IDENTITY,
+			EventSource.RESET_COMPLETE
+		)
+			.build();
+		assertTrue(edgeExtension.readyForEvent(resetCompleteEvent));
+	}
+
+	@Test
+	public void testReadyForEvent_otherEvents_waitsForConfig_returnsFalse() {
+		mockSharedStates(new SharedStateResult(SharedStateStatus.PENDING, null), null, null);
 
 		//verify
-		assertEquals(0, edgeExtension.getCachedEvents().size());
-		assertEquals(1, mockQueue.getCachedEntities().size());
+		assertFalse(edgeExtension.readyForEvent(event1));
 	}
+
+	@Test
+	public void testReadyForEvent_otherEvents_waitsForIdentity_returnsFalse() {
+		mockSharedStates(new SharedStateResult(SharedStateStatus.SET, configData), null, null);
+
+		//verify
+		assertFalse(edgeExtension.readyForEvent(event1));
+	}
+
+	@Test
+	public void testReadyForEvent_otherEvents_withConfigAndIdentity_returnsTrue() {
+		// setup: mock hub shared state for bootupIfNeeded
+		mockHubSharedState(new SharedStateResult(SharedStateStatus.SET, getHubExtensions(true)));
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			null
+		);
+		assertTrue(edgeExtension.readyForEvent(event1));
+	}
+
 
 	@Test
 	public void testHandleGetLocationHint_dispatchesResponseWithHintValue() {
@@ -474,34 +585,84 @@ public class EdgeExtensionTest {
 		assertNull(state.getLocationHint());
 	}
 
-	private void mockSharedStates(final Map<String, Object> config, final Map<String, Object> identity) {
+	private void mockSharedStates(
+		final SharedStateResult config,
+		final SharedStateResult identity,
+		final SharedStateResult consent
+	) {
 		when(
-			mockExtensionApi.getSharedEventState(
+			mockExtensionApi.getSharedState(
 				eq(EdgeConstants.SharedState.CONFIGURATION),
 				any(Event.class),
-				any(ExtensionErrorCallback.class)
+				any(Boolean.class),
+				any(SharedStateResolution.class)
 			)
 		)
 			.thenReturn(config);
+
 		when(
-			mockExtensionApi.getXDMSharedEventState(
+			mockExtensionApi.getXDMSharedState(
 				eq(EdgeConstants.SharedState.IDENTITY),
 				any(Event.class),
-				any(ExtensionErrorCallback.class)
+				any(Boolean.class),
+				any(SharedStateResolution.class)
 			)
 		)
 			.thenReturn(identity);
-	}
 
-	private void mockHubSharedState(final Map<String, Object> hub) {
 		when(
-			mockExtensionApi.getSharedEventState(
-				eq(EdgeConstants.SharedState.HUB),
+			mockExtensionApi.getXDMSharedState(
+				eq(EdgeConstants.SharedState.CONSENT),
 				any(Event.class),
-				isNull(ExtensionErrorCallback.class)
+				any(Boolean.class),
+				any(SharedStateResolution.class)
 			)
 		)
-			.thenReturn(hub);
+			.thenReturn(consent);
+	}
+
+	private void verifyGetSharedStateCalls(final int configTimes, final int identityTimes, final int consentTimes) {
+		if (configTimes >= 0) {
+			verify(mockExtensionApi, times(configTimes))
+				.getSharedState(
+					eq(EdgeConstants.SharedState.CONFIGURATION),
+					any(Event.class),
+					any(Boolean.class),
+					any(SharedStateResolution.class)
+				);
+		}
+
+		if (identityTimes >= 0) {
+			verify(mockExtensionApi, times(identityTimes))
+				.getXDMSharedState(
+					eq(EdgeConstants.SharedState.IDENTITY),
+					any(Event.class),
+					any(Boolean.class),
+					any(SharedStateResolution.class)
+				);
+		}
+
+		if (consentTimes >= 0) {
+			verify(mockExtensionApi, times(consentTimes))
+				.getXDMSharedState(
+					eq(EdgeConstants.SharedState.CONSENT),
+					any(Event.class),
+					any(Boolean.class),
+					any(SharedStateResolution.class)
+				);
+		}
+	}
+
+	private void mockHubSharedState(final SharedStateResult sharedStateResult) {
+		when(
+			mockExtensionApi.getSharedState(
+				eq(EdgeConstants.SharedState.HUB),
+				isNull(),
+				any(Boolean.class),
+				any(SharedStateResolution.class)
+			)
+		)
+			.thenReturn(sharedStateResult);
 	}
 
 	/**

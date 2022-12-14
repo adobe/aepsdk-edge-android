@@ -31,136 +31,6 @@ public class EdgeExtensionListenerTests {
 		MobileCore.start(null);
 	}
 	/* TODO revisit event listener tests to see if they can be reused
-	@Test
-	public void testHear_WhenParentExtensionNull() throws Exception {
-		// setup
-		Event event = new Event.Builder(
-			"Edge Request Content",
-			EventType.EDGE,
-			EventSource.REQUEST_CONTENT
-		)
-			.build();
-		doReturn(null).when(listener).getParentExtension();
-
-		// test
-		listener.hear(event);
-
-		// verify
-		testExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
-		verify(mockEdgeExtension, times(0)).handleExperienceEventRequest(any(Event.class));
-	}
-
-	@Test
-	public void testHear_WhenEventNull() throws Exception {
-		// setup
-		doReturn(mockEdgeExtension).when(listener).getParentExtension();
-
-		// test
-		listener.hear(null);
-
-		// verify
-		testExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
-		verify(mockEdgeExtension, times(0)).handleExperienceEventRequest(any(Event.class));
-		verify(mockEdgeExtension, times(0)).handleConsentUpdate(any(Event.class));
-		verify(mockEdgeExtension, times(0)).handleConsentPreferencesUpdate(any(Event.class));
-		verify(mockEdgeExtension, times(0)).handleSharedStateUpdate(any(Event.class));
-	}
-
-	@Test
-	public void testHear_edgeRequestContent() throws Exception {
-		// setup
-		Event event = new Event.Builder(
-			"Edge Request Content",
-			EventType.EDGE,
-			EventSource.REQUEST_CONTENT
-		)
-			.setEventData(
-				new HashMap<String, Object>() {
-					{
-						put("xdm", "example");
-					}
-				}
-			)
-			.build();
-		doReturn(testExecutor).when(mockEdgeExtension).getExecutor();
-		doReturn(mockEdgeExtension).when(listener).getParentExtension();
-
-		// test
-		listener.hear(event);
-
-		// verify
-		testExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
-		verify(mockEdgeExtension, times(1)).handleExperienceEventRequest(event);
-	}
-
-	@Test
-	public void testHear_edgeRequestContent_whenEmptyData() throws Exception {
-		// setup
-		Event event = new Event.Builder(
-			"Edge Request Content",
-			EventType.EDGE,
-			EventSource.REQUEST_CONTENT
-		)
-			.setEventData(new HashMap<String, Object>())
-			.build();
-		doReturn(testExecutor).when(mockEdgeExtension).getExecutor();
-		doReturn(mockEdgeExtension).when(listener).getParentExtension();
-
-		// test
-		listener.hear(event);
-
-		// verify
-		testExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
-		verify(mockEdgeExtension, times(0)).handleExperienceEventRequest(event);
-	}
-
-	@Test
-	public void testHear_edgeUpdateConsent() throws Exception {
-		// setup
-		Event event = new Event.Builder(
-			"Edge Update Consent",
-			EventType.EDGE,
-			EventSource.UPDATE_CONSENT
-		)
-			.setEventData(
-				new HashMap<String, Object>() {
-					{
-						put("consents", "example");
-					}
-				}
-			)
-			.build();
-		doReturn(testExecutor).when(mockEdgeExtension).getExecutor();
-		doReturn(mockEdgeExtension).when(listener).getParentExtension();
-
-		// test
-		listener.hear(event);
-
-		// verify
-		testExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
-		verify(mockEdgeExtension, times(1)).handleConsentUpdate(event);
-	}
-
-	@Test
-	public void testHear_edgeUpdateConsent_whenEmptyData() throws Exception {
-		// setup
-		Event event = new Event.Builder(
-			"Edge Update Consent",
-			EventType.EDGE,
-			EventSource.UPDATE_CONSENT
-		)
-			.setEventData(new HashMap<String, Object>())
-			.build();
-		doReturn(testExecutor).when(mockEdgeExtension).getExecutor();
-		doReturn(mockEdgeExtension).when(listener).getParentExtension();
-
-		// test
-		listener.hear(event);
-
-		// verify
-		testExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
-		verify(mockEdgeExtension, times(0)).handleConsentUpdate(event);
-	}
 
 	@Test
 	public void testHear_consentPreferencesUpdated() throws Exception {
@@ -187,26 +57,6 @@ public class EdgeExtensionListenerTests {
 		// verify
 		testExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
 		verify(mockEdgeExtension, times(1)).handleConsentPreferencesUpdate(event);
-	}
-
-	@Test
-	public void testHear_consentPreferencesUpdated_whenEmptyData() throws Exception {
-		// setup
-		Event event = new Event.Builder(
-			"Consent preferences",
-			EventType.CONSENT,
-			EventSource.RESPONSE_CONTENT
-		)
-			.build();
-		doReturn(testExecutor).when(mockEdgeExtension).getExecutor();
-		doReturn(mockEdgeExtension).when(listener).getParentExtension();
-
-		// test
-		listener.hear(event);
-
-		// verify
-		testExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
-		verify(mockEdgeExtension, times(0)).handleConsentPreferencesUpdate(event);
 	}
 
 	@Test
@@ -237,26 +87,6 @@ public class EdgeExtensionListenerTests {
 	}
 
 	@Test
-	public void testHear_edgeIdentityResetComplete() throws Exception {
-		// setup
-		Event event = new Event.Builder(
-			"Edge Identity Reset Complete",
-			EventType.EDGE_IDENTITY,
-			EventSource.RESET_COMPLETE
-		)
-			.build();
-		doReturn(testExecutor).when(mockEdgeExtension).getExecutor();
-		doReturn(mockEdgeExtension).when(listener).getParentExtension();
-
-		// test
-		listener.hear(event);
-
-		// verify
-		testExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
-		verify(mockEdgeExtension, times(1)).handleResetComplete(event);
-	}
-
-	@Test
 	public void testHear_sharedStateUpdate_whenEmptyData() throws Exception {
 		// setup
 		Event event = new Event.Builder(
@@ -275,33 +105,6 @@ public class EdgeExtensionListenerTests {
 		// verify
 		testExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
 		verify(mockEdgeExtension, times(0)).handleSharedStateUpdate(event);
-	}
-
-	@Test
-	public void testHear_getLocationHintEvent() throws Exception {
-		// setup
-		Event event = new Event.Builder(
-			"Edge Get Location Hint",
-			EventType.EDGE,
-			EventSource.REQUEST_IDENTITY
-		)
-			.setEventData(
-				new HashMap<String, Object>() {
-					{
-						put(EdgeConstants.EventDataKey.LOCATION_HINT, true);
-					}
-				}
-			)
-			.build();
-		doReturn(testExecutor).when(mockEdgeExtension).getExecutor();
-		doReturn(mockEdgeExtension).when(listener).getParentExtension();
-
-		// test
-		listener.hear(event);
-
-		// verify
-		testExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
-		verify(mockEdgeExtension, times(1)).handleGetLocationHint(event);
 	}
 
 	@Test

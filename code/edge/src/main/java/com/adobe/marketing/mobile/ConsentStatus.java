@@ -12,7 +12,8 @@
 package com.adobe.marketing.mobile;
 
 import com.adobe.marketing.mobile.services.Log;
-import java.util.HashMap;
+import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.DataReaderException;
 import java.util.Map;
 
 /**
@@ -65,20 +66,24 @@ enum ConsentStatus {
 		String collectConsentValue = null;
 
 		try {
-			Map<String, Object> consents = (HashMap<String, Object>) eventData.get(
+			Map<String, Object> consents = DataReader.getTypedMap(
+				Object.class,
+				eventData,
 				EdgeConstants.SharedState.Consent.CONSENTS
 			);
 
 			if (consents != null) {
-				Map<String, Object> collectConsent = (HashMap<String, Object>) consents.get(
+				Map<String, Object> collectConsent = DataReader.getTypedMap(
+					Object.class,
+					consents,
 					EdgeConstants.SharedState.Consent.COLLECT
 				);
 
 				if (collectConsent != null) {
-					collectConsentValue = (String) collectConsent.get(EdgeConstants.SharedState.Consent.VAL);
+					collectConsentValue = DataReader.getString(collectConsent, EdgeConstants.SharedState.Consent.VAL);
 				}
 			}
-		} catch (ClassCastException e) {
+		} catch (DataReaderException e) {
 			// if collect consent not set yet, use default (pending)
 			Log.trace(
 				EdgeConstants.LOG_TAG,

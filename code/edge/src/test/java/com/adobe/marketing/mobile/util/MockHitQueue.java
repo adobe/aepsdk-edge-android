@@ -24,12 +24,14 @@ import java.util.List;
 public class MockHitQueue extends HitQueuing {
 
 	List<DataEntity> queueParams = new ArrayList<>();
-	boolean wasClearCalled = false;
-	boolean wasSuspendCalled = false;
-	boolean wasBeginProcessingCalled = false;
+	public boolean wasQueueCalled = false;
+	public boolean wasClearCalled = false;
+	public boolean wasSuspendCalled = false;
+	public boolean wasBeginProcessingCalled = false;
 
 	@Override
 	public boolean queue(final DataEntity entity) {
+		wasQueueCalled = true;
 		queueParams.add(entity);
 		return true;
 	}

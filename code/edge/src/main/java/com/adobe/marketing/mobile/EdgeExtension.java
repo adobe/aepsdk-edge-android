@@ -14,6 +14,7 @@ package com.adobe.marketing.mobile;
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 import com.adobe.marketing.mobile.services.DataQueue;
 import com.adobe.marketing.mobile.services.HitQueuing;
 import com.adobe.marketing.mobile.services.Log;
@@ -56,7 +57,7 @@ class EdgeExtension extends Extension {
 		}
 	};
 
-	// package protected for testing
+	@VisibleForTesting
 	final EdgeState state;
 
 	/**
@@ -182,9 +183,19 @@ class EdgeExtension extends Extension {
 	 * Valid Configuration and Identity shared states are required for processing the event. If a valid Configuration shared state is
 	 * available, but no {@code edge.configId } is found or {@link #shouldIgnore(Event)}` returns true, the event is dropped.
 	 *
-	 * @param event an event containing {@link ExperienceEvent} data for processing; the event and the event data should not be null, checking in listener
+	 * @param event an event containing {@link ExperienceEvent} data for processing; the event data should not be null/empty
 	 */
 	void handleExperienceEventRequest(@NonNull final Event event) {
+		if (Utils.isNullOrEmpty(event.getEventData())) {
+			Log.trace(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Event with id %s contained no data, ignoring.",
+				event.getUniqueIdentifier()
+			);
+			return;
+		}
+
 		if (shouldIgnore(event)) {
 			return;
 		}
@@ -194,18 +205,37 @@ class EdgeExtension extends Extension {
 	/**
 	 * Handles the Consent Update event
 	 *
-	 * @param event current event to process; the event and the event data should not be null, checking in listener
+	 * @param event current event to process; the event data should not be null/empty
 	 */
 	void handleConsentUpdate(@NonNull final Event event) {
+		if (Utils.isNullOrEmpty(event.getEventData())) {
+			Log.trace(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Consent update request with id %s contained no data, ignoring.",
+				event.getUniqueIdentifier()
+			);
+			return;
+		}
+
 		processAndQueueEvent(event);
 	}
 
 	/**
 	 * Handles the {@link EventType#CONSENT} - {@link EventSource#RESPONSE_CONTENT} event for the collect consent change
 	 *
-	 * @param event current event to process; the event and the event data should not be null, checking in listener
+	 * @param event current event to process; the event data should not be null/empty
 	 */
 	void handleConsentPreferencesUpdate(@NonNull final Event event) {
+		if (Utils.isNullOrEmpty(event.getEventData())) {
+			Log.trace(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Consent preferences with id %s contained no data, ignoring.",
+				event.getUniqueIdentifier()
+			);
+			return;
+		}
 		state.updateCurrentConsent(ConsentStatus.getCollectConsentOrDefault(event.getEventData()));
 	}
 
