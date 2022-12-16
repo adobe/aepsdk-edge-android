@@ -61,20 +61,17 @@ spotless {
 dependencies {
     // Add dependencies on AEP Mobile extensions
     implementation project(':edge')
-    // TODO - Uncomment next line when Core 2.0 is published to Maven
-    //implementation 'com.adobe.marketing.mobile:core:1.+'
-    implementation "com.github.adobe.aepsdk-core-android:core:dev-v2.0.0-SNAPSHOT"
-    implementation ('com.adobe.marketing.mobile:edgeconsent:1.+') {
-        transitive = false
-    }
-    implementation ('com.adobe.marketing.mobile:edgeidentity:1.+') {
-        transitive = false
-    }
-    // TODO: Remove android.enableJettifier after upgrading to an AndroidX compatible Assurance SDK
-    implementation ('com.adobe.marketing.mobile:assurance:1.+') {
-        transitive = false
-    }
 
+    // TODO - Uncomment next lines when 2.0 is published to Maven
+    //implementation 'com.adobe.marketing.mobile:core:1.+'
+    //implementation 'com.adobe.marketing.mobile:edgeconsent:1.+'
+    //implementation 'com.adobe.marketing.mobile:edgeidentity:1.+'
+    //implementation 'com.adobe.marketing.mobile:assurance:1.+'
+    implementation "com.github.adobe.aepsdk-core-android:core:dev-v2.0.0-SNAPSHOT"
+    implementation fileTree(dir: 'libs', include: ['edgeidentity-release-2.0.0.aar', 'edgeconsent-release-2.0.0.aar'])
+    implementation ('com.github.adobe:aepsdk-assurance-android:v2.0.0-alpha.1') {
+        transitive = false
+    }
     // project dependencies
     implementation 'androidx.appcompat:appcompat:1.5.1'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
