@@ -23,36 +23,33 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.powermock.api.mockito.PowerMockito.doReturn;
-import static org.powermock.api.mockito.PowerMockito.mockStatic;
-import static org.powermock.api.mockito.PowerMockito.when;
-import static org.powermock.api.mockito.PowerMockito.whenNew;
+import static org.mockito.Mockito.when;
 
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.MockedStatic;
+import org.mockito.junit.MockitoJUnitRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({ CompletionCallbacksManager.class, ExtensionApi.class })
+@RunWith(MockitoJUnitRunner.class)
 public class EdgeHitProcessorTests {
 
 	// for Endpoint tests
@@ -193,6 +190,8 @@ public class EdgeHitProcessorTests {
 	private Map<String, Object> assuranceSharedState;
 	private CountDownLatch latchOfOne;
 
+	private static MockedStatic<CompletionCallbacksManager> callbacksManagersMockedStatic;
+
 	@Mock
 	EdgeNetworkService mockEdgeNetworkService;
 
@@ -203,21 +202,15 @@ public class EdgeHitProcessorTests {
 	NetworkResponseHandler mockNetworkResponseHandler;
 
 	@Mock
-	RequestBuilder mockRequestBuilder;
-
-	@Mock
 	NamedCollection mockNamedCollection;
 
 	@Before
 	public void setup() throws Exception {
-		mockStatic(CompletionCallbacksManager.class);
-		when(CompletionCallbacksManager.getInstance()).thenReturn(mockResponseCallbackHandler);
+		callbacksManagersMockedStatic = mockStatic(CompletionCallbacksManager.class);
+		callbacksManagersMockedStatic
+			.when(CompletionCallbacksManager::getInstance)
+			.thenReturn(mockResponseCallbackHandler);
 
-		whenNew(RequestBuilder.class).withAnyArguments().thenReturn(mockRequestBuilder);
-		JSONObject test = new JSONObject();
-		test.put("test", "case");
-		doReturn(test).when(mockRequestBuilder).getPayloadWithExperienceEvents(isA(List.class));
-		doReturn(test).when(mockRequestBuilder).getConsentPayload(any(Event.class));
 		setUpDefaultSharedStates();
 
 		hitProcessor =
@@ -244,6 +237,11 @@ public class EdgeHitProcessorTests {
 				}
 			);
 		latchOfOne = new CountDownLatch(1);
+	}
+
+	@After
+	public void tearDown() {
+		callbacksManagersMockedStatic.close();
 	}
 
 	private void setUpDefaultSharedStates() {
@@ -378,7 +376,7 @@ public class EdgeHitProcessorTests {
 		callbackArgCaptor.getValue().onComplete(); // simulates this is done by the doRequest method
 		verify(mockNetworkResponseHandler);
 		mockNetworkResponseHandler.removeWaitingEvents(hit.getRequestId());
-		verify(mockResponseCallbackHandler, times(0));
+		verify(mockResponseCallbackHandler, never());
 		mockResponseCallbackHandler.unregisterCallback(anyString());
 	}
 
@@ -1134,7 +1132,7 @@ public class EdgeHitProcessorTests {
 			}
 			callbackArgCaptor.getValue().onComplete(); // simulates this is done by the doRequest method
 		} else {
-			verify(mockEdgeNetworkService, times(0))
+			verify(mockEdgeNetworkService, never())
 				.doRequest(
 					anyString(),
 					anyString(),

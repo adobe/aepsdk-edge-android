@@ -18,13 +18,15 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.powermock.api.mockito.PowerMockito.mockStatic;
-import static org.powermock.api.mockito.PowerMockito.verifyStatic;
 
+import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,18 +38,19 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.MockedStatic;
+import org.mockito.junit.MockitoJUnitRunner;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({ MobileCore.class })
+@RunWith(MockitoJUnitRunner.class)
 public class NetworkResponseHandlerTest {
 
 	private static final String EVENT_TYPE_EDGE = "com.adobe.eventType.edge";
@@ -83,21 +86,17 @@ public class NetworkResponseHandlerTest {
 	@Mock
 	NamedCollection mockNamedCollection;
 
-	class TestMobileCoreLog {
-
-		String logMessage;
-		LoggingMode loggingMode;
-
-		TestMobileCoreLog(final LoggingMode logMode, final String message) {
-			this.loggingMode = logMode;
-			this.logMessage = message;
-		}
-	}
+	MockedStatic<MobileCore> mockCore;
 
 	@Before
 	public void setup() {
-		mockStatic(MobileCore.class);
+		mockCore = mockStatic(MobileCore.class);
 		networkResponseHandler = new NetworkResponseHandler(mockNamedCollection, edgeStateCallback);
+	}
+
+	@After
+	public void tearDown() {
+		mockCore.close();
 	}
 
 	@Test
@@ -105,8 +104,7 @@ public class NetworkResponseHandlerTest {
 		final String jsonError = null;
 		networkResponseHandler.processResponseOnError(jsonError, "123");
 
-		verifyStatic(MobileCore.class, times(0));
-		MobileCore.dispatchEvent(any(Event.class));
+		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), never());
 	}
 
 	@Test
@@ -114,8 +112,7 @@ public class NetworkResponseHandlerTest {
 		final String jsonError = "";
 		networkResponseHandler.processResponseOnError(jsonError, "123");
 
-		verifyStatic(MobileCore.class, times(0));
-		MobileCore.dispatchEvent(any(Event.class));
+		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), never());
 	}
 
 	@Test
@@ -123,8 +120,7 @@ public class NetworkResponseHandlerTest {
 		final String jsonError = "{ invalid json }";
 		networkResponseHandler.processResponseOnError(jsonError, "123");
 
-		verifyStatic(MobileCore.class, times(0));
-		MobileCore.dispatchEvent(any(Event.class));
+		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), never());
 	}
 
 	@Test
@@ -342,15 +338,14 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnError(jsonError, "123");
 
 		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
-		verifyStatic(MobileCore.class, times(2));
-		MobileCore.dispatchEvent(eventArgCaptor.capture());
+		mockCore.verify(() -> MobileCore.dispatchEvent(eventArgCaptor.capture()), times(2));
 
 		List<Event> returnedEvents = eventArgCaptor.getAllValues();
 		assertEquals(2, returnedEvents.size());
 		Event returnedEvent = returnedEvents.get(0);
 		assertNotNull(returnedEvent);
-		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
-		assertTrue(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT.equalsIgnoreCase(returnedEvent.getSource()));
+		assertEquals(EVENT_TYPE_EDGE, returnedEvent.getType());
+		assertEquals(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT, returnedEvent.getSource());
 		Map<String, Object> expectedEventData = new HashMap<>();
 		expectedEventData.put("type", "https://ns.adobe.com/aep/errors/EXEG-0201-503");
 		expectedEventData.put("status", 503);
@@ -363,8 +358,8 @@ public class NetworkResponseHandlerTest {
 
 		returnedEvent = returnedEvents.get(1);
 		assertNotNull(returnedEvent);
-		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
-		assertTrue(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT.equalsIgnoreCase(returnedEvent.getSource()));
+		assertEquals(EVENT_TYPE_EDGE, returnedEvent.getType());
+		assertEquals(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT, returnedEvent.getSource());
 		expectedEventData = new HashMap<>();
 		expectedEventData.put("type", "https://ns.adobe.com/aep/errors/EXEG-0201-502");
 		expectedEventData.put("status", 502);
@@ -378,8 +373,7 @@ public class NetworkResponseHandlerTest {
 		final String jsonResponse = null;
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
-		verifyStatic(MobileCore.class, times(0));
-		MobileCore.dispatchEvent(any(Event.class));
+		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), never());
 	}
 
 	@Test
@@ -387,8 +381,7 @@ public class NetworkResponseHandlerTest {
 		final String jsonResponse = "";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
-		verifyStatic(MobileCore.class, times(0));
-		MobileCore.dispatchEvent(any(Event.class));
+		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), never());
 	}
 
 	@Test
@@ -396,8 +389,7 @@ public class NetworkResponseHandlerTest {
 		final String jsonResponse = "{ invalid json }";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
-		verifyStatic(MobileCore.class, times(0));
-		MobileCore.dispatchEvent(any(Event.class));
+		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), never());
 	}
 
 	@Test
@@ -465,7 +457,7 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
 		// verify
-		verify(mockNamedCollection, times(0)).setMap(eq(EdgeConstants.DataStoreKeys.STORE_PAYLOADS), any(Map.class));
+		verify(mockNamedCollection, never()).setMap(eq(EdgeConstants.DataStoreKeys.STORE_PAYLOADS), any(Map.class));
 	}
 
 	@Test
@@ -526,7 +518,7 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
 		// verify
-		verify(mockNamedCollection, times(0)).setMap(eq(EdgeConstants.DataStoreKeys.STORE_PAYLOADS), any(Map.class));
+		verify(mockNamedCollection, never()).setMap(eq(EdgeConstants.DataStoreKeys.STORE_PAYLOADS), any(Map.class));
 	}
 
 	@Test
@@ -592,8 +584,7 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
 		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
-		verifyStatic(MobileCore.class, times(2));
-		MobileCore.dispatchEvent(eventArgCaptor.capture());
+		mockCore.verify(() -> MobileCore.dispatchEvent(eventArgCaptor.capture()), times(2));
 
 		List<Event> returnedEvents = eventArgCaptor.getAllValues();
 		assertEquals(2, returnedEvents.size());
@@ -687,8 +678,7 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
 		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
-		verifyStatic(MobileCore.class, times(2));
-		MobileCore.dispatchEvent(eventArgCaptor.capture());
+		mockCore.verify(() -> MobileCore.dispatchEvent(eventArgCaptor.capture()), times(2));
 
 		List<Event> returnedEvents = eventArgCaptor.getAllValues();
 		assertEquals(2, returnedEvents.size());
@@ -771,7 +761,7 @@ public class NetworkResponseHandlerTest {
 
 		// verify
 		final Map<String, Object> expectedPayload = new HashMap<>();
-		Map<String, Object> expectedEventData = new HashMap<>();
+		Map<String, Object> expectedEventData;
 		expectedPayload.put("id", "123612123812381");
 		expectedEventData = new HashMap<>();
 		expectedEventData.put("type", "pairedeventexample");
@@ -864,8 +854,7 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
 		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
-		verifyStatic(MobileCore.class, times(2));
-		MobileCore.dispatchEvent(eventArgCaptor.capture());
+		mockCore.verify(() -> MobileCore.dispatchEvent(eventArgCaptor.capture()), times(2));
 
 		List<Event> returnedEvents = eventArgCaptor.getAllValues();
 		assertEquals(2, returnedEvents.size());
@@ -936,8 +925,7 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
 		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
-		verifyStatic(MobileCore.class, times(2));
-		MobileCore.dispatchEvent(eventArgCaptor.capture());
+		mockCore.verify(() -> MobileCore.dispatchEvent(eventArgCaptor.capture()), times(2));
 
 		List<Event> returnedEvents = eventArgCaptor.getAllValues();
 		assertEquals(2, returnedEvents.size());
@@ -1113,12 +1101,9 @@ public class NetworkResponseHandlerTest {
 			.getInstance()
 			.registerCallback(
 				requestEvent1.getUniqueIdentifier(),
-				new EdgeCallback() {
-					@Override
-					public void onComplete(final List<EdgeEventHandle> handles) {
-						receivedData1.addAll(handles);
-						latch.countDown();
-					}
+				handles -> {
+					receivedData1.addAll(handles);
+					latch.countDown();
 				}
 			);
 
@@ -1127,12 +1112,9 @@ public class NetworkResponseHandlerTest {
 			.getInstance()
 			.registerCallback(
 				requestEvent2.getUniqueIdentifier(),
-				new EdgeCallback() {
-					@Override
-					public void onComplete(final List<EdgeEventHandle> handles) {
-						receivedData2.addAll(handles);
-						latch.countDown();
-					}
+				handles -> {
+					receivedData2.addAll(handles);
+					latch.countDown();
 				}
 			);
 
@@ -1234,12 +1216,9 @@ public class NetworkResponseHandlerTest {
 			.getInstance()
 			.registerCallback(
 				requestEvent1.getUniqueIdentifier(),
-				new EdgeCallback() {
-					@Override
-					public void onComplete(final List<EdgeEventHandle> handles) {
-						receivedData1.addAll(handles);
-						latch.countDown();
-					}
+				handles -> {
+					receivedData1.addAll(handles);
+					latch.countDown();
 				}
 			);
 		// Expect callback not to be called for response errors
@@ -1247,12 +1226,9 @@ public class NetworkResponseHandlerTest {
 			.getInstance()
 			.registerCallback(
 				requestEvent2.getUniqueIdentifier(),
-				new EdgeCallback() {
-					@Override
-					public void onComplete(final List<EdgeEventHandle> handles) {
-						receivedData2.addAll(handles);
-						latch.countDown();
-					}
+				handles -> {
+					receivedData2.addAll(handles);
+					latch.countDown();
 				}
 			);
 		// Expect callback not to be called for response warnings
@@ -1260,12 +1236,9 @@ public class NetworkResponseHandlerTest {
 			.getInstance()
 			.registerCallback(
 				requestEvent3.getUniqueIdentifier(),
-				new EdgeCallback() {
-					@Override
-					public void onComplete(final List<EdgeEventHandle> handles) {
-						receivedData3.addAll(handles);
-						latch.countDown();
-					}
+				handles -> {
+					receivedData3.addAll(handles);
+					latch.countDown();
 				}
 			);
 
@@ -1296,6 +1269,7 @@ public class NetworkResponseHandlerTest {
 
 	@Test
 	public void testProcessResponseOnSuccess_WhenErrorAndWarning_logsTheTwoEvents() {
+		MockedStatic<Log> mockLogService = mockStatic(Log.class);
 		final String jsonResponse =
 			"{\n" +
 			"      \"requestId\": \"d81c93e5-7558-4996-a93c-489d550748b8\",\n" +
@@ -1317,30 +1291,27 @@ public class NetworkResponseHandlerTest {
 			"    }";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
-		List<TestMobileCoreLog> expectedLogs = new ArrayList<>();
-		expectedLogs.add(
-			new TestMobileCoreLog(
-				LoggingMode.ERROR,
-				"Received event error for request id (123), error details:\n" +
-				"{\n" +
-				"  \"eventIndex\": 2,\n" +
-				"  \"title\": \"Failed to process personalization event\",\n" +
-				"  \"status\": 503\n" +
-				"}"
-			)
+		List<String> expectedErrorLogs = new ArrayList<>();
+		expectedErrorLogs.add(
+			"Received event error for request id (123), error details:\n " +
+			"{\n" +
+			"  \"eventIndex\": 2,\n" +
+			"  \"title\": \"Failed to process personalization event\",\n" +
+			"  \"status\": 503\n" +
+			"}"
 		);
-		expectedLogs.add(
-			new TestMobileCoreLog(
-				LoggingMode.WARNING,
-				"Received event error for request id (123), error details:\n" +
-				"{\n" +
-				"  \"eventIndex\": 10,\n" +
-				"  \"title\": \"Some Informative stuff here\",\n" +
-				"  \"status\": 202\n" +
-				"}"
-			)
+		List<String> expectedWarningLogs = new ArrayList<>();
+		expectedWarningLogs.add(
+			"Received event error for request id (123), error details:\n " +
+			"{\n" +
+			"  \"eventIndex\": 10,\n" +
+			"  \"title\": \"Some Informative stuff here\",\n" +
+			"  \"status\": 202\n" +
+			"}"
 		);
-		assertLogs(6, expectedLogs);
+		assertErrorLogs(mockLogService, expectedErrorLogs);
+		assertWarningLogs(mockLogService, expectedWarningLogs);
+		mockLogService.close();
 	}
 
 	// ---------------------------------------------------------------------------------------------
@@ -1570,7 +1541,7 @@ public class NetworkResponseHandlerTest {
 	@Test
 	public void testAddWaitingEvents_skips_whenEmptyList() {
 		final String requestId = "test";
-		networkResponseHandler.addWaitingEvents(requestId, new ArrayList<Event>());
+		networkResponseHandler.addWaitingEvents(requestId, new ArrayList<>());
 
 		List<String> result = networkResponseHandler.getWaitingEvents(requestId);
 		assertTrue(result.isEmpty());
@@ -1681,27 +1652,17 @@ public class NetworkResponseHandlerTest {
 			final int randInt = rand.nextInt(1000);
 
 			if (randInt % 2 == 0) {
-				futures.add(
-					new Callable<Integer>() {
-						@Override
-						public Integer call() {
-							networkResponseHandler.addWaitingEvents(requestId1, eventsList);
-							latch100.countDown();
-							return randInt;
-						}
-					}
-				);
+				futures.add(() -> {
+					networkResponseHandler.addWaitingEvents(requestId1, eventsList);
+					latch100.countDown();
+					return randInt;
+				});
 			} else {
-				futures.add(
-					new Callable<Integer>() {
-						@Override
-						public Integer call() {
-							networkResponseHandler.removeWaitingEvents(requestId1);
-							latch100.countDown();
-							return randInt;
-						}
-					}
-				);
+				futures.add(() -> {
+					networkResponseHandler.removeWaitingEvents(requestId1);
+					latch100.countDown();
+					return randInt;
+				});
 			}
 		}
 
@@ -1711,66 +1672,76 @@ public class NetworkResponseHandlerTest {
 	}
 
 	@Test
-	public void testSetLastResetDate_persitsTimestamp() {
+	public void testSetLastResetDate_persistsTimestamp() {
 		final long lastResetDate = 1;
 		networkResponseHandler.setLastResetDate(lastResetDate);
 
 		verify(mockNamedCollection, times(1)).setLong(EdgeConstants.DataStoreKeys.RESET_IDENTITIES_DATE, lastResetDate);
 	}
 
-	void assertLogs(final int logCallsNo, final List<TestMobileCoreLog> expectedLogs) {
-		assertNotNull(expectedLogs);
-		assertTrue("logCallsNo cannot be lower than 0", logCallsNo >= 0);
-
-		ArgumentCaptor<LoggingMode> logModeArgCaptor = ArgumentCaptor.forClass(LoggingMode.class);
+	/**
+	 * Asserts the Log.error API received the {@code expectedLogs} number and exact log messages.
+	 */
+	private void assertErrorLogs(final MockedStatic<Log> mockLogService, @NotNull final List<String> expectedLogs) {
 		ArgumentCaptor<String> logMessageArgCaptor = ArgumentCaptor.forClass(String.class);
-		verifyStatic(MobileCore.class, times(logCallsNo));
 
-		if (expectedLogs.size() == 0) {
+		mockLogService.verify(
+			() -> Log.error(anyString(), anyString(), logMessageArgCaptor.capture(), any()),
+			times(expectedLogs.size())
+		);
+
+		assertEqualLogMessages(expectedLogs, logMessageArgCaptor.getAllValues());
+	}
+
+	/**
+	 * Asserts the Log.warning API received the {@code expectedLogs} number and exact log messages.
+	 */
+	private void assertWarningLogs(final MockedStatic<Log> mockLogService, @NotNull final List<String> expectedLogs) {
+		ArgumentCaptor<String> logMessageArgCaptor = ArgumentCaptor.forClass(String.class);
+
+		mockLogService.verify(
+			() -> Log.warning(anyString(), anyString(), logMessageArgCaptor.capture(), any()),
+			times(expectedLogs.size())
+		);
+
+		assertEqualLogMessages(expectedLogs, logMessageArgCaptor.getAllValues());
+	}
+
+	private void assertEqualLogMessages(final List<String> expectedLogs, final List<String> actualLogs) {
+		if (expectedLogs == null || expectedLogs.size() == 0) {
 			return;
 		}
 
-		// todo: fix me with new log format
-		MobileCore.log(logModeArgCaptor.capture(), any(String.class), logMessageArgCaptor.capture());
-		List<LoggingMode> actualLogMode = logModeArgCaptor.getAllValues();
-		List<String> actualLogMessages = logMessageArgCaptor.getAllValues();
+		if (actualLogs == null || actualLogs.isEmpty()) {
+			fail(String.format("actualLogs were empty, expected %d entries", expectedLogs.size()));
+			return;
+		}
 
-		for (TestMobileCoreLog log : expectedLogs) {
-			int index = 0;
+		for (String log : expectedLogs) {
 			boolean found = false;
 
-			for (String actualMessage : actualLogMessages) {
-				if (actualMessage != null && actualMessage.contains(log.logMessage)) {
-					assertFalse(
-						"Log message found multiple times (" + log.logMessage + "), expected to find it once",
-						found
-					);
+			for (String actualMessage : actualLogs) {
+				if (actualMessage != null && actualMessage.contains(log)) {
+					assertFalse("Log message found multiple times (" + log + "), expected to find it once", found);
 
 					found = true;
-					assertEquals(
-						"Log level is incorrect for message (" + log.logMessage + ")",
-						log.loggingMode,
-						actualLogMode.get(index)
-					);
 				}
-
-				index++;
 			}
 
-			assertTrue("Log message not found (" + log.logMessage + ")", found);
+			assertTrue("Log message not found (" + log + ")", found);
 		}
 	}
 
 	private void assertResponseErrorEventWithData(final Map<String, Object> expectedEventData) {
-		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
-		verifyStatic(MobileCore.class, times(1));
-		MobileCore.dispatchEvent(eventArgCaptor.capture());
+		ArgumentCaptor<Event> eventArgCaptor;
+		eventArgCaptor = ArgumentCaptor.forClass(Event.class);
+		mockCore.verify(() -> MobileCore.dispatchEvent(eventArgCaptor.capture()), times(1));
 
 		Event returnedEvent = eventArgCaptor.getValue();
 		assertNotNull(returnedEvent);
 		assertEquals(EVENT_NAME_ERROR_RESPONSE, returnedEvent.getName());
-		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
-		assertTrue(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT.equalsIgnoreCase(returnedEvent.getSource()));
+		assertEquals(EVENT_TYPE_EDGE, returnedEvent.getType());
+		assertEquals(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT, returnedEvent.getSource());
 		assertEquals(expectedEventData, returnedEvent.getEventData());
 	}
 
@@ -1779,17 +1750,16 @@ public class NetworkResponseHandlerTest {
 		final String eventSource
 	) {
 		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
-		verifyStatic(MobileCore.class, times(1));
-		MobileCore.dispatchEvent(eventArgCaptor.capture());
+		mockCore.verify(() -> MobileCore.dispatchEvent(eventArgCaptor.capture()), times(1));
 
 		Event returnedEvent = eventArgCaptor.getValue();
 		assertNotNull(returnedEvent);
 		assertEquals(EVENT_NAME_RESPONSE, returnedEvent.getName());
-		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
+		assertEquals(EVENT_TYPE_EDGE, returnedEvent.getType());
 		String expectedEventSource = Utils.isNullOrEmpty(eventSource)
 			? EVENT_SOURCE_EXTENSION_RESPONSE_CONTENT
 			: eventSource;
-		assertTrue(expectedEventSource.equalsIgnoreCase(returnedEvent.getSource()));
+		assertEquals(expectedEventSource, returnedEvent.getSource());
 		assertEquals(expectedEventData, returnedEvent.getEventData());
 	}
 }

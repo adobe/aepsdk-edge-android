@@ -563,7 +563,6 @@ class NetworkResponseHandler {
 	 * @param requestId the event request identifier, used for logging
 	 */
 	private void logErrorMessage(final JSONObject error, final boolean isError, final String requestId) {
-		final LoggingMode loggingMode = isError ? LoggingMode.ERROR : LoggingMode.WARNING;
 		String errorToLog;
 
 		try {
@@ -576,17 +575,13 @@ class NetworkResponseHandler {
 			Log.error(
 				LOG_TAG,
 				LOG_SOURCE,
-				"Received event error for request id (%s), error details:\n %s",
-				requestId,
-				errorToLog
+				String.format("Received event error for request id (%s), error details:\n %s", requestId, errorToLog)
 			);
 		} else {
 			Log.warning(
 				LOG_TAG,
 				LOG_SOURCE,
-				"Received event error for request id (%s), error details:\n %s",
-				requestId,
-				errorToLog
+				String.format("Received event error for request id (%s), error details:\n %s", requestId, errorToLog)
 			);
 		}
 	}

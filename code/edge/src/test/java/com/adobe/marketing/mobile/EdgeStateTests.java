@@ -21,8 +21,11 @@ import static org.junit.Assert.fail;
 import com.adobe.marketing.mobile.util.FakeNamedCollection;
 import com.adobe.marketing.mobile.util.MockHitQueue;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -60,10 +63,37 @@ public class EdgeStateTests {
 	}
 
 	@Test
-	public void testBootupIfNeeded_LoadsPropertiesFromPersistence_AndCreatesSharedState_WithLocationHint() {
+	public void testBootupIfNeeded_LoadsPropertiesFromPersistence_AndCreatesSharedState_WithLocationHint()
+		throws InterruptedException {
+		CountDownLatch getSharedStateCalled = new CountDownLatch(1);
+		CountDownLatch createSharedStateCalled = new CountDownLatch(1);
+		mockSharedStateCallback =
+			new EdgeSharedStateCallback() {
+				@Override
+				public SharedStateResult getSharedState(final String stateOwner, final Event event) {
+					getSharedStateCalled.countDown();
+					if (!EdgeConstants.SharedState.HUB.equals(stateOwner)) {
+						return null;
+					}
+
+					return new SharedStateResult(SharedStateStatus.SET, new HashMap<>());
+				}
+
+				@Override
+				public void createSharedState(final Map<String, Object> state, final Event event) {
+					mockSharedState = state;
+					createSharedStateCalled.countDown();
+				}
+			};
+		state = new EdgeState(mockHitQueue, properties, mockSharedStateCallback);
+
 		long expectedExpiryTimestamp = setLocationHintInMockDataStore("or2", 100);
 		state.bootupIfNeeded();
+
 		assertEquals("or2", properties.getLocationHint());
+
+		assertTrue(getSharedStateCalled.await(200, TimeUnit.MILLISECONDS));
+		assertTrue(createSharedStateCalled.await(200, TimeUnit.MILLISECONDS));
 		assertNotNull(mockSharedState);
 		assertEquals("or2", mockSharedState.get(EdgeConstants.SharedState.Edge.LOCATION_HINT));
 	}
@@ -71,10 +101,154 @@ public class EdgeStateTests {
 	@Test
 	public void testBootupIfNeeded_LoadsPropertiesFromPersistence_AndCreatesSharedState_WithExpiredLocationHint()
 		throws InterruptedException {
+		CountDownLatch getSharedStateCalled = new CountDownLatch(1);
+		CountDownLatch createSharedStateCalled = new CountDownLatch(1);
+		mockSharedStateCallback =
+			new EdgeSharedStateCallback() {
+				@Override
+				public SharedStateResult getSharedState(final String stateOwner, final Event event) {
+					getSharedStateCalled.countDown();
+					if (!EdgeConstants.SharedState.HUB.equals(stateOwner)) {
+						return null;
+					}
+
+					return new SharedStateResult(SharedStateStatus.SET, new HashMap<>());
+				}
+
+				@Override
+				public void createSharedState(final Map<String, Object> state, final Event event) {
+					mockSharedState = state;
+					createSharedStateCalled.countDown();
+				}
+			};
+		state = new EdgeState(mockHitQueue, properties, mockSharedStateCallback);
 		long expectedExpiryTimestamp = setLocationHintInMockDataStore("or2", 1);
 		Thread.sleep(1100); // wait for hint to expire
 		state.bootupIfNeeded();
 		assertNull(properties.getLocationHint());
+
+		assertTrue(getSharedStateCalled.await(200, TimeUnit.MILLISECONDS));
+		assertTrue(createSharedStateCalled.await(200, TimeUnit.MILLISECONDS));
+		assertNotNull(mockSharedState);
+		assertTrue(mockSharedState.isEmpty()); // empty shared state created
+	}
+
+	@Test
+	public void testBootupIfNeeded_whenHubSharedStatePending_returnsFalse() throws InterruptedException {
+		CountDownLatch getSharedStateCalled = new CountDownLatch(1);
+		mockSharedStateCallback =
+			new EdgeSharedStateCallback() {
+				@Override
+				public SharedStateResult getSharedState(final String stateOwner, final Event event) {
+					getSharedStateCalled.countDown();
+					if (!EdgeConstants.SharedState.HUB.equals(stateOwner)) {
+						fail("Unexpected getSharedState call for " + stateOwner);
+						return null;
+					}
+
+					return new SharedStateResult(SharedStateStatus.PENDING, new HashMap<>());
+				}
+
+				@Override
+				public void createSharedState(final Map<String, Object> state, final Event event) {
+					fail("Unexpected call to createSharedState");
+				}
+			};
+		state = new EdgeState(mockHitQueue, properties, mockSharedStateCallback);
+
+		assertFalse(state.bootupIfNeeded());
+		assertTrue(getSharedStateCalled.await(200, TimeUnit.MILLISECONDS));
+	}
+
+	@Test
+	public void testBootupIfNeeded_whenHubSharedStateNull_returnsFalse() throws InterruptedException {
+		CountDownLatch getSharedStateCalled = new CountDownLatch(1);
+		mockSharedStateCallback =
+			new EdgeSharedStateCallback() {
+				@Override
+				public SharedStateResult getSharedState(final String stateOwner, final Event event) {
+					getSharedStateCalled.countDown();
+					if (!EdgeConstants.SharedState.HUB.equals(stateOwner)) {
+						fail("Unexpected getSharedState call for " + stateOwner);
+						return null;
+					}
+
+					return null;
+				}
+
+				@Override
+				public void createSharedState(final Map<String, Object> state, final Event event) {
+					fail("Unexpected call to createSharedState");
+				}
+			};
+		state = new EdgeState(mockHitQueue, properties, mockSharedStateCallback);
+
+		assertFalse(state.bootupIfNeeded());
+		assertTrue(getSharedStateCalled.await(200, TimeUnit.MILLISECONDS));
+	}
+
+	@Test
+	public void testBootupIfNeeded_whenHubSharedStateSetAndValid_returnsTrue() throws InterruptedException {
+		CountDownLatch getSharedStateCalled = new CountDownLatch(1);
+		CountDownLatch createSharedStateCalled = new CountDownLatch(1);
+		mockSharedStateCallback =
+			new EdgeSharedStateCallback() {
+				@Override
+				public SharedStateResult getSharedState(final String stateOwner, final Event event) {
+					getSharedStateCalled.countDown();
+					if (!EdgeConstants.SharedState.HUB.equals(stateOwner)) {
+						fail("Unexpected getSharedState call for " + stateOwner);
+						return null;
+					}
+
+					return new SharedStateResult(SharedStateStatus.SET, getMockEventHubSharedState());
+				}
+
+				@Override
+				public void createSharedState(final Map<String, Object> state, final Event event) {
+					mockSharedState = state;
+					createSharedStateCalled.countDown();
+				}
+			};
+		state = new EdgeState(mockHitQueue, properties, mockSharedStateCallback);
+
+		assertTrue(state.bootupIfNeeded());
+
+		assertTrue(getSharedStateCalled.await(200, TimeUnit.MILLISECONDS));
+		assertTrue(createSharedStateCalled.await(200, TimeUnit.MILLISECONDS));
+		assertNotNull(mockSharedState);
+		assertTrue(mockSharedState.isEmpty()); // empty shared state created
+	}
+
+	@Test
+	public void testBootupIfNeeded_whenHubSharedStateSetAndNoData_returnsTrue() throws InterruptedException {
+		CountDownLatch getSharedStateCalled = new CountDownLatch(1);
+		CountDownLatch createSharedStateCalled = new CountDownLatch(1);
+		mockSharedStateCallback =
+			new EdgeSharedStateCallback() {
+				@Override
+				public SharedStateResult getSharedState(final String stateOwner, final Event event) {
+					getSharedStateCalled.countDown();
+					if (!EdgeConstants.SharedState.HUB.equals(stateOwner)) {
+						fail("Unexpected getSharedState call for " + stateOwner);
+						return null;
+					}
+
+					return new SharedStateResult(SharedStateStatus.SET, null);
+				}
+
+				@Override
+				public void createSharedState(final Map<String, Object> state, final Event event) {
+					mockSharedState = state;
+					createSharedStateCalled.countDown();
+				}
+			};
+		state = new EdgeState(mockHitQueue, properties, mockSharedStateCallback);
+
+		assertTrue(state.bootupIfNeeded());
+
+		assertTrue(getSharedStateCalled.await(200, TimeUnit.MILLISECONDS));
+		assertTrue(createSharedStateCalled.await(200, TimeUnit.MILLISECONDS));
 		assertNotNull(mockSharedState);
 		assertTrue(mockSharedState.isEmpty()); // empty shared state created
 	}
@@ -191,5 +365,45 @@ public class EdgeStateTests {
 		Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
 		calendar.add(Calendar.SECOND, ttlSeconds);
 		return calendar.getTimeInMillis();
+	}
+
+	private Map<String, Object> getMockEventHubSharedState() {
+		Map<String, Object> hubState = new HashMap<>();
+		hubState.put("version", "2.0.0");
+		hubState.put(
+			"wrapper",
+			new HashMap<String, Object>() {
+				{
+					put("type", "N");
+					put("friendlyName", "None");
+				}
+			}
+		);
+		hubState.put(
+			"extensions",
+			new HashMap<String, Object>() {
+				{
+					put(
+						"com.adobe.module.configuration",
+						new HashMap<String, Object>() {
+							{
+								put("version", "2.0.0");
+								put("friendlyName", "Configuration");
+							}
+						}
+					);
+					put(
+						"com.adobe.edge",
+						new HashMap<String, Object>() {
+							{
+								put("version", "2.0.0");
+								put("friendlyName", "Edge");
+							}
+						}
+					);
+				}
+			}
+		);
+		return hubState;
 	}
 }
