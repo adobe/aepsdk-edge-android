@@ -240,8 +240,8 @@ dependencies {
     implementation 'androidx.annotation:annotation:1.5.0'
 
     testImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
-    testImplementation "org.mockito:mockito-core:${rootProject.ext.mockitoCoreVersion}"
-    testImplementation "org.mockito:mockito-inline:${rootProject.ext.mockitoCoreVersion}"
+    testImplementation "org.mockito:mockito-core:${rootProject.ext.mockitoVersion}"
+    testImplementation "org.mockito:mockito-inline:${rootProject.ext.mockitoVersion}"
     testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.12.7'
     testImplementation 'org.json:json:20180813'
 
