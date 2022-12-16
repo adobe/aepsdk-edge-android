@@ -70,7 +70,6 @@ public class EdgeFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
-		setExpectationEvent(EventType.HUB, EventSource.BOOTED, 1);
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1);
 		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 4);

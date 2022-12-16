@@ -172,8 +172,6 @@ public class RestartFunctionalTests {
 	 * @throws Exception
 	 */
 	public void setupCore(final boolean restart) throws Exception {
-		setExpectationEvent(EventType.HUB, EventSource.BOOTED, 1);
-
 		if (restart) {
 			// On restart, expect Consent to load preferences from persistence and dispatch them to Hub
 			setExpectationEvent(EventType.CONSENT, EventSource.RESPONSE_CONTENT, 1);

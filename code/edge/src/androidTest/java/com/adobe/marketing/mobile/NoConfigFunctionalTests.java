@@ -51,7 +51,6 @@ public class NoConfigFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
-		setExpectationEvent(EventType.HUB, EventSource.BOOTED, 1);
 		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 2);
 
 		final CountDownLatch latch = new CountDownLatch(1);

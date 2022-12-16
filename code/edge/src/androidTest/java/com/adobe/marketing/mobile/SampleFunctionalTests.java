@@ -64,7 +64,6 @@ public class SampleFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
-		FunctionalTestHelper.setExpectationEvent(EventType.HUB, EventSource.BOOTED, 1);
 		// expectations for update config request&response events
 		FunctionalTestHelper.setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
 		FunctionalTestHelper.setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1);
