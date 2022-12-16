@@ -524,6 +524,13 @@ public class EdgeExtensionTest {
 		assertEquals("or2", state.getLocationHint());
 	}
 
+	/**
+	 * Mocks the shared state result on the {@code mockExtensionApi}
+	 *
+	 * @param config {@code SharedStateResult} returned when the getSharedState API is invoked for Configuration
+	 * @param identity {@code SharedStateResult} returned when the getXDMSharedState API is invoked for Edge Identity
+	 * @param consent {@code SharedStateResult} returned when the getXDMSharedState API is invoked for Consent
+	 */
 	private void mockSharedStates(
 		final SharedStateResult config,
 		final SharedStateResult identity,
@@ -560,7 +567,13 @@ public class EdgeExtensionTest {
 			.thenReturn(consent);
 	}
 
+	/**
+	 * Verifies the {@code expectedEvent} was queued once.
+	 *
+	 * @param expectedEvent to verify against the queue captor; should not be null
+	 */
 	private void verifyEventQueued(final Event expectedEvent) {
+		assertNotNull(expectedEvent);
 		final ArgumentCaptor<DataEntity> entityCaptor = ArgumentCaptor.forClass(DataEntity.class);
 		verify(mockQueue, times(1)).queue(entityCaptor.capture());
 		EdgeDataEntity edgeEntity = EdgeDataEntity.fromDataEntity(entityCaptor.getValue());
@@ -568,6 +581,14 @@ public class EdgeExtensionTest {
 		assertEquals(expectedEvent.getName(), edgeEntity.getEvent().getName());
 	}
 
+	/**
+	 * Verifies the number of shared state retrievals was as expected. The expected number of invocations
+	 * should be equal or greater than 0.
+	 *
+	 * @param configTimes number of times the getSharedState API is invoked for Configuration
+	 * @param identityTimes number of times the getXDMSharedState API is invoked for Edge Identity
+	 * @param consentTimes number of times the getXDMSharedState API is invoked for Consent
+	 */
 	private void verifyGetSharedStateCalls(final int configTimes, final int identityTimes, final int consentTimes) {
 		if (configTimes >= 0) {
 			verify(mockExtensionApi, times(configTimes))
