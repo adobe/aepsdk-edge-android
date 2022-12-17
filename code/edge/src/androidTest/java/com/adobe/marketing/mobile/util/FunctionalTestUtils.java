@@ -41,7 +41,7 @@ public class FunctionalTestUtils {
 	 */
 	public static Map<String, String> flattenMap(final Map<String, Object> map) {
 		if (map == null || map.isEmpty()) {
-			return Collections.<String, String>emptyMap();
+			return Collections.emptyMap();
 		}
 
 		try {
@@ -53,7 +53,7 @@ public class FunctionalTestUtils {
 			Log.error(LOG_TAG, LOG_SOURCE, "Failed to parse JSON object to tree structure.");
 		}
 
-		return Collections.<String, String>emptyMap();
+		return Collections.emptyMap();
 	}
 
 	/**
@@ -66,7 +66,7 @@ public class FunctionalTestUtils {
 	 */
 	public static Map<String, String> flattenBytes(final byte[] bytes) {
 		if (bytes == null || bytes.length == 0) {
-			return Collections.<String, String>emptyMap();
+			return Collections.emptyMap();
 		}
 
 		try {
@@ -75,7 +75,7 @@ public class FunctionalTestUtils {
 			return payloadMap;
 		} catch (IOException e) {
 			Log.error(LOG_TAG, LOG_SOURCE, "Failed to parse JSON payload to tree structure.");
-			return Collections.<String, String>emptyMap();
+			return Collections.emptyMap();
 		}
 	}
 

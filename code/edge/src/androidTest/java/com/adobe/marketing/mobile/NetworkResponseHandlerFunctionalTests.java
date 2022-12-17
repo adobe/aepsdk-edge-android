@@ -26,6 +26,7 @@ import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.FunctionalTestConstants;
 import com.adobe.marketing.mobile.util.FunctionalTestUtils;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -88,19 +89,8 @@ public class NetworkResponseHandlerFunctionalTests {
 		};
 		MobileCore.updateConfiguration(config);
 
-		Edge.registerExtension();
-		Identity.registerExtension();
-
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.start(
-			new AdobeCallback() {
-				@Override
-				public void call(Object o) {
-					latch.countDown();
-				}
-			}
-		);
-
+		MobileCore.registerExtensions(Arrays.asList(Edge.EXTENSION, Identity.EXTENSION), o -> latch.countDown());
 		latch.await();
 
 		assertExpectedEvents(false);

@@ -33,6 +33,7 @@ import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.ADBCountDownLatch;
 import com.adobe.marketing.mobile.util.FunctionalTestConstants;
 import com.adobe.marketing.mobile.util.MonitorExtension;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -158,7 +159,7 @@ public class RestartFunctionalTests {
 	}
 
 	public void resetCore() throws Exception {
-		MobileCore.setCore(null);
+		MobileCore.resetSDK();
 		MobileCore.setLogLevel(LoggingMode.VERBOSE);
 		Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
 		Application application = Instrumentation.newApplication(FunctionalTestHelper.CustomApplication.class, context);
@@ -185,14 +186,10 @@ public class RestartFunctionalTests {
 		// Expect 4 shared state events on clean start. On restart, Consent also sets a shared state
 		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, restart ? 5 : 4);
 
-		MonitorExtension.registerExtension();
-		Edge.registerExtension();
-		Identity.registerExtension();
-		Consent.registerExtension();
-
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.start(
-			(AdobeCallback) o -> {
+		MobileCore.registerExtensions(
+			Arrays.asList(Edge.EXTENSION, Identity.EXTENSION, Consent.EXTENSION, MonitorExtension.EXTENSION),
+			o -> {
 				if (!restart) {
 					// Set configuration on clean start. On restart Configuration will load from persistence.
 					HashMap<String, Object> config = new HashMap<String, Object>() {
@@ -202,11 +199,9 @@ public class RestartFunctionalTests {
 					};
 					MobileCore.updateConfiguration(config);
 				}
-
 				latch.countDown();
 			}
 		);
-
 		latch.await();
 
 		assertExpectedEvents(false);

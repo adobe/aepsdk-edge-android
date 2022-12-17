@@ -54,15 +54,7 @@ public class NoConfigFunctionalTests {
 		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 2);
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.registerExtensions(
-			Arrays.asList(Edge.EXTENSION, FakeIdentity.EXTENSION),
-			new AdobeCallback<Object>() {
-				@Override
-				public void call(Object o) {
-					latch.countDown();
-				}
-			}
-		);
+		MobileCore.registerExtensions(Arrays.asList(Edge.EXTENSION, FakeIdentity.EXTENSION), o -> latch.countDown());
 
 		latch.await();
 
@@ -164,12 +156,9 @@ public class NoConfigFunctionalTests {
 		final List<EdgeEventHandle> receivedHandles = new ArrayList<>();
 		Edge.sendEvent(
 			experienceEvent,
-			new EdgeCallback() {
-				@Override
-				public void onComplete(List<EdgeEventHandle> handles) {
-					receivedHandles.addAll(handles);
-					latch.countDown();
-				}
+			handles -> {
+				receivedHandles.addAll(handles);
+				latch.countDown();
 			}
 		);
 

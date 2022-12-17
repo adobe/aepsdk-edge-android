@@ -28,6 +28,7 @@ import com.adobe.marketing.mobile.util.FunctionalTestConstants;
 import com.adobe.marketing.mobile.util.FunctionalTestUtils;
 import com.adobe.marketing.mobile.util.TestXDMSchema;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -81,12 +82,8 @@ public class EdgeFunctionalTests {
 		};
 		MobileCore.updateConfiguration(config);
 
-		Edge.registerExtension();
-		Identity.registerExtension();
-
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.start((AdobeCallback) o -> latch.countDown());
-
+		MobileCore.registerExtensions(Arrays.asList(Edge.EXTENSION, Identity.EXTENSION), o -> latch.countDown());
 		latch.await();
 
 		assertExpectedEvents(false);
@@ -242,7 +239,7 @@ public class EdgeFunctionalTests {
 	@Test
 	public void testSendEvent_withEmptyXDMDataAndNullData_DoesNotSendRequestEvent() throws InterruptedException {
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
-			.setXdmSchema(new HashMap<String, Object>())
+			.setXdmSchema(new HashMap<>())
 			.setData(null)
 			.build();
 		Edge.sendEvent(experienceEvent, null);
@@ -509,7 +506,7 @@ public class EdgeFunctionalTests {
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
 			.setXdmSchema(new TestXDMSchema())
-			.setData(new HashMap<String, Object>())
+			.setData(new HashMap<>())
 			.build();
 		Edge.sendEvent(experienceEvent, null);
 
@@ -1046,15 +1043,10 @@ public class EdgeFunctionalTests {
 		final String[] result = new String[1];
 
 		Edge.setLocationHint("or2");
-		Edge.getLocationHint(
-			new AdobeCallback<String>() {
-				@Override
-				public void call(final String s) {
-					result[0] = s;
-					latch.countDown();
-				}
-			}
-		);
+		Edge.getLocationHint(s -> {
+			result[0] = s;
+			latch.countDown();
+		});
 
 		latch.await(2000, TimeUnit.MILLISECONDS);
 		assertEquals("or2", result[0]);
@@ -1067,15 +1059,10 @@ public class EdgeFunctionalTests {
 
 		Edge.setLocationHint("or2");
 		Edge.setLocationHint(null);
-		Edge.getLocationHint(
-			new AdobeCallback<String>() {
-				@Override
-				public void call(final String s) {
-					result[0] = s;
-					latch.countDown();
-				}
-			}
-		);
+		Edge.getLocationHint(s -> {
+			result[0] = s;
+			latch.countDown();
+		});
 
 		latch.await(2000, TimeUnit.MILLISECONDS);
 		assertNull(result[0]);
@@ -1088,15 +1075,10 @@ public class EdgeFunctionalTests {
 
 		Edge.setLocationHint("or2");
 		Edge.setLocationHint("");
-		Edge.getLocationHint(
-			new AdobeCallback<String>() {
-				@Override
-				public void call(final String s) {
-					result[0] = s;
-					latch.countDown();
-				}
-			}
-		);
+		Edge.getLocationHint(s -> {
+			result[0] = s;
+			latch.countDown();
+		});
 
 		latch.await(2000, TimeUnit.MILLISECONDS);
 		assertNull(result[0]);
@@ -1212,15 +1194,10 @@ public class EdgeFunctionalTests {
 		final String[] result = new String[1];
 
 		Edge.setLocationHint("incorrect location hint");
-		Edge.getLocationHint(
-			new AdobeCallback<String>() {
-				@Override
-				public void call(final String s) {
-					result[0] = s;
-					latch.countDown();
-				}
-			}
-		);
+		Edge.getLocationHint(s -> {
+			result[0] = s;
+			latch.countDown();
+		});
 
 		latch.await(2000, TimeUnit.MILLISECONDS);
 		assertEquals("incorrect location hint", result[0]);
@@ -1234,15 +1211,10 @@ public class EdgeFunctionalTests {
 		final String expectedHint = "{\"example\":\"incorrect\"}";
 
 		Edge.setLocationHint(expectedHint);
-		Edge.getLocationHint(
-			new AdobeCallback<String>() {
-				@Override
-				public void call(final String s) {
-					result[0] = s;
-					latch.countDown();
-				}
-			}
-		);
+		Edge.getLocationHint(s -> {
+			result[0] = s;
+			latch.countDown();
+		});
 
 		latch.await(2000, TimeUnit.MILLISECONDS);
 		assertEquals(expectedHint, result[0]);
@@ -1256,15 +1228,10 @@ public class EdgeFunctionalTests {
 		final String expectedHint = "\u0048\u0065\u006C\u006C\u006F World";
 
 		Edge.setLocationHint(expectedHint);
-		Edge.getLocationHint(
-			new AdobeCallback<String>() {
-				@Override
-				public void call(final String s) {
-					result[0] = s;
-					latch.countDown();
-				}
-			}
-		);
+		Edge.getLocationHint(s -> {
+			result[0] = s;
+			latch.countDown();
+		});
 
 		latch.await(2000, TimeUnit.MILLISECONDS);
 		assertEquals(expectedHint, result[0]);
@@ -1506,14 +1473,7 @@ public class EdgeFunctionalTests {
 	private void updateConfiguration(final Map<String, Object> config) throws InterruptedException {
 		final CountDownLatch latch = new CountDownLatch(1);
 		MobileCore.updateConfiguration(config);
-		MobileCore.getPrivacyStatus(
-			new AdobeCallback<MobilePrivacyStatus>() {
-				@Override
-				public void call(MobilePrivacyStatus mobilePrivacyStatus) {
-					latch.countDown();
-				}
-			}
-		);
+		MobileCore.getPrivacyStatus(mobilePrivacyStatus -> latch.countDown());
 
 		assertTrue(latch.await(2, TimeUnit.SECONDS));
 	}

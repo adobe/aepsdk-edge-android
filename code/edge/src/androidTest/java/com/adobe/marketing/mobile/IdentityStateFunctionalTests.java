@@ -61,15 +61,7 @@ public class IdentityStateFunctionalTests {
 		MobileCore.updateConfiguration(config);
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.registerExtensions(
-			Arrays.asList(Edge.EXTENSION, FakeIdentity.EXTENSION),
-			new AdobeCallback<Object>() {
-				@Override
-				public void call(Object o) {
-					latch.countDown();
-				}
-			}
-		);
+		MobileCore.registerExtensions(Arrays.asList(Edge.EXTENSION, FakeIdentity.EXTENSION), o -> latch.countDown());
 
 		latch.await();
 

@@ -23,6 +23,7 @@ import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.FunctionalTestConstants;
 import com.adobe.marketing.mobile.util.FunctionalTestUtils;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,19 +66,8 @@ public class CompletionHandlerFunctionalTests {
 		};
 		MobileCore.updateConfiguration(config);
 
-		Edge.registerExtension();
-		Identity.registerExtension();
-
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.start(
-			new AdobeCallback() {
-				@Override
-				public void call(Object o) {
-					latch.countDown();
-				}
-			}
-		);
-
+		MobileCore.registerExtensions(Arrays.asList(Edge.EXTENSION, Identity.EXTENSION), o -> latch.countDown());
 		latch.await();
 		assertExpectedEvents(false);
 		resetTestExpectations();
@@ -103,12 +93,9 @@ public class CompletionHandlerFunctionalTests {
 		final List<EdgeEventHandle> receivedHandles = new ArrayList<>();
 		Edge.sendEvent(
 			experienceEvent,
-			new EdgeCallback() {
-				@Override
-				public void onComplete(List<EdgeEventHandle> handles) {
-					receivedHandles.addAll(handles);
-					latch.countDown();
-				}
+			handles -> {
+				receivedHandles.addAll(handles);
+				latch.countDown();
 			}
 		);
 
@@ -152,24 +139,18 @@ public class CompletionHandlerFunctionalTests {
 		final CountDownLatch latch1 = new CountDownLatch(1);
 		Edge.sendEvent(
 			experienceEvent,
-			new EdgeCallback() {
-				@Override
-				public void onComplete(List<EdgeEventHandle> handles) {
-					assertEquals(1, handles.size());
-					latch1.countDown();
-				}
+			handles -> {
+				assertEquals(1, handles.size());
+				latch1.countDown();
 			}
 		);
 
 		final CountDownLatch latch2 = new CountDownLatch(1);
 		Edge.sendEvent(
 			experienceEvent,
-			new EdgeCallback() {
-				@Override
-				public void onComplete(List<EdgeEventHandle> handles) {
-					assertEquals(1, handles.size());
-					latch2.countDown();
-				}
+			handles -> {
+				assertEquals(1, handles.size());
+				latch2.countDown();
 			}
 		);
 
@@ -199,12 +180,9 @@ public class CompletionHandlerFunctionalTests {
 		final CountDownLatch latch1 = new CountDownLatch(1);
 		Edge.sendEvent(
 			experienceEvent,
-			new EdgeCallback() {
-				@Override
-				public void onComplete(List<EdgeEventHandle> handles) {
-					assertEquals(1, handles.size());
-					latch1.countDown();
-				}
+			handles -> {
+				assertEquals(1, handles.size());
+				latch1.countDown();
 			}
 		);
 
@@ -221,13 +199,10 @@ public class CompletionHandlerFunctionalTests {
 		final CountDownLatch latch2 = new CountDownLatch(1);
 		Edge.sendEvent(
 			experienceEvent,
-			new EdgeCallback() {
-				@Override
-				public void onComplete(List<EdgeEventHandle> handles) {
-					// 0 handles, received errors but still called completion
-					assertEquals(0, handles.size());
-					latch2.countDown();
-				}
+			handles -> {
+				// 0 handles, received errors but still called completion
+				assertEquals(0, handles.size());
+				latch2.countDown();
 			}
 		);
 
@@ -257,12 +232,9 @@ public class CompletionHandlerFunctionalTests {
 		final CountDownLatch latch = new CountDownLatch(1);
 		Edge.sendEvent(
 			experienceEvent,
-			new EdgeCallback() {
-				@Override
-				public void onComplete(List<EdgeEventHandle> handles) {
-					assertEquals(1, handles.size());
-					latch.countDown();
-				}
+			handles -> {
+				assertEquals(1, handles.size());
+				latch.countDown();
 			}
 		);
 
