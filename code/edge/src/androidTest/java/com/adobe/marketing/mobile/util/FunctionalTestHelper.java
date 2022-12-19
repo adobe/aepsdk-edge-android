@@ -9,7 +9,7 @@
   governing permissions and limitations under the License.
 */
 
-package com.adobe.marketing.mobile;
+package com.adobe.marketing.mobile.util;
 
 import static com.adobe.marketing.mobile.util.FunctionalTestConstants.LOG_TAG;
 import static com.adobe.marketing.mobile.util.MonitorExtension.EventSpec;
@@ -23,6 +23,12 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
+import com.adobe.marketing.mobile.AdobeCallbackWithError;
+import com.adobe.marketing.mobile.AdobeError;
+import com.adobe.marketing.mobile.Event;
+import com.adobe.marketing.mobile.LoggingMode;
+import com.adobe.marketing.mobile.MobileCore;
+import com.adobe.marketing.mobile.MobileCoreHelper;
 import com.adobe.marketing.mobile.services.FunctionalTestDataStoreService;
 import com.adobe.marketing.mobile.services.FunctionalTestNetworkService;
 import com.adobe.marketing.mobile.services.HttpConnecting;
@@ -33,10 +39,6 @@ import com.adobe.marketing.mobile.services.Networking;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.ServiceProviderHelper;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
-import com.adobe.marketing.mobile.util.ADBCountDownLatch;
-import com.adobe.marketing.mobile.util.FunctionalTestConstants;
-import com.adobe.marketing.mobile.util.FunctionalTestUtils;
-import com.adobe.marketing.mobile.util.MonitorExtension;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -44,7 +46,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -142,7 +143,9 @@ public class FunctionalTestHelper {
 			return new Statement() {
 				@Override
 				public void evaluate() throws Throwable {
-					MobileCore.registerExtensions(Arrays.asList(MonitorExtension.EXTENSION), null);
+					// Use registerExtension here to avoid starting the core yet, the tests should
+					// start it after all extensions have been registered
+					MobileCore.registerExtension(MonitorExtension.EXTENSION, null);
 
 					try {
 						base.evaluate();

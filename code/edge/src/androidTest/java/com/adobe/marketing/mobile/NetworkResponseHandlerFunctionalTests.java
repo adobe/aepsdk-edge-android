@@ -11,10 +11,10 @@
 
 package com.adobe.marketing.mobile;
 
-import static com.adobe.marketing.mobile.FunctionalTestHelper.assertExpectedEvents;
-import static com.adobe.marketing.mobile.FunctionalTestHelper.getDispatchedEventsWith;
-import static com.adobe.marketing.mobile.FunctionalTestHelper.resetTestExpectations;
-import static com.adobe.marketing.mobile.FunctionalTestHelper.setExpectationEvent;
+import static com.adobe.marketing.mobile.util.FunctionalTestHelper.assertExpectedEvents;
+import static com.adobe.marketing.mobile.util.FunctionalTestHelper.getDispatchedEventsWith;
+import static com.adobe.marketing.mobile.util.FunctionalTestHelper.resetTestExpectations;
+import static com.adobe.marketing.mobile.util.FunctionalTestHelper.setExpectationEvent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -24,6 +24,7 @@ import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.FunctionalTestDataStoreService;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.FunctionalTestConstants;
+import com.adobe.marketing.mobile.util.FunctionalTestHelper;
 import com.adobe.marketing.mobile.util.FunctionalTestUtils;
 import java.util.ArrayList;
 import java.util.Arrays;

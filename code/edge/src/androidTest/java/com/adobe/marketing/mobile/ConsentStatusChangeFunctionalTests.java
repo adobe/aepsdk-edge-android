@@ -11,8 +11,8 @@
 
 package com.adobe.marketing.mobile;
 
-import static com.adobe.marketing.mobile.FunctionalTestHelper.*;
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
+import static com.adobe.marketing.mobile.util.FunctionalTestHelper.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -23,6 +23,7 @@ import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.ADBCountDownLatch;
 import com.adobe.marketing.mobile.util.FunctionalTestConstants;
+import com.adobe.marketing.mobile.util.FunctionalTestHelper;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
