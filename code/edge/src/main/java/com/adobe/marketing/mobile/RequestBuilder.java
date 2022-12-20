@@ -17,14 +17,12 @@ import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.CloneFailedException;
 import com.adobe.marketing.mobile.util.EventDataUtils;
-import java.text.SimpleDateFormat;
+import com.adobe.marketing.mobile.util.TimeUtils;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.TimeZone;
 import org.json.JSONObject;
 
 class RequestBuilder {
@@ -37,14 +35,6 @@ class RequestBuilder {
 
 	// Control character used at the end of each response fragment
 	private String streamingLineFeed;
-
-	private static final SimpleDateFormat iso6801DateFormat;
-
-	static {
-		final Locale posixLocale = new Locale(Locale.US.getLanguage(), Locale.US.getCountry(), "POSIX");
-		iso6801DateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", posixLocale);
-		iso6801DateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-	}
 
 	private static final Map<String, Object> consentQueryOptions;
 
@@ -249,7 +239,7 @@ class RequestBuilder {
 		// if no timestamp is provided in the xdm event payload, set the event timestamp
 		if (timestampFromPayload == null || timestampFromPayload.isEmpty()) {
 			long eventTimestamp = event.getTimestamp();
-			String eventTimestampString = iso6801DateFormat.format(new Date(eventTimestamp));
+			String eventTimestampString = TimeUtils.getISO8601UTCDateWithMilliseconds(new Date(eventTimestamp));
 			xdm.put(EdgeJson.Event.Xdm.TIMESTAMP, eventTimestampString);
 		}
 	}

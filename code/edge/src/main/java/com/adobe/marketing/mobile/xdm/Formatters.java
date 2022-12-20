@@ -56,7 +56,10 @@ public final class Formatters {
 	 * @param timestamp a timestamp
 	 * @return {@code timestamp} formatted to a string in the format of 'yyyy-MM-dd'T'HH:mm:ss'Z'',
 	 * or an empty string if {@code timestamp} is null
+	 *
+	 * @deprecated as of 2.0.0, replaced by {@code TimeUtils.getISO8601UTCDateWithMilliseconds} from Mobile Core
 	 */
+	@Deprecated
 	public static String dateToISO8601String(final Date timestamp) {
 		if (timestamp == null) {
 			return "";
@@ -76,7 +79,10 @@ public final class Formatters {
 	 * @param date a date
 	 * @return {@code date} formatted to a string in the format of 'yyy-MM-dd', or an empty string
 	 * if {@code date} is null
+	 *
+	 * @deprecated as of 2.0.0, replaced by {@code TimeUtils.getISO8601FullDate} from Mobile Core
 	 */
+	@Deprecated
 	public static String dateToShortDateString(final Date date) {
 		if (date == null) {
 			return "";
