@@ -16,6 +16,8 @@ import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.CloneFailedException;
+import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.DataReaderException;
 import com.adobe.marketing.mobile.util.EventDataUtils;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -139,12 +141,14 @@ class RequestBuilder {
 			return null;
 		}
 
-		Map<String, Object> consentMap;
-
-		try {
-			consentMap = (Map<String, Object>) event.getEventData().get(EdgeConstants.EventDataKey.CONSENTS);
-		} catch (ClassCastException e) {
-			Log.debug(LOG_TAG, LOG_SOURCE, "Failed to read consents from event data, not a map");
+		final Map<String, Object> consentMap = DataReader.optTypedMap(
+			Object.class,
+			event.getEventData(),
+			EdgeConstants.EventDataKey.CONSENTS,
+			null
+		);
+		if (Utils.isNullOrEmpty(consentMap)) {
+			Log.debug(LOG_TAG, LOG_SOURCE, "Failed to read consents from event data, not a valid map");
 			return null;
 		}
 
@@ -156,12 +160,16 @@ class RequestBuilder {
 		query.setConsentOptions(consentQueryOptions);
 		consents.setQueryOptions(query);
 
-		try {
-			if (xdmPayloads != null && xdmPayloads.get(EdgeConstants.EventDataKey.IDENTITY_MAP) != null) {
-				consents.setIdentityMap((Map<String, Object>) xdmPayloads.get(EdgeConstants.EventDataKey.IDENTITY_MAP));
-			}
-		} catch (ClassCastException e) {
-			Log.debug(LOG_TAG, LOG_SOURCE, "Failed to read IdentityMap from request payload, not a map");
+		final Map<String, Object> identityMap = DataReader.optTypedMap(
+			Object.class,
+			xdmPayloads,
+			EdgeConstants.EventDataKey.IDENTITY_MAP,
+			null
+		);
+		if (Utils.isNullOrEmpty(xdmPayloads)) {
+			Log.debug(LOG_TAG, LOG_SOURCE, "Failed to read identityMap from request payload, not a map");
+		} else {
+			consents.setIdentityMap(identityMap);
 		}
 
 		// Enable response streaming
@@ -235,10 +243,9 @@ class RequestBuilder {
 		}
 
 		String timestampFromPayload = null;
-
 		try {
-			timestampFromPayload = (String) xdm.get(EdgeJson.Event.Xdm.TIMESTAMP);
-		} catch (ClassCastException e) {
+			timestampFromPayload = DataReader.getString(xdm, EdgeJson.Event.Xdm.TIMESTAMP);
+		} catch (DataReaderException e) {
 			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,

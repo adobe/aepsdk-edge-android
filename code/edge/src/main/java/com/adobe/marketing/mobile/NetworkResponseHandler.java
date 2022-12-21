@@ -15,6 +15,8 @@ import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
+import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.DataReaderException;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -478,15 +480,16 @@ class NetworkResponseHandler {
 
 			if (EdgeJson.Response.EventHandle.LocationHint.EDGE_NETWORK.equals(scope)) {
 				try {
-					String hint = (String) locationHint.get(EdgeJson.Response.EventHandle.LocationHint.HINT);
-					Integer ttlSeconds = (Integer) locationHint.get(
+					String hint = DataReader.getString(locationHint, EdgeJson.Response.EventHandle.LocationHint.HINT);
+					int ttlSeconds = DataReader.getInt(
+						locationHint,
 						EdgeJson.Response.EventHandle.LocationHint.TTL_SECONDS
 					);
 
-					if (!StringUtils.isNullOrEmpty(hint) && ttlSeconds != null && edgeStateCallback != null) {
+					if (!StringUtils.isNullOrEmpty(hint) && edgeStateCallback != null) {
 						edgeStateCallback.setLocationHint(hint, ttlSeconds);
 					}
-				} catch (ClassCastException e) {
+				} catch (DataReaderException e) {
 					Log.warning(
 						LOG_TAG,
 						LOG_SOURCE,
