@@ -429,6 +429,22 @@ public class RequestBuilderTest {
 	}
 
 	@Test
+	public void getConsentPayload_returnsNull_whenConsentsPresentWithEmptyValue() {
+		JSONObject payload = requestBuilder.getConsentPayload(
+				new Event.Builder("test", "testType", "testSource")
+						.setEventData(
+								new HashMap<String, Object>() {
+									{
+										put("consents", new HashMap<>());
+									}
+								}
+						)
+						.build()
+		);
+		assertNull(payload);
+	}
+
+	@Test
 	public void getConsentPayload_happy() throws Exception {
 		final Map<String, Object> collectConsent = new HashMap<String, Object>() {
 			{
@@ -543,6 +559,46 @@ public class RequestBuilderTest {
 
 		assertStandardFieldsInConsentUpdatesPayload(payload);
 		assertNotNull(payload.getJSONObject(IDENTITY_MAP_KEY));
+	}
+
+	@Test
+	public void getConsentPayload_skipsIdentityMap_whenNotSet() throws Exception {
+		// adding for completeness, but this scenario is not expected in usual flows
+		// as the identity shared state is required and has at a min an ECID
+		final String jsonStr =
+				"{\"identityMap\": {} }";
+
+		final JSONObject jsonObject = new JSONObject(jsonStr);
+		final Map<String, Object> identityState = Utils.toMap(jsonObject);
+		requestBuilder.addXdmPayload(identityState);
+		JSONObject payload = requestBuilder.getConsentPayload(
+				new Event.Builder("test", "testType", "testSource")
+						.setEventData(
+								new HashMap<String, Object>() {
+									{
+										put(
+												"consents",
+												new HashMap<String, Object>() {
+													{
+														put(
+																"collect",
+																new HashMap<String, Object>() {
+																	{
+																		put("val", "y");
+																	}
+																}
+														);
+													}
+												}
+										);
+									}
+								}
+						)
+						.build()
+		);
+
+		assertStandardFieldsInConsentUpdatesPayload(payload);
+		assertFalse(payload.has(IDENTITY_MAP_KEY));
 	}
 
 	@Test
