@@ -20,7 +20,9 @@ import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.FunctionalTestConstants;
+import com.adobe.marketing.mobile.util.FunctionalTestHelper;
 import com.adobe.marketing.mobile.util.FunctionalTestUtils;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +66,6 @@ public class SampleFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
-		FunctionalTestHelper.setExpectationEvent(EventType.HUB, EventSource.BOOTED, 1);
 		// expectations for update config request&response events
 		FunctionalTestHelper.setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
 		FunctionalTestHelper.setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1);
@@ -78,19 +79,8 @@ public class SampleFunctionalTests {
 		};
 		MobileCore.updateConfiguration(config);
 
-		Edge.registerExtension();
-		Identity.registerExtension();
-
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.start(
-			new AdobeCallback() {
-				@Override
-				public void call(Object o) {
-					latch.countDown();
-				}
-			}
-		);
-
+		MobileCore.registerExtensions(Arrays.asList(Edge.EXTENSION, Identity.EXTENSION), o -> latch.countDown());
 		latch.await();
 
 		// Wait for and verify all expected events are received

@@ -11,8 +11,8 @@
 
 package com.adobe.marketing.mobile;
 
-import static com.adobe.marketing.mobile.FunctionalTestHelper.*;
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
+import static com.adobe.marketing.mobile.util.FunctionalTestHelper.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -49,7 +49,6 @@ public class IdentityStateFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
-		setExpectationEvent(EventType.HUB, EventSource.BOOTED, 1);
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1);
 		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 3);
@@ -62,15 +61,7 @@ public class IdentityStateFunctionalTests {
 		MobileCore.updateConfiguration(config);
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.registerExtensions(
-			Arrays.asList(Edge.EXTENSION, FakeIdentity.EXTENSION),
-			new AdobeCallback<Object>() {
-				@Override
-				public void call(Object o) {
-					latch.countDown();
-				}
-			}
-		);
+		MobileCore.registerExtensions(Arrays.asList(Edge.EXTENSION, FakeIdentity.EXTENSION), o -> latch.countDown());
 
 		latch.await();
 

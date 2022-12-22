@@ -51,20 +51,6 @@ public class MonitorExtension extends Extension {
 		getApi().registerEventListener(EventType.WILDCARD, EventSource.WILDCARD, this::wildcardProcessor);
 	}
 
-	public static void registerExtension() {
-		MobileCore.registerExtension(
-			MonitorExtension.class,
-			extensionError -> {
-				Log.error(
-					LOG_TAG,
-					LOG_SOURCE,
-					"There was an error registering the Monitor extension: %s",
-					extensionError.getErrorName()
-				);
-			}
-		);
-	}
-
 	/**
 	 * Unregister the Monitor Extension from the EventHub.
 	 */

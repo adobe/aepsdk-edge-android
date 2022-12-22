@@ -11,10 +11,10 @@
 
 package com.adobe.marketing.mobile;
 
-import static com.adobe.marketing.mobile.FunctionalTestHelper.assertExpectedEvents;
-import static com.adobe.marketing.mobile.FunctionalTestHelper.getDispatchedEventsWith;
-import static com.adobe.marketing.mobile.FunctionalTestHelper.resetTestExpectations;
-import static com.adobe.marketing.mobile.FunctionalTestHelper.setExpectationEvent;
+import static com.adobe.marketing.mobile.util.FunctionalTestHelper.assertExpectedEvents;
+import static com.adobe.marketing.mobile.util.FunctionalTestHelper.getDispatchedEventsWith;
+import static com.adobe.marketing.mobile.util.FunctionalTestHelper.resetTestExpectations;
+import static com.adobe.marketing.mobile.util.FunctionalTestHelper.setExpectationEvent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -24,8 +24,10 @@ import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.FunctionalTestDataStoreService;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.FunctionalTestConstants;
+import com.adobe.marketing.mobile.util.FunctionalTestHelper;
 import com.adobe.marketing.mobile.util.FunctionalTestUtils;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -77,7 +79,6 @@ public class NetworkResponseHandlerFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
-		setExpectationEvent(EventType.HUB, EventSource.BOOTED, 1);
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1);
 		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 4);
@@ -89,19 +90,8 @@ public class NetworkResponseHandlerFunctionalTests {
 		};
 		MobileCore.updateConfiguration(config);
 
-		Edge.registerExtension();
-		Identity.registerExtension();
-
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.start(
-			new AdobeCallback() {
-				@Override
-				public void call(Object o) {
-					latch.countDown();
-				}
-			}
-		);
-
+		MobileCore.registerExtensions(Arrays.asList(Edge.EXTENSION, Identity.EXTENSION), o -> latch.countDown());
 		latch.await();
 
 		assertExpectedEvents(false);

@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile.util;
 
+import androidx.annotation.NonNull;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,10 +41,6 @@ public class ADBCountDownLatch {
 		latch.countDown();
 	}
 
-	public long getCount() {
-		return latch.getCount();
-	}
-
 	public int getInitialCount() {
 		return initialCount;
 	}
@@ -52,8 +49,9 @@ public class ADBCountDownLatch {
 		return currentCount.get();
 	}
 
+	@NonNull
 	@Override
 	public String toString() {
-		return String.format("%s, initial: %d, current: %d", latch.toString(), initialCount, currentCount.get());
+		return String.format("%s, initial: %d, current: %d", latch, initialCount, currentCount.get());
 	}
 }

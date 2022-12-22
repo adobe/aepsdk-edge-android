@@ -11,16 +11,17 @@
 
 package com.adobe.marketing.mobile;
 
-import static com.adobe.marketing.mobile.FunctionalTestHelper.assertExpectedEvents;
-import static com.adobe.marketing.mobile.FunctionalTestHelper.assertNetworkRequestCount;
-import static com.adobe.marketing.mobile.FunctionalTestHelper.createNetworkResponse;
-import static com.adobe.marketing.mobile.FunctionalTestHelper.getNetworkRequestsWith;
-import static com.adobe.marketing.mobile.FunctionalTestHelper.resetTestExpectations;
-import static com.adobe.marketing.mobile.FunctionalTestHelper.setExpectationEvent;
-import static com.adobe.marketing.mobile.FunctionalTestHelper.setExpectationNetworkRequest;
-import static com.adobe.marketing.mobile.FunctionalTestHelper.setNetworkResponseFor;
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
+import static com.adobe.marketing.mobile.util.FunctionalTestHelper.assertExpectedEvents;
+import static com.adobe.marketing.mobile.util.FunctionalTestHelper.assertNetworkRequestCount;
+import static com.adobe.marketing.mobile.util.FunctionalTestHelper.createNetworkResponse;
+import static com.adobe.marketing.mobile.util.FunctionalTestHelper.getNetworkRequestsWith;
+import static com.adobe.marketing.mobile.util.FunctionalTestHelper.resetTestExpectations;
+import static com.adobe.marketing.mobile.util.FunctionalTestHelper.setExpectationEvent;
+import static com.adobe.marketing.mobile.util.FunctionalTestHelper.setExpectationNetworkRequest;
+import static com.adobe.marketing.mobile.util.FunctionalTestHelper.setNetworkResponseFor;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
 import android.app.Instrumentation;
@@ -32,7 +33,9 @@ import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.ADBCountDownLatch;
 import com.adobe.marketing.mobile.util.FunctionalTestConstants;
+import com.adobe.marketing.mobile.util.FunctionalTestHelper;
 import com.adobe.marketing.mobile.util.MonitorExtension;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -158,7 +161,7 @@ public class RestartFunctionalTests {
 	}
 
 	public void resetCore() throws Exception {
-		MobileCore.setCore(null);
+		MobileCore.resetSDK();
 		MobileCore.setLogLevel(LoggingMode.VERBOSE);
 		Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
 		Application application = Instrumentation.newApplication(FunctionalTestHelper.CustomApplication.class, context);
@@ -169,11 +172,9 @@ public class RestartFunctionalTests {
 	 * Setup Mobile Core for testing. Registers Edge, Edge Identity, Consent, and Monitor extensions.
 	 *
 	 * @param restart true if setup for restart case of Core, false if clean start of Core
-	 * @throws Exception
+	 * @throws InterruptedException in case the latch wait fails
 	 */
-	public void setupCore(final boolean restart) throws Exception {
-		setExpectationEvent(EventType.HUB, EventSource.BOOTED, 1);
-
+	public void setupCore(final boolean restart) throws InterruptedException {
 		if (restart) {
 			// On restart, expect Consent to load preferences from persistence and dispatch them to Hub
 			setExpectationEvent(EventType.CONSENT, EventSource.RESPONSE_CONTENT, 1);
@@ -187,14 +188,10 @@ public class RestartFunctionalTests {
 		// Expect 4 shared state events on clean start. On restart, Consent also sets a shared state
 		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, restart ? 5 : 4);
 
-		MonitorExtension.registerExtension();
-		Edge.registerExtension();
-		Identity.registerExtension();
-		Consent.registerExtension();
-
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.start(
-			(AdobeCallback) o -> {
+		MobileCore.registerExtensions(
+			Arrays.asList(Edge.EXTENSION, Identity.EXTENSION, Consent.EXTENSION, MonitorExtension.EXTENSION),
+			o -> {
 				if (!restart) {
 					// Set configuration on clean start. On restart Configuration will load from persistence.
 					HashMap<String, Object> config = new HashMap<String, Object>() {
@@ -204,12 +201,10 @@ public class RestartFunctionalTests {
 					};
 					MobileCore.updateConfiguration(config);
 				}
-
 				latch.countDown();
 			}
 		);
-
-		latch.await();
+		assertTrue(latch.await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS));
 
 		assertExpectedEvents(false);
 		// Note: Should not call resetTestExpectations so this helper can be used for testing scenarios
