@@ -378,8 +378,7 @@ public class EdgeNetworkServiceTest {
 		final String url = "https://test.com";
 		final String jsonRequest = "{}";
 		final String errorStr = "Service Unavailable";
-		MockConnection mockConnection = new MockConnection(503, null, errorStr, null);
-		mockNetworkService.mockConnectAsyncConnection = mockConnection;
+		mockNetworkService.mockConnectAsyncConnection = new MockConnection(503, null, errorStr, null);
 		networkService = new EdgeNetworkService(mockNetworkService);
 
 		// test

@@ -21,14 +21,14 @@ public class FunctionalTestConstants {
 	public static final String LOG_TAG = "FunctionalTestsFramework";
 
 	// Event type and sources used by Monitor Extension
-	public class EventType {
+	public static class EventType {
 
 		public static final String MONITOR = "com.adobe.functional.eventType.monitor";
 
 		private EventType() {}
 	}
 
-	public class EventSource {
+	public static class EventSource {
 
 		public static final String SHARED_STATE_REQUEST = "com.adobe.eventSource.sharedStateRequest";
 		public static final String SHARED_STATE_RESPONSE = "com.adobe.eventSource.sharedStateResponse";
@@ -37,7 +37,7 @@ public class FunctionalTestConstants {
 		private EventSource() {}
 	}
 
-	public class Defaults {
+	public static class Defaults {
 
 		public static final int WAIT_TIMEOUT_MS = 1000;
 		public static final int WAIT_NETWORK_REQUEST_TIMEOUT_MS = 2000;
@@ -59,7 +59,7 @@ public class FunctionalTestConstants {
 		private Defaults() {}
 	}
 
-	public class EventDataKey {
+	public static class EventDataKey {
 
 		public static final String EDGE_REQUEST_ID = "requestId";
 		public static final String REQUEST_EVENT_ID = "requestEventId";
@@ -70,14 +70,14 @@ public class FunctionalTestConstants {
 		private EventDataKey() {}
 	}
 
-	public class DataStoreKeys {
+	public static class DataStoreKeys {
 
 		public static final String STORE_PAYLOADS = "storePayloads";
 
 		private DataStoreKeys() {}
 	}
 
-	public class SharedState {
+	public static class SharedState {
 
 		public static final String STATE_OWNER = "stateowner";
 		public static final String EDGE = "com.adobe.edge";
@@ -114,7 +114,7 @@ public class FunctionalTestConstants {
 		private SharedState() {}
 	}
 
-	public class NetworkKeys {
+	public static class NetworkKeys {
 
 		public static final String REQUEST_URL = "https://edge.adobedc.net/ee/v1";
 		public static final String REQUEST_PARAMETER_KEY_CONFIG_ID = "configId";

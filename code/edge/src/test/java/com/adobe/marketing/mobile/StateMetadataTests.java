@@ -67,19 +67,19 @@ public class StateMetadataTests {
 		assertNotNull(payload1);
 		assertEquals("key1", payload1.getKey());
 		assertEquals("value1", payload1.getValue());
-		assertEquals(new Integer(7200), payload1.getMaxAge());
+		assertEquals(Integer.valueOf(7200), payload1.getMaxAge());
 
 		StoreResponsePayload payload2 = StoreResponsePayload.fromJsonObject(new JSONObject(payloads.get(1)));
 		assertNotNull(payload2);
 		assertEquals("key2", payload2.getKey());
 		assertEquals("value2", payload2.getValue());
-		assertEquals(new Integer(7200), payload2.getMaxAge());
+		assertEquals(Integer.valueOf(7200), payload2.getMaxAge());
 
 		StoreResponsePayload payload3 = StoreResponsePayload.fromJsonObject(new JSONObject(payloads.get(2)));
 		assertNotNull(payload3);
 		assertEquals("key3", payload3.getKey());
 		assertEquals("value3", payload3.getValue());
-		assertEquals(new Integer(7200), payload3.getMaxAge());
+		assertEquals(Integer.valueOf(7200), payload3.getMaxAge());
 	}
 
 	private StoreResponsePayload buildStoreResponsePayload(final String key, final String value, final int maxAge) {

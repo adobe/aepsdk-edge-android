@@ -25,6 +25,7 @@ import org.junit.Test;
 public class FormattersTests {
 
 	@Test
+	@SuppressWarnings("deprecation")
 	public void dateToISO8601String_onValidTimestamp_returnsFormattedString() {
 		Calendar cal = new Calendar.Builder()
 			.set(Calendar.YEAR, 2019)
@@ -42,12 +43,14 @@ public class FormattersTests {
 	}
 
 	@Test
+	@SuppressWarnings("deprecation")
 	public void dateToISO8601String_onNull_returnsEmptyString() {
 		String serializedDate = Formatters.dateToISO8601String(null);
 		assertEquals("", serializedDate);
 	}
 
 	@Test
+	@SuppressWarnings("deprecation")
 	public void dateToShortDateString_onValidTimestamp_returnsFormattedString() {
 		Calendar cal = new Calendar.Builder()
 			.set(Calendar.YEAR, 2019)
@@ -63,6 +66,7 @@ public class FormattersTests {
 	}
 
 	@Test
+	@SuppressWarnings("deprecation")
 	public void dateToShortDateString_onNull_returnsEmptyString() {
 		String serializedDate = Formatters.dateToShortDateString(null);
 		assertEquals("", serializedDate);
@@ -123,14 +127,14 @@ public class FormattersTests {
 
 	@Test
 	public void serializeFromList_onEmpty_returnsEmptyMap() {
-		List<Map<String, Object>> result = Formatters.serializeFromList(new ArrayList<Property>());
+		List<Map<String, Object>> result = Formatters.serializeFromList(new ArrayList<>());
 		assertNotNull(result);
 		assertEquals(0, result.size());
 	}
 
 	private static class TestPropertyA implements Property {
 
-		private String value;
+		private final String value;
 
 		TestPropertyA(final String value) {
 			this.value = value;
@@ -147,7 +151,7 @@ public class FormattersTests {
 
 	private static class TestPropertyB implements Property {
 
-		private String value;
+		private final String value;
 
 		TestPropertyB(final String value) {
 			this.value = value;

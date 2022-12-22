@@ -11,8 +11,8 @@
 
 package com.adobe.marketing.mobile;
 
-import static com.adobe.marketing.mobile.FunctionalTestHelper.*;
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
+import static com.adobe.marketing.mobile.util.FunctionalTestHelper.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -23,6 +23,8 @@ import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.ADBCountDownLatch;
 import com.adobe.marketing.mobile.util.FunctionalTestConstants;
+import com.adobe.marketing.mobile.util.FunctionalTestHelper;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +53,6 @@ public class ConsentStatusChangeFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
-		setExpectationEvent(EventType.HUB, EventSource.BOOTED, 1);
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1);
 
@@ -65,13 +66,11 @@ public class ConsentStatusChangeFunctionalTests {
 		};
 		MobileCore.updateConfiguration(config);
 
-		Edge.registerExtension();
-		Identity.registerExtension();
-		Consent.registerExtension();
-
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.start((AdobeCallback) o -> latch.countDown());
-
+		MobileCore.registerExtensions(
+			Arrays.asList(Edge.EXTENSION, Identity.EXTENSION, Consent.EXTENSION),
+			o -> latch.countDown()
+		);
 		latch.await();
 
 		assertExpectedEvents(false);
@@ -214,12 +213,12 @@ public class ConsentStatusChangeFunctionalTests {
 		assertEquals("update", requestBody.get("query.consent.operation"));
 		assertNotNull(requestBody.get("identityMap.ECID[0].id"));
 		assertEquals("ambiguous", requestBody.get("identityMap.ECID[0].authenticatedState"));
-		assertEquals(false, new Boolean(requestBody.get("identityMap.ECID[0].primary")));
+		assertEquals(false, Boolean.valueOf(requestBody.get("identityMap.ECID[0].primary")));
 		assertEquals("Adobe", requestBody.get("consent[0].standard"));
 		assertEquals("2.0", requestBody.get("consent[0].version"));
 		assertEquals("n", requestBody.get("consent[0].value.collect.val"));
 		assertNotNull(requestBody.get("consent[0].value.metadata.time"));
-		assertEquals(true, new Boolean(requestBody.get("meta.konductorConfig.streaming.enabled")));
+		assertEquals(true, Boolean.valueOf(requestBody.get("meta.konductorConfig.streaming.enabled")));
 		assertEquals("\n", requestBody.get("meta.konductorConfig.streaming.lineFeed"));
 		assertEquals("\u0000", requestBody.get("meta.konductorConfig.streaming.recordSeparator"));
 	}
@@ -242,12 +241,12 @@ public class ConsentStatusChangeFunctionalTests {
 		assertEquals("update", requestBody.get("query.consent.operation"));
 		assertNotNull(requestBody.get("identityMap.ECID[0].id"));
 		assertEquals("ambiguous", requestBody.get("identityMap.ECID[0].authenticatedState"));
-		assertEquals(false, new Boolean(requestBody.get("identityMap.ECID[0].primary")));
+		assertEquals(false, Boolean.valueOf(requestBody.get("identityMap.ECID[0].primary")));
 		assertEquals("Adobe", requestBody.get("consent[0].standard"));
 		assertEquals("2.0", requestBody.get("consent[0].version"));
 		assertEquals("y", requestBody.get("consent[0].value.collect.val"));
 		assertNotNull(requestBody.get("consent[0].value.metadata.time"));
-		assertEquals(true, new Boolean(requestBody.get("meta.konductorConfig.streaming.enabled")));
+		assertEquals(true, Boolean.valueOf(requestBody.get("meta.konductorConfig.streaming.enabled")));
 		assertEquals("\n", requestBody.get("meta.konductorConfig.streaming.lineFeed"));
 		assertEquals("\u0000", requestBody.get("meta.konductorConfig.streaming.recordSeparator"));
 	}
@@ -455,14 +454,7 @@ public class ConsentStatusChangeFunctionalTests {
 
 	private void getConsentsSync() throws Exception {
 		final ADBCountDownLatch latch = new ADBCountDownLatch(1);
-		Consent.getConsents(
-			new AdobeCallback<Map<String, Object>>() {
-				@Override
-				public void call(Map<String, Object> stringObjectMap) {
-					latch.countDown();
-				}
-			}
-		);
+		Consent.getConsents(stringObjectMap -> latch.countDown());
 
 		latch.await(1000, TimeUnit.MILLISECONDS);
 	}
@@ -470,14 +462,7 @@ public class ConsentStatusChangeFunctionalTests {
 	private void updateConfiguration(final Map<String, Object> config) throws InterruptedException {
 		final CountDownLatch latch = new CountDownLatch(1);
 		MobileCore.updateConfiguration(config);
-		MobileCore.getPrivacyStatus(
-			new AdobeCallback<MobilePrivacyStatus>() {
-				@Override
-				public void call(MobilePrivacyStatus mobilePrivacyStatus) {
-					latch.countDown();
-				}
-			}
-		);
+		MobileCore.getPrivacyStatus(mobilePrivacyStatus -> latch.countDown());
 
 		assertTrue(latch.await(2, TimeUnit.SECONDS));
 	}

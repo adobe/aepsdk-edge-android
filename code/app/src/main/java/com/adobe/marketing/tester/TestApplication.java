@@ -13,13 +13,13 @@ package com.adobe.marketing.tester;
 
 import android.app.Application;
 import android.util.Log;
-import com.adobe.marketing.mobile.AdobeCallback;
 import com.adobe.marketing.mobile.Assurance;
 import com.adobe.marketing.mobile.Edge;
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.edge.consent.Consent;
 import com.adobe.marketing.mobile.edge.identity.Identity;
+import java.util.Arrays;
 
 public class TestApplication extends Application {
 
@@ -37,19 +37,9 @@ public class TestApplication extends Application {
 		MobileCore.configureWithAppID(ENVIRONMENT_FILE_ID);
 
 		// register Adobe extensions
-		Edge.registerExtension();
-		Identity.registerExtension(); // Edge Identity extension
-		Consent.registerExtension();
-		Assurance.registerExtension();
-
-		// once all the extensions are registered, call MobileCore.start(...) to start processing the events
-		MobileCore.start(
-			new AdobeCallback<Object>() {
-				@Override
-				public void call(final Object o) {
-					Log.d(LOG_TAG, "Mobile SDK was initialized");
-				}
-			}
+		MobileCore.registerExtensions(
+			Arrays.asList(Edge.EXTENSION, Identity.EXTENSION, Consent.EXTENSION, Assurance.EXTENSION),
+			o -> Log.d(LOG_TAG, "Mobile SDK was initialized")
 		);
 	}
 }

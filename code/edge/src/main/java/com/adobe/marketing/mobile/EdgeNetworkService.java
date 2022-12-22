@@ -16,7 +16,6 @@ import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.services.Log;
-import com.adobe.marketing.mobile.services.NetworkCallback;
 import com.adobe.marketing.mobile.services.NetworkRequest;
 import com.adobe.marketing.mobile.services.Networking;
 import java.io.BufferedReader;
@@ -319,12 +318,9 @@ class EdgeNetworkService {
 		final HttpConnecting[] httpConnecting = new HttpConnecting[1];
 		networkService.connectAsync(
 			networkRequest,
-			new NetworkCallback() {
-				@Override
-				public void call(final HttpConnecting connection) {
-					httpConnecting[0] = connection;
-					countDownLatch.countDown();
-				}
+			connection -> {
+				httpConnecting[0] = connection;
+				countDownLatch.countDown();
 			}
 		);
 

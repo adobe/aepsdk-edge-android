@@ -12,7 +12,6 @@
 package com.adobe.marketing.tester;
 
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import androidx.appcompat.app.AppCompatActivity;
@@ -34,13 +33,8 @@ public class AssuranceActivity extends AppCompatActivity {
 		txtAssuranceSessionURL = findViewById(R.id.txtAssuranceSessionURL);
 
 		//Set up button events
-		btnConnectToAssuranceSession.setOnClickListener(
-			new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					Assurance.startSession(txtAssuranceSessionURL.getText().toString());
-				}
-			}
+		btnConnectToAssuranceSession.setOnClickListener(v ->
+			Assurance.startSession(txtAssuranceSessionURL.getText().toString())
 		);
 	}
 }

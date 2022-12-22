@@ -13,7 +13,6 @@ package com.adobe.marketing.mobile.services;
 
 import static com.adobe.marketing.mobile.util.FunctionalTestConstants.LOG_TAG;
 
-import android.content.Context;
 import java.io.File;
 
 /**
@@ -25,12 +24,9 @@ public class ServiceProviderHelper {
 
 	/**
 	 * Reset the {@link ServiceProvider}.
-	 *
-	 * @param context the application context
 	 */
-	public static void resetServiceProvider(final Context context) {
-		ServiceProvider.getInstance().reset();
-		ServiceProvider.getInstance().setContext(context);
+	public static void resetServiceProvider() {
+		ServiceProvider.getInstance().resetServices();
 	}
 
 	/**

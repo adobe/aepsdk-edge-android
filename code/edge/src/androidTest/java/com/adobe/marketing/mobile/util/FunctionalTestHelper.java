@@ -9,7 +9,7 @@
   governing permissions and limitations under the License.
 */
 
-package com.adobe.marketing.mobile;
+package com.adobe.marketing.mobile.util;
 
 import static com.adobe.marketing.mobile.util.FunctionalTestConstants.LOG_TAG;
 import static com.adobe.marketing.mobile.util.MonitorExtension.EventSpec;
@@ -21,20 +21,24 @@ import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.SharedPreferences;
+import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
+import com.adobe.marketing.mobile.AdobeCallbackWithError;
+import com.adobe.marketing.mobile.AdobeError;
+import com.adobe.marketing.mobile.Event;
+import com.adobe.marketing.mobile.LoggingMode;
+import com.adobe.marketing.mobile.MobileCore;
+import com.adobe.marketing.mobile.MobileCoreHelper;
 import com.adobe.marketing.mobile.services.FunctionalTestDataStoreService;
 import com.adobe.marketing.mobile.services.FunctionalTestNetworkService;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.HttpMethod;
+import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NetworkRequest;
 import com.adobe.marketing.mobile.services.Networking;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.ServiceProviderHelper;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
-import com.adobe.marketing.mobile.util.ADBCountDownLatch;
-import com.adobe.marketing.mobile.util.FunctionalTestConstants;
-import com.adobe.marketing.mobile.util.FunctionalTestUtils;
-import com.adobe.marketing.mobile.util.MonitorExtension;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -84,7 +88,7 @@ public class FunctionalTestHelper {
 		private static final String LOG_SOURCE = "SetupCoreRule";
 
 		@Override
-		public Statement apply(final Statement base, final Description description) {
+		public Statement apply(@NonNull final Statement base, @NonNull final Description description) {
 			return new Statement() {
 				@Override
 				public void evaluate() throws Throwable {
@@ -93,7 +97,7 @@ public class FunctionalTestHelper {
 						defaultApplication = Instrumentation.newApplication(CustomApplication.class, context);
 					}
 
-					MobileCore.setCore(null);
+					MobileCoreHelper.resetSDK();
 					setTestableNetworkService();
 					MobileCore.setLogLevel(LoggingMode.VERBOSE);
 					MobileCore.setApplication(defaultApplication);
@@ -110,17 +114,10 @@ public class FunctionalTestHelper {
 						// After test execution
 						Log.debug(LOG_TAG, LOG_SOURCE, "Finished '%s'", description.getMethodName());
 						waitForThreads(5000); // wait to allow thread to run after test execution
-						Core core = MobileCore.getCore();
-
-						if (core != null && core.eventHub != null) {
-							core.eventHub.shutdown();
-							core.eventHub = null;
-						}
-
-						MobileCore.setCore(null);
+						MobileCoreHelper.resetSDK();
 						FunctionalTestDataStoreService.clearStores();
 						resetTestExpectations();
-						resetServiceProvider(defaultApplication);
+						resetServiceProvider();
 					}
 				}
 			};
@@ -142,11 +139,14 @@ public class FunctionalTestHelper {
 	public static class RegisterMonitorExtensionRule implements TestRule {
 
 		@Override
-		public Statement apply(final Statement base, final Description description) {
+		@SuppressWarnings("deprecation")
+		public Statement apply(@NonNull final Statement base, @NonNull final Description description) {
 			return new Statement() {
 				@Override
 				public void evaluate() throws Throwable {
-					MonitorExtension.registerExtension();
+					// Use registerExtension here to avoid starting the core yet, the tests should
+					// start it after all extensions have been registered
+					MobileCore.registerExtension(MonitorExtension.EXTENSION, null);
 
 					try {
 						base.evaluate();
@@ -161,7 +161,7 @@ public class FunctionalTestHelper {
 	public static class LogOnErrorRule implements TestRule {
 
 		@Override
-		public Statement apply(final Statement base, final Description description) {
+		public Statement apply(@NonNull final Statement base, @NonNull final Description description) {
 			return new Statement() {
 				@Override
 				public void evaluate() throws Throwable {
@@ -177,7 +177,6 @@ public class FunctionalTestHelper {
 
 	/**
 	 * Get the LogCat logs
-	 * @return
 	 */
 	private static String collectLogCat(final String methodName) {
 		Process process;
@@ -281,7 +280,7 @@ public class FunctionalTestHelper {
 	 */
 	private static Set<Thread> getEligibleThreads() {
 		Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
-		Set<Thread> eligibleThreads = new HashSet<Thread>();
+		Set<Thread> eligibleThreads = new HashSet<>();
 
 		for (Thread t : threadSet) {
 			if (
@@ -459,7 +458,7 @@ public class FunctionalTestHelper {
 			String.format(
 				"Received %d unexpected event(s): %s",
 				unexpectedEventsReceivedCount,
-				unexpectedEventsErrorString.toString()
+				unexpectedEventsErrorString
 			),
 			0,
 			unexpectedEventsReceivedCount
@@ -510,7 +509,7 @@ public class FunctionalTestHelper {
 			sleep(FunctionalTestConstants.Defaults.WAIT_TIMEOUT_MS);
 		}
 
-		return receivedEvents.containsKey(eventSpec) ? receivedEvents.get(eventSpec) : Collections.<Event>emptyList();
+		return receivedEvents.containsKey(eventSpec) ? receivedEvents.get(eventSpec) : Collections.emptyList();
 	}
 
 	/**
@@ -840,14 +839,11 @@ public class FunctionalTestHelper {
 
 	/**
 	 * Reset the {@link ServiceProvider} by clearing all files under the application cache folder,
-	 * instantiate new instances of each service provider, and setting the context
-	 * in {@link ServiceProvider#setContext(Context)}.
-	 *
-	 * @param context the application context
+	 * instantiate new instances of each service provider
 	 */
-	private static void resetServiceProvider(final Context context) {
+	private static void resetServiceProvider() {
 		ServiceProviderHelper.cleanCacheDir();
-		ServiceProviderHelper.resetServiceProvider(context);
+		ServiceProviderHelper.resetServiceProvider();
 	}
 
 	/**

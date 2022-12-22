@@ -66,7 +66,7 @@ public class TestXDMSchema implements Schema {
 		}
 
 		if (this.timestamp != null) {
-			map.put("timestamp", com.adobe.marketing.mobile.xdm.Formatters.dateToISO8601String(this.timestamp));
+			map.put("timestamp", TimeUtils.getISO8601UTCDateWithMilliseconds(this.timestamp));
 		}
 
 		return map;

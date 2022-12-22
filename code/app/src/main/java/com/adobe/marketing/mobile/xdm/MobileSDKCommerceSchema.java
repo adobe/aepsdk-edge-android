@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile.xdm;
 
+import com.adobe.marketing.mobile.util.TimeUtils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,7 +85,7 @@ public class MobileSDKCommerceSchema implements com.adobe.marketing.mobile.xdm.S
 		}
 
 		if (this.timestamp != null) {
-			map.put("timestamp", com.adobe.marketing.mobile.xdm.Formatters.dateToISO8601String(this.timestamp));
+			map.put("timestamp", TimeUtils.getISO8601UTCDateWithMilliseconds(this.timestamp));
 		}
 
 		return map;
