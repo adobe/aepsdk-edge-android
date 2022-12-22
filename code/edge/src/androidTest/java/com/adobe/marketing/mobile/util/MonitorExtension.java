@@ -20,6 +20,8 @@ import com.adobe.marketing.mobile.EventType;
 import com.adobe.marketing.mobile.Extension;
 import com.adobe.marketing.mobile.ExtensionApi;
 import com.adobe.marketing.mobile.MobileCore;
+import com.adobe.marketing.mobile.SharedStateResolution;
+import com.adobe.marketing.mobile.SharedStateResult;
 import com.adobe.marketing.mobile.services.Log;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -145,14 +147,14 @@ public class MonitorExtension extends Extension {
 			return;
 		}
 
-		Map<String, Object> sharedState = getApi().getSharedEventState(stateOwner, event, null);
-
+		SharedStateResult sharedStateResult = getApi()
+			.getSharedState(stateOwner, event, false, SharedStateResolution.ANY);
 		Event responseEvent = new Event.Builder(
 			"Get Shared State Response",
 			FunctionalTestConstants.EventType.MONITOR,
 			FunctionalTestConstants.EventSource.SHARED_STATE_RESPONSE
 		)
-			.setEventData(sharedState)
+			.setEventData(sharedStateResult != null ? sharedStateResult.getValue() : new HashMap<>())
 			.inResponseToEvent(event)
 			.build();
 		MobileCore.dispatchEvent(responseEvent);

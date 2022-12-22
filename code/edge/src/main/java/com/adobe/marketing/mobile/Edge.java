@@ -40,9 +40,10 @@ public class Edge {
 
 	/**
 	 * Registers the extension with the Mobile SDK. This method should be called only once in your application class.
-	 * @deprecated Use {@link MobileCore#registerExtensions(List, AdobeCallback)} with {@link Edge#EXTENSION} instead.
+	 * @deprecated as of 2.0.0, use {@link MobileCore#registerExtensions(List, AdobeCallback)} with {@link Edge#EXTENSION} instead.
 	 */
 	@Deprecated
+	@SuppressWarnings("deprecation")
 	public static void registerExtension() {
 		MobileCore.registerExtension(
 			EdgeExtension.class,

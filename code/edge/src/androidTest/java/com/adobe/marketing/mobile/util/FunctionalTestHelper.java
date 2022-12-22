@@ -139,6 +139,7 @@ public class FunctionalTestHelper {
 	public static class RegisterMonitorExtensionRule implements TestRule {
 
 		@Override
+		@SuppressWarnings("deprecation")
 		public Statement apply(@NonNull final Statement base, @NonNull final Description description) {
 			return new Statement() {
 				@Override
@@ -176,7 +177,6 @@ public class FunctionalTestHelper {
 
 	/**
 	 * Get the LogCat logs
-	 * @return
 	 */
 	private static String collectLogCat(final String methodName) {
 		Process process;
@@ -458,7 +458,7 @@ public class FunctionalTestHelper {
 			String.format(
 				"Received %d unexpected event(s): %s",
 				unexpectedEventsReceivedCount,
-				unexpectedEventsErrorString.toString()
+				unexpectedEventsErrorString
 			),
 			0,
 			unexpectedEventsReceivedCount

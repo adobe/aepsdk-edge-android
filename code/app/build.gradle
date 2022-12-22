@@ -67,9 +67,9 @@ dependencies {
     //implementation 'com.adobe.marketing.mobile:edgeconsent:1.+'
     //implementation 'com.adobe.marketing.mobile:edgeidentity:1.+'
     //implementation 'com.adobe.marketing.mobile:assurance:1.+'
-    implementation "com.github.adobe.aepsdk-core-android:core:dev-v2.0.0-SNAPSHOT"
+    implementation 'com.adobe.marketing.mobile:core:2.0.0-SNAPSHOT'
     implementation fileTree(dir: 'libs', include: ['edgeidentity-release-2.0.0.aar', 'edgeconsent-release-2.0.0.aar'])
-    implementation ('com.github.adobe:aepsdk-assurance-android:v2.0.0-alpha.1') {
+    implementation ('com.adobe.marketing.mobile:assurance:2.0.0-SNAPSHOT') {
         transitive = false
     }
     // project dependencies

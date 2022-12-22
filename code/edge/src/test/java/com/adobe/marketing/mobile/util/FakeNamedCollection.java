@@ -15,7 +15,6 @@ import com.adobe.marketing.mobile.services.NamedCollection;
 import java.util.HashMap;
 import java.util.Map;
 
-// TODO: actually use fallback values
 public class FakeNamedCollection implements NamedCollection {
 
 	private HashMap<String, Object> dataStore = new HashMap<>();
@@ -27,7 +26,7 @@ public class FakeNamedCollection implements NamedCollection {
 
 	@Override
 	public int getInt(String key, int fallback) {
-		return dataStore.containsKey(key) ? (int) dataStore.get(key) : fallback;
+		return DataReader.optInt(dataStore, key, fallback);
 	}
 
 	@Override
@@ -37,7 +36,7 @@ public class FakeNamedCollection implements NamedCollection {
 
 	@Override
 	public String getString(String key, String fallback) {
-		return (String) dataStore.get(key);
+		return DataReader.optString(dataStore, key, fallback);
 	}
 
 	@Override
@@ -47,7 +46,7 @@ public class FakeNamedCollection implements NamedCollection {
 
 	@Override
 	public double getDouble(String key, double fallback) {
-		return (double) dataStore.get(key);
+		return DataReader.optDouble(dataStore, key, fallback);
 	}
 
 	@Override
@@ -57,7 +56,7 @@ public class FakeNamedCollection implements NamedCollection {
 
 	@Override
 	public long getLong(String key, long fallback) {
-		return dataStore.containsKey(key) ? (long) dataStore.get(key) : fallback;
+		return DataReader.optLong(dataStore, key, fallback);
 	}
 
 	@Override
@@ -67,7 +66,7 @@ public class FakeNamedCollection implements NamedCollection {
 
 	@Override
 	public float getFloat(String key, float fallback) {
-		return dataStore.containsKey(key) ? (float) dataStore.get(key) : fallback;
+		return DataReader.optFloat(dataStore, key, fallback);
 	}
 
 	@Override
@@ -77,7 +76,7 @@ public class FakeNamedCollection implements NamedCollection {
 
 	@Override
 	public boolean getBoolean(String key, boolean fallback) {
-		return (boolean) dataStore.get(key);
+		return DataReader.optBoolean(dataStore, key, fallback);
 	}
 
 	@Override
@@ -87,7 +86,7 @@ public class FakeNamedCollection implements NamedCollection {
 
 	@Override
 	public Map<String, String> getMap(String key) {
-		return dataStore.containsKey(key) ? (Map<String, String>) dataStore.get(key) : null;
+		return DataReader.optTypedMap(String.class, dataStore, key, null);
 	}
 
 	@Override

@@ -87,12 +87,9 @@ public class CompletionCallbacksManagerTests {
 			.getInstance()
 			.registerCallback(
 				uniqueEventId,
-				new EdgeCallback() {
-					@Override
-					public void onComplete(final List<EdgeEventHandle> handles) {
-						receivedData.addAll(handles);
-						latchOfOne.countDown();
-					}
+				handles -> {
+					receivedData.addAll(handles);
+					latchOfOne.countDown();
 				}
 			);
 
@@ -110,28 +107,15 @@ public class CompletionCallbacksManagerTests {
 		throws InterruptedException {
 		final List<EdgeEventHandle> receivedData = new ArrayList<>();
 
-		CompletionCallbacksManager
-			.getInstance()
-			.registerCallback(
-				uniqueEventId2,
-				new EdgeCallback() {
-					@Override
-					public void onComplete(final List<EdgeEventHandle> handles) {
-						latchOfOne.countDown();
-					}
-				}
-			);
+		CompletionCallbacksManager.getInstance().registerCallback(uniqueEventId2, handles -> latchOfOne.countDown());
 
 		CompletionCallbacksManager
 			.getInstance()
 			.registerCallback(
 				uniqueEventId,
-				new EdgeCallback() {
-					@Override
-					public void onComplete(final List<EdgeEventHandle> handles) {
-						receivedData.addAll(handles);
-						anotherLatchOfOne.countDown();
-					}
+				handles -> {
+					receivedData.addAll(handles);
+					anotherLatchOfOne.countDown();
 				}
 			);
 
@@ -152,12 +136,9 @@ public class CompletionCallbacksManagerTests {
 			.getInstance()
 			.registerCallback(
 				uniqueEventId,
-				new EdgeCallback() {
-					@Override
-					public void onComplete(final List<EdgeEventHandle> handles) {
-						receivedData1.addAll(handles);
-						latchOfOne.countDown();
-					}
+				handles -> {
+					receivedData1.addAll(handles);
+					latchOfOne.countDown();
 				}
 			);
 
@@ -165,12 +146,9 @@ public class CompletionCallbacksManagerTests {
 			.getInstance()
 			.registerCallback(
 				uniqueEventId2,
-				new EdgeCallback() {
-					@Override
-					public void onComplete(final List<EdgeEventHandle> handles) {
-						receivedData2.addAll(handles);
-						anotherLatchOfOne.countDown();
-					}
+				handles -> {
+					receivedData2.addAll(handles);
+					anotherLatchOfOne.countDown();
 				}
 			);
 
@@ -197,12 +175,9 @@ public class CompletionCallbacksManagerTests {
 			.getInstance()
 			.registerCallback(
 				uniqueEventId,
-				new EdgeCallback() {
-					@Override
-					public void onComplete(final List<EdgeEventHandle> handles) {
-						receivedData.addAll(handles);
-						latchOfOne.countDown();
-					}
+				handles -> {
+					receivedData.addAll(handles);
+					latchOfOne.countDown();
 				}
 			);
 
@@ -223,12 +198,9 @@ public class CompletionCallbacksManagerTests {
 			.getInstance()
 			.registerCallback(
 				uniqueEventId,
-				new EdgeCallback() {
-					@Override
-					public void onComplete(final List<EdgeEventHandle> handles) {
-						receivedData.addAll(handles);
-						latchOfOne.countDown();
-					}
+				handles -> {
+					receivedData.addAll(handles);
+					latchOfOne.countDown();
 				}
 			);
 
@@ -246,12 +218,9 @@ public class CompletionCallbacksManagerTests {
 			.getInstance()
 			.registerCallback(
 				uniqueEventId,
-				new EdgeCallback() {
-					@Override
-					public void onComplete(final List<EdgeEventHandle> handles) {
-						receivedData.addAll(handles);
-						latchOfOne.countDown();
-					}
+				handles -> {
+					receivedData.addAll(handles);
+					latchOfOne.countDown();
 				}
 			);
 
@@ -265,17 +234,7 @@ public class CompletionCallbacksManagerTests {
 
 	@Test
 	public void testRegisterCallback_thenUnregisterForOtherEventIds_completionNotCalled() throws InterruptedException {
-		CompletionCallbacksManager
-			.getInstance()
-			.registerCallback(
-				uniqueEventId,
-				new EdgeCallback() {
-					@Override
-					public void onComplete(final List<EdgeEventHandle> handles) {
-						latchOfOne.countDown();
-					}
-				}
-			);
+		CompletionCallbacksManager.getInstance().registerCallback(uniqueEventId, handles -> latchOfOne.countDown());
 
 		CompletionCallbacksManager.getInstance().unregisterCallback(uniqueEventId2);
 		CompletionCallbacksManager.getInstance().unregisterCallback(uniqueEventId3);
@@ -292,24 +251,8 @@ public class CompletionCallbacksManagerTests {
 
 	@Test
 	public void testRegisterCallback_withNullEmptyUniqueEvent_doesNotCrash() {
-		CompletionCallbacksManager
-			.getInstance()
-			.registerCallback(
-				null,
-				new EdgeCallback() {
-					@Override
-					public void onComplete(List<EdgeEventHandle> handles) {}
-				}
-			);
-		CompletionCallbacksManager
-			.getInstance()
-			.registerCallback(
-				"",
-				new EdgeCallback() {
-					@Override
-					public void onComplete(List<EdgeEventHandle> handles) {}
-				}
-			);
+		CompletionCallbacksManager.getInstance().registerCallback(null, handles -> {});
+		CompletionCallbacksManager.getInstance().registerCallback("", handles -> {});
 	}
 
 	@Test

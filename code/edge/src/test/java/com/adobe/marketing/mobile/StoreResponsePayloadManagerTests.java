@@ -117,12 +117,12 @@ public class StoreResponsePayloadManagerTests {
 
 		assertEquals("kndctr_53A16ACB5CC1D3760A495C99_AdobeOrg_optout", payload1.getKey());
 		assertEquals("general=false", payload1.getValue());
-		assertEquals(new Integer(8000), payload1.getMaxAge());
+		assertEquals(Integer.valueOf(8000), payload1.getMaxAge());
 		assertTrue(payload1.getExpiryDate() > originalPayloads.get(payload1.getKey()).getExpiryDate());
 
 		assertEquals("kndctr_53A16ACB5CC1D3760A495C99_AdobeOrg_optin", payload2.getKey());
 		assertEquals("newValue", payload2.getValue());
-		assertEquals(new Integer(10), payload2.getMaxAge());
+		assertEquals(Integer.valueOf(10), payload2.getMaxAge());
 		assertTrue(payload2.getExpiryDate() > originalPayloads.get(payload2.getKey()).getExpiryDate());
 	}
 
