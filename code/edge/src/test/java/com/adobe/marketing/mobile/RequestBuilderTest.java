@@ -431,15 +431,15 @@ public class RequestBuilderTest {
 	@Test
 	public void getConsentPayload_returnsNull_whenConsentsPresentWithEmptyValue() {
 		JSONObject payload = requestBuilder.getConsentPayload(
-				new Event.Builder("test", "testType", "testSource")
-						.setEventData(
-								new HashMap<String, Object>() {
-									{
-										put("consents", new HashMap<>());
-									}
-								}
-						)
-						.build()
+			new Event.Builder("test", "testType", "testSource")
+				.setEventData(
+					new HashMap<String, Object>() {
+						{
+							put("consents", new HashMap<>());
+						}
+					}
+				)
+				.build()
 		);
 		assertNull(payload);
 	}
@@ -565,36 +565,35 @@ public class RequestBuilderTest {
 	public void getConsentPayload_skipsIdentityMap_whenNotSet() throws Exception {
 		// adding for completeness, but this scenario is not expected in usual flows
 		// as the identity shared state is required and has at a min an ECID
-		final String jsonStr =
-				"{\"identityMap\": {} }";
+		final String jsonStr = "{\"identityMap\": {} }";
 
 		final JSONObject jsonObject = new JSONObject(jsonStr);
 		final Map<String, Object> identityState = Utils.toMap(jsonObject);
 		requestBuilder.addXdmPayload(identityState);
 		JSONObject payload = requestBuilder.getConsentPayload(
-				new Event.Builder("test", "testType", "testSource")
-						.setEventData(
+			new Event.Builder("test", "testType", "testSource")
+				.setEventData(
+					new HashMap<String, Object>() {
+						{
+							put(
+								"consents",
 								new HashMap<String, Object>() {
 									{
 										put(
-												"consents",
-												new HashMap<String, Object>() {
-													{
-														put(
-																"collect",
-																new HashMap<String, Object>() {
-																	{
-																		put("val", "y");
-																	}
-																}
-														);
-													}
+											"collect",
+											new HashMap<String, Object>() {
+												{
+													put("val", "y");
 												}
+											}
 										);
 									}
 								}
-						)
-						.build()
+							);
+						}
+					}
+				)
+				.build()
 		);
 
 		assertStandardFieldsInConsentUpdatesPayload(payload);
