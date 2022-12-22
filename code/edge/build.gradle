@@ -236,7 +236,7 @@ configurations.all {
 dependencies {
     // TODO - Uncomment next line when Core 2.0 is published to Maven
     //implementation "com.adobe.marketing.mobile:core:${rootProject.mavenCoreVersion}"
-    implementation "com.github.adobe.aepsdk-core-android:core:dev-v2.0.0-SNAPSHOT"
+    implementation 'com.adobe.marketing.mobile:core:2.0.0-SNAPSHOT'
     implementation 'androidx.annotation:annotation:1.5.0'
 
     testImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"

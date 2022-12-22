@@ -90,7 +90,7 @@ public class UtilsTests {
 	@Test
 	public void testPutIfNotNull_NonNull_InsertsCorrectly() {
 		Map<String, Object> map = new HashMap<>();
-		Utils.putIfNotNull(map, "testKey", new Integer(2));
+		Utils.putIfNotNull(map, "testKey", 2);
 
 		assertEquals(1, map.size());
 		assertEquals(2, map.get("testKey"));

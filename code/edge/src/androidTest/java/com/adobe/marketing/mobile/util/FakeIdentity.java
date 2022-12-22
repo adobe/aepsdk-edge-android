@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile.util;
 
+import androidx.annotation.NonNull;
 import com.adobe.marketing.mobile.Extension;
 import com.adobe.marketing.mobile.ExtensionApi;
 
@@ -42,6 +43,7 @@ public class FakeIdentity extends FakeExtension {
 	/**
 	 * @return the real name of the Edge Identity extension
 	 */
+	@NonNull
 	@Override
 	protected String getName() {
 		return "com.adobe.edge.identity";

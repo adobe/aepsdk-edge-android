@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import org.junit.Test;
 
-@SuppressWarnings("unchecked")
 public class ExperienceEventTests {
 
 	private final String xdmKey = "xdm";

@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentMap;
 
 public class FunctionalTestDataStoreService implements DataStoring {
 
-	private static ConcurrentMap<String, NamedCollection> stores = new ConcurrentHashMap<>();
+	private static final ConcurrentMap<String, NamedCollection> stores = new ConcurrentHashMap<>();
 
 	public static void clearStores() {
 		stores.clear();
@@ -37,7 +37,7 @@ public class FunctionalTestDataStoreService implements DataStoring {
 
 	public static class FunctionalTestDataStore implements NamedCollection {
 
-		private ConcurrentMap<String, Object> store;
+		private final ConcurrentMap<String, Object> store;
 
 		public FunctionalTestDataStore() {
 			this.store = new ConcurrentHashMap<>();
