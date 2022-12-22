@@ -141,8 +141,7 @@ public class MonitorExtension extends Extension {
 			return;
 		}
 
-		String stateOwner = (String) eventData.get(FunctionalTestConstants.EventDataKey.STATE_OWNER);
-
+		String stateOwner = DataReader.optString(eventData, FunctionalTestConstants.EventDataKey.STATE_OWNER, null);
 		if (stateOwner == null) {
 			return;
 		}
