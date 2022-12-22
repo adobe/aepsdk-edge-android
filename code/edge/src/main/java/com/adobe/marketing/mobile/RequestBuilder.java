@@ -166,7 +166,7 @@ class RequestBuilder {
 			EdgeConstants.EventDataKey.IDENTITY_MAP,
 			null
 		);
-		if (Utils.isNullOrEmpty(xdmPayloads)) {
+		if (Utils.isNullOrEmpty(identityMap)) {
 			Log.debug(LOG_TAG, LOG_SOURCE, "Failed to read identityMap from request payload, not a map");
 		} else {
 			consents.setIdentityMap(identityMap);
