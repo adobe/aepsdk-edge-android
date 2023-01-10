@@ -19,7 +19,6 @@ import com.adobe.marketing.mobile.util.CloneFailedException;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.DataReaderException;
 import com.adobe.marketing.mobile.util.EventDataUtils;
-import com.adobe.marketing.mobile.util.StringUtils;
 import com.adobe.marketing.mobile.util.TimeUtils;
 import java.util.ArrayList;
 import java.util.Date;
@@ -175,7 +174,11 @@ class RequestBuilder {
 	private KonductorConfig buildKonductorConfig() {
 		KonductorConfig konductorConfig = new KonductorConfig();
 
-		if (!StringUtils.isNullOrEmpty(streamingRecordSeparator) && !StringUtils.isNullOrEmpty(streamingLineFeed)) {
+		// streaming separators can include empty spaces, so don't use StringUtils.isNullOrEmpty since it uses trim
+		if (
+			(streamingRecordSeparator != null && !streamingRecordSeparator.isEmpty()) &&
+			(streamingLineFeed != null && !streamingLineFeed.isEmpty())
+		) {
 			konductorConfig.enableStreaming(streamingRecordSeparator, streamingLineFeed);
 		}
 

@@ -14,8 +14,6 @@ package com.adobe.marketing.mobile;
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import com.adobe.marketing.mobile.services.Log;
-import com.adobe.marketing.mobile.util.CloneFailedException;
-import com.adobe.marketing.mobile.util.EventDataUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 import com.adobe.marketing.mobile.xdm.Schema;
 import java.util.Collections;
@@ -52,17 +50,7 @@ public final class ExperienceEvent {
 		 */
 		public Builder setData(final Map<String, Object> data) {
 			throwIfAlreadyBuilt();
-			try {
-				experienceEvent.data = EventDataUtils.clone(data);
-			} catch (CloneFailedException e) {
-				Log.warning(
-					LOG_TAG,
-					LOG_SOURCE,
-					"Unable to create free-form data copy on setData. CloneFailedException: %s",
-					e.getLocalizedMessage()
-				);
-				experienceEvent.data = null;
-			}
+			experienceEvent.data = data == null ? null : Utils.deepCopy(data);
 			return this;
 		}
 
@@ -85,20 +73,10 @@ public final class ExperienceEvent {
 				experienceEvent.xdmData = null;
 				experienceEvent.datasetIdentifier = null;
 				return this;
+			} else {
+				experienceEvent.xdmData = Utils.deepCopy(xdm.serializeToXdm());
+				experienceEvent.datasetIdentifier = xdm.getDatasetIdentifier();
 			}
-
-			try {
-				experienceEvent.xdmData = EventDataUtils.clone(xdm.serializeToXdm());
-			} catch (CloneFailedException e) {
-				Log.warning(
-					LOG_TAG,
-					LOG_SOURCE,
-					"Unable to create XDM data copy on setXdmSchema, verify serializeToXdm is implemented correctly. CloneFailedException: %s",
-					e.getLocalizedMessage()
-				);
-				experienceEvent.xdmData = null;
-			}
-			experienceEvent.datasetIdentifier = xdm.getDatasetIdentifier();
 
 			return this;
 		}
@@ -123,16 +101,7 @@ public final class ExperienceEvent {
 		 */
 		public Builder setXdmSchema(final Map<String, Object> xdm, final String datasetIdentifier) {
 			throwIfAlreadyBuilt();
-			try {
-				experienceEvent.xdmData = xdm == null ? null : EventDataUtils.clone(xdm);
-			} catch (CloneFailedException e) {
-				Log.warning(
-					LOG_TAG,
-					LOG_SOURCE,
-					"Unable to create XDM data copy on setXdmSchema, CloneFailedException: %s",
-					e.getLocalizedMessage()
-				);
-			}
+			experienceEvent.xdmData = xdm == null ? null : Utils.deepCopy(xdm);
 			experienceEvent.datasetIdentifier = datasetIdentifier;
 			return this;
 		}
