@@ -246,7 +246,7 @@ class EdgeExtension extends Extension {
 	 * @param event current event to process
 	 */
 	void handleResetComplete(@NonNull final Event event) {
-		networkResponseHandler.setLastResetDate(event.getTimestamp()); // set last reset date
+		getNetworkResponseHandler().setLastResetDate(event.getTimestamp()); // set last reset date
 
 		if (hitQueue == null) {
 			Log.warning(

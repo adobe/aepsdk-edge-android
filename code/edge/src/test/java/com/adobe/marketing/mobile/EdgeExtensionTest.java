@@ -104,6 +104,47 @@ public class EdgeExtensionTest {
 	}
 
 	@Test
+	public void testOnRegistered_registersCorrectListeners() {
+		edgeExtension.onRegistered();
+
+		final ArgumentCaptor<String> eventTypeCaptor = ArgumentCaptor.forClass(String.class);
+		final ArgumentCaptor<String> eventSourceCaptor = ArgumentCaptor.forClass(String.class);
+		final ArgumentCaptor<ExtensionEventListener> listenerCaptor = ArgumentCaptor.forClass(
+			ExtensionEventListener.class
+		);
+		verify(mockExtensionApi, times(6))
+			.registerEventListener(eventTypeCaptor.capture(), eventSourceCaptor.capture(), listenerCaptor.capture());
+		assertEquals(EventType.EDGE, eventTypeCaptor.getAllValues().get(0));
+		assertEquals(EventSource.REQUEST_CONTENT, eventSourceCaptor.getAllValues().get(0));
+		assertEquals(EventType.CONSENT, eventTypeCaptor.getAllValues().get(1));
+		assertEquals(EventSource.RESPONSE_CONTENT, eventSourceCaptor.getAllValues().get(1));
+		assertEquals(EventType.EDGE, eventTypeCaptor.getAllValues().get(2));
+		assertEquals(EventSource.UPDATE_CONSENT, eventSourceCaptor.getAllValues().get(2));
+		assertEquals(EventType.EDGE_IDENTITY, eventTypeCaptor.getAllValues().get(3));
+		assertEquals(EventSource.RESET_COMPLETE, eventSourceCaptor.getAllValues().get(3));
+		assertEquals(EventType.EDGE, eventTypeCaptor.getAllValues().get(4));
+		assertEquals(EventSource.REQUEST_IDENTITY, eventSourceCaptor.getAllValues().get(4));
+		assertEquals(EventType.EDGE, eventTypeCaptor.getAllValues().get(5));
+		assertEquals(EventSource.UPDATE_IDENTITY, eventSourceCaptor.getAllValues().get(5));
+		assertEquals(6, listenerCaptor.getAllValues().size());
+	}
+
+	@Test
+	public void testGetName() {
+		assertEquals("com.adobe.edge", edgeExtension.getName());
+	}
+
+	@Test
+	public void testGetFriendlyName() {
+		assertEquals("Edge", edgeExtension.getFriendlyName());
+	}
+
+	@Test
+	public void testGetVersion_notNull() {
+		assertNotNull(edgeExtension.getVersion());
+	}
+
+	@Test
 	public void testHandleExperienceEventRequest_whenCollectConsentYes_queues() {
 		mockSharedStates(
 			new SharedStateResult(SharedStateStatus.SET, configData),
@@ -301,6 +342,17 @@ public class EdgeExtensionTest {
 		assertEquals(ConsentStatus.PENDING, state.getCurrentCollectConsent());
 	}
 
+	// Tests for void handleResetComplete(final Event event)
+
+	@Test
+	public void testHandleResetComplete_queues() {
+		Event resetComplete = new Event.Builder("Reset complete", EventType.EDGE_IDENTITY, EventSource.RESET_COMPLETE)
+			.build();
+		edgeExtension.handleResetComplete(resetComplete);
+
+		verifyEventQueued(resetComplete);
+	}
+
 	@Test
 	public void testReadyForEvent_whenNotBootedUp_waits_returnsFalse() {
 		// setup: bootupIfNeeded waits for HUB shared state
@@ -389,6 +441,18 @@ public class EdgeExtensionTest {
 			null
 		);
 		assertTrue(edgeExtension.readyForEvent(event1));
+	}
+
+	@Test
+	public void testReadyForEvent_unknownEvents_returnsTrue() {
+		// setup: mock hub shared state for bootupIfNeeded
+		mockHubSharedState(new SharedStateResult(SharedStateStatus.SET, getHubExtensions(true)));
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			null
+		);
+		assertTrue(edgeExtension.readyForEvent(new Event.Builder("test", "type", "source").build()));
 	}
 
 	@Test

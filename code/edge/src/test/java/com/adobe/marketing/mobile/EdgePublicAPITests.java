@@ -12,13 +12,20 @@
 package com.adobe.marketing.mobile;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
+import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
@@ -33,16 +40,93 @@ import org.mockito.junit.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class EdgePublicAPITests {
 
+	private static String GRADLE_PROPERTIES_PATH = "../gradle.properties";
+	private static String PROPERTY_MODULE_VERSION = "moduleVersion";
+
 	private MockedStatic<MobileCore> mockCore;
 
 	@Before
-	public void setup() throws Exception {
+	public void setup() {
 		mockCore = mockStatic(MobileCore.class);
 	}
 
 	@After
 	public void tearDown() {
 		mockCore.close();
+	}
+
+	@SuppressWarnings({ "deprecation", "rawtypes" })
+	@Test
+	public void testRegisterExtension_registersWithMobileCore() {
+		Edge.registerExtension();
+
+		final ArgumentCaptor<Class> extensionClassCaptor = ArgumentCaptor.forClass(Class.class);
+		final ArgumentCaptor<ExtensionErrorCallback> callbackCaptor = ArgumentCaptor.forClass(
+			ExtensionErrorCallback.class
+		);
+		mockCore.verify(
+			() -> MobileCore.registerExtension(extensionClassCaptor.capture(), callbackCaptor.capture()),
+			times(1)
+		);
+
+		assertEquals(EdgeExtension.class, extensionClassCaptor.getValue());
+		assertNotNull(callbackCaptor.getValue());
+	}
+
+	@Test
+	public void testExtensionVersion_verifyModuleVersionInPropertiesFile_asEqual() {
+		Properties properties = loadProperties(GRADLE_PROPERTIES_PATH);
+
+		assertNotNull(Edge.extensionVersion());
+		assertFalse(Edge.extensionVersion().isEmpty());
+
+		String moduleVersion = properties.getProperty(PROPERTY_MODULE_VERSION);
+		assertNotNull(moduleVersion);
+
+		assertEquals(moduleVersion, Edge.extensionVersion());
+	}
+
+	@Test
+	public void testSendEvent_whenNullEvent_ignored() {
+		Edge.sendEvent(null, null);
+		mockCore.verify(() -> MobileCore.dispatchEvent(any()), never());
+	}
+
+	@Test
+	public void testSendEvent_whenNullXDMData_ignored() {
+		Edge.sendEvent(new ExperienceEvent.Builder().build(), null);
+		mockCore.verify(() -> MobileCore.dispatchEvent(any()), never());
+	}
+
+	@Test
+	public void testSendEvent_whenValidData_sendsEvent() {
+		ExperienceEvent event = new ExperienceEvent.Builder()
+			.setXdmSchema(
+				new HashMap<String, Object>() {
+					{
+						put("myXdm", "data example");
+					}
+				}
+			)
+			.setData(
+				new HashMap<String, Object>() {
+					{
+						put("myData", "raw data");
+					}
+				}
+			)
+			.build();
+		Edge.sendEvent(event, null);
+
+		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
+		mockCore.verify(() -> MobileCore.dispatchEvent(requestEventCaptor.capture()), times(1));
+
+		final Event requestEvent = requestEventCaptor.getValue();
+		assertEquals(EventType.EDGE, requestEvent.getType());
+		assertEquals(EventSource.REQUEST_CONTENT, requestEvent.getSource());
+		assertTrue(requestEvent.getEventData().containsKey("xdm"));
+		assertTrue(requestEvent.getEventData().containsKey("data"));
+		assertFalse(requestEvent.getEventData().containsKey("datasetId"));
 	}
 
 	@Test
@@ -88,7 +172,67 @@ public class EdgePublicAPITests {
 	}
 
 	@Test
-	public void testGetLocationHint_whenResponseIsValueHint_returnsValueHint() throws InterruptedException {
+	public void testGetLocationHint_whenNullCallback_ignores() {
+		Edge.getLocationHint(null);
+		mockCore.verify(
+			() ->
+				MobileCore.dispatchEventWithResponseCallback(
+					any(Event.class),
+					any(Long.class),
+					any(AdobeCallbackWithError.class)
+				),
+			never()
+		);
+	}
+
+	@Test
+	public void testGetLocationHint_whenAdobeCallback_AndResponseIsValueHint_returnsValueHint()
+		throws InterruptedException {
+		final CountDownLatch latch = new CountDownLatch(1);
+		Edge.getLocationHint(s -> {
+			assertEquals("hint", s);
+			latch.countDown();
+		});
+
+		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
+		mockCore.verify(
+			() ->
+				MobileCore.dispatchEventWithResponseCallback(
+					requestEventCaptor.capture(),
+					any(Long.class),
+					any(AdobeCallbackWithError.class)
+				),
+			times(1)
+		);
+
+		final Event requestEvent = requestEventCaptor.getValue();
+		assertEquals(EventType.EDGE, requestEvent.getType());
+		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
+		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
+		assertEquals(true, requestEvent.getEventData().get("locationHint"));
+
+		Event responseEvent = new Event.Builder(
+			EdgeConstants.EventName.RESPONSE_LOCATION_HINT,
+			EventType.EDGE,
+			EventSource.RESPONSE_IDENTITY
+		)
+			.setEventData(
+				new HashMap<String, Object>() {
+					{
+						put(EdgeConstants.EventDataKey.LOCATION_HINT, "hint");
+					}
+				}
+			)
+			.inResponseToEvent(requestEvent)
+			.build();
+
+		MobileCore.dispatchEvent(responseEvent);
+		latch.await(2000, TimeUnit.MILLISECONDS);
+	}
+
+	@Test
+	public void testGetLocationHint_whenAdobeCallbackWithError_AndResponseIsValueHint_returnsValueHint()
+		throws InterruptedException {
 		final CountDownLatch latch = new CountDownLatch(1);
 		Edge.getLocationHint(
 			new AdobeCallbackWithError<String>() {
@@ -396,5 +540,28 @@ public class EdgePublicAPITests {
 
 		MobileCore.dispatchEvent(responseEvent);
 		latch.await(2000, TimeUnit.MILLISECONDS);
+	}
+
+	private Properties loadProperties(final String filepath) {
+		Properties properties = new Properties();
+		InputStream input = null;
+
+		try {
+			input = new FileInputStream(filepath);
+
+			properties.load(input);
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if (input != null) {
+				try {
+					input.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		return properties;
 	}
 }
