@@ -411,7 +411,18 @@ class EdgeNetworkService {
 
 		while (scanner.hasNext()) {
 			final String jsonResult = scanner.next();
-			responseCallback.onResponse(jsonResult.substring(trimLength));
+			try {
+				responseCallback.onResponse(jsonResult.substring(trimLength));
+			} catch (StringIndexOutOfBoundsException e) {
+				Log.warning(
+					LOG_TAG,
+					LOG_SOURCE,
+					"Failed to trim record separator with length %d from network response '%s': %s",
+					trimLength,
+					jsonResult,
+					e.getLocalizedMessage()
+				);
+			}
 		}
 	}
 
