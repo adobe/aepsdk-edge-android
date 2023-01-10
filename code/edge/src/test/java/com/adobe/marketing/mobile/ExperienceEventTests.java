@@ -271,6 +271,18 @@ public class ExperienceEventTests {
 	}
 
 	@Test
+	public void testExperienceEvent_withNullXdmMapAndDataMap_buildReturnsNull() {
+		final Map<String, Object> expectedData = new HashMap<String, Object>() {
+			{
+				put("dataKey", "dataValue");
+			}
+		};
+
+		ExperienceEvent event = new ExperienceEvent.Builder().setXdmSchema(null, null).setData(expectedData).build();
+		assertNull(event);
+	}
+
+	@Test
 	public void testExperienceEvent_setDataMutated() {
 		Map<String, Object> eventData = generateEventData();
 
