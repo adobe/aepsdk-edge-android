@@ -476,7 +476,7 @@ class NetworkResponseHandler {
 		}
 
 		for (Map<String, Object> locationHint : handle.getPayload()) {
-			String scope = (String) locationHint.get(EdgeJson.Response.EventHandle.LocationHint.SCOPE);
+			String scope = DataReader.optString(locationHint, EdgeJson.Response.EventHandle.LocationHint.SCOPE, null);
 
 			if (EdgeJson.Response.EventHandle.LocationHint.EDGE_NETWORK.equals(scope)) {
 				try {
