@@ -13,6 +13,7 @@ package com.adobe.marketing.mobile;
 
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.JSONUtils;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
@@ -135,14 +136,14 @@ final class EdgeDataEntity {
 
 			if (serializedEntity.has(CONFIGURATION_KEY)) {
 				JSONObject configObj = serializedEntity.getJSONObject(CONFIGURATION_KEY);
-				configuration = Utils.toMap(configObj);
+				configuration = JSONUtils.toMap(configObj);
 			}
 
 			Map<String, Object> identityMap = null;
 
 			if (serializedEntity.has(IDENTITY_MAP_KEY)) {
 				JSONObject identityObj = serializedEntity.getJSONObject(IDENTITY_MAP_KEY);
-				identityMap = Utils.toMap(identityObj);
+				identityMap = JSONUtils.toMap(identityObj);
 			}
 
 			String eventString = serializedEntity.getJSONObject(EVENT_KEY).toString();

@@ -14,9 +14,11 @@ package com.adobe.marketing.mobile;
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.CloneFailedException;
+import com.adobe.marketing.mobile.util.EventDataUtils;
+import com.adobe.marketing.mobile.util.JSONUtils;
+import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.json.JSONArray;
@@ -28,10 +30,6 @@ final class Utils {
 	private static final String LOG_SOURCE = "Utils";
 
 	private Utils() {}
-
-	static boolean isNullOrEmpty(final String str) {
-		return str == null || str.isEmpty();
-	}
 
 	static boolean isNullOrEmpty(final Map<String, Object> map) {
 		return map == null || map.isEmpty();
@@ -56,7 +54,7 @@ final class Utils {
 	 * @param values a map to add to {@code map} if not null or empty
 	 */
 	static void putIfNotEmpty(final Map<String, Object> map, final String key, final Map<String, Object> values) {
-		boolean addValues = map != null && key != null && values != null && !values.isEmpty();
+		boolean addValues = map != null && key != null && !isNullOrEmpty(values);
 
 		if (addValues) {
 			map.put(key, values);
@@ -73,24 +71,7 @@ final class Utils {
 	 * @param value a String to add to {@code map} if not null or empty
 	 */
 	public static void putIfNotEmpty(final Map<String, Object> map, final String key, final String value) {
-		boolean addValues = map != null && key != null && value != null && !value.isEmpty();
-
-		if (addValues) {
-			map.put(key, value);
-		}
-	}
-
-	/**
-	 * Adds {@code key}/{@code value} to {@code map} if {@code value} is not null or an
-	 * empty collection.
-	 *
-	 * @param map collection to put {@code value} mapped to {@code key} if {@code value} is
-	 *            non-null and contains at least one entry
-	 * @param key key used to map {@code value} in {@code map}
-	 * @param value a Object to add to {@code map} if not null
-	 */
-	static void putIfNotNull(final Map<String, Object> map, final String key, final Object value) {
-		boolean addValues = map != null && key != null && value != null;
+		boolean addValues = map != null && key != null && !StringUtils.isNullOrEmpty(value);
 
 		if (addValues) {
 			map.put(key, value);
@@ -98,96 +79,6 @@ final class Utils {
 	}
 
 	/* JSON - Map conversion helpers */
-	/**
-	 * Converts provided {@link JSONObject} into {@link Map} for any number of levels, which can be used as event data
-	 * This method is recursive.
-	 * The elements for which the conversion fails will be skipped.
-	 *
-	 * @param jsonObject to be converted
-	 * @return {@link Map} containing the elements from the provided json, null if {@code jsonObject} is null
-	 */
-	static Map<String, Object> toMap(final JSONObject jsonObject) {
-		if (jsonObject == null) {
-			return null;
-		}
-
-		Map<String, Object> jsonAsMap = new HashMap<>();
-		Iterator<String> keysIterator = jsonObject.keys();
-
-		while (keysIterator.hasNext()) {
-			String nextKey = keysIterator.next();
-			Object value = null;
-			Object returnValue;
-
-			try {
-				value = jsonObject.get(nextKey);
-			} catch (JSONException e) {
-				Log.debug(LOG_TAG, LOG_SOURCE, "Unable to convert jsonObject to Map for key %s skipping.", nextKey);
-			}
-
-			if (value == null) {
-				continue;
-			}
-
-			if (value instanceof JSONObject) {
-				returnValue = toMap((JSONObject) value);
-			} else if (value instanceof JSONArray) {
-				returnValue = toList((JSONArray) value);
-			} else {
-				returnValue = value;
-			}
-
-			jsonAsMap.put(nextKey, returnValue);
-		}
-
-		return jsonAsMap;
-	}
-
-	/**
-	 * Converts provided {@link JSONArray} into {@link List} for any number of levels which can be used as event data
-	 * This method is recursive.
-	 * The elements for which the conversion fails will be skipped.
-	 *
-	 * @param jsonArray to be converted
-	 * @return {@link List} containing the elements from the provided json, null if {@code jsonArray} is null
-	 */
-	static List<Object> toList(final JSONArray jsonArray) {
-		if (jsonArray == null) {
-			return null;
-		}
-
-		List<Object> jsonArrayAsList = new ArrayList<>();
-		int size = jsonArray.length();
-
-		for (int i = 0; i < size; i++) {
-			Object value = null;
-
-			try {
-				value = jsonArray.get(i);
-			} catch (JSONException e) {
-				Log.debug(LOG_TAG, LOG_SOURCE, "Unable to convert jsonObject to List for index %d skipping.", i);
-			}
-
-			if (value == null) {
-				continue;
-			}
-
-			Object returnValue;
-
-			if (value instanceof JSONObject) {
-				returnValue = toMap((JSONObject) value);
-			} else if (value instanceof JSONArray) {
-				returnValue = toList((JSONArray) value);
-			} else {
-				returnValue = value;
-			}
-
-			jsonArrayAsList.add(returnValue);
-		}
-
-		return jsonArrayAsList;
-	}
-
 	static List<Map<String, Object>> toListOfMaps(final JSONArray jsonArray) {
 		if (jsonArray == null) {
 			return null;
@@ -212,8 +103,12 @@ final class Utils {
 			Map<String, Object> returnValue;
 
 			if (value instanceof JSONObject) {
-				returnValue = toMap((JSONObject) value);
-				jsonArrayAsList.add(returnValue);
+				try {
+					returnValue = JSONUtils.toMap((JSONObject) value);
+					jsonArrayAsList.add(returnValue);
+				} catch (JSONException e) {
+					Log.debug(LOG_TAG, LOG_SOURCE, "Unable to convert jsonObject to Map for index %d, skipping.", i);
+				}
 			}
 		}
 
@@ -227,14 +122,15 @@ final class Utils {
 	 * @return {@link Map} containing a deep copy of all the elements in {@code map}
 	 */
 	static Map<String, Object> deepCopy(final Map<String, Object> map) {
-		if (map == null) {
-			return null;
-		}
-
 		try {
-			return Utils.toMap(new JSONObject(map));
-		} catch (NullPointerException e) {
-			Log.debug(LOG_TAG, LOG_SOURCE, "Unable to deep copy map, json string invalid.");
+			return EventDataUtils.clone(map);
+		} catch (CloneFailedException e) {
+			Log.debug(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Unable to deep copy map. CloneFailedException: %s",
+				e.getLocalizedMessage()
+			);
 		}
 
 		return null;

@@ -14,6 +14,7 @@ package com.adobe.marketing.mobile;
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.JSONUtils;
 import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -56,6 +57,17 @@ class StateMetadata {
 	}
 
 	Map<String, Object> toObjectMap() {
-		return Utils.toMap(metadataPayload);
+		try {
+			return JSONUtils.toMap(metadataPayload);
+		} catch (JSONException e) {
+			Log.trace(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Unable to create Object map for StateMetadata due to JSONException: %s",
+				e.getLocalizedMessage()
+			);
+		}
+
+		return null;
 	}
 }

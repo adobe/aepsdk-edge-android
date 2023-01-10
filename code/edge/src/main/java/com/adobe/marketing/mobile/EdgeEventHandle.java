@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile;
 
+import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +40,7 @@ public class EdgeEventHandle {
 		}
 
 		String tempType = handle.optString(EdgeJson.Response.EventHandle.TYPE);
-		this.type = Utils.isNullOrEmpty(tempType) ? null : tempType;
+		this.type = StringUtils.isNullOrEmpty(tempType) ? null : tempType;
 		this.eventIndex = handle.optInt(EdgeJson.Response.EventHandle.EVENT_INDEX, 0);
 		this.payload = Utils.toListOfMaps(handle.optJSONArray(EdgeJson.Response.EventHandle.PAYLOAD));
 	}
