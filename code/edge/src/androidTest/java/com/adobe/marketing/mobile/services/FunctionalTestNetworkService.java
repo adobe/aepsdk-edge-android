@@ -21,6 +21,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class FunctionalTestNetworkService implements Networking {
@@ -29,6 +31,7 @@ public class FunctionalTestNetworkService implements Networking {
 	private final Map<TestableNetworkRequest, List<TestableNetworkRequest>> receivedTestableNetworkRequests;
 	private final Map<TestableNetworkRequest, HttpConnecting> responseMatchers;
 	private final Map<TestableNetworkRequest, ADBCountDownLatch> expectedTestableNetworkRequests;
+	private final ExecutorService executorService; // simulating the async network service
 	private Integer delayedResponse = 0;
 
 	private static final HttpConnecting defaultResponse = new HttpConnecting() {
@@ -65,6 +68,7 @@ public class FunctionalTestNetworkService implements Networking {
 		receivedTestableNetworkRequests = new HashMap<>();
 		responseMatchers = new HashMap<>();
 		expectedTestableNetworkRequests = new HashMap<>();
+		executorService = Executors.newCachedThreadPool();
 	}
 
 	public void reset() {
@@ -131,28 +135,31 @@ public class FunctionalTestNetworkService implements Networking {
 			networkRequest.getUrl(),
 			networkRequest.getMethod().name()
 		);
-		HttpConnecting response = setNetworkRequest(
-			new TestableNetworkRequest(
-				networkRequest.getUrl(),
-				networkRequest.getMethod(),
-				networkRequest.getBody(),
-				networkRequest.getHeaders(),
-				networkRequest.getConnectTimeout(),
-				networkRequest.getReadTimeout()
-			)
-		);
 
-		if (resultCallback != null) {
-			if (delayedResponse > 0) {
-				try {
-					Thread.sleep(delayedResponse * 1000);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+		executorService.submit(() -> {
+			HttpConnecting response = setNetworkRequest(
+				new TestableNetworkRequest(
+					networkRequest.getUrl(),
+					networkRequest.getMethod(),
+					networkRequest.getBody(),
+					networkRequest.getHeaders(),
+					networkRequest.getConnectTimeout(),
+					networkRequest.getReadTimeout()
+				)
+			);
+
+			if (resultCallback != null) {
+				if (delayedResponse > 0) {
+					try {
+						Thread.sleep(delayedResponse * 1000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 				}
-			}
 
-			resultCallback.call(response == null ? defaultResponse : response);
-		}
+				resultCallback.call(response == null ? defaultResponse : response);
+			}
+		});
 	}
 
 	/**
@@ -161,7 +168,7 @@ public class FunctionalTestNetworkService implements Networking {
 	 */
 	private HttpConnecting setNetworkRequest(TestableNetworkRequest networkRequest) {
 		if (!receivedTestableNetworkRequests.containsKey(networkRequest)) {
-			receivedTestableNetworkRequests.put(networkRequest, new ArrayList<TestableNetworkRequest>());
+			receivedTestableNetworkRequests.put(networkRequest, new ArrayList<>());
 		}
 
 		receivedTestableNetworkRequests.get(networkRequest).add(networkRequest);

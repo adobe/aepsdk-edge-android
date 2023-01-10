@@ -16,6 +16,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Testing helper class, wrapper over {@link CountDownLatch}
+ */
 public class ADBCountDownLatch {
 
 	private final CountDownLatch latch;
@@ -36,6 +39,9 @@ public class ADBCountDownLatch {
 		return latch.await(timeout, unit);
 	}
 
+	/**
+	 * This API should be called from the worker threads, to allow the await API to block on execution
+	 */
 	public void countDown() {
 		currentCount.incrementAndGet();
 		latch.countDown();
