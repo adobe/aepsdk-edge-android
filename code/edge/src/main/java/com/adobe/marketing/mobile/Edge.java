@@ -13,6 +13,8 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.DataReaderException;
@@ -34,6 +36,7 @@ public class Edge {
 	 *
 	 * @return The version as {@code String}
 	 */
+	@NonNull
 	public static String extensionVersion() {
 		return EdgeConstants.EXTENSION_VERSION;
 	}
@@ -64,7 +67,10 @@ public class Edge {
 	 * @param callback        optional callback to be invoked when the request is complete, returning the associated response handles
 	 *                        received from the Adobe Experience Edge. It may be invoked on a different thread.
 	 */
-	public static void sendEvent(final ExperienceEvent experienceEvent, final EdgeCallback callback) {
+	public static void sendEvent(
+		@NonNull final ExperienceEvent experienceEvent,
+		@Nullable final EdgeCallback callback
+	) {
 		if (experienceEvent == null) {
 			Log.warning(
 				LOG_TAG,
@@ -112,7 +118,7 @@ public class Edge {
 	 *     	           If an {@link AdobeCallbackWithError} is provided, an {@link AdobeError} can be returned in the
 	 *	               eventuality of an error.
 	 */
-	public static void getLocationHint(final AdobeCallback<String> callback) {
+	public static void getLocationHint(@NonNull final AdobeCallback<String> callback) {
 		if (callback == null) {
 			Log.debug(
 				LOG_TAG,
@@ -173,13 +179,14 @@ public class Edge {
 
 				@Override
 				public void fail(final AdobeError adobeError) {
-					returnError(callback, adobeError);
+					AdobeError error = adobeError != null ? adobeError : AdobeError.UNEXPECTED_ERROR;
+					returnError(callback, error);
 					Log.debug(
 						LOG_TAG,
 						LOG_SOURCE,
 						"Failed to dispatch %s event: %s.",
 						EdgeConstants.EventName.REQUEST_LOCATION_HINT,
-						adobeError.getErrorName()
+						error.getErrorName()
 					);
 				}
 			}
@@ -198,7 +205,7 @@ public class Edge {
 	 *
 	 * @param hint the Edge Network location hint to use when connecting to the Adobe Experience Platform Edge Network
 	 */
-	public static void setLocationHint(final String hint) {
+	public static void setLocationHint(@Nullable final String hint) {
 		Map<String, Object> requestData = new HashMap<String, Object>() {
 			{
 				put(EdgeConstants.EventDataKey.LOCATION_HINT, hint);
@@ -220,14 +227,10 @@ public class Edge {
 	 * When an {@link AdobeCallbackWithError} is provided, the fail method will be called with provided {@link AdobeError}.
 	 *
 	 * @param <T> the type passed to the {@code AdobeCallback} method
-	 * @param callback should not be null, should be instance of {@code AdobeCallbackWithError}
+	 * @param callback instance of {@code AdobeCallbackWithError}; should not be null
 	 * @param error    the {@code AdobeError} returned back in the callback
 	 */
-	private static <T> void returnError(final AdobeCallback<T> callback, final AdobeError error) {
-		if (callback == null) {
-			return;
-		}
-
+	private static <T> void returnError(@NonNull final AdobeCallback<T> callback, @NonNull final AdobeError error) {
 		final AdobeCallbackWithError<T> adobeCallbackWithError = callback instanceof AdobeCallbackWithError
 			? (AdobeCallbackWithError<T>) callback
 			: null;
