@@ -116,6 +116,7 @@ public class FunctionalTestHelper {
 						waitForThreads(5000); // wait to allow thread to run after test execution
 						MobileCoreHelper.resetSDK();
 						FunctionalTestDataStoreService.clearStores();
+						clearAllDatastores();
 						resetTestExpectations();
 						resetServiceProvider();
 					}
@@ -608,6 +609,7 @@ public class FunctionalTestHelper {
 	 * @see #setExpectationNetworkRequest(String, HttpMethod, int)
 	 */
 	public static void assertNetworkRequestCount() throws InterruptedException {
+		waitForThreads(2000); // allow for some extra time for threads to finish before asserts
 		Map<TestableNetworkRequest, ADBCountDownLatch> expectedNetworkRequests = testNetworkService.getExpectedNetworkRequests();
 
 		if (expectedNetworkRequests.isEmpty()) {
@@ -618,7 +620,7 @@ public class FunctionalTestHelper {
 		}
 
 		for (Map.Entry<TestableNetworkRequest, ADBCountDownLatch> expectedRequest : expectedNetworkRequests.entrySet()) {
-			boolean awaitResult = expectedRequest.getValue().await(15, TimeUnit.SECONDS);
+			boolean awaitResult = expectedRequest.getValue().await(5, TimeUnit.SECONDS);
 			assertTrue(
 				"Time out waiting for network request with URL '" +
 				expectedRequest.getKey().getUrl() +
