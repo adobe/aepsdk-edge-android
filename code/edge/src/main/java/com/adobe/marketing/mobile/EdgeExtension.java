@@ -111,11 +111,13 @@ class EdgeExtension extends Extension {
 		return EdgeConstants.EXTENSION_NAME;
 	}
 
+	@NonNull
 	@Override
 	protected String getFriendlyName() {
 		return EdgeConstants.FRIENDLY_NAME;
 	}
 
+	@NonNull
 	@Override
 	protected String getVersion() {
 		return EdgeConstants.EXTENSION_VERSION;
@@ -382,7 +384,7 @@ class EdgeExtension extends Extension {
 	 * @param event current event to process
 	 * @return the Configuration shared state or null if it is pending
 	 */
-	private Map<String, Object> getConfigurationState(final Event event) {
+	private Map<String, Object> getConfigurationState(@NonNull final Event event) {
 		SharedStateResult sharedStateResult = getApi()
 			.getSharedState(EdgeConstants.SharedState.CONFIGURATION, event, false, SharedStateResolution.ANY);
 		if (sharedStateResult == null || sharedStateResult.getStatus() != SharedStateStatus.SET) {
@@ -397,7 +399,7 @@ class EdgeExtension extends Extension {
 	 * @param event current event to process
 	 * @return the Identity shared state or null if it is pending
 	 */
-	private Map<String, Object> getIdentityXDMState(final Event event) {
+	private Map<String, Object> getIdentityXDMState(@NonNull final Event event) {
 		return getIdentityXDMState(event, false);
 	}
 
@@ -407,7 +409,7 @@ class EdgeExtension extends Extension {
 	 * @param barrier if true, returns next Identity state at or past the {@code event}, but not the state before {@code event}.
 	 * @return the Identity shared state or null if it is pending
 	 */
-	private Map<String, Object> getIdentityXDMState(final Event event, final boolean barrier) {
+	private Map<String, Object> getIdentityXDMState(@NonNull final Event event, final boolean barrier) {
 		SharedStateResult sharedStateResult = getApi()
 			.getXDMSharedState(EdgeConstants.SharedState.IDENTITY, event, barrier, SharedStateResolution.ANY);
 		if (sharedStateResult == null || sharedStateResult.getStatus() != SharedStateStatus.SET) {
@@ -423,7 +425,7 @@ class EdgeExtension extends Extension {
 	 * @param event the event to validate consent for
 	 * @return true when collect consent is no, false otherwise
 	 */
-	private boolean shouldIgnore(final Event event) {
+	private boolean shouldIgnore(@NonNull final Event event) {
 		ConsentStatus consentForEvent = getConsentForEvent(event);
 
 		if (consentForEvent == ConsentStatus.NO) {
@@ -445,7 +447,7 @@ class EdgeExtension extends Extension {
 	 * @param event the current event to check Consent for
 	 * @return {@code ConsentStatus} value from shared state or, if not found, current consent value
 	 */
-	private ConsentStatus getConsentForEvent(final Event event) {
+	private ConsentStatus getConsentForEvent(@NonNull final Event event) {
 		SharedStateResult sharedStateResult = getApi()
 			.getXDMSharedState(EdgeConstants.SharedState.CONSENT, event, false, SharedStateResolution.ANY);
 		if (sharedStateResult == null || sharedStateResult.getStatus() != SharedStateStatus.SET) {
