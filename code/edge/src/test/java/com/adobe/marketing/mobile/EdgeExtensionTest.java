@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.HitQueuing;
+import com.adobe.marketing.mobile.util.JSONUtils;
 import java.util.HashMap;
 import java.util.Map;
 import org.json.JSONObject;
@@ -100,7 +101,7 @@ public class EdgeExtensionTest {
 		state = edgeExtension.state;
 		mockSharedStates(null, null, null); // default return null, to be set in test if needed
 
-		identityState = Utils.toMap(new JSONObject(jsonStr));
+		identityState = JSONUtils.toMap(new JSONObject(jsonStr));
 	}
 
 	@Test

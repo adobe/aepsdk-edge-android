@@ -22,6 +22,7 @@ import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.FakeIdentity;
 import com.adobe.marketing.mobile.util.FunctionalTestConstants;
+import com.adobe.marketing.mobile.util.JSONUtils;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -123,7 +124,7 @@ public class IdentityStateFunctionalTests {
 			"}";
 
 		final JSONObject jsonObject = new JSONObject(jsonStr);
-		final Map<String, Object> identityMap = Utils.toMap(jsonObject);
+		final Map<String, Object> identityMap = JSONUtils.toMap(jsonObject);
 		// Once the shared state is set, the Edge Extension is expected to reprocess the original
 		// Send Event request once the Hub Shared State event is received.
 		FakeIdentity.setXDMSharedState(identityMap, FakeIdentity.EVENT_TYPE);
@@ -154,7 +155,7 @@ public class IdentityStateFunctionalTests {
 			"}";
 
 		final JSONObject jsonObject = new JSONObject(jsonStr);
-		final Map<String, Object> identityState = Utils.toMap(jsonObject);
+		final Map<String, Object> identityState = JSONUtils.toMap(jsonObject);
 		FakeIdentity.setXDMSharedState(identityState, FakeIdentity.EVENT_TYPE); // set state without ECID
 
 		HttpConnecting responseConnection = createNetworkResponse("\u0000{\"test\": \"json\"}", 200);

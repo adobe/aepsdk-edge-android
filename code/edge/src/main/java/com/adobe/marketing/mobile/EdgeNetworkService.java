@@ -18,6 +18,7 @@ import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NetworkRequest;
 import com.adobe.marketing.mobile.services.Networking;
+import com.adobe.marketing.mobile.util.StringUtils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -142,7 +143,7 @@ class EdgeNetworkService {
 		final Map<String, String> requestHeaders,
 		final ResponseCallback responseCallback
 	) {
-		if (Utils.isNullOrEmpty(url)) {
+		if (StringUtils.isNullOrEmpty(url)) {
 			Log.error(LOG_TAG, LOG_SOURCE, "Could not send request to a null url");
 
 			if (responseCallback != null) {
@@ -516,7 +517,7 @@ class EdgeNetworkService {
 	 */
 	private String composeGenericErrorAsJson(final String plainTextErrorMessage) {
 		// trim the error message or set the default generic message if no value is provided
-		String errorMessage = Utils.isNullOrEmpty(plainTextErrorMessage)
+		String errorMessage = StringUtils.isNullOrEmpty(plainTextErrorMessage)
 			? DEFAULT_GENERIC_ERROR_MESSAGE
 			: plainTextErrorMessage.trim();
 		errorMessage = errorMessage.isEmpty() ? DEFAULT_GENERIC_ERROR_MESSAGE : errorMessage;

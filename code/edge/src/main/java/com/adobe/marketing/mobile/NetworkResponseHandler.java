@@ -17,6 +17,7 @@ import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.DataReaderException;
+import com.adobe.marketing.mobile.util.JSONUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -77,7 +78,7 @@ class NetworkResponseHandler {
 	 * @param batchedEvents batched events sent to ExEdge
 	 */
 	void addWaitingEvents(final String requestId, final List<Event> batchedEvents) {
-		if (Utils.isNullOrEmpty(requestId) || batchedEvents == null || batchedEvents.isEmpty()) {
+		if (StringUtils.isNullOrEmpty(requestId) || batchedEvents == null || batchedEvents.isEmpty()) {
 			return;
 		}
 
@@ -117,7 +118,7 @@ class NetworkResponseHandler {
 	 * @return the list of unique event ids associated with the requestId that were removed
 	 */
 	List<String> removeWaitingEvents(final String requestId) {
-		if (Utils.isNullOrEmpty(requestId)) {
+		if (StringUtils.isNullOrEmpty(requestId)) {
 			return null;
 		}
 
@@ -145,7 +146,7 @@ class NetworkResponseHandler {
 	 * @return the list of unique event ids associated with the requestId that were removed
 	 */
 	List<String> getWaitingEvents(final String requestId) {
-		if (Utils.isNullOrEmpty(requestId)) {
+		if (StringUtils.isNullOrEmpty(requestId)) {
 			return Collections.emptyList();
 		}
 
@@ -275,7 +276,11 @@ class NetworkResponseHandler {
 				}
 			} else {
 				// generic server error, return the error as is
-				Map<String, Object> eventDataResponse = Utils.toMap(json);
+				Map<String, Object> eventDataResponse = JSONUtils.toMap(json);
+				if (eventDataResponse == null) {
+					return;
+				}
+
 				eventDataResponse.put(EdgeConstants.EventDataKey.EDGE_REQUEST_ID, requestId);
 				Event responseEvent = new Event.Builder(
 					EdgeConstants.EventName.ERROR_RESPONSE_CONTENT,
@@ -384,7 +389,7 @@ class NetworkResponseHandler {
 
 		String source = isError ? EventSource.ERROR_RESPONSE_CONTENT : EventSource.RESPONSE_CONTENT;
 
-		if (!Utils.isNullOrEmpty(eventSource)) {
+		if (!StringUtils.isNullOrEmpty(eventSource)) {
 			source = eventSource;
 		}
 
@@ -442,7 +447,7 @@ class NetworkResponseHandler {
 	) {
 		eventData.put(EdgeConstants.EventDataKey.EDGE_REQUEST_ID, requestId);
 
-		if (!Utils.isNullOrEmpty(eventId)) {
+		if (!StringUtils.isNullOrEmpty(eventId)) {
 			eventData.put(EdgeConstants.EventDataKey.REQUEST_EVENT_ID, eventId);
 		}
 	}
@@ -452,7 +457,7 @@ class NetworkResponseHandler {
 	 * @param handle the event handle
 	 */
 	private void handleStoreEventHandle(final EdgeEventHandle handle) {
-		if (handle == null || Utils.isNullOrEmpty(handle.getType())) {
+		if (handle == null || StringUtils.isNullOrEmpty(handle.getType())) {
 			return;
 		}
 
@@ -467,7 +472,7 @@ class NetworkResponseHandler {
 	 * @param handle the event handle
 	 */
 	private void handleLocationHintEventHandle(final EdgeEventHandle handle) {
-		if (handle == null || Utils.isNullOrEmpty(handle.getType())) {
+		if (handle == null || StringUtils.isNullOrEmpty(handle.getType())) {
 			return;
 		}
 
@@ -522,9 +527,13 @@ class NetworkResponseHandler {
 
 		for (int i = 0; i < size; i++) {
 			JSONObject currentError = null;
+			Map<String, Object> eventDataResponse = null;
 
 			try {
 				currentError = errorsArray.getJSONObject(i);
+
+				// Convert json object to Map<String, Object> to be able to pass it as Event data
+				eventDataResponse = JSONUtils.toMap(currentError);
 			} catch (JSONException e) {
 				Log.trace(
 					LOG_TAG,
@@ -534,10 +543,6 @@ class NetworkResponseHandler {
 					e.getLocalizedMessage()
 				);
 			}
-
-			// Convert json object to Map<String, Object> to be able to pass it as Event data
-			Map<String, Object> eventDataResponse = Utils.toMap(currentError);
-
 			if (Utils.isNullOrEmpty(eventDataResponse)) {
 				continue;
 			}

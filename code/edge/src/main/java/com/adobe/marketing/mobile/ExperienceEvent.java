@@ -14,6 +14,7 @@ package com.adobe.marketing.mobile;
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.StringUtils;
 import com.adobe.marketing.mobile.xdm.Schema;
 import java.util.Collections;
 import java.util.HashMap;
@@ -191,7 +192,7 @@ public final class ExperienceEvent {
 			Utils.putIfNotEmpty(serializedMap, EdgeJson.Event.XDM, xdmData);
 		}
 
-		if (!Utils.isNullOrEmpty(datasetIdentifier)) {
+		if (!StringUtils.isNullOrEmpty(datasetIdentifier)) {
 			serializedMap.put(EdgeConstants.EventDataKey.DATASET_ID, datasetIdentifier);
 		}
 

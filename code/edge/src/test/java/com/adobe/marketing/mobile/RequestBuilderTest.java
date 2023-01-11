@@ -20,6 +20,7 @@ import static junit.framework.TestCase.fail;
 import static org.mockito.Mockito.when;
 
 import com.adobe.marketing.mobile.services.NamedCollection;
+import com.adobe.marketing.mobile.util.JSONUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -333,7 +334,7 @@ public class RequestBuilderTest {
 			"}";
 
 		final JSONObject jsonObject = new JSONObject(jsonStr);
-		final Map<String, Object> identityState = Utils.toMap(jsonObject);
+		final Map<String, Object> identityState = JSONUtils.toMap(jsonObject);
 		requestBuilder.addXdmPayload(identityState);
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
 
@@ -529,7 +530,7 @@ public class RequestBuilderTest {
 			"}";
 
 		final JSONObject jsonObject = new JSONObject(jsonStr);
-		final Map<String, Object> identityState = Utils.toMap(jsonObject);
+		final Map<String, Object> identityState = JSONUtils.toMap(jsonObject);
 		requestBuilder.addXdmPayload(identityState);
 		JSONObject payload = requestBuilder.getConsentPayload(
 			new Event.Builder("test", "testType", "testSource")
@@ -568,7 +569,7 @@ public class RequestBuilderTest {
 		final String jsonStr = "{\"identityMap\": {} }";
 
 		final JSONObject jsonObject = new JSONObject(jsonStr);
-		final Map<String, Object> identityState = Utils.toMap(jsonObject);
+		final Map<String, Object> identityState = JSONUtils.toMap(jsonObject);
 		requestBuilder.addXdmPayload(identityState);
 		JSONObject payload = requestBuilder.getConsentPayload(
 			new Event.Builder("test", "testType", "testSource")
