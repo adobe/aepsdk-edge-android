@@ -100,11 +100,9 @@ final class Utils {
 				continue;
 			}
 
-			Map<String, Object> returnValue;
-
 			if (value instanceof JSONObject) {
 				try {
-					returnValue = JSONUtils.toMap((JSONObject) value);
+					Map<String, Object> returnValue = JSONUtils.toMap((JSONObject) value);
 					jsonArrayAsList.add(returnValue);
 				} catch (JSONException e) {
 					Log.debug(LOG_TAG, LOG_SOURCE, "Unable to convert jsonObject to Map for index %d, skipping.", i);

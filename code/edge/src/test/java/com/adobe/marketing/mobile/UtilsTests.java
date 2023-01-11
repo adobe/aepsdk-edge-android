@@ -272,4 +272,39 @@ public class UtilsTests {
 		assertEquals(1, map.size());
 		assertEquals(innerMap, map.get("key"));
 	}
+
+	@Test
+	public void testToListOfMaps_whenNull() {
+		assertNull(Utils.toListOfMaps(null));
+	}
+
+	@Test
+	public void testToListOfMaps_whenNullElements() throws JSONException {
+		JSONObject elem = new JSONObject();
+		elem.put("test", "value");
+		JSONArray test = new JSONArray();
+		test.put(elem);
+		test.put(null);
+		test.put(elem);
+
+		List<Map<String, Object>> result = Utils.toListOfMaps(test);
+		assertEquals(2, result.size());
+		assertEquals("value", result.get(0).get("test"));
+		assertEquals("value", result.get(1).get("test"));
+	}
+
+	@Test
+	public void testToListOfMaps_whenNotJSONObjects() throws JSONException {
+		JSONObject elem = new JSONObject();
+		elem.put("test", "value");
+		JSONArray test = new JSONArray();
+		test.put(100);
+		test.put(null);
+		test.put(elem);
+		test.put("hello");
+
+		List<Map<String, Object>> result = Utils.toListOfMaps(test);
+		assertEquals(1, result.size());
+		assertEquals("value", result.get(0).get("test"));
+	}
 }
