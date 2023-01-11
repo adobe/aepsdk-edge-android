@@ -14,6 +14,7 @@ package com.adobe.marketing.mobile;
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -66,7 +67,7 @@ class CompletionCallbacksManager {
 			return;
 		}
 
-		if (Utils.isNullOrEmpty(requestEventId)) {
+		if (StringUtils.isNullOrEmpty(requestEventId)) {
 			Log.warning(LOG_TAG, LOG_SOURCE, "Failed to register response callback because of null/empty event id.");
 			return;
 		}
@@ -82,7 +83,7 @@ class CompletionCallbacksManager {
 	 * @param requestEventId unique event identifier for Experience events; should not be null/empty
 	 */
 	void unregisterCallback(final String requestEventId) {
-		if (Utils.isNullOrEmpty(requestEventId)) {
+		if (StringUtils.isNullOrEmpty(requestEventId)) {
 			return;
 		}
 
@@ -108,7 +109,7 @@ class CompletionCallbacksManager {
 	 * @param eventHandle newly received event handle
 	 */
 	void eventHandleReceived(final String requestEventId, final EdgeEventHandle eventHandle) {
-		if (Utils.isNullOrEmpty(requestEventId) || eventHandle == null) {
+		if (StringUtils.isNullOrEmpty(requestEventId) || eventHandle == null) {
 			return;
 		}
 

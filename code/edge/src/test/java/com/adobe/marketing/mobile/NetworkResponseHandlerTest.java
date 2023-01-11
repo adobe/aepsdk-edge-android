@@ -28,6 +28,8 @@ import static org.mockito.Mockito.when;
 
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
+import com.adobe.marketing.mobile.util.JSONUtils;
+import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -145,7 +147,7 @@ public class NetworkResponseHandlerTest {
 
 		// verify
 		JSONObject json = new JSONObject(jsonError);
-		Map<String, Object> expectedEventData = Utils.toMap(json);
+		Map<String, Object> expectedEventData = JSONUtils.toMap(json);
 		expectedEventData.put(REQUEST_ID, "123");
 		assertResponseErrorEventWithData(expectedEventData);
 	}
@@ -1756,7 +1758,7 @@ public class NetworkResponseHandlerTest {
 		assertNotNull(returnedEvent);
 		assertEquals(EVENT_NAME_RESPONSE, returnedEvent.getName());
 		assertEquals(EVENT_TYPE_EDGE, returnedEvent.getType());
-		String expectedEventSource = Utils.isNullOrEmpty(eventSource)
+		String expectedEventSource = StringUtils.isNullOrEmpty(eventSource)
 			? EVENT_SOURCE_EXTENSION_RESPONSE_CONTENT
 			: eventSource;
 		assertEquals(expectedEventSource, returnedEvent.getSource());

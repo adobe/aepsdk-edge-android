@@ -174,7 +174,11 @@ class RequestBuilder {
 	private KonductorConfig buildKonductorConfig() {
 		KonductorConfig konductorConfig = new KonductorConfig();
 
-		if (!Utils.isNullOrEmpty(streamingRecordSeparator) && !Utils.isNullOrEmpty(streamingLineFeed)) {
+		// streaming separators can include empty spaces, so don't use StringUtils.isNullOrEmpty since it uses trim
+		if (
+			(streamingRecordSeparator != null && !streamingRecordSeparator.isEmpty()) &&
+			(streamingLineFeed != null && !streamingLineFeed.isEmpty())
+		) {
 			konductorConfig.enableStreaming(streamingRecordSeparator, streamingLineFeed);
 		}
 

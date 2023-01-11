@@ -12,6 +12,7 @@
 package com.adobe.marketing.mobile;
 
 import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.StringUtils;
 import com.adobe.marketing.mobile.xdm.Schema;
 import java.util.HashMap;
 import java.util.Map;
@@ -151,7 +152,7 @@ class TestExperienceEventSchema implements Schema {
 			throwIfAlreadyBuilt();
 
 			// The SDK considers EventType a required property
-			if (Utils.isNullOrEmpty(experienceEventContextData.eventType)) {
+			if (StringUtils.isNullOrEmpty(experienceEventContextData.eventType)) {
 				Log.warning(
 					LOG_TAG,
 					LOG_SOURCE,

@@ -23,6 +23,7 @@ import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.FakeIdentity;
 import com.adobe.marketing.mobile.util.FunctionalTestConstants;
 import com.adobe.marketing.mobile.util.FunctionalTestUtils;
+import com.adobe.marketing.mobile.util.JSONUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -88,7 +89,7 @@ public class NoConfigFunctionalTests {
 			"}";
 
 		final JSONObject jsonObject = new JSONObject(jsonStr);
-		final Map<String, Object> identityMap = Utils.toMap(jsonObject);
+		final Map<String, Object> identityMap = JSONUtils.toMap(jsonObject);
 
 		resetTestExpectations(); // reset received events
 		setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 1);
@@ -138,7 +139,7 @@ public class NoConfigFunctionalTests {
 			"}";
 
 		final JSONObject jsonObject = new JSONObject(jsonStr);
-		final Map<String, Object> identityMap = Utils.toMap(jsonObject);
+		final Map<String, Object> identityMap = JSONUtils.toMap(jsonObject);
 		FakeIdentity.setXDMSharedState(identityMap, FakeIdentity.EVENT_TYPE);
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
