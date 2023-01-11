@@ -93,7 +93,7 @@ final class Utils {
 			try {
 				value = jsonArray.get(i);
 			} catch (JSONException e) {
-				Log.debug(LOG_TAG, LOG_SOURCE, "Unable to convert jsonObject to List for index %d skipping.", i);
+				Log.debug(LOG_TAG, LOG_SOURCE, "Unable to convert jsonObject to List for index %d, skipping.", i);
 			}
 
 			if (value == null) {

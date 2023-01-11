@@ -72,7 +72,6 @@ public final class ExperienceEvent {
 			if (xdm == null) {
 				experienceEvent.xdmData = null;
 				experienceEvent.datasetIdentifier = null;
-				return this;
 			} else {
 				experienceEvent.xdmData = Utils.deepCopy(xdm.serializeToXdm());
 				experienceEvent.datasetIdentifier = xdm.getDatasetIdentifier();

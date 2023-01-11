@@ -60,7 +60,7 @@ class StateMetadata {
 		try {
 			return JSONUtils.toMap(metadataPayload);
 		} catch (JSONException e) {
-			Log.trace(
+			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
 				"Unable to create Object map for StateMetadata due to JSONException: %s",
