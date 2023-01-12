@@ -77,6 +77,18 @@ class EdgeRequest {
 			Utils.putIfNotEmpty(requestPayload, JSON_KEY_META, metadata.toObjectMap());
 		}
 
-		return new JSONObject(requestPayload);
+		JSONObject jsonPayload = null;
+		try {
+			jsonPayload = new JSONObject(requestPayload);
+		} catch (NullPointerException e) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Unable to create Edge Request with null keys: %s",
+				e.getLocalizedMessage()
+			);
+		}
+
+		return jsonPayload;
 	}
 }

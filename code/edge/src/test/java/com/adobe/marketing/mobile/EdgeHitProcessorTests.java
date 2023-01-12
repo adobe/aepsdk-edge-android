@@ -546,6 +546,30 @@ public class EdgeHitProcessorTests {
 	}
 
 	@Test
+	public void testProcessHit_experienceEvent_noEdgeConfigId_doesNotSendNetworkRequest_returnsTrue() {
+		// Tests that when a good hit is processed that a network request is made and the request returns 200
+
+		// setup
+		Map<String, Object> config = new HashMap<>();
+		config.put("noConfigId", "123");
+		EdgeDataEntity entity = new EdgeDataEntity(experienceEvent, config, identityMap);
+
+		// test
+		assertProcessHit(entity, false, true);
+	}
+
+	@Test
+	public void testProcessHit_consentUpdateEvent_noEdgeConfigId_doesNotSendNetworkRequest_returnsTrue() {
+		// setup
+		Map<String, Object> config = new HashMap<>();
+		config.put("noConfigId", "123");
+		EdgeDataEntity entity = new EdgeDataEntity(consentEvent, config, identityMap);
+
+		// test
+		assertProcessHit(entity, false, true);
+	}
+
+	@Test
 	public void testProcessHit_assuranceEnabled_sendsRequestWithAssuranceHeader() {
 		// setup
 		assuranceSharedState =

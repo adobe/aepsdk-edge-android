@@ -91,7 +91,17 @@ class CompletionCallbacksManager {
 
 		if (callback != null) {
 			final List<EdgeEventHandle> handles = edgeEventHandles.get(requestEventId);
-			callback.onComplete(handles != null ? handles : new ArrayList<>());
+			try {
+				callback.onComplete(handles != null ? handles : new ArrayList<>());
+			} catch (Exception e) {
+				Log.warning(
+					LOG_TAG,
+					LOG_SOURCE,
+					"Caught Exception while calling EdgeCallback for request event id %s: %s",
+					requestEventId,
+					e.getLocalizedMessage()
+				);
+			}
 			Log.trace(
 				LOG_TAG,
 				LOG_SOURCE,
