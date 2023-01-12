@@ -250,25 +250,13 @@ class EdgeHitProcessor implements HitProcessing {
 			return true; // Request complete, don't retry hit
 		}
 
-		// Use null fallback value, which defaults to Prod environment when building EdgeEndpoint
-		String requestEnvironment = DataReader.optString(
-			edgeConfig,
-			EdgeConstants.SharedState.Configuration.EDGE_REQUEST_ENVIRONMENT,
-			null
-		);
-		// Use null fallback value, which defaults to default request domain when building EdgeEndpoint
-		String requestDomain = DataReader.optString(
-			edgeConfig,
-			EdgeConstants.SharedState.Configuration.EDGE_DOMAIN,
-			null
-		);
+		final EdgeEndpoint edgeEndpoint = getEdgeEndpoint(edgeConfig);
 
-		final String locationHint = stateCallback != null ? stateCallback.getLocationHint() : null;
 		final EdgeHit edgeHit = new EdgeHit(
 			edgeConfigId,
 			requestPayload,
 			EdgeNetworkService.RequestType.INTERACT,
-			new EdgeEndpoint(requestEnvironment, requestDomain, locationHint)
+			edgeEndpoint
 		);
 
 		// NOTE: the order of these events need to be maintained as they were sent in the network request
@@ -325,30 +313,41 @@ class EdgeHitProcessor implements HitProcessing {
 			return true; // Request complete, don't retry hit
 		}
 
-		// Use null fallback value, which defaults to Prod environment when building EdgeEndpoint
-		String requestEnvironment = DataReader.optString(
-			edgeConfig,
-			EdgeConstants.SharedState.Configuration.EDGE_REQUEST_ENVIRONMENT,
-			null
-		);
-		// Use null fallback value, which defaults to default request domain when building EdgeEndpoint
-		String requestDomain = DataReader.optString(
-			edgeConfig,
-			EdgeConstants.SharedState.Configuration.EDGE_DOMAIN,
-			null
-		);
+		final EdgeEndpoint edgeEndpoint = getEdgeEndpoint(edgeConfig);
 
-		final String locationHint = stateCallback != null ? stateCallback.getLocationHint() : null;
 		final EdgeHit edgeHit = new EdgeHit(
 			edgeConfigId,
 			consentPayload,
 			EdgeNetworkService.RequestType.CONSENT,
-			new EdgeEndpoint(requestEnvironment, requestDomain, locationHint)
+			edgeEndpoint
 		);
 
 		networkResponseHandler.addWaitingEvent(edgeHit.getRequestId(), entity.getEvent());
 		final Map<String, String> requestHeaders = getRequestHeaders();
 		return sendNetworkRequest(entityId, edgeHit, requestHeaders);
+	}
+
+	/**
+	 * Creates a new instance of {@link EdgeEndpoint} using the values provided in {@code edgeConfiguration}.
+	 * @param edgeConfiguration the current Edge configuration
+	 * @return a new {@code EdgeEndpoint} instance
+	 */
+	private EdgeEndpoint getEdgeEndpoint(final Map<String, Object> edgeConfiguration) {
+		// Use null fallback value, which defaults to Prod environment when building EdgeEndpoint
+		String requestEnvironment = DataReader.optString(
+			edgeConfiguration,
+			EdgeConstants.SharedState.Configuration.EDGE_REQUEST_ENVIRONMENT,
+			null
+		);
+		// Use null fallback value, which defaults to default request domain when building EdgeEndpoint
+		String requestDomain = DataReader.optString(
+			edgeConfiguration,
+			EdgeConstants.SharedState.Configuration.EDGE_DOMAIN,
+			null
+		);
+
+		final String locationHint = stateCallback != null ? stateCallback.getLocationHint() : null;
+		return new EdgeEndpoint(requestEnvironment, requestDomain, locationHint);
 	}
 
 	/**
