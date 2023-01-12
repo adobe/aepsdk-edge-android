@@ -648,7 +648,7 @@ public class EdgeNetworkServiceTest {
 	public void testHandleStreamingResponse_catchesIndexOutOfBoundsException() {
 		// When processing a response, the response is parsed into chunks using the line feed delimiter.
 		// Each chunk then removes the record separator to produce the expected response.
-		// If a chunk length is less than than record separator length, an IndexOutOfBounds exception is thrown.
+		// If a chunk length is less than the record separator length, an IndexOutOfBounds exception is thrown.
 		// This test verifies an IndexOutOfBounds exception is caught and handled.
 
 		networkService = new EdgeNetworkService(mockNetworkService);
