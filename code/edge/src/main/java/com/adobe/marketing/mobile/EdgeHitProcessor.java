@@ -244,7 +244,7 @@ class EdgeHitProcessor implements HitProcessing {
 			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
-				"Cannot process hit as the Edge Network configuration ID is null or empty, dropping current event (%s).",
+				"Cannot process Experience Event hit as the Edge Network configuration ID is null or empty, dropping current event (%s).",
 				entity.getEvent().getUniqueIdentifier()
 			);
 			return true; // Request complete, don't retry hit
@@ -319,7 +319,7 @@ class EdgeHitProcessor implements HitProcessing {
 			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
-				"Cannot process hit as the Edge Network configuration ID is null or empty, dropping current event (%s).",
+				"Cannot process Update Consent hit as the Edge Network configuration ID is null or empty, dropping current event (%s).",
 				entity.getEvent().getUniqueIdentifier()
 			);
 			return true; // Request complete, don't retry hit
