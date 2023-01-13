@@ -12,6 +12,7 @@
 package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
+import static com.adobe.marketing.mobile.util.FunctionalTestConstants.LOG_TAG;
 import static com.adobe.marketing.mobile.util.FunctionalTestHelper.assertExpectedEvents;
 import static com.adobe.marketing.mobile.util.FunctionalTestHelper.assertNetworkRequestCount;
 import static com.adobe.marketing.mobile.util.FunctionalTestHelper.createNetworkResponse;
@@ -30,6 +31,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.adobe.marketing.mobile.edge.consent.Consent;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
+import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.ADBCountDownLatch;
 import com.adobe.marketing.mobile.util.FunctionalTestConstants;
@@ -41,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -259,8 +262,26 @@ public class RestartFunctionalTests {
 
 	private void getConsentsSync() throws Exception {
 		final ADBCountDownLatch latch = new ADBCountDownLatch(1);
-		Consent.getConsents(stringObjectMap -> latch.countDown());
+		Consent.getConsents(stringObjectMap -> {
+			Log.trace(
+				LOG_TAG,
+				"RestartFunctionalTests",
+				"getConsentsSync returned: %s",
+				stringObjectMap
+					.keySet()
+					.stream()
+					.map(key -> key + "=" + stringObjectMap.get(key))
+					.collect(Collectors.joining(", ", "{", "}"))
+			);
+			latch.countDown();
+		});
 
-		latch.await(2000, TimeUnit.MILLISECONDS);
+		if (!latch.await(2000, TimeUnit.MILLISECONDS)) {
+			Log.debug(
+				LOG_TAG,
+				"RestartFunctionalTests",
+				"Timeout calling getConsentsSync. Consent.getConsents failed to return after 2 secs."
+			);
+		}
 	}
 }
