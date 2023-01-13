@@ -19,6 +19,7 @@ public class FunctionalTestConstants {
 	public static final int NETWORK_REQUEST_MAX_RETRIES = 5;
 	public static final String EDGE_DATA_STORAGE = "EdgeDataStorage";
 	public static final String LOG_TAG = "FunctionalTestsFramework";
+	public static final String EXTENSION_NAME = "com.adobe.edge";
 
 	// Event type and sources used by Monitor Extension
 	public static class EventType {
