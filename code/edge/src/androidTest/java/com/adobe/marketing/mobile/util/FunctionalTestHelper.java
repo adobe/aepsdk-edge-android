@@ -845,7 +845,6 @@ public class FunctionalTestHelper {
 	 * clearing and closing the DataQueue, and instantiate new instances of each service provider
 	 */
 	private static void resetServiceProvider() {
-		clearDataQueue();
 		ServiceProviderHelper.cleanCacheDir();
 		ServiceProviderHelper.resetServiceProvider();
 	}
@@ -857,16 +856,4 @@ public class FunctionalTestHelper {
 		ServiceProvider.getInstance().setNetworkService(testNetworkService);
 	}
 
-	/**
-	 * Clear and close the DataQueue from the current ServiceProvider instance.
-	 */
-	private static void clearDataQueue() {
-		Log.trace(LOG_TAG, LOG_SOURCE, "Clearing and closing Data Queue.");
-		final DataQueue dataQueue = ServiceProvider
-			.getInstance()
-			.getDataQueueService()
-			.getDataQueue(FunctionalTestConstants.EXTENSION_NAME);
-		dataQueue.clear();
-		dataQueue.close();
-	}
 }
