@@ -29,7 +29,6 @@ import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.MobileCoreHelper;
-import com.adobe.marketing.mobile.services.DataQueue;
 import com.adobe.marketing.mobile.services.FunctionalTestDataStoreService;
 import com.adobe.marketing.mobile.services.FunctionalTestNetworkService;
 import com.adobe.marketing.mobile.services.HttpConnecting;
@@ -855,5 +854,4 @@ public class FunctionalTestHelper {
 	private static void setTestableNetworkService() {
 		ServiceProvider.getInstance().setNetworkService(testNetworkService);
 	}
-
 }
