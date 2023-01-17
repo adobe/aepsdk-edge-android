@@ -29,6 +29,7 @@ import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.MobileCoreHelper;
+import com.adobe.marketing.mobile.services.DataQueue;
 import com.adobe.marketing.mobile.services.FunctionalTestDataStoreService;
 import com.adobe.marketing.mobile.services.FunctionalTestNetworkService;
 import com.adobe.marketing.mobile.services.HttpConnecting;
@@ -841,9 +842,10 @@ public class FunctionalTestHelper {
 
 	/**
 	 * Reset the {@link ServiceProvider} by clearing all files under the application cache folder,
-	 * instantiate new instances of each service provider
+	 * clearing and closing the DataQueue, and instantiate new instances of each service provider
 	 */
 	private static void resetServiceProvider() {
+		clearDataQueue();
 		ServiceProviderHelper.cleanCacheDir();
 		ServiceProviderHelper.resetServiceProvider();
 	}
@@ -853,5 +855,18 @@ public class FunctionalTestHelper {
 	 */
 	private static void setTestableNetworkService() {
 		ServiceProvider.getInstance().setNetworkService(testNetworkService);
+	}
+
+	/**
+	 * Clear and close the DataQueue from the current ServiceProvider instance.
+	 */
+	private static void clearDataQueue() {
+		Log.trace(LOG_TAG, LOG_SOURCE, "Clearing and closing Data Queue.");
+		final DataQueue dataQueue = ServiceProvider
+			.getInstance()
+			.getDataQueueService()
+			.getDataQueue(FunctionalTestConstants.EXTENSION_NAME);
+		dataQueue.clear();
+		dataQueue.close();
 	}
 }
