@@ -254,26 +254,8 @@ public class RestartFunctionalTests {
 
 	private void getConsentsSync() throws Exception {
 		final ADBCountDownLatch latch = new ADBCountDownLatch(1);
-		Consent.getConsents(stringObjectMap -> {
-			Log.trace(
-				LOG_TAG,
-				"RestartFunctionalTests",
-				"getConsentsSync returned: %s",
-				stringObjectMap
-					.keySet()
-					.stream()
-					.map(key -> key + "=" + stringObjectMap.get(key))
-					.collect(Collectors.joining(", ", "{", "}"))
-			);
-			latch.countDown();
-		});
+		Consent.getConsents(stringObjectMap -> latch.countDown());
 
-		if (!latch.await(2000, TimeUnit.MILLISECONDS)) {
-			Log.debug(
-				LOG_TAG,
-				"RestartFunctionalTests",
-				"Timeout calling getConsentsSync. Consent.getConsents failed to return after 2 secs."
-			);
-		}
+		latch.await(2000, TimeUnit.MILLISECONDS);
 	}
 }

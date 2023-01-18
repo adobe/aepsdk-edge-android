@@ -846,9 +846,6 @@ public class EdgeFunctionalTests {
 			.build();
 		MobileCore.dispatchEvent(resetEvent);
 
-		// FIXME DEBUG
-		sleep(3000);
-
 		// send a new event, should contain previously stored store data
 		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
