@@ -12,7 +12,6 @@
 package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
-import static com.adobe.marketing.mobile.util.FunctionalTestConstants.LOG_TAG;
 import static com.adobe.marketing.mobile.util.FunctionalTestHelper.assertExpectedEvents;
 import static com.adobe.marketing.mobile.util.FunctionalTestHelper.assertNetworkRequestCount;
 import static com.adobe.marketing.mobile.util.FunctionalTestHelper.createNetworkResponse;
@@ -27,7 +26,6 @@ import static org.junit.Assert.assertTrue;
 import com.adobe.marketing.mobile.edge.consent.Consent;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
-import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.ADBCountDownLatch;
 import com.adobe.marketing.mobile.util.FunctionalTestConstants;
@@ -39,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -49,7 +46,6 @@ public class RestartFunctionalTests {
 
 	private static final String EXEDGE_INTERACT_URL_STRING =
 		FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
-	private static final String EXEDGE_CONSENT_URL_STRING = FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING;
 	private static final String CONFIG_ID = "1234abcd-abcd-1234-5678-123456abcdef";
 	private static final int EVENTS_COUNT = 5;
 	private static final int TIMEOUT_MILLIS = 5000;
