@@ -24,10 +24,6 @@ import static com.adobe.marketing.mobile.util.FunctionalTestHelper.setNetworkRes
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import android.app.Application;
-import android.app.Instrumentation;
-import android.content.Context;
-import androidx.test.platform.app.InstrumentationRegistry;
 import com.adobe.marketing.mobile.edge.consent.Consent;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
@@ -164,11 +160,7 @@ public class RestartFunctionalTests {
 	}
 
 	public void resetCore() throws Exception {
-		MobileCore.resetSDK();
-		MobileCore.setLogLevel(LoggingMode.VERBOSE);
-		Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-		Application application = Instrumentation.newApplication(FunctionalTestHelper.CustomApplication.class, context);
-		MobileCore.setApplication(application);
+		FunctionalTestHelper.resetCoreHelper();
 	}
 
 	/**
