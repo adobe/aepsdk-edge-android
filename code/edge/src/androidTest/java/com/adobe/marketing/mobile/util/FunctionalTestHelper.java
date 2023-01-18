@@ -126,6 +126,21 @@ public class FunctionalTestHelper {
 	}
 
 	/**
+	 * Reset the {@link MobileCore} and {@link ServiceProvider} without clearing persistence or database.
+	 * Initializes {@code MobileCore} and {@code ServiceProvider} for testing after resetting by,
+	 * setting the {@link FunctionalTestNetworkService} to the {@code ServiceProvider}, and setting
+	 * the instrumented test application to {@code MobileCore}.
+	 * This method does not clear the shared preferences, application cache directory, or database directory.
+	 */
+	public static void resetCoreHelper() {
+		MobileCoreHelper.resetSDK();
+		ServiceProviderHelper.resetServices();
+		setTestableNetworkService();
+		MobileCore.setLogLevel(LoggingMode.VERBOSE);
+		MobileCore.setApplication(defaultApplication);
+	}
+
+	/**
 	 * {@code TestRule} which registers the {@code MonitorExtension}, allowing test cases to assert
 	 * events passing through the {@code EventHub}. This {@code TestRule} must be applied after
 	 * the {@link SetupCoreRule} to ensure the {@code MobileCore} is setup for testing first.
@@ -841,11 +856,12 @@ public class FunctionalTestHelper {
 
 	/**
 	 * Reset the {@link ServiceProvider} by clearing all files under the application cache folder,
-	 * instantiate new instances of each service provider
+	 * clearing all files under the database folder, and instantiate new instances of each service provider
 	 */
 	private static void resetServiceProvider() {
 		ServiceProviderHelper.cleanCacheDir();
-		ServiceProviderHelper.resetServiceProvider();
+		ServiceProviderHelper.cleanDatabaseDir();
+		ServiceProviderHelper.resetServices();
 	}
 
 	/**

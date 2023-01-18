@@ -13,6 +13,8 @@ package com.adobe.marketing.mobile.services;
 
 import static com.adobe.marketing.mobile.util.FunctionalTestConstants.LOG_TAG;
 
+import android.content.Context;
+import com.adobe.marketing.mobile.util.FunctionalTestConstants;
 import java.io.File;
 
 /**
@@ -24,8 +26,9 @@ public class ServiceProviderHelper {
 
 	/**
 	 * Reset the {@link ServiceProvider}.
+	 * @see ServiceProvider#resetServices()
 	 */
-	public static void resetServiceProvider() {
+	public static void resetServices() {
 		ServiceProvider.getInstance().resetServices();
 	}
 
@@ -36,6 +39,30 @@ public class ServiceProviderHelper {
 	public static void cleanCacheDir() {
 		File cacheDir = ServiceProvider.getInstance().getDeviceInfoService().getApplicationCacheDir();
 		deleteFiles(cacheDir);
+	}
+
+	/**
+	 * Attempt to recursively delete all the files under the application database directory.
+	 * Requires the application context to be set in the {@link ServiceProvider}.
+	 * @see AppContextService#getApplicationContext()
+	 */
+	public static void cleanDatabaseDir() {
+		final String databaseName = FunctionalTestConstants.EXTENSION_NAME;
+		Context appContext = ServiceProvider.getInstance().getAppContextService().getApplicationContext();
+		if (appContext == null) {
+			Log.debug(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Failed to clean database directory for (%s), the ApplicationContext is null",
+				databaseName
+			);
+			return;
+		}
+
+		final File databaseDirDataQueue = appContext.getDatabasePath(databaseName);
+		if (databaseDirDataQueue != null) {
+			deleteFiles(databaseDirDataQueue.getParentFile());
+		}
 	}
 
 	/**

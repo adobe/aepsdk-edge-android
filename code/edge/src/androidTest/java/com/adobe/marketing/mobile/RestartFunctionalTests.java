@@ -23,10 +23,6 @@ import static com.adobe.marketing.mobile.util.FunctionalTestHelper.setNetworkRes
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import android.app.Application;
-import android.app.Instrumentation;
-import android.content.Context;
-import androidx.test.platform.app.InstrumentationRegistry;
 import com.adobe.marketing.mobile.edge.consent.Consent;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
@@ -50,7 +46,6 @@ public class RestartFunctionalTests {
 
 	private static final String EXEDGE_INTERACT_URL_STRING =
 		FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
-	private static final String EXEDGE_CONSENT_URL_STRING = FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING;
 	private static final String CONFIG_ID = "1234abcd-abcd-1234-5678-123456abcdef";
 	private static final int EVENTS_COUNT = 5;
 	private static final int TIMEOUT_MILLIS = 5000;
@@ -161,11 +156,7 @@ public class RestartFunctionalTests {
 	}
 
 	public void resetCore() throws Exception {
-		MobileCore.resetSDK();
-		MobileCore.setLogLevel(LoggingMode.VERBOSE);
-		Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-		Application application = Instrumentation.newApplication(FunctionalTestHelper.CustomApplication.class, context);
-		MobileCore.setApplication(application);
+		FunctionalTestHelper.resetCoreHelper();
 	}
 
 	/**

@@ -166,6 +166,12 @@ class EdgeExtension extends Extension {
 	}
 
 	@Override
+	protected void onUnregistered() {
+		super.onUnregistered();
+		hitQueue.close();
+	}
+
+	@Override
 	public boolean readyForEvent(@NonNull Event event) {
 		if (!state.bootupIfNeeded()) {
 			return false;
