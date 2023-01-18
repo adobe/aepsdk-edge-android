@@ -127,8 +127,9 @@ public class FunctionalTestHelper {
 
 	/**
 	 * Reset the {@link MobileCore} and {@link ServiceProvider} without clearing persistence or database.
-	 * Resets the {@code MobileCore} and {@code ServiceProvider}, sets the {@link FunctionalTestNetworkService}
-	 * to the {@code ServiceProvider}, and sets the instrumented test application to {@code MobileCore}.
+	 * Initializes {@code MobileCore} and {@code ServiceProvider} for testing after resetting by,
+	 * setting the {@link FunctionalTestNetworkService} to the {@code ServiceProvider}, and setting
+	 * the instrumented test application to {@code MobileCore}.
 	 * This method does not clear the shared preferences, application cache directory, or database directory.
 	 */
 	public static void resetCoreHelper() {
