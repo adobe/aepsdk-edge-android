@@ -68,7 +68,12 @@ dependencies {
     //implementation 'com.adobe.marketing.mobile:edgeidentity:1.+'
     //implementation 'com.adobe.marketing.mobile:assurance:1.+'
     implementation 'com.adobe.marketing.mobile:core:2.0.0-SNAPSHOT'
-    implementation fileTree(dir: 'libs', include: ['edgeidentity-release-2.0.0.aar', 'edgeconsent-release-2.0.0.aar'])
+    implementation ('com.adobe.marketing.mobile:edgeidentity:2.0.0-SNAPSHOT') {
+        transitive = false
+    }
+    implementation ('com.adobe.marketing.mobile:edgeconsent:2.0.0-SNAPSHOT') {
+        transitive = false
+    }
     implementation ('com.adobe.marketing.mobile:assurance:2.0.0-SNAPSHOT') {
         transitive = false
     }

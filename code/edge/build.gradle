@@ -248,7 +248,10 @@ dependencies {
     // TODO - Uncomment next lines when 2.0 is published to Maven
 //    androidTestImplementation 'com.adobe.marketing.mobile:edgeidentity:1.+'
 //    androidTestImplementation 'com.adobe.marketing.mobile:edgeconsent:1.+'
-    androidTestImplementation fileTree(dir: 'libs', include: ['edgeidentity-release-2.0.0.aar', 'edgeconsent-release-2.0.0.aar'])
+    androidTestImplementation ('com.adobe.marketing.mobile:edgeidentity:2.0.0-SNAPSHOT') {
+        transitive = false
+    }
+    androidTestImplementation fileTree(dir: 'libs', include: ['edgeconsent-release-2.0.0.aar'])
 
     androidTestImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
