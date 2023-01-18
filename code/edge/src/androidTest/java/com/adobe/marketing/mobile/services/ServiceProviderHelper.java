@@ -26,8 +26,9 @@ public class ServiceProviderHelper {
 
 	/**
 	 * Reset the {@link ServiceProvider}.
+	 * @see ServiceProvider#resetServices()
 	 */
-	public static void resetServiceProvider() {
+	public static void resetServices() {
 		ServiceProvider.getInstance().resetServices();
 	}
 

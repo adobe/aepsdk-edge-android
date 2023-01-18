@@ -134,7 +134,7 @@ public class FunctionalTestHelper {
 	 */
 	public static void resetCoreHelper() {
 		MobileCoreHelper.resetSDK();
-		ServiceProviderHelper.resetServiceProvider();
+		ServiceProviderHelper.resetServices();
 		setTestableNetworkService();
 		MobileCore.setLogLevel(LoggingMode.VERBOSE);
 		MobileCore.setApplication(defaultApplication);
@@ -861,7 +861,7 @@ public class FunctionalTestHelper {
 	private static void resetServiceProvider() {
 		ServiceProviderHelper.cleanCacheDir();
 		ServiceProviderHelper.cleanDatabaseDir();
-		ServiceProviderHelper.resetServiceProvider();
+		ServiceProviderHelper.resetServices();
 	}
 
 	/**
