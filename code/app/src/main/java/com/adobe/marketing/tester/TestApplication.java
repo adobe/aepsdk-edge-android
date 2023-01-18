@@ -12,20 +12,21 @@
 package com.adobe.marketing.tester;
 
 import android.app.Application;
-import android.util.Log;
 import com.adobe.marketing.mobile.Assurance;
 import com.adobe.marketing.mobile.Edge;
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.edge.consent.Consent;
 import com.adobe.marketing.mobile.edge.identity.Identity;
+import com.adobe.marketing.mobile.services.Log;
 import java.util.Arrays;
 
 public class TestApplication extends Application {
 
-	private static final String LOG_TAG = "TestApplication";
+	private static final String LOG_TAG = "EdgeTestApplication";
+	private static final String LOG_SOURCE = "TestApplication";
 
-	// TODO: Set up the Environment File ID from your Launch property for the preferred environment
+	// TODO: Set up the preferred Environment File ID from your mobile property configured in Data Collection UI
 	private final String ENVIRONMENT_FILE_ID = "";
 
 	@Override
@@ -36,10 +37,10 @@ public class TestApplication extends Application {
 		MobileCore.setLogLevel(LoggingMode.VERBOSE);
 		MobileCore.configureWithAppID(ENVIRONMENT_FILE_ID);
 
-		// register Adobe extensions
+		// Register Adobe extensions
 		MobileCore.registerExtensions(
 			Arrays.asList(Edge.EXTENSION, Identity.EXTENSION, Consent.EXTENSION, Assurance.EXTENSION),
-			o -> Log.d(LOG_TAG, "Mobile SDK was initialized")
+			o -> Log.debug(LOG_TAG, LOG_SOURCE, "Mobile SDK was initialized")
 		);
 	}
 }
