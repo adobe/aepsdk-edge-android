@@ -23,7 +23,7 @@ import java.util.Arrays;
 
 public class TestApplication extends Application {
 
-	private static final String LOG_TAG = "EdgeTestApplication";
+	public static final String LOG_TAG = "EdgeTestApp";
 	private static final String LOG_SOURCE = "TestApplication";
 
 	// TODO: Set up the preferred Environment File ID from your mobile property configured in Data Collection UI
