@@ -108,9 +108,9 @@ jobs:
           name: Build
           command: make ci-build
 
-      - run:
-          name: Build App
-          command: make ci-build-app
+      # - run:
+      #     name: Build App
+      #     command: make ci-build-app
 
       - android/run-tests:
           test-command: make ci-unit-test
