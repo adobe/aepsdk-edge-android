@@ -15,6 +15,8 @@ import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.util.StringUtils;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -93,13 +95,17 @@ class CompletionCallbacksManager {
 			final List<EdgeEventHandle> handles = edgeEventHandles.get(requestEventId);
 			try {
 				callback.onComplete(handles != null ? handles : new ArrayList<>());
-			} catch (Exception e) {
+			} catch (Exception ex) {
+				StringWriter stringWriter = new StringWriter();
+				PrintWriter printWriter = new PrintWriter(stringWriter);
+				ex.printStackTrace(printWriter);
+
 				Log.warning(
 					LOG_TAG,
 					LOG_SOURCE,
-					"Caught Exception while calling EdgeCallback for request event id %s: %s",
+					"Exception thrown when invoking EdgeCallback for request event id %s: %s",
 					requestEventId,
-					e.getLocalizedMessage()
+					stringWriter.toString()
 				);
 			}
 			Log.trace(
