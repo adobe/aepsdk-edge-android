@@ -50,7 +50,7 @@ import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
-	
+
 	private static final String LOG_SOURCE = "MainActivity";
 	private boolean hasSpinnerBooted = false;
 
