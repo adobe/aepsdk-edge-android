@@ -103,7 +103,7 @@ class CompletionCallbacksManager {
 				Log.warning(
 					LOG_TAG,
 					LOG_SOURCE,
-					"Exception thrown when invoking EdgeCallback for request event id %s: %s",
+					"Exception thrown when invoking EdgeCallback.onComplete() for request event id %s: %s",
 					requestEventId,
 					stringWriter.toString()
 				);
