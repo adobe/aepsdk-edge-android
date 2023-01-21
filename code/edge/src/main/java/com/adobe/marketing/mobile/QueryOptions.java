@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile;
 
+import com.adobe.marketing.mobile.util.MapUtils;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,7 +38,7 @@ class QueryOptions {
 	 */
 	Map<String, Object> toObjectMap() {
 		Map<String, Object> serializedMap = new HashMap<>();
-		Utils.putIfNotEmpty(serializedMap, JSON_KEY_CONSENT, consent);
+		MapUtils.putIfNotEmpty(serializedMap, JSON_KEY_CONSENT, consent);
 		return serializedMap;
 	}
 }

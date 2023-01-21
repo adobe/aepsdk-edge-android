@@ -14,6 +14,7 @@ package com.adobe.marketing.mobile;
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.MapUtils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,12 +70,12 @@ class EdgeRequest {
 
 		Map<String, Object> requestPayload = new HashMap<>();
 
-		Utils.putIfNotEmpty(requestPayload, JSON_KEY_XDM, xdmPayloads);
+		MapUtils.putIfNotEmpty(requestPayload, JSON_KEY_XDM, xdmPayloads);
 
 		requestPayload.put(JSON_KEY_EVENTS, serializedEvents);
 
 		if (metadata != null) {
-			Utils.putIfNotEmpty(requestPayload, JSON_KEY_META, metadata.toObjectMap());
+			MapUtils.putIfNotEmpty(requestPayload, JSON_KEY_META, metadata.toObjectMap());
 		}
 
 		return new JSONObject(requestPayload);

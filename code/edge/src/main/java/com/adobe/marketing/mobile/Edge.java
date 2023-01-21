@@ -18,6 +18,7 @@ import androidx.annotation.Nullable;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.DataReaderException;
+import com.adobe.marketing.mobile.util.MapUtils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,7 +82,7 @@ public class Edge {
 		}
 
 		// Note: iOS implementation ignores requests if XDM data is empty
-		if (Utils.isNullOrEmpty(experienceEvent.getXdmSchema())) {
+		if (MapUtils.isNullOrEmpty(experienceEvent.getXdmSchema())) {
 			Log.warning(LOG_TAG, LOG_SOURCE, "sendEvent API cannot make the request with null/empty XDM data.");
 			return;
 		}
@@ -89,7 +90,7 @@ public class Edge {
 		// serialize the ExperienceEvent into event data
 		final Map<String, Object> data = experienceEvent.toObjectMap();
 
-		if (Utils.isNullOrEmpty(data)) {
+		if (MapUtils.isNullOrEmpty(data)) {
 			Log.warning(LOG_TAG, LOG_SOURCE, "sendEvent API cannot make the request with null/empty event data.");
 			return;
 		}
