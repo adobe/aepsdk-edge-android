@@ -146,7 +146,7 @@ With the datastream set up, data can be directed to its destination by adding se
 <img src="../Assets/edge-send-event-tutorial/aep-setup/datastreams-add-service.png" alt="Set datastream values" width="1100"/>  
 
 2. From the **Service (required)** dropdown (**1**), select **Adobe Analytics**.
-3. Select **Add Report Suite** (**2**), and enter the report suite ID you want the data from this tutorial to land.
+3. Select **Add Report Suite** (**2**), and enter the report suite ID you want the data from this tutorial to save to. An [Analytics report suite](https://experienceleague.adobe.com/docs/analytics/admin/admin-tools/manage-report-suites/report-suites-admin.html) serves as a kind of datastore.
 4. Select **Save**.
 
 <img src="../Assets/edge-send-event-tutorial/aep-setup/datastreams-add-analytics.png" alt="Set datastream values" width="1100"/>  
@@ -366,7 +366,7 @@ For details on the various Edge extensions used, see the [table of related proje
 
 Notice that the Lifecycle APIs rely on the developer to place them in the proper app lifecycle functions (as seen in `MainActivity.java` and `AssuranceActivity.java`); that is, there are built-in functions that are called by the operating system that give the app notices that it is about to enter an active state, or go into a background state, etc. A proper Lifecycle extension implementation requires that the developer places the API calls in the required Android lifecycle functions. See the full guide on [implementing Lifecycle](https://aep-sdks.gitbook.io/docs/foundation-extensions/mobile-core/lifecycle).
 
-### 4. Run app   
+### 4. Run app  
 In Android Studio: 
 1. Set the app target (**1**) to **app** (if not already).
 2. Choose which destination device (**2**) to run it on (either emulator or physical device. In this case it is set to the Pixel 4 API 33 Android 13 emulator). 
@@ -382,7 +382,7 @@ You should see your application running on the device you selected, with logs be
 > If the debug console area is not shown by default, activate it by selecting:  
 > View -> Tool Windows -> Logcat
 
-### 5. `sendEvent` implementation examples   
+### 5. `sendEvent` implementation examples  
 With Edge extension successfully installed and registered, you can make `sendEvent` calls, which will be processed by the Edge extension and sent to the Edge network.
 
 Check `EdgeFragment.java` for implementation examples of product add and view events. You can see the data payloads that are to be sent with the calls. Notice that they conform to the Commerce XDM schema structure we set up in the first section.
@@ -440,7 +440,7 @@ When presented with this window, your new Assurance session is ready to go, and 
 <img src="../Assets/edge-send-event-tutorial/assurance-validation/assurance-create-session-qr.png" alt="Creating a new session in Assurance step 3 - QR code" width="400"/>
 <img src="../Assets/edge-send-event-tutorial/assurance-validation/assurance-create-session-link.png" alt="Creating a new session in Assurance step 3 - Session link" width="400"/>
 
-### 2. Connect to the app   
+### 2. Connect to the app  
 To connect to Assurance, use the session link method:
 1. Copy the session link; you can select the icon of a double overlapping box to the right of the link to copy it.
     - If using a physical device, it may be helpful to have a way to send this link to the device (ex: email, text, etc.). Alternatively, you can use the camera on your physical device to scan the QR code.
