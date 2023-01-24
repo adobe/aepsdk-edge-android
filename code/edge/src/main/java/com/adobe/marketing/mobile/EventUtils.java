@@ -13,6 +13,7 @@ package com.adobe.marketing.mobile;
 
 import androidx.annotation.NonNull;
 import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.MapUtils;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -78,7 +79,7 @@ final class EventUtils {
 
 		for (String configKey : configKeysWithStringValue) {
 			final String configValue = DataReader.optString(configSharedState, configKey, null);
-			Utils.putIfNotEmpty(edgeConfig, configKey, configValue);
+			MapUtils.putIfNotEmpty(edgeConfig, configKey, configValue);
 		}
 
 		return edgeConfig;

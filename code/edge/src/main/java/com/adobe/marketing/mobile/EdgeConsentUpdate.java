@@ -12,6 +12,7 @@
 package com.adobe.marketing.mobile;
 
 import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.MapUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -70,7 +71,7 @@ class EdgeConsentUpdate {
 	 * @return the request payload in {@link JSONObject} format or null if the consents are null/empty
 	 */
 	JSONObject asJsonObject() {
-		if (Utils.isNullOrEmpty(consents)) {
+		if (MapUtils.isNullOrEmpty(consents)) {
 			Log.debug(
 				EdgeConstants.LOG_TAG,
 				LOG_SOURCE,
@@ -82,14 +83,14 @@ class EdgeConsentUpdate {
 		final Map<String, Object> payload = new HashMap<>();
 
 		if (metadata != null) {
-			Utils.putIfNotEmpty(payload, EdgeJson.Event.METADATA, metadata.toObjectMap());
+			MapUtils.putIfNotEmpty(payload, EdgeJson.Event.METADATA, metadata.toObjectMap());
 		}
 
 		if (query != null) {
-			Utils.putIfNotEmpty(payload, EdgeJson.Event.QUERY, query.toObjectMap());
+			MapUtils.putIfNotEmpty(payload, EdgeJson.Event.QUERY, query.toObjectMap());
 		}
 
-		Utils.putIfNotEmpty(payload, EdgeJson.Event.Xdm.IDENTITY_MAP, identityMap);
+		MapUtils.putIfNotEmpty(payload, EdgeJson.Event.Xdm.IDENTITY_MAP, identityMap);
 
 		final Map<String, Object> consent = new HashMap<>();
 		consent.put(EdgeJson.Event.Consent.STANDARD_KEY, EdgeJson.Event.Consent.STANDARD_VALUE);

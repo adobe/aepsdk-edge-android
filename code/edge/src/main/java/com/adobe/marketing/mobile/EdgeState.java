@@ -16,6 +16,7 @@ import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 import com.adobe.marketing.mobile.services.HitQueuing;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.MapUtils;
 import java.util.Map;
 
 /**
@@ -190,7 +191,7 @@ class EdgeState {
 			}
 		}
 
-		if (Utils.isNullOrEmpty(consentExtensionInfo)) {
+		if (MapUtils.isNullOrEmpty(consentExtensionInfo)) {
 			Log.warning(
 				LOG_TAG,
 				LOG_SOURCE,

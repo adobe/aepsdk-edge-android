@@ -18,6 +18,7 @@ import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.DataReaderException;
 import com.adobe.marketing.mobile.util.JSONUtils;
+import com.adobe.marketing.mobile.util.MapUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -209,7 +210,7 @@ class NetworkResponseHandler {
 		}
 
 		try {
-			if (!Utils.isNullOrEmpty(json)) {
+			if (!JSONUtils.isNullOrEmpty(json)) {
 				final boolean ignoreStorePayloads = shouldIgnoreStorePayload(requestId);
 				JSONArray eventHandleArray = json.getJSONArray(EdgeJson.Response.HANDLE);
 				processEventHandles(eventHandleArray, requestId, ignoreStorePayloads);
@@ -219,7 +220,7 @@ class NetworkResponseHandler {
 		}
 
 		try {
-			if (!Utils.isNullOrEmpty(json)) {
+			if (!JSONUtils.isNullOrEmpty(json)) {
 				JSONArray errorsArray = json.getJSONArray(EdgeJson.Response.ERRORS);
 				dispatchEventErrors(errorsArray, true, requestId);
 			}
@@ -228,7 +229,7 @@ class NetworkResponseHandler {
 		}
 
 		try {
-			if (!Utils.isNullOrEmpty(json)) {
+			if (!JSONUtils.isNullOrEmpty(json)) {
 				JSONArray warningsArray = json.getJSONArray(EdgeJson.Response.WARNINGS);
 				dispatchEventErrors(warningsArray, false, requestId);
 			}
@@ -316,7 +317,7 @@ class NetworkResponseHandler {
 		final String requestId,
 		final boolean ignoreStorePayloads
 	) {
-		if (Utils.isNullOrEmpty(eventHandleArray)) {
+		if (JSONUtils.isNullOrEmpty(eventHandleArray)) {
 			Log.trace(LOG_TAG, LOG_SOURCE, "Received null/empty event handle array, nothing to handle");
 			return;
 		}
@@ -383,7 +384,7 @@ class NetworkResponseHandler {
 		final boolean isError,
 		final String eventSource
 	) {
-		if (Utils.isNullOrEmpty(eventData)) {
+		if (MapUtils.isNullOrEmpty(eventData)) {
 			return;
 		}
 
@@ -517,7 +518,7 @@ class NetworkResponseHandler {
 	 * @param requestId the event request identifier, used for logging
 	 */
 	private void dispatchEventErrors(final JSONArray errorsArray, final boolean isError, final String requestId) {
-		if (Utils.isNullOrEmpty(errorsArray)) {
+		if (JSONUtils.isNullOrEmpty(errorsArray)) {
 			Log.trace(LOG_TAG, LOG_SOURCE, "Received null/empty errors array, nothing to handle");
 			return;
 		}
@@ -543,7 +544,7 @@ class NetworkResponseHandler {
 					e.getLocalizedMessage()
 				);
 			}
-			if (Utils.isNullOrEmpty(eventDataResponse)) {
+			if (MapUtils.isNullOrEmpty(eventDataResponse)) {
 				continue;
 			}
 

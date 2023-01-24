@@ -23,6 +23,7 @@ import com.adobe.marketing.mobile.services.PersistentHitQueue;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.DataReaderException;
+import com.adobe.marketing.mobile.util.MapUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.HashMap;
 import java.util.List;
@@ -195,7 +196,7 @@ class EdgeExtension extends Extension {
 	 * @param event an event containing {@link ExperienceEvent} data for processing; the event data should not be null/empty
 	 */
 	void handleExperienceEventRequest(@NonNull final Event event) {
-		if (Utils.isNullOrEmpty(event.getEventData())) {
+		if (MapUtils.isNullOrEmpty(event.getEventData())) {
 			Log.trace(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -217,7 +218,7 @@ class EdgeExtension extends Extension {
 	 * @param event current event to process; the event data should not be null/empty
 	 */
 	void handleConsentUpdate(@NonNull final Event event) {
-		if (Utils.isNullOrEmpty(event.getEventData())) {
+		if (MapUtils.isNullOrEmpty(event.getEventData())) {
 			Log.trace(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -236,7 +237,7 @@ class EdgeExtension extends Extension {
 	 * @param event current event to process; the event data should not be null/empty
 	 */
 	void handleConsentPreferencesUpdate(@NonNull final Event event) {
-		if (Utils.isNullOrEmpty(event.getEventData())) {
+		if (MapUtils.isNullOrEmpty(event.getEventData())) {
 			Log.trace(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -301,7 +302,7 @@ class EdgeExtension extends Extension {
 	 */
 	void handleSetLocationHint(@NonNull final Event event) {
 		final Map<String, Object> eventData = event.getEventData();
-		if (Utils.isNullOrEmpty(eventData)) {
+		if (MapUtils.isNullOrEmpty(eventData)) {
 			Log.trace(
 				LOG_TAG,
 				LOG_SOURCE,

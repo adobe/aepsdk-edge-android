@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile;
 
+import com.adobe.marketing.mobile.util.MapUtils;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -55,8 +56,8 @@ class RequestMetadata {
 	 */
 	Map<String, Object> toObjectMap() {
 		Map<String, Object> serializedMap = new HashMap<>();
-		Utils.putIfNotEmpty(serializedMap, JSON_KEY_GATEWAY, konductorConfig);
-		Utils.putIfNotEmpty(serializedMap, JSON_KEY_STATE, state);
+		MapUtils.putIfNotEmpty(serializedMap, JSON_KEY_GATEWAY, konductorConfig);
+		MapUtils.putIfNotEmpty(serializedMap, JSON_KEY_STATE, state);
 		return serializedMap;
 	}
 

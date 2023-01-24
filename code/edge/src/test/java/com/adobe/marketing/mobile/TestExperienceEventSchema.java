@@ -12,6 +12,7 @@
 package com.adobe.marketing.mobile;
 
 import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.MapUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 import com.adobe.marketing.mobile.xdm.Schema;
 import java.util.HashMap;
@@ -79,9 +80,9 @@ class TestExperienceEventSchema implements Schema {
 	Map<String, Object> toObjectMap() {
 		Map<String, Object> serializedMap = new HashMap<>();
 
-		Utils.putIfNotEmpty(serializedMap, EdgeJson.Event.Xdm.EVENT_TYPE, eventType);
-		Utils.putIfNotEmpty(serializedMap, EdgeJson.Event.Xdm.EVENT_MERGE_ID, eventMergeId);
-		Utils.putIfNotEmpty(serializedMap, EdgeJson.Event.Xdm.COMMERCE, commerce);
+		MapUtils.putIfNotEmpty(serializedMap, EdgeJson.Event.Xdm.EVENT_TYPE, eventType);
+		MapUtils.putIfNotEmpty(serializedMap, EdgeJson.Event.Xdm.EVENT_MERGE_ID, eventMergeId);
+		MapUtils.putIfNotEmpty(serializedMap, EdgeJson.Event.Xdm.COMMERCE, commerce);
 		return serializedMap;
 	}
 
