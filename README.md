@@ -14,10 +14,12 @@ To learn more about this extension, read the [Adobe Experience Platform Edge Net
 Integrate the Edge Network extension into your app by including the following in your gradle file's `dependencies`:
 
 ```gradle
-implementation 'com.adobe.marketing.mobile:edgeidentity:1.+'
-implementation 'com.adobe.marketing.mobile:edge:1.+'
-implementation 'com.adobe.marketing.mobile:core:1.+'
+implementation 'com.adobe.marketing.mobile:edgeidentity:2.0.0'
+implementation 'com.adobe.marketing.mobile:edge:2.0.0'
+implementation 'com.adobe.marketing.mobile:core:2.0.0'
 ```
+> **Note**  
+> See the [current version list](https://developer.adobe.com/client-sdks/documentation/current-sdk-versions) for the latest extension versions to use.
 
 ### Development
 
@@ -59,7 +61,6 @@ Once the connection is established and the events list starts getting populated,
 | [AEPConsent Extension](https://github.com/adobe/aepsdk-edgeconsent-android)              | The AEPConsent extension enables consent preferences collection from your mobile app when using the AEP Mobile SDK and the Edge Network extension. |
 | [AEPLifecycle Extension](https://github.com/adobe/aepsdk-core-android)                   | The AEPLifecycle extension helps collect application Lifecycle metrics and any additional context data provided by the application developer when using AEP SDK and the AEP Edge Network extension. |
 | [AEPEdgeIdentity Extension](https://github.com/adobe/aepsdk-edgeidentity-android)        | The AEPEdgeIdentity extension enables handling of user identity data from a mobile app when using AEP SDK and the AEP Edge Network extension. |
-| [AEP SDK Sample App for iOS](https://github.com/adobe/aepsdk-sample-app-ios)         | Contains iOS sample apps for the AEP SDK. Apps are provided for both Objective-C and Swift implementations. |
 | [AEP SDK Sample App for Android](https://github.com/adobe/aepsdk-sample-app-android) | Contains Android sample app for the AEP SDK.                 |
 
 ## Documentation
