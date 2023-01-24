@@ -11,8 +11,9 @@
 */
 package com.adobe.marketing.mobile.tutorial;
 
+import static com.adobe.marketing.mobile.tutorial.MainApp.LOG_TAG;
+
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,6 +27,7 @@ import com.adobe.marketing.mobile.Edge;
 import com.adobe.marketing.mobile.EdgeCallback;
 import com.adobe.marketing.mobile.EdgeEventHandle;
 import com.adobe.marketing.mobile.ExperienceEvent;
+import com.adobe.marketing.mobile.services.Log;
 // Edge Tutorial - code section (1/3) */
 
 import com.adobe.marketing.mobile.xdm.Commerce;
@@ -41,7 +43,7 @@ import java.util.List;
 import java.util.Map;
 
 public class EdgeFragment extends Fragment {
-    private static final String LOG_TAG = "EdgeFragment";
+    private static final String LOG_SOURCE = "EdgeFragment";
 
     private FragmentFirstBinding binding;
 
@@ -91,12 +93,13 @@ public class EdgeFragment extends Fragment {
                 ExperienceEvent event = new ExperienceEvent.Builder()
                         .setXdmSchema(xdmData)
                         .build();
-                Log.d(LOG_TAG, "Sending event");
+                Log.debug(LOG_TAG, LOG_SOURCE, "Sending event");
+
                 Edge.sendEvent(event, new EdgeCallback() {
 
                     @Override
                     public void onComplete(final List<EdgeEventHandle> handles) {
-                        Log.d(LOG_TAG, "Edge event callback called");
+                        Log.debug(LOG_TAG, LOG_SOURCE, "Edge event callback called");
                     }
                 });
             }
@@ -134,12 +137,12 @@ public class EdgeFragment extends Fragment {
                 ExperienceEvent event = new ExperienceEvent.Builder()
                         .setXdmSchema(eventData)
                         .build();
-                Log.d(LOG_TAG, "Sending event");
+                Log.debug(LOG_TAG, LOG_SOURCE, "Sending event");
                 Edge.sendEvent(event, new EdgeCallback() {
 
                     @Override
                     public void onComplete(final List<EdgeEventHandle> handles) {
-                        Log.d(LOG_TAG, "Edge event callback called");
+                        Log.debug(LOG_TAG, LOG_SOURCE, "Edge event callback called");
                     }
                 });
 

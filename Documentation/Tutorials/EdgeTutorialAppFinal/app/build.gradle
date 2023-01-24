@@ -54,11 +54,11 @@ dependencies {
 
     // Add dependencies on AEP Mobile extensions
     //* Edge Tutorial - code section (1/1)
-    implementation 'com.adobe.marketing.mobile:assurance:1.0.4'
-    implementation 'com.adobe.marketing.mobile:core:1.11.4'
-    implementation 'com.adobe.marketing.mobile:lifecycle:1.1.1'
-    implementation 'com.adobe.marketing.mobile:edge:1.3.2'
-    implementation 'com.adobe.marketing.mobile:edgeconsent:1.0.1'
-    implementation 'com.adobe.marketing.mobile:edgeidentity:1.1.0'
+    implementation 'com.adobe.marketing.mobile:assurance:2.0.0'
+    implementation 'com.adobe.marketing.mobile:core:2.0.0'
+    implementation 'com.adobe.marketing.mobile:edge:2.0.0'
+    implementation 'com.adobe.marketing.mobile:edgeconsent:2.0.0'
+    implementation 'com.adobe.marketing.mobile:edgeidentity:2.0.0'
+    implementation 'com.adobe.marketing.mobile:lifecycle:2.0.0'
     // Edge Tutorial - code section (1/1) */
 }

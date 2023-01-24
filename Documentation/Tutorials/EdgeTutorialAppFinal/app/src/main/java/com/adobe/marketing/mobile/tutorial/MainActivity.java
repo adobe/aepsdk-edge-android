@@ -11,6 +11,8 @@
 */
 package com.adobe.marketing.mobile.tutorial;
 
+import static com.adobe.marketing.mobile.tutorial.MainApp.LOG_TAG;
+
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -22,14 +24,14 @@ import androidx.appcompat.app.AppCompatActivity;
 // Imports the Assurance and Core extensions for use in the code below.
 //* Edge Tutorial - code section (1/4)
 import com.adobe.marketing.mobile.Assurance;
-import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
+import com.adobe.marketing.mobile.services.Log;
 // Edge Tutorial - code section (1/4) */
 
 import com.adobe.marketing.mobile.tutorial.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String LOG_TAG = "MainActivity";
+    private static final String LOG_SOURCE = "MainActivity";
 
     private ActivityMainBinding binding;
 
@@ -48,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
             // Enables deep linking to connect to Assurance.
             //* Edge Tutorial - code section (2/4)
             Assurance.startSession(data.toString());
-            MobileCore.log(LoggingMode.VERBOSE, LOG_TAG, "Deep link received " + data.toString());
+            Log.debug(LOG_TAG, LOG_SOURCE, "Deep link received: " + data.toString());
             // Edge Tutorial - code section (2/4) */
         }
 
@@ -58,8 +60,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onPause() {
         super.onPause();
-        // The next two code sections are functionality that is enabled by the [AEP Lifecycle](https://aep-sdks.gitbook.io/docs/foundation-extensions/lifecycle-for-edge-network)
-        // extension; the extension's main purpose is to track the app's state, basically when the app starts or is closed.
+        // The next two code sections are functionality that is enabled by the AEP Lifecycle
+        // extension. The extension's main purpose is to track the app's state; basically when the app starts or is closed.
         // Enables the `lifecyclePause` API that tracks when the app is closed.
         //* Edge Tutorial - code section (3/4)
         MobileCore.lifecyclePause();
