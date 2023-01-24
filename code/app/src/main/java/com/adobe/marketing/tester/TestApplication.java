@@ -40,7 +40,7 @@ public class TestApplication extends Application {
 		// Register Adobe extensions
 		MobileCore.registerExtensions(
 			Arrays.asList(Edge.EXTENSION, Identity.EXTENSION, Consent.EXTENSION, Assurance.EXTENSION),
-			o -> Log.debug(LOG_TAG, LOG_SOURCE, "Mobile SDK was initialized")
+			o -> Log.debug(LOG_TAG, LOG_SOURCE, "AEP Mobile SDK initialized.")
 		);
 	}
 }
