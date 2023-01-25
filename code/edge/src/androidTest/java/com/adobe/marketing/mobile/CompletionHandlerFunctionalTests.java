@@ -241,4 +241,47 @@ public class CompletionHandlerFunctionalTests {
 		assertNetworkRequestCount();
 		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch.await(1, TimeUnit.SECONDS));
 	}
+
+	@Test
+	public void testSendEvent_withCompletionHandler_whenExceptionThrownFromCallback_callsCompletionCorrectly()
+		throws InterruptedException {
+		HttpConnecting responseConnection = createNetworkResponse(RESPONSE_BODY_WITH_HANDLE, 200);
+		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
+		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 2);
+
+		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
+			.setXdmSchema(
+				new HashMap<String, Object>() {
+					{
+						put("eventType", "personalizationEvent");
+						put("test", "xdm");
+					}
+				}
+			)
+			.build();
+
+		final CountDownLatch latch1 = new CountDownLatch(1);
+		Edge.sendEvent(
+			experienceEvent,
+			handles -> {
+				assertEquals(1, handles.size());
+				latch1.countDown();
+				throw new NullPointerException();
+			}
+		);
+
+		// If the Exception is not caught, subsequent requests will fail to process.
+		final CountDownLatch latch2 = new CountDownLatch(1);
+		Edge.sendEvent(
+			experienceEvent,
+			handles -> {
+				assertEquals(1, handles.size());
+				latch2.countDown();
+			}
+		);
+
+		assertNetworkRequestCount();
+		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch1.await(1, TimeUnit.SECONDS));
+		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch2.await(1, TimeUnit.SECONDS));
+	}
 }

@@ -645,6 +645,33 @@ public class EdgeNetworkServiceTest {
 	}
 
 	@Test
+	public void testHandleStreamingResponse_catchesIndexOutOfBoundsException() {
+		// When processing a response, the response is parsed into chunks using the line feed delimiter.
+		// Each chunk then removes the record separator to produce the expected response.
+		// If a chunk length is less than the record separator length, an IndexOutOfBounds exception is thrown.
+		// This test verifies an IndexOutOfBounds exception is caught and handled.
+
+		networkService = new EdgeNetworkService(mockNetworkService);
+		final String recordSeparator = "<RS>";
+		final String lineFeed = "<LF>";
+		final String responseStr =
+			"<RS>{\"some\":\"thing1\\n\"}<LF>" +
+			"<RS>{\"some\":\"thing2\\n\"}<LF>" +
+			"<RS>{\"some\":\"thing3\\n\"}<LF>."; // note the trailing '.' character
+
+		ArrayList<String> expectedResponses = new ArrayList<>();
+		expectedResponses.add("{\"some\":\"thing1\\n\"}");
+		expectedResponses.add("{\"some\":\"thing2\\n\"}");
+		expectedResponses.add("{\"some\":\"thing3\\n\"}");
+
+		// test
+		StreamingResponseResult result = DoStreamingResponse(recordSeparator, lineFeed, responseStr);
+
+		// verify
+		assertEquals(expectedResponses, result.onResponseCallback);
+	}
+
+	@Test
 	public void testHandleStreamingResponse_SingleStreamingResponse() {
 		// setup
 		networkService = new EdgeNetworkService(mockNetworkService);

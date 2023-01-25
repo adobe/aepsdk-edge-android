@@ -546,6 +546,26 @@ public class EdgeHitProcessorTests {
 	}
 
 	@Test
+	public void testProcessHit_experienceEvent_noEdgeConfigId_doesNotSendNetworkRequest_returnsTrue() {
+		// Tests that when a good hit is processed that a network request is made and the request returns 200
+
+		// setup
+		EdgeDataEntity entity = new EdgeDataEntity(experienceEvent, null, identityMap);
+
+		// test
+		assertProcessHit(entity, false, true);
+	}
+
+	@Test
+	public void testProcessHit_consentUpdateEvent_noEdgeConfigId_doesNotSendNetworkRequest_returnsTrue() {
+		// setup
+		EdgeDataEntity entity = new EdgeDataEntity(consentEvent, null, identityMap);
+
+		// test
+		assertProcessHit(entity, false, true);
+	}
+
+	@Test
 	public void testProcessHit_assuranceEnabled_sendsRequestWithAssuranceHeader() {
 		// setup
 		assuranceSharedState =

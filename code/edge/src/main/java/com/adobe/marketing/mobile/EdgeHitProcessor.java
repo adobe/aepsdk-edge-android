@@ -86,104 +86,25 @@ class EdgeHitProcessor implements HitProcessing {
 		RequestBuilder request = new RequestBuilder(namedCollection);
 		request.addXdmPayload(entity.getIdentityMap());
 
-		final Map<String, String> requestHeaders = getRequestHeaders();
-
 		// Enable response streaming for all events
 		request.enableResponseStreaming(
 			EdgeConstants.Defaults.REQUEST_CONFIG_RECORD_SEPARATOR,
 			EdgeConstants.Defaults.REQUEST_CONFIG_LINE_FEED
 		);
 
-		final String locationHint = stateCallback != null ? stateCallback.getLocationHint() : null;
-
+		boolean hitCompleteResult = true;
 		if (EventUtils.isExperienceEvent(entity.getEvent())) {
-			try {
-				if (stateCallback != null) {
-					// Add Implementation Details to request (global) level
-					request.addXdmPayload(stateCallback.getImplementationDetails());
-				}
-
-				final List<Event> listOfEvents = new ArrayList<>();
-				listOfEvents.add(entity.getEvent());
-				final JSONObject requestPayload = request.getPayloadWithExperienceEvents(listOfEvents);
-
-				if (requestPayload != null) {
-					Map<String, Object> edgeConfig = entity.getConfiguration();
-					String edgeConfigId = (String) edgeConfig.get(
-						EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID
-					);
-					String requestEnvironment = (String) edgeConfig.get(
-						EdgeConstants.SharedState.Configuration.EDGE_REQUEST_ENVIRONMENT
-					);
-					String requestDomain = (String) edgeConfig.get(EdgeConstants.SharedState.Configuration.EDGE_DOMAIN);
-					final EdgeHit edgeHit = new EdgeHit(
-						edgeConfigId,
-						requestPayload,
-						EdgeNetworkService.RequestType.INTERACT,
-						new EdgeEndpoint(requestEnvironment, requestDomain, locationHint)
-					);
-
-					// NOTE: the order of these events need to be maintained as they were sent in the network request
-					// otherwise the response callback cannot be matched
-					networkResponseHandler.addWaitingEvents(edgeHit.getRequestId(), listOfEvents);
-					processingResult.complete(
-						sendNetworkRequest(dataEntity.getUniqueIdentifier(), edgeHit, requestHeaders)
-					);
-					return;
-				} else {
-					Log.debug(
-						LOG_TAG,
-						LOG_SOURCE,
-						"Failed to build the request payload, dropping current event (%s).",
-						entity.getEvent().getUniqueIdentifier()
-					);
-				}
-			} catch (Exception e) {
-				Log.warning(
-					LOG_TAG,
-					LOG_SOURCE,
-					"Failed to parse JSON requestPayload for event id (%s), skipping.",
-					entity.getEvent().getUniqueIdentifier()
-				);
-			}
+			hitCompleteResult = processExperienceEventHit(dataEntity.getUniqueIdentifier(), entity, request);
 		} else if (EventUtils.isUpdateConsentEvent(entity.getEvent())) {
-			// Build and send the consent network request to Experience Edge
-			final JSONObject consentPayload = request.getConsentPayload(entity.getEvent());
-
-			if (consentPayload != null) {
-				Map<String, Object> edgeConfig = entity.getConfiguration();
-				String edgeConfigId = (String) edgeConfig.get(EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID);
-				String requestEnvironment = (String) edgeConfig.get(
-					EdgeConstants.SharedState.Configuration.EDGE_REQUEST_ENVIRONMENT
-				);
-				String requestDomain = (String) edgeConfig.get(EdgeConstants.SharedState.Configuration.EDGE_DOMAIN);
-				final EdgeHit edgeHit = new EdgeHit(
-					edgeConfigId,
-					consentPayload,
-					EdgeNetworkService.RequestType.CONSENT,
-					new EdgeEndpoint(requestEnvironment, requestDomain, locationHint)
-				);
-
-				networkResponseHandler.addWaitingEvent(edgeHit.getRequestId(), entity.getEvent());
-				processingResult.complete(
-					sendNetworkRequest(dataEntity.getUniqueIdentifier(), edgeHit, requestHeaders)
-				);
-				return;
-			} else {
-				Log.debug(
-					LOG_TAG,
-					LOG_SOURCE,
-					"Failed to build the consent payload, dropping current event (%s).",
-					entity.getEvent().getUniqueIdentifier()
-				);
-			}
+			hitCompleteResult = processUpdateConsentEventHit(dataEntity.getUniqueIdentifier(), entity, request);
 		} else if (EventUtils.isResetComplete(entity.getEvent())) {
 			// clear state store
 			final StoreResponsePayloadManager payloadManager = new StoreResponsePayloadManager(namedCollection);
 			payloadManager.deleteAllStorePayloads();
+			hitCompleteResult = true; // Request complete, don't retry hit
 		}
 
-		processingResult.complete(true); // Request complete, don't retry hit
+		processingResult.complete(hitCompleteResult);
 	}
 
 	/**
@@ -274,6 +195,159 @@ class EdgeHitProcessor implements HitProcessing {
 
 			return false; // Hit failed to send, retry after interval
 		}
+	}
+
+	/**
+	 * Process and send an ExperienceEvent network request.
+	 *
+	 * @param entityId the {@link DataEntity} unique identifier
+	 * @param entity the {@link EdgeDataEntity} which encapsulates the request data
+	 * @param request a {@link RequestBuilder} instance
+	 * @return true if the request processing is complete for this hit or false if processing is
+	 * not complete and this hit must be retired.
+	 */
+	private boolean processExperienceEventHit(
+		@NonNull final String entityId,
+		@NonNull final EdgeDataEntity entity,
+		@NonNull final RequestBuilder request
+	) {
+		if (stateCallback != null) {
+			// Add Implementation Details to request (global) level
+			request.addXdmPayload(stateCallback.getImplementationDetails());
+		}
+
+		final List<Event> listOfEvents = new ArrayList<>();
+		listOfEvents.add(entity.getEvent());
+		final JSONObject requestPayload = request.getPayloadWithExperienceEvents(listOfEvents);
+
+		if (requestPayload == null) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Failed to build the request payload, dropping current event (%s).",
+				entity.getEvent().getUniqueIdentifier()
+			);
+
+			return true; // Request complete, don't retry hit
+		}
+
+		Map<String, Object> edgeConfig = entity.getConfiguration();
+
+		String edgeConfigId = DataReader.optString(
+			edgeConfig,
+			EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID,
+			null
+		);
+		if (StringUtils.isNullOrEmpty(edgeConfigId)) {
+			// The Edge configuration ID value should get validated when creating the Hit,
+			// so we shouldn't get here in production.
+			Log.debug(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Cannot process Experience Event hit as the Edge Network configuration ID is null or empty, dropping current event (%s).",
+				entity.getEvent().getUniqueIdentifier()
+			);
+			return true; // Request complete, don't retry hit
+		}
+
+		final EdgeEndpoint edgeEndpoint = getEdgeEndpoint(edgeConfig);
+
+		final EdgeHit edgeHit = new EdgeHit(
+			edgeConfigId,
+			requestPayload,
+			EdgeNetworkService.RequestType.INTERACT,
+			edgeEndpoint
+		);
+
+		// NOTE: the order of these events need to be maintained as they were sent in the network request
+		// otherwise the response callback cannot be matched
+		networkResponseHandler.addWaitingEvents(edgeHit.getRequestId(), listOfEvents);
+
+		final Map<String, String> requestHeaders = getRequestHeaders();
+		return sendNetworkRequest(entityId, edgeHit, requestHeaders);
+	}
+
+	/**
+	 * Process and send an Update Consent network request.
+	 *
+	 * @param entityId the {@link DataEntity} unique identifier
+	 * @param entity the {@link EdgeDataEntity} which encapsulates the request data
+	 * @param request a {@link RequestBuilder} instance
+	 * @return true if the request processing is complete for this hit or false if processing is
+	 * not complete and this hit must be retired.
+	 */
+	private boolean processUpdateConsentEventHit(
+		@NonNull final String entityId,
+		@NonNull final EdgeDataEntity entity,
+		@NonNull final RequestBuilder request
+	) {
+		// Build and send the consent network request to Experience Edge
+		final JSONObject consentPayload = request.getConsentPayload(entity.getEvent());
+
+		if (consentPayload == null) {
+			Log.debug(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Failed to build the consent payload, dropping current event (%s).",
+				entity.getEvent().getUniqueIdentifier()
+			);
+
+			return true; // Request complete, don't retry hit
+		}
+
+		Map<String, Object> edgeConfig = entity.getConfiguration();
+		String edgeConfigId = DataReader.optString(
+			edgeConfig,
+			EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID,
+			null
+		);
+		if (StringUtils.isNullOrEmpty(edgeConfigId)) {
+			// The Edge configuration ID value should get validated when creating the Hit,
+			// so we shouldn't get here in production.
+			Log.debug(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Cannot process Update Consent hit as the Edge Network configuration ID is null or empty, dropping current event (%s).",
+				entity.getEvent().getUniqueIdentifier()
+			);
+			return true; // Request complete, don't retry hit
+		}
+
+		final EdgeEndpoint edgeEndpoint = getEdgeEndpoint(edgeConfig);
+
+		final EdgeHit edgeHit = new EdgeHit(
+			edgeConfigId,
+			consentPayload,
+			EdgeNetworkService.RequestType.CONSENT,
+			edgeEndpoint
+		);
+
+		networkResponseHandler.addWaitingEvent(edgeHit.getRequestId(), entity.getEvent());
+		final Map<String, String> requestHeaders = getRequestHeaders();
+		return sendNetworkRequest(entityId, edgeHit, requestHeaders);
+	}
+
+	/**
+	 * Creates a new instance of {@link EdgeEndpoint} using the values provided in {@code edgeConfiguration}.
+	 * @param edgeConfiguration the current Edge configuration
+	 * @return a new {@code EdgeEndpoint} instance
+	 */
+	private EdgeEndpoint getEdgeEndpoint(final Map<String, Object> edgeConfiguration) {
+		// Use null fallback value, which defaults to Prod environment when building EdgeEndpoint
+		String requestEnvironment = DataReader.optString(
+			edgeConfiguration,
+			EdgeConstants.SharedState.Configuration.EDGE_REQUEST_ENVIRONMENT,
+			null
+		);
+		// Use null fallback value, which defaults to default request domain when building EdgeEndpoint
+		String requestDomain = DataReader.optString(
+			edgeConfiguration,
+			EdgeConstants.SharedState.Configuration.EDGE_DOMAIN,
+			null
+		);
+
+		final String locationHint = stateCallback != null ? stateCallback.getLocationHint() : null;
+		return new EdgeEndpoint(requestEnvironment, requestDomain, locationHint);
 	}
 
 	/**
