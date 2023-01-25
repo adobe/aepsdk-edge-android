@@ -20,6 +20,7 @@ import static com.adobe.marketing.mobile.EdgeJson.Event.ImplementationDetails.VA
 import static com.adobe.marketing.mobile.EdgeJson.Event.ImplementationDetails.VERSION;
 
 import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.MapUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,7 +39,7 @@ final class ImplementationDetails {
 	 * @return a map conforming to the XDM Implementation Detail data type, or null if no implementation details exist
 	 */
 	static Map<String, Object> fromEventHubState(final Map<String, Object> eventHubState) {
-		if (Utils.isNullOrEmpty(eventHubState)) {
+		if (MapUtils.isNullOrEmpty(eventHubState)) {
 			return null;
 		}
 

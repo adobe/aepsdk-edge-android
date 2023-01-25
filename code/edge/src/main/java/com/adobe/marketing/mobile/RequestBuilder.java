@@ -19,6 +19,7 @@ import com.adobe.marketing.mobile.util.CloneFailedException;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.DataReaderException;
 import com.adobe.marketing.mobile.util.EventDataUtils;
+import com.adobe.marketing.mobile.util.MapUtils;
 import com.adobe.marketing.mobile.util.TimeUtils;
 import java.util.ArrayList;
 import java.util.Date;
@@ -74,7 +75,7 @@ class RequestBuilder {
 	 * @param xdmPayload an XDM payload to be attached to the request
 	 */
 	void addXdmPayload(final Map<String, Object> xdmPayload) {
-		if (Utils.isNullOrEmpty(xdmPayload)) {
+		if (MapUtils.isNullOrEmpty(xdmPayload)) {
 			return;
 		}
 
@@ -117,7 +118,7 @@ class RequestBuilder {
 	 * @return the consent update payload in {@link JSONObject} format or null if the consent payload is empty
 	 */
 	JSONObject getConsentPayload(final Event event) {
-		if (event == null || Utils.isNullOrEmpty(event.getEventData())) {
+		if (event == null || MapUtils.isNullOrEmpty(event.getEventData())) {
 			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -137,7 +138,7 @@ class RequestBuilder {
 			EdgeConstants.EventDataKey.CONSENTS,
 			null
 		);
-		if (Utils.isNullOrEmpty(consentMap)) {
+		if (MapUtils.isNullOrEmpty(consentMap)) {
 			Log.debug(LOG_TAG, LOG_SOURCE, "Failed to read consents from event data, not a valid map");
 			return null;
 		}
@@ -156,7 +157,7 @@ class RequestBuilder {
 			EdgeConstants.EventDataKey.IDENTITY_MAP,
 			null
 		);
-		if (Utils.isNullOrEmpty(identityMap)) {
+		if (MapUtils.isNullOrEmpty(identityMap)) {
 			Log.debug(LOG_TAG, LOG_SOURCE, "Failed to read identityMap from request payload, not a map");
 		} else {
 			consents.setIdentityMap(identityMap);
@@ -200,7 +201,7 @@ class RequestBuilder {
 		for (Event e : events) {
 			try {
 				Map<String, Object> data = EventDataUtils.clone(e.getEventData());
-				if (!Utils.isNullOrEmpty(data)) {
+				if (!MapUtils.isNullOrEmpty(data)) {
 					setDatasetIdToExperienceEvent(data);
 					setTimestampToExperienceEvent(data, e);
 					setEventIdToExperienceEvent(data, e);

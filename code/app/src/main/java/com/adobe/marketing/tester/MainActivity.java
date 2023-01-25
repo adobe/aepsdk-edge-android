@@ -11,6 +11,8 @@
 
 package com.adobe.marketing.tester;
 
+import static com.adobe.marketing.tester.TestApplication.LOG_TAG;
+
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -49,7 +51,6 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
 
-	private static final String LOG_TAG = "TestApp";
 	private static final String LOG_SOURCE = "MainActivity";
 	private boolean hasSpinnerBooted = false;
 

@@ -412,6 +412,17 @@ class EdgeNetworkService {
 
 		while (scanner.hasNext()) {
 			final String jsonResult = scanner.next();
+			if (jsonResult.length() - trimLength < 0) {
+				Log.debug(
+					LOG_TAG,
+					LOG_SOURCE,
+					"Unexpected network response chunk is shorter than record separator '%s'. Ignoring response '%s'.",
+					recordSeparator,
+					jsonResult
+				);
+				continue;
+			}
+
 			responseCallback.onResponse(jsonResult.substring(trimLength));
 		}
 	}

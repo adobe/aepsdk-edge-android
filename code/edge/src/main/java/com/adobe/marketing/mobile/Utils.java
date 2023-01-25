@@ -17,7 +17,6 @@ import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.util.CloneFailedException;
 import com.adobe.marketing.mobile.util.EventDataUtils;
 import com.adobe.marketing.mobile.util.JSONUtils;
-import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,53 +29,6 @@ final class Utils {
 	private static final String LOG_SOURCE = "Utils";
 
 	private Utils() {}
-
-	static boolean isNullOrEmpty(final Map<String, Object> map) {
-		return map == null || map.isEmpty();
-	}
-
-	static boolean isNullOrEmpty(final JSONArray jsonArray) {
-		return jsonArray == null || jsonArray.length() == 0;
-	}
-
-	static boolean isNullOrEmpty(final JSONObject jsonObject) {
-		return jsonObject == null || jsonObject.length() == 0;
-	}
-
-	/* Helpers for manipulating Maps */
-	/**
-	 * Adds {@code key}/{@code values} to {@code map} if {@code values} is not null or an
-	 * empty collection.
-	 *
-	 * @param map collection to put {@code values} mapped to {@code key} if {@code values} is
-	 *            non-null and contains at least one entry
-	 * @param key key used to map {@code values} in {@code map}
-	 * @param values a map to add to {@code map} if not null or empty
-	 */
-	static void putIfNotEmpty(final Map<String, Object> map, final String key, final Map<String, Object> values) {
-		boolean addValues = map != null && key != null && !isNullOrEmpty(values);
-
-		if (addValues) {
-			map.put(key, values);
-		}
-	}
-
-	/**
-	 * Adds {@code key}/{@code value} to {@code map} if {@code value} is not null or an
-	 * empty collection.
-	 *
-	 * @param map collection to put {@code value} mapped to {@code key} if {@code value} is
-	 *            non-null and contains at least one entry
-	 * @param key key used to map {@code value} in {@code map}
-	 * @param value a String to add to {@code map} if not null or empty
-	 */
-	public static void putIfNotEmpty(final Map<String, Object> map, final String key, final String value) {
-		boolean addValues = map != null && key != null && !StringUtils.isNullOrEmpty(value);
-
-		if (addValues) {
-			map.put(key, value);
-		}
-	}
 
 	/* JSON - Map conversion helpers */
 	static List<Map<String, Object>> toListOfMaps(final JSONArray jsonArray) {
