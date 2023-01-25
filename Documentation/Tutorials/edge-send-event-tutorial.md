@@ -26,7 +26,7 @@ This hands-on tutorial provides end-to-end instructions on how to implement the 
 <img src="../Assets/edge-send-event-tutorial/overview-graph.png" alt="Going from Assurance to Data Collection" width="1100"/>
 
 ### Environment
-- Android Studio version which supports Gradle plugin 7.2 and a working Android simulator
+- Android Studio version which supports Gradle plugin 7.2 and a working Android simulator.
 
 ## Adobe Experience Platform setup
 Before any app changes, some configuration items on the Adobe Experience Platform (AEP) side need to be set up. The end goal of this section is to create a mobile property that controls the configuration settings for the various AEP extensions used in this tutorial.
