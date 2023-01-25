@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-Refer to the [Getting Started Guide](getting-started.md)
+Refer to the [Getting Started Guide](getting-started.md).
 
 ## API reference
 
@@ -69,6 +69,9 @@ Edge.getLocationHint(new AdobeCallbackWithError<String>() {
 ### registerExtension
 
 Registers the Edge Network extension with the Mobile Core extension.
+
+> **Warning**  
+> Deprecated as of 2.0.0. Use the [MobileCore.registerExtensions API](https://developer.adobe.com/client-sdks/documentation/mobile-core/api-reference) instead.
 
 #### Java
 
