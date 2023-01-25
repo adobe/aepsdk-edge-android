@@ -412,18 +412,18 @@ class EdgeNetworkService {
 
 		while (scanner.hasNext()) {
 			final String jsonResult = scanner.next();
-			try {
-				responseCallback.onResponse(jsonResult.substring(trimLength));
-			} catch (StringIndexOutOfBoundsException e) {
-				Log.warning(
+			if (jsonResult.length() - trimLength < 0) {
+				Log.debug(
 					LOG_TAG,
 					LOG_SOURCE,
-					"Failed to trim record separator with length %d from network response '%s': %s",
-					trimLength,
-					jsonResult,
-					e.getLocalizedMessage()
+					"Unexpected network response chunk is shorter than record separator '%s'. Ignoring response '%s'.",
+					recordSeparator,
+					jsonResult
 				);
+				continue;
 			}
+
+			responseCallback.onResponse(jsonResult.substring(trimLength));
 		}
 	}
 
