@@ -341,9 +341,10 @@ To:
 //* Edge Tutorial - code section (1/1)
 ```
 
-With the block uncommented, you should see a blue ribbon appear at the top of the code view window, with text like: "Gradle files have changed since last project sync. A project sync may be necessary for the IDE to work properly."
+With the block uncommented, you should see a ribbon with a prompt appear at the top of the code view window, with text similar to: "Gradle files have changed since last project sync. A project sync may be necessary for the IDE to work properly."
 
 1. Select **Sync Now**.
+   * Alternatively, use **File** -> **Sync Project with Gradle Files** to achieve the same effect.
 
 Gradle will use the configuration settings we just activated to install all of the Edge extensions we want for our tutorial app, and allow us to use their features within the app's code.
 
