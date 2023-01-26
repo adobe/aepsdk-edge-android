@@ -50,7 +50,7 @@ Configure a new Assurance session by setting the Base URL to `testapp://main` an
 $ adb shell am start -W -a  android.intent.action.VIEW -d "testapp://main?adb_validation_sessionid=ADD_YOUR_SESSION_ID_HERE" com.adobe.marketing.edgetestapp
 ```
 
-Note: replace ADD_YOUR_SESSION_ID_HERE with your Assurance session identifier.
+Note: replace `ADD_YOUR_SESSION_ID_HERE` with your actual Assurance session identifier.
 
 Once the connection is established and the events list starts getting populated, you can filter the Edge extension events. See the full list of available events [here](https://developer.adobe.com/client-sdks/documentation/edge-network/validation/).
 
