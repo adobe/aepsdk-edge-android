@@ -3,15 +3,15 @@
 
 ## About this project
 
-The Adobe Experience Platform Edge Network mobile extension allows you to send data to the Adobe  Edge Network from a mobile application. This extension allows you to implement Adobe Experience Cloud capabilities in a more robust way, serve multiple Adobe solutions though one network call, and simultaneously forward this information to the Adobe Experience Platform.
+The Adobe Experience Platform Edge Network mobile extension allows you to send data to the Adobe Edge Network from a mobile application. This extension allows you to implement Adobe Experience Cloud capabilities in a more robust way, serve multiple Adobe solutions though one network call, and simultaneously forward this information to the Adobe Experience Platform.
 
-The AEP Edge Network mobile extension is an extension for the Adobe Experience Platform SDK and requires the `AEPCore` and `AEPServices` extensions for event handling, as well as the `AEPEdgeIdentity` extension for handling identities, such as `ECID`.
+The Edge Network mobile extension is an extension for the Adobe Experience Platform SDK and requires the Mobile Core and Services extensions for event handling, as well as the Identity for Edge Network extension for handling identities, such as `ECID`.
 
 ## Documentation
 
-To learn more about this extension, see the [Adobe Experience Platform Edge Network](https://developer.adobe.com/client-sdks/documentation/edge-network/) documentation.
+Information about Adobe Experience Platform Edge Network's implementation, API usage, and architecture can be found in the [Documentation](Documentation) directory.
 
-Additional information about SDK usage and architecture can be found in the [Documentation](Documentation) directory.
+Learn more about Edge Network and all other Mobile SDK extensions in the official [Adobe Experience Platform Mobile SDK documentation](https://developer.adobe.com/client-sdks/documentation/edge-network/).
 
 ## Getting started
 ### Installation
@@ -19,9 +19,9 @@ Additional information about SDK usage and architecture can be found in the [Doc
 Integrate the Edge Network extension into your app by including the following in your gradle file's `dependencies`:
 
 ```gradle
-implementation 'com.adobe.marketing.mobile:core:2.0.0'
-implementation 'com.adobe.marketing.mobile:edge:2.0.0'
-implementation 'com.adobe.marketing.mobile:edgeidentity:2.0.0'
+implementation 'com.adobe.marketing.mobile:core:2.+'
+implementation 'com.adobe.marketing.mobile:edge:2.+'
+implementation 'com.adobe.marketing.mobile:edgeidentity:2.+'
 ```
 > **Note**  
 > See the [current version list](https://developer.adobe.com/client-sdks/documentation/current-sdk-versions) for the latest extension versions to use.
@@ -58,11 +58,11 @@ Once the connection is established and the events list starts getting populated,
 
 | Project                                                                              | Description                                                  |
 | ------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| [AEP Core Extensions](https://github.com/adobe/aepsdk-core-android)                       | The AEPCore and AEPServices represent the foundation of the Adobe Experience Platform SDK. |
-| [AEP onsent Extension](https://github.com/adobe/aepsdk-edgeconsent-android)              | The AEPConsent extension enables consent preferences collection from your mobile app when using the AEP Mobile SDK and the Edge Network extension. |
-| [AEP Lifecycle Extension](https://github.com/adobe/aepsdk-core-android)                   | The AEPLifecycle extension helps collect application Lifecycle metrics and any additional context data provided by the application developer when using AEP SDK and the AEP Edge Network extension. |
-| [AEP Edge Identity Extension](https://github.com/adobe/aepsdk-edgeidentity-android)        | The AEPEdgeIdentity extension enables handling of user identity data from a mobile app when using AEP SDK and the AEP Edge Network extension. |
-| [AEP SDK Sample App for Android](https://github.com/adobe/aepsdk-sample-app-android) | Contains the Android sample app for the AEP SDK.                 |
+| [Core extensions](https://github.com/adobe/aepsdk-core-android)                       | The Mobile Core represents the foundation of Adobe Experience Platform Mobile SDK. |
+| [Consent for Edge Network extension](https://github.com/adobe/aepsdk-edgeconsent-android)              | The Consent for Edge Network extension enables consent preferences collection from your mobile app when using Adobe Experience Platform Mobile SDK and the Edge Network extension. |
+| [Lifecycle for Edge Network extension](https://github.com/adobe/aepsdk-core-android)                   | The Lifecycle for Edge Network extension helps collect application Lifecycle metrics and any additional context data provided by the application developer when using Adobe Experience Platform Mobile SDK and the Edge Network extension. |
+| [Identity for Edge Network extension](https://github.com/adobe/aepsdk-edgeidentity-android)        | The Identity for Edge Network extension enables handling of user identity data from a mobile app when using Adobe Experience Platform Mobile SDK and the Edge Network extension. |
+| [Adobe Experience Platform Android sample app](https://github.com/adobe/aepsdk-sample-app-android) | Contains a fully implemented Android sample app using the Adobe Experience Platform Mobile SDK.                 |
 
 ## Contributing
 

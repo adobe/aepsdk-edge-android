@@ -71,7 +71,7 @@ Edge.getLocationHint(new AdobeCallbackWithError<String>() {
 Registers the Edge Network extension with the Mobile Core extension.
 
 > **Warning**  
-> Deprecated as of 2.0.0. Use the [MobileCore.registerExtensions API](https://developer.adobe.com/client-sdks/documentation/mobile-core/api-reference) instead.
+> Deprecated as of 2.0.0. Use the [MobileCore.registerExtensions API](https://github.com/adobe/aepsdk-core-android) instead.
 
 #### Java
 
