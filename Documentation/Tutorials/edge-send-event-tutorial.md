@@ -365,7 +365,7 @@ Make sure to uncomment all sections within each file (the total will tell you ho
 ### Edge extension details <!-- omit in toc -->
 For details on the various Edge extensions used, see the [table of related projects](../../README.md#related-projects).
 
-Notice that the Lifecycle APIs rely on the developer to place them in the proper app lifecycle functions (as seen in `MainActivity.java` and `AssuranceActivity.java`); that is, there are built-in functions that are called by the operating system that give the app notices that it is about to enter an active state, or go into a background state, etc. A proper Lifecycle extension implementation requires that the developer places the API calls in the required Android lifecycle functions. See the full guide on [implementing Lifecycle](https://developer.adobe.com/client-sdks/documentation/mobile-core/lifecycle/).
+Notice that the Lifecycle APIs rely on the developer to place them in the proper app lifecycle functions (as seen in `MainActivity.java` and `AssuranceActivity.java`); that is, there are built-in functions that are called by the operating system that give the app notices that it is about to enter an active state, or go into a background state, etc. A proper Lifecycle extension implementation requires that the developer places the API calls in the required Android lifecycle functions.
 
 ### 4. Run app  
 In Android Studio: 
