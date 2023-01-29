@@ -1,0 +1,70 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: "com.diffplug.spotless"
+
+spotless {
+    kotlin {
+        target "src/*/java/**/*.kt"
+        ktlint('0.41.0')
+        licenseHeaderFile "../../config/formatter/adobe.header.txt"
+    }
+}
+
+android {
+    compileSdk rootProject.ext.compileSdkVersion
+
+    defaultConfig {
+        applicationId "com.adobe.marketing.edgetestappkt"
+        minSdk 21
+        targetSdk rootProject.ext.targetSdkVersion
+        versionCode rootProject.ext.versionCode
+        versionName "1.0"
+        multiDexEnabled = true
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+}
+
+dependencies {
+    implementation project(':edge')
+
+    // TODO - Uncomment next lines when 2.0 is published to Maven
+    //implementation 'com.adobe.marketing.mobile:core:2.+'
+    //implementation 'com.adobe.marketing.mobile:edgeconsent:2.+'
+    //implementation 'com.adobe.marketing.mobile:edgeidentity:2.+'
+    //implementation 'com.adobe.marketing.mobile:assurance:2.+'
+    implementation 'com.adobe.marketing.mobile:core:2.0.0-SNAPSHOT'
+    implementation ('com.adobe.marketing.mobile:edgeidentity:2.0.0-SNAPSHOT') {
+        transitive = false
+    }
+    implementation ('com.adobe.marketing.mobile:edgeconsent:2.0.0-SNAPSHOT') {
+        transitive = false
+    }
+    implementation ('com.adobe.marketing.mobile:assurance:2.0.0-SNAPSHOT') {
+        transitive = false
+    }
+
+    implementation 'androidx.core:core-ktx:1.9.0'
+    implementation 'androidx.compose.ui:ui:1.3.0'
+    implementation 'androidx.compose.material:material:1.3.1'
+    implementation 'androidx.compose.ui:ui-tooling-preview:1.3.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.5.1'
+    implementation 'androidx.activity:activity-compose:1.6.1'
+    implementation 'androidx.navigation:navigation-compose:2.5.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
+    implementation 'androidx.appcompat:appcompat:1.6.0'
+    implementation 'androidx.navigation:navigation-fragment:2.5.3'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+    implementation 'com.google.code.gson:gson:2.8.9'
+}

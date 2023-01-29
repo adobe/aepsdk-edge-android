@@ -1,0 +1,26 @@
+
+<resources>
+    <string name="app_name">Edge Test App kt</string>
+
+<!--    Edge view -->
+    <string name="no_data">No data available</string>
+    <string name="label_request_environment">Request Environment</string>
+    <string name="btn_request_env_prod">Prod</string>
+    <string name="btn_request_env_pre_prod">Pre Prod</string>
+    <string name="btn_request_env_int">INT</string>
+    <string name="btn_get_hint">Get Location Hint</string>
+    <string name="btn_send_event">Send Event</string>
+    <string name="btn_reset_ids">Reset IDs</string>
+    <string name="btn_remove_identity">Remove</string>
+    <string name="btn_get_identity">Get Identity</string>
+    <string name="btn_get_consent">Get Consent</string>
+    <string name="label_set_location_hint">SET LOCATION HINT:</string>
+    <string name="tv_collect_consent">Collect Consent</string>
+    <string name="tv_edge_identity">Edge Identity</string>
+    <string name="tv_mobile_core">Mobile Core</string>
+
+<!--    Assurance -->
+    <string name="btn_assurance_connect">Connect</string>
+    <string name="et_assurance_session_url_hint">Paste your Assurance session ID here</string>
+    <string name="btn_assurance_settings_menu">Connect to Assurance</string>
+</resources>
