@@ -26,7 +26,7 @@ import com.adobe.marketing.mobile.edge.identity.IdentityItem
 import com.adobe.marketing.mobile.edge.identity.IdentityMap
 import com.adobe.marketing.mobile.services.Log
 import com.adobe.marketing.tester.app.data.LocationHint
-import com.adobe.marketing.tester.app.xdm.*
+import com.adobe.marketing.tester.xdm.commerce.*
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 

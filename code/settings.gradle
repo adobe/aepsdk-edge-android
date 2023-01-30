@@ -25,4 +25,5 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "edge-sdk"
-include ':app', ':app-kotlin', ':edge'
+include ':edge'
+include ':app', ':app-kotlin', ':app-util-xdm'

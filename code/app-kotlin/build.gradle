@@ -38,6 +38,7 @@ android {
 
 dependencies {
     implementation project(':edge')
+    implementation project(':app-util-xdm')
 
     // TODO - Uncomment next lines when 2.0 is published to Maven
     //implementation 'com.adobe.marketing.mobile:core:2.+'
