@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Adobe. All rights reserved.
+ * Copyright 2023 Adobe. All rights reserved.
  * This file is licensed to you under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License. You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -9,57 +9,45 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-plugins {
-    id 'com.android.application'
-    id 'com.diffplug.spotless'
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: "com.diffplug.spotless"
+
+spotless {
+    kotlin {
+        target "src/*/java/**/*.kt"
+        ktlint('0.41.0')
+        licenseHeaderFile "../../config/formatter/adobe.header.txt"
+    }
 }
 
 android {
-    namespace 'com.adobe.marketing.tester'
-
     compileSdk rootProject.ext.compileSdkVersion
 
     defaultConfig {
-        applicationId "com.adobe.marketing.edgetestapp"
-        minSdk rootProject.ext.minSdkVersion
+        applicationId "com.adobe.marketing.edgetestappkt"
+        minSdk 21
         targetSdk rootProject.ext.targetSdkVersion
         versionCode rootProject.ext.versionCode
-        versionName project.property('moduleVersion') as String ?: "1.0.0 (Default)"
-        archivesBaseName = "edge-test-app-$versionName"
+        versionName "1.0"
+        multiDexEnabled = true
 
-        //This says that my test app only wants to use the Phone variant
-        missingDimensionStrategy 'target', 'phone'
-
-        testInstrumentationRunner rootProject.ext.testInstrumentationRunner
-
-        vectorDrawables.useSupportLibrary = true
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
-        debug {
-            debuggable true
-        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-}
 
-spotless {
-    java {
-        toggleOffOn("format:off", "format:on")
-        target "src/*/java/**/*.java"
-        removeUnusedImports()
-        prettier(['prettier': '2.7.1', 'prettier-plugin-java': '1.6.2'])
-                .config(['parser': 'java', 'tabWidth': 4, 'useTabs': true, 'printWidth': 120])
-        endWithNewline()
-        licenseHeaderFile "../../config/formatter/adobe.header.txt"
+    kotlinOptions {
+        jvmTarget = '1.8'
     }
 }
 
 dependencies {
-    // Add dependencies on AEP Mobile extensions
     implementation project(':edge')
     implementation project(':app-util-xdm')
 
@@ -78,12 +66,17 @@ dependencies {
     implementation ('com.adobe.marketing.mobile:assurance:2.0.0-SNAPSHOT') {
         transitive = false
     }
-    // project dependencies
-    implementation 'androidx.appcompat:appcompat:1.5.1'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'com.google.code.gson:gson:2.8.9'
-}
 
-configurations.all {
-    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+    implementation 'androidx.core:core-ktx:1.9.0'
+    implementation 'androidx.compose.ui:ui:1.3.0'
+    implementation 'androidx.compose.material:material:1.3.1'
+    implementation 'androidx.compose.ui:ui-tooling-preview:1.3.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.5.1'
+    implementation 'androidx.activity:activity-compose:1.6.1'
+    implementation 'androidx.navigation:navigation-compose:2.5.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
+    implementation 'androidx.appcompat:appcompat:1.6.0'
+    implementation 'androidx.navigation:navigation-fragment:2.5.3'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+    implementation 'com.google.code.gson:gson:2.8.9'
 }
