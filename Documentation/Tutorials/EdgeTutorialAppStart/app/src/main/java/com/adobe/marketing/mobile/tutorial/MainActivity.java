@@ -50,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
             // Enables deep linking to connect to Assurance.
             /* Edge Tutorial - code section (2/4)
             Assurance.startSession(data.toString());
-            Log.debug(LOG_TAG, LOG_SOURCE, "Deep link received: " + data.toString());
+            Log.debug(LOG_TAG, LOG_SOURCE, "Deeplink for Assurance received: " + data.toString());
             // Edge Tutorial - code section (2/4) */
         }
 
