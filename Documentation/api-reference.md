@@ -50,7 +50,7 @@ public static void getLocationHint(final AdobeCallback<String> callback)
 * _callback_ is invoked with the location hint. The location hint value may be null if the location hint expired or was not set. The callback may be invoked on a different thread. If `AdobeCallbackWithError` is provided, the default timeout is 1000ms and the `fail` method is called if the operation times out or an unexpected error occurs.
 
 ##### Example
-```swift
+```java
 Edge.getLocationHint(new AdobeCallbackWithError<String>() {
     @Override
     public void call(final String hint) {
