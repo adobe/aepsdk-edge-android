@@ -26,7 +26,7 @@ This hands-on tutorial provides end-to-end instructions on how to implement the 
 <img src="../Assets/edge-send-event-tutorial/overview-graph.png" alt="Going from Assurance to Data Collection" width="1100"/>
 
 ### Environment
-- Android Studio version which supports Gradle plugin 7.2 and a working Android simulator
+- Android Studio version which supports Gradle plugin 7.2 and a working Android simulator.
 
 ## Adobe Experience Platform setup
 Before any app changes, some configuration items on the Adobe Experience Platform (AEP) side need to be set up. The end goal of this section is to create a mobile property that controls the configuration settings for the various AEP extensions used in this tutorial.
@@ -300,7 +300,7 @@ Once the mobile property is published to the **Development** environment:
 Now that the server side configuration is complete, install the extensions in the app and enable extension functionality by making some code updates.
 
 ### 1. Get a copy of the files (tutorial app code) and initial setup
-1. Open the code repository: https://git.corp.adobe.com/dms-mobile/platform-extension
+1. Open the code repository: https://github.com/adobe/aepsdk-edge-android
 2. Select **Code** in the top right 
 3. In the window that opens, select **Download ZIP**; by default it should land in your **Downloads** folder.
    - Optionally, move the ZIP to your **Documents** folder
@@ -341,9 +341,10 @@ To:
 //* Edge Tutorial - code section (1/1)
 ```
 
-With the block uncommented, you should see a blue ribbon appear at the top of the code view window, with text like: "Gradle files have changed since last project sync. A project sync may be necessary for the IDE to work properly."
+With the block uncommented, you should see a ribbon with a prompt appear at the top of the code view window, with text similar to: "Gradle files have changed since last project sync. A project sync may be necessary for the IDE to work properly."
 
 1. Select **Sync Now**.
+   * Alternatively, use **File** -> **Sync Project with Gradle Files** to achieve the same effect.
 
 Gradle will use the configuration settings we just activated to install all of the Edge extensions we want for our tutorial app, and allow us to use their features within the app's code.
 
@@ -364,7 +365,7 @@ Make sure to uncomment all sections within each file (the total will tell you ho
 ### Edge extension details <!-- omit in toc -->
 For details on the various Edge extensions used, see the [table of related projects](../../README.md#related-projects).
 
-Notice that the Lifecycle APIs rely on the developer to place them in the proper app lifecycle functions (as seen in `MainActivity.java` and `AssuranceActivity.java`); that is, there are built-in functions that are called by the operating system that give the app notices that it is about to enter an active state, or go into a background state, etc. A proper Lifecycle extension implementation requires that the developer places the API calls in the required Android lifecycle functions. See the full guide on [implementing Lifecycle](https://aep-sdks.gitbook.io/docs/foundation-extensions/mobile-core/lifecycle).
+Notice that the Lifecycle APIs rely on the developer to place them in the proper app lifecycle functions (as seen in `MainActivity.java` and `AssuranceActivity.java`); that is, there are built-in functions that are called by the operating system that give the app notices that it is about to enter an active state, or go into a background state, etc. A proper Lifecycle extension implementation requires that the developer places the API calls in the required Android lifecycle functions.
 
 ### 4. Run app  
 In Android Studio: 

@@ -1,70 +1,53 @@
 # Adobe Experience Platform Edge Network Mobile Extension
 
+[![Maven Central](https://img.shields.io/maven-metadata/v.svg?label=edge&logo=android&logoColor=white&metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Fadobe%2Fmarketing%2Fmobile%2Fedge%2Fmaven-metadata.xml)](https://mvnrepository.com/artifact/com.adobe.marketing.mobile/edge)
 
 ## About this project
 
-The Adobe Experience Platform Edge Network mobile extension allows you to send data to the Adobe  Edge Network from a mobile application. This extension allows you to implement Adobe Experience Cloud capabilities in a more robust way, serve multiple Adobe solutions though one network call, and simultaneously forward this information to the Adobe Experience Platform.
+The Adobe Experience Platform Edge Network mobile extension allows you to send data to the Experience Platform Edge Network from a mobile application. This extension allows you to implement Adobe Experience Cloud capabilities in a more robust way, serve multiple Adobe solutions though one network call, and simultaneously forward this information to Adobe Experience Platform.
 
-The AEP Edge Network mobile extension is an extension for the [Adobe Experience Platform SDK](https://aep-sdks.gitbook.io) and requires the `AEPCore` and `AEPServices` extensions for event handling, as well as the `AEPEdgeIdentity` extension for retrieving the identities, such as ECID.
-
-To learn more about this extension, read the [Adobe Experience Platform Edge Network](https://aep-sdks.gitbook.io/docs/foundation-extensions/experience-platform-extension) documentation.
+The Edge Network mobile extension is an extension for the [Adobe Experience Platform Mobile SDK](https://developer.adobe.com/client-sdks) and requires the Mobile Core and Services extensions for event handling, as well as the Identity for Edge Network extension for handling identities, such as `ECID`.
 
 ### Installation
 
-Integrate the Edge Network extension into your app by including the following in your gradle file's `dependencies`:
-
-```gradle
-implementation 'com.adobe.marketing.mobile:edgeidentity:1.+'
-implementation 'com.adobe.marketing.mobile:edge:1.+'
-implementation 'com.adobe.marketing.mobile:core:1.+'
-```
+Integrate the Edge Network mobile extension into your app by following the [getting started guide](Documentation/getting-started.md).
 
 ### Development
 
-**Open the project**
+#### Open the project
 
 To open and run the project, open the `code/settings.gradle` file in Android Studio.
 
-**Data Collection mobile property prerequisites**
+#### Run the test application
 
-The test app needs to be configured with the following edge extensions before it can be used:
-- Mobile Core (installed by default)
-- [Edge](https://aep-sdks.gitbook.io/docs/foundation-extensions/experience-platform-extension)
-- [Edge Identity](https://aep-sdks.gitbook.io/docs/foundation-extensions/identity-for-edge-network)
-- [Edge Consent](https://aep-sdks.gitbook.io/docs/foundation-extensions/consent-for-edge-network)
-- [Assurance](https://aep-sdks.gitbook.io/docs/foundation-extensions/adobe-experience-platform-assurance)
+To configure and run the test app for this project, follow the [getting started guide for the test app](Documentation/getting-started-test-app.md).
 
-**Run test application**
+#### Code format
 
-1. In the test app, set your `ENVIRONMENT_FILE_ID` in `TestApplication.java`.
-2. Select the `app` runnable with the desired emulator and run the program.
+This project uses the code formatting tools [Spotless](https://github.com/diffplug/spotless/tree/main/plugin-gradle) with [Prettier](https://prettier.io/). Formatting is applied when the project is built from Gradle and is checked when changes are submitted to the CI build system.
 
-**Inspect the events with Assurance**
-
-Configure a new Assurance session by setting the Base URL to `testapp://main` and launch Assurance in the test app by running the following command in your terminal:
-
-```bash
-$ adb shell am start -W -a  android.intent.action.VIEW -d "testapp://main?adb_validation_sessionid=ADD_YOUR_SESSION_ID_HERE" com.adobe.marketing.edgetestapp
+Prettier requires [Node version](https://nodejs.org/en/download/releases/) 10+
+To enable the Git pre-commit hook to apply code formatting on each commit, run the following to update the project's git config `core.hooksPath`:
 ```
-
-Note: replace ADD_YOUR_SESSION_ID_HERE with your Assurance session identifier.
-
-Once the connection is established and the events list starts getting populated, you can filter the Edge extension events. See full list of available events [here](https://aep-sdks.gitbook.io/docs/foundation-extensions/experience-platform-extension/validation).
+make init
+```
 
 ## Related Projects
 
-| Project                                                                              | Description                                                  |
-| ------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| [AEPCore Extensions](https://github.com/adobe/aepsdk-core-android)                       | The AEPCore and AEPServices represent the foundation of the Adobe Experience Platform SDK. |
-| [AEPConsent Extension](https://github.com/adobe/aepsdk-edgeconsent-android)              | The AEPConsent extension enables consent preferences collection from your mobile app when using the AEP Mobile SDK and the Edge Network extension. |
-| [AEPLifecycle Extension](https://github.com/adobe/aepsdk-core-android)                   | The AEPLifecycle extension helps collect application Lifecycle metrics and any additional context data provided by the application developer when using AEP SDK and the AEP Edge Network extension. |
-| [AEPEdgeIdentity Extension](https://github.com/adobe/aepsdk-edgeidentity-android)        | The AEPEdgeIdentity extension enables handling of user identity data from a mobile app when using AEP SDK and the AEP Edge Network extension. |
-| [AEP SDK Sample App for iOS](https://github.com/adobe/aepsdk-sample-app-ios)         | Contains iOS sample apps for the AEP SDK. Apps are provided for both Objective-C and Swift implementations. |
-| [AEP SDK Sample App for Android](https://github.com/adobe/aepsdk-sample-app-android) | Contains Android sample app for the AEP SDK.                 |
+| Project                                                                                            | Description                                                  |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| [Core extensions](https://github.com/adobe/aepsdk-core-android)                                    | The Mobile Core represents the foundation of the Experience Platform Mobile SDK. |
+| [Consent for Edge Network extension](https://github.com/adobe/aepsdk-edgeconsent-android)          | The Consent for Edge Network extension enables consent preferences collection from your mobile app when using the Experience Platform Mobile SDK and the Edge Network extension. |
+| [Lifecycle for Edge Network extension](https://github.com/adobe/aepsdk-core-android)               | The Lifecycle for Edge Network extension helps collect application Lifecycle metrics and any additional context data provided by the application developer when using the Mobile SDK and the Edge Network extension. |
+| [Identity for Edge Network extension](https://github.com/adobe/aepsdk-edgeidentity-android)        | The Identity for Edge Network extension enables handling of user identity data from a mobile app when using the Experience Platform Mobile SDK and the Edge Network extension. |
+| [Adobe Experience Platform Assurance](https://github.com/adobe/aepsdk-assurance-android)           | The Assurance extension enables validation workflows for your Experience Platform Mobile SDK implementation. |
+| [Adobe Experience Platform Android sample app](https://github.com/adobe/aepsdk-sample-app-android) | Contains a fully implemented Android sample app using the Experience Platform Mobile SDK. |
 
 ## Documentation
 
-Additional documentation for usage and SDK architecture can be found under the [Documentation](Documentation) directory.
+Information about Adobe Experience Platform Edge Network's implementation, API usage, and architecture can be found in the [Documentation](Documentation) directory.
+
+Learn more about Edge Network and all other Mobile SDK extensions in the official [Adobe Experience Platform Mobile SDK documentation](https://developer.adobe.com/client-sdks/documentation/edge-network/).
 
 ## Contributing
 

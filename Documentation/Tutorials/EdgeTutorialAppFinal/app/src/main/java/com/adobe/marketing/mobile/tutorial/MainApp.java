@@ -12,25 +12,26 @@
 package com.adobe.marketing.mobile.tutorial;
 
 import android.app.Application;
-import android.util.Log;
 
 // Imports the various Edge extensions and other AEP extensions that enable sending event
 // data to the Edge Network, and power other features. The `import` statement makes it available
 // to use in the code below.
 //* Edge Tutorial - code section (1/2)
-import com.adobe.marketing.mobile.AdobeCallback;
 import com.adobe.marketing.mobile.Assurance;
 import com.adobe.marketing.mobile.Edge;
-import com.adobe.marketing.mobile.InvalidInitException;
 import com.adobe.marketing.mobile.Lifecycle;
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.edge.consent.Consent;
 import com.adobe.marketing.mobile.edge.identity.Identity;
+import com.adobe.marketing.mobile.services.Log;
+
+import java.util.Arrays;
 // Edge Tutorial - code section (1/2) */
 
 public class MainApp extends Application {
-    private static final String LOG_TAG = "Test Application";
+    public static final String LOG_TAG = "EdgeTutorialApp";
+    private static final String LOG_SOURCE = "MainApp";
 
     // TODO: Set the Environment File ID from your mobile property configured in Data Collection UI
     private final String ENVIRONMENT_FILE_ID = "";
@@ -40,7 +41,7 @@ public class MainApp extends Application {
         super.onCreate();
         //* Edge Tutorial - code section (2/2)
         // Passes the app reference to Core, which allows it to access the the app `Context` and monitor the lifecycle
-        // of the Android application. See the [API reference](https://aep-sdks.gitbook.io/docs/foundation-extensions/mobile-core/mobile-core-api-reference#setapplication-android-only).
+        // of the Android application.
         MobileCore.setApplication(this);
         // Sets the log level of Core (which handles the core functionality used by extensions like networking,
         // data conversions, etc.) to `verbose`, which provides more granular details on app logic; this can be
@@ -50,27 +51,11 @@ public class MainApp extends Application {
         // this will apply the extension settings in our app.
         MobileCore.configureWithAppID(ENVIRONMENT_FILE_ID);
 
-        // Registers the extensions with Core, getting them ready to run in the app.
-        try {
-            // Register AEP extensions
-            Assurance.registerExtension();
-            Consent.registerExtension();
-            Edge.registerExtension();
-            Identity.registerExtension();
-            Lifecycle.registerExtension();
-
-            // Once all the extensions are registered, call MobileCore.start(...) to start processing the events
-            MobileCore.start(new AdobeCallback() {
-
-                @Override
-                public void call(Object o) {
-                    Log.d(LOG_TAG, "AEP Mobile SDK is initialized");
-
-                }
-            });
-        } catch (InvalidInitException e) {
-            e.printStackTrace();
-        }
+        // Registers the Adobe extensions with Core, getting them ready to run in the app.
+        MobileCore.registerExtensions(
+                Arrays.asList(Assurance.EXTENSION, Consent.EXTENSION, Edge.EXTENSION, Identity.EXTENSION, Lifecycle.EXTENSION),
+                o -> Log.debug(LOG_TAG, LOG_SOURCE, "AEP Mobile SDK initialized.")
+        );
         // Edge Tutorial - code section (2/2) */
     }
 }
