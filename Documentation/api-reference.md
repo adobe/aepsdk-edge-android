@@ -217,8 +217,6 @@ Edge.sendEvent(experienceEvent) {
 }
 ```
 
-
-
 ------
 
 ### setLocationHint
@@ -295,38 +293,6 @@ public interface Schema {
     Map<String, Object> serializeToXdm();
 }
 ```
-#### Kotlin
-```kotlin
-/**
- * The interface that represents an Experience XDM event data schema.
- */
-interface Schema {
-  /**
-    * Returns the version of this schema as defined in the Adobe Experience Platform.
-    * @return the version of this schema
-    */
-  val schemaVersion: String?
-
-  /**
-    * Returns the identifier for this schema as defined in the Adobe Experience Platform.
-    * The identifier is a URI where this schema is defined.
-    * @return the URI identifier for this schema
-    */
-  val schemaIdentifier: String?
-
-  /**
-    * Returns the identifier for this dataset as defined in the Adobe Experience Platform.
-    * @return the dataset ID
-    */
-  val datasetIdentifier: String?
-
-  /**
-    * Serialize this `Schema` object to a map equivalent of its XDM schema.
-    * @return XDM formatted map of this `Schema` object
-    */
-  fun serializeToXdm(): Map<String?, Any?>?
-}
-```
 
 By implementing the `Property` interface, you can define complex properties for your XDM `Schema`. A complex property is defined as not being a primitive type, `String`, or `Date`.
 
@@ -339,17 +305,6 @@ public interface Property {
      * @return XDM-formatted map of this {@code Property} object.
      */
     Map<String, Object> serializeToXdm();
-}
-```
-
-#### Kotlin
-```kotlin
-interface Property {
-  /**
-    * Serialize this `Property` object to a map with the same format as its XDM schema.
-    * @return XDM-formatted map of this `Property` object.
-    */
-  fun serializeToXdm(): Map<String?, Any?>?
 }
 ```
 
@@ -378,24 +333,6 @@ public class EdgeEventHandle {
      * @return the event payload values for this {@link EdgeEventHandle} or null if not found in the {@link JSONObject} response
      */
   public List<Map<String, Object>> getPayload() {...}
-}
-```
-
-```java
-/**
- * The [EdgeEventHandle] is a response fragment from Adobe Experience Edge Service for a sent XDM Experience Event.
- * One event can receive none, one or multiple [EdgeEventHandle](s) as response.
- */
-class EdgeEventHandle {
-    /**
-     * @return the payload type or null if not found in the [JSONObject] response
-     */
-    fun getType(): String {...}
-
-    /**
-     * @return the event payload values for this [EdgeEventHandle] or null if not found in the [JSONObject] response
-     */
-    fun getPayload(): List<Map<String, Any>>? {...}
 }
 ```
 
@@ -472,8 +409,8 @@ public final class ExperienceEvent {
 
 ##### Examples
 ```java
-//Example 1
-// set freeform data to the Experience event
+// Example 1
+// Set freeform data to the Experience event
 Map<String, Object> xdmData = new HashMap<>();
 xdmData.put("eventType", "SampleXDMEvent");
 xdmData.put("sample", "data");
@@ -488,7 +425,7 @@ ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
   .build();
 ```
 ```java
-//Example 2
+// Example 2
 // Create Experience Event from XDM Schema implementations
 public class XDMSchemaExample implements com.adobe.marketing.mobile.xdm.Schema {
   private String eventType;
@@ -522,7 +459,7 @@ ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
   .build();
 ```
 ```java
-//Example 3
+// Example 3
 // Set the destination Dataset identifier to the current Experience event:
 Map<String, Object> xdmData = new HashMap<>();
 xdmData.put("eventType", "SampleXDMEvent");
