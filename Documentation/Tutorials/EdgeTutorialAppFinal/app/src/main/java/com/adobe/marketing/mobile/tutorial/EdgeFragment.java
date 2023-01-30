@@ -93,13 +93,13 @@ public class EdgeFragment extends Fragment {
                 ExperienceEvent event = new ExperienceEvent.Builder()
                         .setXdmSchema(xdmData)
                         .build();
-                Log.debug(LOG_TAG, LOG_SOURCE, "Sending event");
+                Log.debug(LOG_TAG, LOG_SOURCE, "Sending ProductAdd Edge event");
 
                 Edge.sendEvent(event, new EdgeCallback() {
 
                     @Override
                     public void onComplete(final List<EdgeEventHandle> handles) {
-                        Log.debug(LOG_TAG, LOG_SOURCE, "Edge event callback called");
+                        Log.debug(LOG_TAG, LOG_SOURCE, "Callback called for ProductAdd Edge event");
                     }
                 });
             }
@@ -137,12 +137,12 @@ public class EdgeFragment extends Fragment {
                 ExperienceEvent event = new ExperienceEvent.Builder()
                         .setXdmSchema(eventData)
                         .build();
-                Log.debug(LOG_TAG, LOG_SOURCE, "Sending event");
+                Log.debug(LOG_TAG, LOG_SOURCE, "Sending ProductView Edge event");
                 Edge.sendEvent(event, new EdgeCallback() {
 
                     @Override
                     public void onComplete(final List<EdgeEventHandle> handles) {
-                        Log.debug(LOG_TAG, LOG_SOURCE, "Edge event callback called");
+                        Log.debug(LOG_TAG, LOG_SOURCE, "Callback called for ProductAdd Edge event");
                     }
                 });
 
