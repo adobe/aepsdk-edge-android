@@ -84,7 +84,7 @@ public class MainApp extends Application {
 		MobileCore.configureWithAppID(ENVIRONMENT_FILE_ID);
 
 		MobileCore.registerExtensions(
-			Arrays.asList(Consent.EXTENSION, Edge.EXTENSION, Identity.EXTENSION),
+			Arrays.asList(Edge.EXTENSION, Identity.EXTENSION),
 			o -> Log.d("MainApp", "Adobe Experience Platform Mobile SDK was initialized.")
 		);
 	}
@@ -95,7 +95,7 @@ public class MainApp extends Application {
 ```kotlin
 class MainApp : Application() {
 
-  private var ENVIRONMENT_FILE_ID: String = ""
+  private var ENVIRONMENT_FILE_ID: String = "YOUR_APP_ENVIRONMENT_ID"
 
     override fun onCreate() {
         super.onCreate()
@@ -104,7 +104,7 @@ class MainApp : Application() {
         MobileCore.configureWithAppID(ENVIRONMENT_FILE_ID)
 
         MobileCore.registerExtensions(
-          listOf(Consent.EXTENSION, Edge.EXTENSION, Identity.EXTENSION)
+          listOf(Edge.EXTENSION, Identity.EXTENSION)
         ) {
           Log.d("MainApp", "Adobe Experience Platform Mobile SDK was initialized")
         }
