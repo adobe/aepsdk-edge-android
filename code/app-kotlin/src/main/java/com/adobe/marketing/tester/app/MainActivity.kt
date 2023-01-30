@@ -18,7 +18,11 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import com.adobe.marketing.mobile.*
+import com.adobe.marketing.mobile.Assurance
+import com.adobe.marketing.mobile.Edge
+import com.adobe.marketing.mobile.EdgeEventHandle
+import com.adobe.marketing.mobile.ExperienceEvent
+import com.adobe.marketing.mobile.MobileCore
 import com.adobe.marketing.mobile.edge.consent.Consent
 import com.adobe.marketing.mobile.edge.identity.AuthenticatedState
 import com.adobe.marketing.mobile.edge.identity.Identity
@@ -187,10 +191,10 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.btnSubmitSingleEvent).setOnClickListener {
 
-            val valuesList: MutableList<String> = ArrayList()
+            val valuesList = mutableListOf<String>()
             valuesList.add("val1")
             valuesList.add("val2")
-            val eventData: MutableMap<String, Any> = java.util.HashMap()
+            val eventData = mutableMapOf<String , Any>()
             eventData["test"] = "request"
             eventData["customText"] = "mytext"
             eventData["listExample"] = valuesList
@@ -248,7 +252,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val config: MutableMap<String, Any> = HashMap()
+        val config = mutableMapOf<String, Any>()
         config["edge.environment"] = value
         MobileCore.updateConfiguration(config)
     }
@@ -258,13 +262,13 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val collectConsents: MutableMap<String, Any> = HashMap()
+        val collectConsents = mutableMapOf<String, Any>()
         collectConsents["val"] = value
 
-        val consents: MutableMap<String, Any> = HashMap()
+        val consents = mutableMapOf<String, Any>()
         consents["collect"] = collectConsents
 
-        val updateConsents: MutableMap<String, Any> = HashMap()
+        val updateConsents = mutableMapOf<String, Any>()
         updateConsents["consents"] = consents
 
         Consent.update(updateConsents)
