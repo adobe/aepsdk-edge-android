@@ -33,7 +33,7 @@ Before any app changes, some configuration items on the Adobe Experience Platfor
 
 First, create an XDM schema (the format for data that the Edge Network uses) and configure a datastream (controls where the data will go). 
 
-### 1. Create a schema  
+### 1. Create a schema
 At a high level, a schema is a definition for the structure of your data; what properties you are expecting, what format they should be in, and checks for the actual values coming in.  
 
 1. Go to the [Adobe Experience Platform](https://experience.adobe.com/#/platform), using your Adobe ID credentials to log in if prompted.
@@ -229,11 +229,11 @@ You should see the following after all the extensions are installed:
 
 <img src="../Assets/edge-send-event-tutorial/aep-setup/mobile-property-edge-extensions.png" alt="All installed extensions" width="1100"/>  
 
-### 4. Configure a Rule to forward Lifecycle metrics to Edge Network 
+### 4. Configure a Rule to forward Lifecycle metrics to Edge Network
 
 The Lifecycle for Edge extension sends app foreground and background events, and a rule needs to be configured in order to forward these events to the Edge Network. Note that there is no need to install Lifecycle since it is already included with Mobile Core.
 
-#### Create a rule <!-- omit in toc -->
+#### Create a rule<!-- omit in toc -->
 1. On the Rules tab, select **Create New Rule**.
    - If your property already has rules, the button will be in the top right of the screen.
 
@@ -244,7 +244,7 @@ The Lifecycle for Edge extension sends app foreground and background events, and
 
 <img src="../Assets/edge-send-event-tutorial/aep-setup/mobile-property-rule-1.png" alt="All installed extensions" width="1100"/>  
 
-#### Select an event <!-- omit in toc -->
+#### Select an event<!-- omit in toc -->
 
 2. From the **Extension** dropdown list (**1**), select **Mobile Core**.
 3. From the **Event Type** dropdown list (**2**), select **Foreground**.
@@ -262,7 +262,7 @@ The Lifecycle for Edge extension sends app foreground and background events, and
 
 <img src="../Assets/edge-send-event-tutorial/aep-setup/mobile-property-rule-4.png" alt="All installed extensions" width="1100"/>  
 
-#### Define the action <!-- omit in toc -->
+#### Define the action<!-- omit in toc -->
 1. Under the Actions section, select **+ Add** (**1**).
 
 <img src="../Assets/edge-send-event-tutorial/aep-setup/mobile-property-rule-5.png" alt="All installed extensions" width="1100"/>  
@@ -273,7 +273,7 @@ The Lifecycle for Edge extension sends app foreground and background events, and
 
 <img src="../Assets/edge-send-event-tutorial/aep-setup/mobile-property-rule-6.png" alt="All installed extensions" width="1100"/>  
 
-#### Save the rule and rebuild your property <!-- omit in toc -->
+#### Save the rule and rebuild your property<!-- omit in toc -->
 1. After you complete your configuration, verify that your rule looks like the following:
 2. Select **Save** (**1**).
 
@@ -362,12 +362,12 @@ Make sure to uncomment all sections within each file (the total will tell you ho
 3. `EdgeFragment.java`
 4. `AssuranceActivity.java`
 
-### Edge extension details <!-- omit in toc -->
+### Edge extension details<!-- omit in toc -->
 For details on the various Edge extensions used, see the [table of related projects](../../README.md#related-projects).
 
 Notice that the Lifecycle APIs rely on the developer to place them in the proper app lifecycle functions (as seen in `MainActivity.java` and `AssuranceActivity.java`); that is, there are built-in functions that are called by the operating system that give the app notices that it is about to enter an active state, or go into a background state, etc. A proper Lifecycle extension implementation requires that the developer places the API calls in the required Android lifecycle functions.
 
-### 4. Run app  
+### 4. Run app
 In Android Studio: 
 1. Set the app target (**1**) to **app** (if not already).
 2. Choose which destination device (**2**) to run it on (either emulator or physical device. In this case it is set to the Pixel 4 API 33 Android 13 emulator). 
@@ -383,7 +383,7 @@ You should see your application running on the device you selected, with logs be
 > If the debug console area is not shown by default, activate it by selecting:  
 > View -> Tool Windows -> Logcat
 
-### 5. `sendEvent` implementation examples  
+### 5. `sendEvent` implementation examples
 With Edge extension successfully installed and registered, you can make `sendEvent` calls, which will be processed by the Edge extension and sent to the Edge network.
 
 Check `EdgeFragment.java` for implementation examples of product add and view events. You can see the data payloads that are to be sent with the calls. Notice that they conform to the Commerce XDM schema structure we set up in the first section.
@@ -395,7 +395,7 @@ The second button shows an example of using a data dictionary to construct the e
 ## Validation with Assurance
 With the server side configuration and app setup complete, Assurance makes it possible to take a look at the event flow in real time and inspect the details of individual events; using Assurance, the Experience Events sent out by the Edge extension can be validated to have the required format.
 
-### 1. Set up the Assurance session  
+### 1. Set up the Assurance session
 1. In the browser, navigate to [Assurance](https://experience.adobe.com/assurance) and login using your Adobe ID credentials.
 2. Select **Create Session** in the top right.
 
@@ -441,7 +441,7 @@ When presented with this window, your new Assurance session is ready to go, and 
 <img src="../Assets/edge-send-event-tutorial/assurance-validation/assurance-create-session-qr.png" alt="Creating a new session in Assurance step 3 - QR code" width="400"/>
 <img src="../Assets/edge-send-event-tutorial/assurance-validation/assurance-create-session-link.png" alt="Creating a new session in Assurance step 3 - Session link" width="400"/>
 
-### 2. Connect to the app  
+### 2. Connect to the app
 To connect to Assurance, use the session link method:
 1. Copy the session link; you can select the icon of a double overlapping box to the right of the link to copy it.
     - If using a physical device, it may be helpful to have a way to send this link to the device (ex: email, text, etc.). Alternatively, you can use the camera on your physical device to scan the QR code.
@@ -481,14 +481,14 @@ In the web-based Assurance session, there is also an indicator in the top right 
 Notice how in the Assurance session Events view (**2**), there are already events populating as a consequence of the connection of the mobile app to the Assurance session (**3**); the Assurance extension itself emits events about the session connection and subsequently captures these events to display in the web-based session viewer. You can expect Assurance to capture all events processed by the AEP SDK from all other extensions as well.  
 
 ### 3. Inspect events with Assurance
-#### Send product related Experience events <!-- omit in toc -->
+#### Send product related Experience events<!-- omit in toc -->
 In order to see Edge events, in the connected app instance:
 1. Select either **Product add event** or **Product view event** to send an Experience Event to the Edge Network! 
    - Behind the scenes the buttons use the `sendEvent` API from the Edge extension. This event will be captured by the Assurance extension and shown in the web session viewer.
 
 <img src="../Assets/edge-send-event-tutorial/assurance-validation/android-trigger-event.png" alt="Simulator tracking buttons" width="400"/>
 
-#### Inspect events using Events view <!-- omit in toc -->
+#### Inspect events using Events view<!-- omit in toc -->
 1. Select the `AEP Request Event` event (**1**) in the events table to see the event details in the right side window.
 2. Select the **RAW EVENT** dropdown (**2**) in the event details window to see the event data payload. 
 3. Verify that the `ACPExtensionEventData` matches what was sent by the Edge `sendEvent` API.
@@ -502,7 +502,7 @@ Our previous efforts to configure the Adobe Experience Platform settings to rout
 
 <img src="../Assets/edge-send-event-tutorial/assurance-validation/assurance-analytics-mapping-validation.png" alt="Simulator tracking buttons" width="1100"/>
 
-#### Inspect events using Event Transactions view <!-- omit in toc -->
+#### Inspect events using Event Transactions view<!-- omit in toc -->
 Assurance also provides another view that shows a visual flow of events, which may be helpful in understanding the relationship between events.
 1. Select **Event Transactions** (**1**) under the section label **Adobe Experience Platform Edge** in the left-side navigation panel.
 
