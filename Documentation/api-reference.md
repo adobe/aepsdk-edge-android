@@ -1,8 +1,8 @@
-# Adobe Experience Platform Edge Network Extension Android API Usage
+# Adobe Experience Platform Edge Network Extension Android API Reference
 
 ## Prerequisites
 
-Refer to the [Getting Started Guide](getting-started.md).
+Refer to the [Getting started guide](getting-started.md).
 
 ## API reference
 
@@ -51,7 +51,7 @@ val extensionVersion = EdgeBridge.extensionVersion()
 
 ### getLocationHint
 
-Gets the Edge Network location hint used in requests to the Edge Network. The location hint may be used when building the URL for Edge Network requests to hint at the server cluster to use.
+Gets the Edge Network location hint used in requests to the Edge Network. The Edge Network location hint may be used when building the URL for Edge Network requests to hint at the server cluster to use.
 
 #### Java
 
@@ -205,7 +205,7 @@ val experienceEvent = ExperienceEvent.Builder()
 // Example 1 - send the experience event without handling the Edge Network response
 Edge.sendEvent(experienceEvent, null)
 ```
-```java
+```kotlin
 // Example 2 - send the experience event and handle the Edge Network response onComplete
 Edge.sendEvent(experienceEvent) {
   // Handle the Edge Network response 
