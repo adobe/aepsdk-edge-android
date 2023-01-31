@@ -141,7 +141,7 @@ Edge.registerExtension()
 
 Resets current state of the Edge extension and clears previously cached content related to current identity, if any.
 
-See [MobileCore.resetIdentities](https://aep-sdks.gitbook.io/docs/foundation-extensions/mobile-core/mobile-core-api-reference) for more details.
+See [MobileCore.resetIdentities](https://github.com/adobe/aepsdk-core-android/blob/main/Documentation/MobileCore/api-reference.md) for more details.
 
 ------
 
