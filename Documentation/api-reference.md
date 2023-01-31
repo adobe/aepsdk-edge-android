@@ -491,21 +491,7 @@ class XDMSchemaExample : Schema {
     var eventType: String? = null
     var otherField: String? = null
 
-    override fun getSchemaVersion(): String {
-      // Return value here
-    }
-
-    override fun getSchemaIdentifier(): String {
-      // Return value here
-    }
-
-    override fun getDatasetIdentifier(): String {
-      // Return value here
-    }
-
-    override fun serializeToXdm(): Map<String, Any> {
-      // Return value here
-    }
+    ...
 }
 
 // Create Experience Event from class implementing Schema
