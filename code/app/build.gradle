@@ -63,15 +63,11 @@ dependencies {
     implementation project(':edge')
     implementation project(':app-util-xdm')
 
+    implementation 'com.adobe.marketing.mobile:core:2.+'
+    implementation 'com.adobe.marketing.mobile:edgeidentity:2.+'
     // TODO - Uncomment next lines when 2.0 is published to Maven
-    //implementation 'com.adobe.marketing.mobile:core:2.+'
     //implementation 'com.adobe.marketing.mobile:edgeconsent:2.+'
-    //implementation 'com.adobe.marketing.mobile:edgeidentity:2.+'
     //implementation 'com.adobe.marketing.mobile:assurance:2.+'
-    implementation 'com.adobe.marketing.mobile:core:2.0.0-SNAPSHOT'
-    implementation ('com.adobe.marketing.mobile:edgeidentity:2.0.0-SNAPSHOT') {
-        transitive = false
-    }
     implementation ('com.adobe.marketing.mobile:edgeconsent:2.0.0-SNAPSHOT') {
         transitive = false
     }
