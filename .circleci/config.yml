@@ -35,7 +35,7 @@ workflows:
           build-cache-prefix: v1
           requires:
             - validate-code
- 
+
 jobs:
   validate-code:
     parameters:
@@ -108,9 +108,9 @@ jobs:
           name: Build
           command: make ci-build
 
-      # - run:
-      #     name: Build App
-      #     command: make ci-build-app
+      - run:
+          name: Build App
+          command: make ci-build-app
 
       - android/run-tests:
           test-command: make ci-unit-test
@@ -165,7 +165,7 @@ jobs:
           #   The test command
           test-command: make ci-functional-test
           restore-gradle-cache-prefix: << parameters.gradle-cache-prefix >>
-      
+
       - android/save-build-cache:
           cache-prefix: << parameters.build-cache-prefix >>
 
@@ -181,4 +181,3 @@ jobs:
       # On test failures, the step in the Makefile to copy the reports to ci/ is not run, so store test results from build folder instead.
       - store_test_results:
           path: code/edge/build/outputs/androidTest-results
-          
