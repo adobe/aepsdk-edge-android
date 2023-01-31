@@ -82,7 +82,6 @@ Edge.getLocationHint(new AdobeCallbackWithError<String>() {
 ```kotlin
 fun getLocationHint(callback: AdobeCallback<String>)
 ```
-* `callback` is invoked with the location hint. The location hint value may be `null` if the location hint expired or was not set. The callback may be invoked on a different thread. If `AdobeCallbackWithError` is provided, the default timeout is 1000ms and the `fail` method is called if the operation times out or an unexpected error occurs.
 
 ##### Example
 ```kotlin
@@ -105,6 +104,7 @@ Registers the Edge Network extension with the Mobile Core extension.
 > **Warning**  
 > Deprecated as of 2.0.0. Use the [MobileCore.registerExtensions API](https://github.com/adobe/aepsdk-core-android/blob/main/Documentation/MobileCore/api-reference.md) instead.
 
+
 #### Java
 
 ##### Syntax
@@ -126,8 +126,7 @@ Edge.registerExtension();
 ```kotlin
 fun registerExtension()
 ```
-
-##### Examples
+##### Example
 ```kotlin
 import com.adobe.marketing.mobile.Edge
 
@@ -157,7 +156,7 @@ Sends an Experience event to the Adobe Experience Platform Edge Network.
 public static void sendEvent(final ExperienceEvent experienceEvent, final EdgeCallback callback);
 ```
 
-* `experienceEvent` is the XDM [Experience Event](#experienceevent) sent to the Edge Network
+* `experienceEvent` is the XDM [Experience Event](#experienceevent) sent to the Edge Network.
 * `callback` is an optional callback invoked when the request is complete and returns the associated [EdgeEventHandle](#edgeeventhandle)(s) received from the Edge Network. It may be invoked on a different thread.
 
 ##### Example
@@ -184,7 +183,6 @@ Edge.sendEvent(experienceEvent, new EdgeCallback() {
   }
 });
 ```
-
 #### Kotlin
 
 ##### Syntax
@@ -192,13 +190,10 @@ Edge.sendEvent(experienceEvent, new EdgeCallback() {
 fun sendEvent(experienceEvent: ExperienceEvent, callback: EdgeCallback?)
 ```
 
-* `experienceEvent` is the XDM [Experience Event](#experienceevent) sent to the Edge Network
-* `callback` is an optional callback invoked when the request is complete and returns the associated [EdgeEventHandle](#edgeeventhandle)(s) received from the Edge Network. It may be invoked on a different thread.
-
-##### Example
+#### Example
 ```kotlin
 // Create experience event from Map
-val xdmData: MutableMap<String, Any> = HashMap()
+val xdmData = mutableMapOf<String, Any>()
 xdmData["eventType"] = "SampleXDMEvent"
 xdmData["sample"] = "data"
 
@@ -245,7 +240,6 @@ Edge.setLocationHint(hint);
 ```kotlin
 fun setLocationHint(hint: String?)
 ```
-- `hint` the Edge Network location hint to use when connecting to the Edge Network.
 
 ##### Example
 ```kotlin
@@ -317,7 +311,7 @@ When defining your custom XDM schema(s), implement these interfaces to ensure th
 The `EdgeEventHandle` is a response fragment from Edge Network for a sent XDM Experience Event. One event can receive none, one or multiple `EdgeEventHandle`(s) as response.
 Use this class when calling the [sendEvent](#sendevent) API with `EdgeCallback`.
 
-
+#### Java
 ```java
 /**
  * The {@link EdgeEventHandle} is a response fragment from Adobe Experience Edge Service for a sent XDM Experience Event.
@@ -340,7 +334,7 @@ public class EdgeEventHandle {
 
 Experience Event is the event to be sent to Adobe Experience Platform Edge Network. The XDM data is required for any Experience Event being sent using the Edge extension.
 
-
+#### Java
 ```java
 public final class ExperienceEvent {
 
@@ -407,10 +401,10 @@ public final class ExperienceEvent {
 
 #### Java
 
-##### Examples
+#### Examples
+Example 1: Set both the XDM and freeform data of an `ExperienceEvent`.
 ```java
-// Example 1
-// Set freeform data to the Experience event
+// Set freeform data of the Experience Event instance
 Map<String, Object> xdmData = new HashMap<>();
 xdmData.put("eventType", "SampleXDMEvent");
 xdmData.put("sample", "data");
@@ -424,8 +418,8 @@ ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
   .setData(data)
   .build();
 ```
+Example 2: Create an `ExperienceEvent` event instance using a class that implements the `Schema` interface.
 ```java
-// Example 2
 // Create Experience Event from XDM Schema implementations
 public class XDMSchemaExample implements com.adobe.marketing.mobile.xdm.Schema {
   private String eventType;
@@ -449,7 +443,7 @@ public class XDMSchemaExample implements com.adobe.marketing.mobile.xdm.Schema {
   }
 }
 
-// Create Experience Event from Schema
+// Create Experience Event from class implementing Schema
 XDMSchemaExample xdmData = new XDMSchemaExample();
 xdmData.setEventType("SampleXDMEvent");
 xdmData.setOtherField("OtherFieldValue");
@@ -458,14 +452,80 @@ ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
   .setXdmSchema(xdmData)
   .build();
 ```
+Example 3: Set a custom destination Dataset ID when creating an `ExperienceEvent` instance.
 ```java
-// Example 3
-// Set the destination Dataset identifier to the current Experience event:
 Map<String, Object> xdmData = new HashMap<>();
 xdmData.put("eventType", "SampleXDMEvent");
 xdmData.put("sample", "data");
 
+// Set the destination Dataset identifier of the Experience Event
 ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
   .setXdmSchema(xdmData, "datasetIdExample")
   .build();
+```
+
+#### Kotlin
+
+#### Examples
+Example 1: Set both the XDM and freeform data of an `ExperienceEvent`.
+```kotlin
+// Set freeform data of the Experience Event instance
+val xdmData = mutableMapOf<String, Any>()
+xdmData["eventType"] = "SampleXDMEvent"
+xdmData["sample"] = "data"
+
+val data = mutableMapOf<String, Any>()
+data["free"] = "form"
+data["data"] = "example"
+
+val experienceEvent = ExperienceEvent.Builder()
+  .setXdmSchema(xdmData)
+  .setData(data)
+  .build()
+```
+
+Example 2: Create an `ExperienceEvent` event instance using a class that implements the `Schema` interface.
+```kotlin
+// Create Experience Event from XDM Schema implementations
+class XDMSchemaExample : Schema {
+    var eventType: String? = null
+    var otherField: String? = null
+
+    override fun getSchemaVersion(): String {
+      // Return value here
+    }
+
+    override fun getSchemaIdentifier(): String {
+      // Return value here
+    }
+
+    override fun getDatasetIdentifier(): String {
+      // Return value here
+    }
+
+    override fun serializeToXdm(): Map<String, Any> {
+      // Return value here
+    }
+}
+
+// Create Experience Event from class implementing Schema
+val xdmData = XDMSchemaExample()
+xdmData.eventType = "SampleXDMEvent"
+xdmData.otherField = "OtherFieldValue"
+
+val experienceEvent = ExperienceEvent.Builder()
+  .setXdmSchema(xdmData)
+  .build()
+```
+
+Example 3: Set a custom destination Dataset ID when creating an `ExperienceEvent` instance.
+```kotlin
+val xdmData = mutableMapOf<String, Any>()
+xdmData["eventType"] = "SampleXDMEvent"
+xdmData["sample"] = "data"
+
+// Set the destination Dataset identifier of the Experience Event
+val experienceEvent = ExperienceEvent.Builder()
+  .setXdmSchema(xdmData, "datasetIdExample")
+  .build()
 ```
