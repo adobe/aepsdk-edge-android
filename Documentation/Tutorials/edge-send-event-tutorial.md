@@ -288,7 +288,7 @@ The Lifecycle for Edge extension sends app foreground and background events, and
 
 <img src="../Assets/edge-send-event-tutorial/aep-setup/mobile-property-publish.png" alt="All installed extensions" width="1100"/>  
 
-#### Getting the mobile property ID <!-- omit in toc -->
+#### Getting the mobile property ID<!-- omit in toc -->
 Once the mobile property is published to the **Development** environment:  
 1. Select the box icon next to the environment dropdown (**5**, from above)
 2. Select the double overlapping box (**1**) to the right of the property ID to copy it. Save this unique ID (in a text file, or other easily accessible place), as it is required when setting up the app in the next section.
