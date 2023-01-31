@@ -244,11 +244,7 @@ dependencies {
     testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.12.7'
     testImplementation 'org.json:json:20180813'
 
-    // TODO - Uncomment next lines when 2.0 is published to Maven
-//    androidTestImplementation 'com.adobe.marketing.mobile:edgeconsent:2.+'
-    androidTestImplementation ('com.adobe.marketing.mobile:edgeconsent:2.0.0-SNAPSHOT') {
-        transitive = false
-    }
+    androidTestImplementation 'com.adobe.marketing.mobile:edgeconsent:2.+'
 
     androidTestImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
