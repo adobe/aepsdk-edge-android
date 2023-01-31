@@ -22,8 +22,8 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
-        maven { url 'https://jitpack.io' }
     }
 }
 rootProject.name = "edge-sdk"
-include ':app', ':edge'
+include ':edge'
+include ':app', ':app-kotlin', ':app-util-xdm'
