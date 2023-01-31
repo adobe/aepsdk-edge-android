@@ -31,5 +31,5 @@ android {
 
 dependencies {
     implementation project(':edge')
-    implementation 'com.adobe.marketing.mobile:core:2.0.0-SNAPSHOT'
+    implementation "com.adobe.marketing.mobile:core:${rootProject.mavenCoreVersion}"
 }
