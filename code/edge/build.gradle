@@ -1,0 +1,252 @@
+/**
+ * Copyright 2019 Adobe. All rights reserved.
+ * This file is licensed to you under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+ * OF ANY KIND, either express or implied. See the License for the specific language
+ * governing permissions and limitations under the License.
+ */
+plugins {
+    id 'com.android.library'
+    id 'maven-publish'
+    id 'signing'
+    id 'jacoco'
+    id 'com.diffplug.spotless'
+}
+
+jacoco {
+    toolVersion = rootProject.ext.jacocoVersion
+}
+
+android {
+    namespace 'com.adobe.marketing.mobile.edge'
+
+    compileSdk rootProject.ext.compileSdkVersion
+
+    defaultConfig {
+        minSdk rootProject.ext.minSdkVersion
+        targetSdk rootProject.ext.targetSdkVersion
+
+        testInstrumentationRunner rootProject.ext.testInstrumentationRunner
+    }
+
+    flavorDimensions "target"
+    productFlavors {
+        phone {
+            dimension "target"
+        }
+    }
+
+    buildTypes {
+        debug {
+            testCoverageEnabled true
+            debuggable true
+        }
+
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+
+    compileOptions {
+        sourceCompatibility rootProject.ext.sourceCompatibility
+        targetCompatibility rootProject.ext.targetCompatibility
+    }
+}
+
+preBuild.dependsOn spotlessApply
+
+spotless {
+    java {
+        toggleOffOn("format:off", "format:on")
+        target "src/*/java/**/*.java"
+        removeUnusedImports()
+        prettier(['prettier': '2.7.1', 'prettier-plugin-java': '1.6.2'])
+                .config(['parser': 'java', 'tabWidth': 4, 'useTabs': true, 'printWidth': 120])
+        endWithNewline()
+        licenseHeaderFile "../../config/formatter/adobe.header.txt"
+    }
+}
+
+afterEvaluate {
+    tasks.withType(Javadoc) {
+        source = android.sourceSets.main.java.srcDirs
+        classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+        classpath += files(android.libraryVariants.collect { variant ->
+            variant.javaCompileProvider.get().classpath.files
+        })
+        options {
+            source = "8"
+            links "https://developer.android.com/reference"
+        }
+    }
+}
+
+task javadocInternal(type: Javadoc) {
+    destinationDir = reporting.file("javadocInternal")
+    options.memberLevel = JavadocMemberLevel.PRIVATE
+}
+
+task javadocPublic(type: Javadoc) {
+    destinationDir = reporting.file("javadocPublic")
+    options.memberLevel = JavadocMemberLevel.PUBLIC
+}
+
+task javadocPublish(type: Jar) {
+    from javadocPublic
+    archiveClassifier.set('javadoc')
+}
+
+def isReleaseBuild() {
+    return hasProperty('release')
+}
+
+version = isReleaseBuild() ? rootProject.moduleVersion : rootProject.moduleVersion+"-SNAPSHOT"
+
+publish.dependsOn('assemblePhone')
+
+publishing {
+    publications {
+        release(MavenPublication) {
+            groupId = 'com.adobe.marketing.mobile'
+            artifactId = rootProject.moduleName
+            version = version
+            artifact("$buildDir/outputs/aar/${moduleAARName}")
+            artifact javadocPublish
+
+            pom {
+                name = mavenRepoName
+                description = mavenRepoDescription
+                url = 'https://developer.adobe.com/client-sdks'
+                licenses {
+                    license {
+                        name = 'Adobe Proprietary'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'adobe'
+                        name = 'adobe'
+                        email = 'adobe-mobile-testing@adobe.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:github.com//adobe/aepsdk-edge-android.git'
+                    developerConnection = 'scm:git:ssh://github.com//adobe/aepsdk-edge-android.git'
+                    url = 'https://github.com/adobe/aepsdk-edge-android'
+                }
+                withXml {
+                    def dependenciesNode = asNode().appendNode('dependencies')
+
+                    def coreDependencyNode = dependenciesNode.appendNode('dependency')
+                    coreDependencyNode.appendNode('groupId', 'com.adobe.marketing.mobile')
+                    coreDependencyNode.appendNode('artifactId', 'core')
+                    coreDependencyNode.appendNode('version', mavenCoreVersion)
+
+                    def identityDependencyNode = dependenciesNode.appendNode('dependency')
+                    identityDependencyNode.appendNode('groupId', 'com.adobe.marketing.mobile')
+                    identityDependencyNode.appendNode('artifactId', 'edgeidentity')
+                    identityDependencyNode.appendNode('version', mavenIdentityVersion)
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = "sonatype"
+            url = version.endsWith('SNAPSHOT') ? "https://oss.sonatype.org/content/repositories/snapshots/" : "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+            credentials {
+                username = System.getenv("SONATYPE_USERNAME")
+                password = System.getenv("SONATYPE_PASSWORD")
+            }
+        }
+    }
+}
+
+ext."signing.gnupg.executable"="gpg"
+ext."signing.gnupg.keyName"=System.getenv("GPG_KEY_ID")
+ext."signing.gnupg.passphrase"=System.getenv("GPG_PASSPHRASE")
+
+signing {
+    useGpgCmd()
+    required {
+        tasks.withType(PublishToMavenRepository).find {
+            gradle.taskGraph.hasTask it
+        }
+    }
+    sign publishing.publications
+}
+
+tasks.withType(Test) {
+    testLogging {
+        showStandardStreams = true
+    }
+}
+
+task platformUnitTestJacocoReport(type: JacocoReport, dependsOn: "testPhoneDebugUnitTest") {
+    def excludeRegex = ['**/BuildConfig.class']
+    def debugTree = fileTree(dir: "${project.buildDir}/intermediates/javac/phoneDebug/classes/com/adobe/marketing/mobile", excludes: excludeRegex)
+
+    additionalClassDirs.setFrom files([debugTree])
+    additionalSourceDirs.setFrom files(android.sourceSets.main.java.sourceFiles)
+    sourceDirectories.setFrom files(android.sourceSets.phone.java.sourceFiles)
+    executionData fileTree(dir: "$buildDir", includes: [
+            "outputs/unit_test_code_coverage/phoneDebugUnitTest/testPhoneDebugUnitTest.exec"
+    ])
+
+    // Report dir: build/reports/jacoco/platformUnitTestJacocoReport/
+    reports {
+        xml.required = true
+        csv.required = false
+        html.required = true
+    }
+}
+
+task platformFunctionalTestJacocoReport(type: JacocoReport, dependsOn: "createPhoneDebugCoverageReport") {
+    def excludeRegex = ['**/BuildConfig.class']
+    def debugTree = fileTree(dir: "${project.buildDir}/intermediates/javac/phoneDebug/classes/com/adobe/marketing/mobile", excludes: excludeRegex)
+
+    additionalClassDirs.setFrom files([debugTree])
+    additionalSourceDirs.setFrom files(android.sourceSets.main.java.sourceFiles)
+    sourceDirectories.setFrom files(android.sourceSets.phone.java.sourceFiles)
+    executionData fileTree(dir: "$buildDir", includes: [
+            "outputs/code_coverage/phoneDebugAndroidTest/connected/*coverage.ec"
+    ])
+
+    // Report dir: build/reports/coverage/androidTest/phone/debug/connected/
+    reports {
+        xml.required = true
+        csv.required = false
+        html.required = true
+    }
+}
+
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}
+
+dependencies {
+    implementation "com.adobe.marketing.mobile:core:${rootProject.mavenCoreVersion}"
+    implementation "com.adobe.marketing.mobile:edgeidentity:${rootProject.mavenIdentityVersion}"
+    implementation "androidx.annotation:annotation:${rootProject.androidxAnnotationVersion}"
+
+    testImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
+    testImplementation "org.mockito:mockito-core:${rootProject.ext.mockitoVersion}"
+    testImplementation "org.mockito:mockito-inline:${rootProject.ext.mockitoVersion}"
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.12.7'
+    testImplementation 'org.json:json:20180813'
+
+    androidTestImplementation 'com.adobe.marketing.mobile:edgeconsent:2.+'
+
+    androidTestImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+    androidTestImplementation 'com.fasterxml.jackson.core:jackson-databind:2.12.7'
+}
