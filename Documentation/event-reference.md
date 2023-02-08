@@ -2,23 +2,24 @@
 
 ## Table of Contents<!-- omit in toc -->
 - [Events handled by Edge](#events-handled-by-edge)
-  - [Edge request content](#edge-request-content)
+  - [Edge request content (event processing)](#edge-request-content-event-processing)
   - [Edge request identity](#edge-request-identity)
   - [Edge update consent](#edge-update-consent)
   - [Edge update identity](#edge-update-identity)
   - [Edge consent response content](#edge-consent-response-content)
   - [Edge identity reset complete](#edge-identity-reset-complete)
 - [Events dispatched by Edge](#events-dispatched-by-edge)
-  - [Generic identity request reset](#generic-identity-request-reset)
+  - [Edge request content (event creation)](#edge-request-content-event-creation)
+  - [Edge update identity](#edge-update-identity-1)
 
 
 ## Events handled by Edge
 
 The following events are handled by the Edge extension client-side.
 
-### Edge request content
+### Edge request content (event processing)
 
-This event is a request to process and deliver an Experience event to Edge Network. This event is created when the `Edge.sendEvent(ExperienceEvent)` API is called.
+This event is a request to process and deliver an Experience event to Edge Network. This event is created when the `Edge.sendEvent(ExperienceEvent)` API is called. This event is captured by the Edge Network extension's event listener in the Event Hub for processing and sent to the Edge Network.
 
 #### Event Details<!-- omit in toc -->
 
@@ -56,7 +57,7 @@ This event is a request to get the current location hint being used by the Edge 
 
 | Key          | Value type    | Required | Description                |
 | ------------ | ------------- | -------- | -------------------------- |
-| locationHint | `boolean`     | Yes      | Property is set automatically; it is not user modifiable. |
+| locationHint | `boolean`     | Yes      | The Edge Network location hint to use when connecting to  Edge Network. Property is set automatically; it is not user modifiable. |
 
 -----
 
@@ -127,6 +128,8 @@ This event contains the latest consent preferences synced with the SDK, and is u
 
 This event signals that [Identity for Edge Network](https://github.com/adobe/aepsdk-edgeidentity-android) has completed [resetting all identities](https://developer.adobe.com/client-sdks/documentation/identity-for-edge-network/api-reference/#resetidentities) usually following a call to [`MobileCore.resetIdentities()`](https://github.com/adobe/aepsdk-core-android/blob/main/Documentation/MobileCore/api-reference.md). 
 
+When this event is received, the Edge extension queues it up and removes the cached internal state:store settings. If other events are queued before this event, these events will be processed first in the order they were received.
+
 #### Event Details<!-- omit in toc -->
 
 | API                             | Event type                 | Event source                         |
@@ -143,16 +146,75 @@ This event has no data payload.
 
 The following events are dispatched by the Edge extension client-side.
 
-### Generic identity request reset
+### Edge request content (event creation)
 
-This event indicates the an identity reset request was initiated, usually through the `MobileCore.resetIdentities()` API. When this event is received, the Edge extension queues it up and removes the cached internal state:store settings. If other events are queued before this event, these events will be processed first in the order they were received.
+This event is a request to process and deliver an Experience event to Edge Network. This event is created when the `Edge.sendEvent(ExperienceEvent)` API is called. It is then sent to the Event Hub where the Edge Network extension's listener captures the event.
 
 #### Event Details<!-- omit in toc -->
 
-| Event type                            | Event source                         |
-| ------------------------------------- | ------------------------------------ |
-| com.adobe.eventType.genericIdentity   | com.adobe.eventSource.requestReset   |
+| Event type                 | Event source                         |
+| -------------------------- | ------------------------------------ |
+| com.adobe.eventType.edge   | com.adobe.eventSource.requestContent |
+
+| API      | Event type         | Event source      |
+| -------- | ------------------ | ----------------- |
+| [`Edge.sendEvent(experienceEvent,callback)`](api-reference.md#sendevent) | com.adobe.eventType.edge | com.adobe.eventSource.requestContent |
 
 #### Data payload definition<!-- omit in toc -->
 
-This event has no data payload.
+| Key       | Value type    | Required | Description           |
+| --------- | ------------- | -------- | --------------------- |
+| xdm       | `Map<String, Object>` | Yes      | XDM formatted data; use an `XDMSchema` implementation for a better XDM data ingestion and format control. |
+| data      | `Map<String, Object>` | No       | Optional free-form data associated with this event. |
+| datasetId | `String`        | No       | Optional custom dataset ID. If not set, the event uses the default Experience dataset ID set in the datastream configuration |
+
+> **Note**  
+> Events of this type and source are only processed if the data collection consent status stored in the `collect` property is **not** `n` (no); that is, either yes (`y`) or pending (`p`).
+
+-----
+
+### Edge update identity
+
+This event is a request to process and deliver an Experience event to Edge Network. This event is created when the `Edge.sendEvent(ExperienceEvent)` API is called. It is then sent to the Event Hub where the Edge Network extension's listener captures the event.
+
+#### Event Details<!-- omit in toc -->
+
+| Event type                 | Event source                         |
+| -------------------------- | ------------------------------------ |
+| com.adobe.eventType.edge   | com.adobe.eventSource.requestContent |
+
+| API      | Event type         | Event source      |
+| -------- | ------------------ | ----------------- |
+| [`Edge.sendEvent(experienceEvent,callback)`](api-reference.md#sendevent) | com.adobe.eventType.edge | com.adobe.eventSource.updateIdentity |
+
+#### Data payload definition<!-- omit in toc -->
+
+| Key       | Value type    | Required | Description           |
+| --------- | ------------- | -------- | --------------------- |
+| locationHint       | `@Nullable String` | Yes      | The Edge Network location hint to use when connecting to  Edge Network. Property is set automatically; it is not user modifiable. implementation for a better XDM data ingestion and format control. |
+| data      | `Map<String, Object>` | No       | Optional free-form data associated with this event. |
+| datasetId | `String`        | No       | Optional custom dataset ID. If not set, the event uses the default Experience dataset ID set in the datastream configuration |
+
+
+**Edge.java**
+sendEvent
+EventType.EDGE
+EventSource.REQUEST_CONTENT
+
+setLocationHint
+EventType.EDGE,
+EventSource.UPDATE_IDENTITY
+
+**EdgeExtension.java**
+handleGetLocationHint
+EventType.EDGE,
+EventSource.RESPONSE_IDENTITY
+
+**NetworkResponseHandler.java**
+processResponseOnError
+EventType.EDGE,
+EventSource.ERROR_RESPONSE_CONTENT
+
+dispatchResponse
+EventType.EDGE
+programmatic SOURCE
