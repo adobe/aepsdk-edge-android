@@ -37,11 +37,6 @@ String extensionVersion = Edge.extensionVersion();
 
 #### Kotlin
 
-##### Syntax
-```kotlin
-fun extensionVersion(): String
-```
-
 ##### Examples
 ```kotlin
 val extensionVersion = EdgeBridge.extensionVersion()
@@ -77,11 +72,6 @@ Edge.getLocationHint(new AdobeCallbackWithError<String>() {
 ```
 
 #### Kotlin
-
-##### Syntax
-```kotlin
-fun getLocationHint(callback: AdobeCallback<String>)
-```
 
 ##### Example
 ```kotlin
@@ -122,10 +112,6 @@ Edge.registerExtension();
 
 #### Kotlin
 
-##### Syntax
-```kotlin
-fun registerExtension()
-```
 ##### Example
 ```kotlin
 import com.adobe.marketing.mobile.Edge
@@ -185,11 +171,6 @@ Edge.sendEvent(experienceEvent, new EdgeCallback() {
 ```
 #### Kotlin
 
-##### Syntax
-```kotlin
-fun sendEvent(experienceEvent: ExperienceEvent, callback: EdgeCallback?)
-```
-
 #### Example
 ```kotlin
 // Create experience event from Map
@@ -235,11 +216,6 @@ Edge.setLocationHint(hint);
 ```
 
 #### Kotlin
-
-##### Syntax
-```kotlin
-fun setLocationHint(hint: String?)
-```
 
 ##### Example
 ```kotlin
