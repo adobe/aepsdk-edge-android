@@ -5,12 +5,12 @@
   - [Edge request content (event processing)](#edge-request-content-event-processing)
   - [Edge request identity](#edge-request-identity)
   - [Edge update consent](#edge-update-consent)
-  - [Edge update identity](#edge-update-identity)
+  - [Edge update identity (event processing)](#edge-update-identity-event-processing)
   - [Edge consent response content](#edge-consent-response-content)
   - [Edge identity reset complete](#edge-identity-reset-complete)
 - [Events dispatched by Edge](#events-dispatched-by-edge)
   - [Edge request content (event creation)](#edge-request-content-event-creation)
-  - [Edge update identity](#edge-update-identity-1)
+  - [Edge update identity (event creation)](#edge-update-identity-event-creation)
 
 
 ## Events handled by Edge
@@ -20,6 +20,8 @@ The following events are handled by the Edge extension client-side.
 ### Edge request content (event processing)
 
 This event is a request to process and deliver an Experience event to Edge Network. This event is created when the `Edge.sendEvent(ExperienceEvent)` API is called. This event is captured by the Edge Network extension's event listener in the Event Hub for processing and sent to the Edge Network.
+
+If the required `xdm` key is not present in the event data payload, the event is not sent to Edge Network.
 
 #### Event Details<!-- omit in toc -->
 
@@ -79,9 +81,9 @@ This event is a request to process and deliver a Consent update event to Edge Ne
 
 -----
 
-### Edge update identity
+### Edge update identity (event processing)
 
-This event is a request to set the Edge Network location hint used by the Edge Network extension in requests to Edge Network. (how edgy!)
+This event is a request to set the Edge Network location hint used by the Edge Network extension in requests to Edge Network.
 
 > **Warning**  
 > Use caution when setting the location hint. Only use valid [location hints defined within the `EdgeNetwork` scope](https://experienceleague.adobe.com/docs/experience-platform/edge-network-server-api/location-hints.html). An invalid location hint value will cause all Edge Network requests to fail with a `404` response code.
@@ -96,7 +98,7 @@ This event is a request to set the Edge Network location hint used by the Edge N
 
 | Key       | Value type    | Required | Description           |
 | --------- | ------------- | -------- | --------------------- |
-| hint      | `String`      | Yes      | Location hint value. Passing `null` or an empty string (`""`) clears the existing location hint. See  the [list of valid location hints for the `EdgeNetwork` scope](https://experienceleague.adobe.com/docs/experience-platform/edge-network-server-api/location-hints.html). |
+| locationHint      | `String`      | Yes      | Location hint value. Passing `null` or an empty string (`""`) clears the existing location hint. See  the [list of valid location hints for the `EdgeNetwork` scope](https://experienceleague.adobe.com/docs/experience-platform/edge-network-server-api/location-hints.html). |
 
 -----
 
@@ -173,37 +175,36 @@ This event is a request to process and deliver an Experience event to Edge Netwo
 
 -----
 
-### Edge update identity
+### Edge update identity (event creation)
 
-This event is a request to process and deliver an Experience event to Edge Network. This event is created when the `Edge.sendEvent(ExperienceEvent)` API is called. It is then sent to the Event Hub where the Edge Network extension's listener captures the event.
+This event is a request to set the Edge Network location hint used by the Edge Network extension in requests to Edge Network.
+
+> **Warning**  
+> Use caution when setting the location hint. Only use valid [location hints defined within the `EdgeNetwork` scope](https://experienceleague.adobe.com/docs/experience-platform/edge-network-server-api/location-hints.html). An invalid location hint value will cause all Edge Network requests to fail with a `404` response code.
 
 #### Event Details<!-- omit in toc -->
 
-| Event type                 | Event source                         |
-| -------------------------- | ------------------------------------ |
-| com.adobe.eventType.edge   | com.adobe.eventSource.requestContent |
-
-| API      | Event type         | Event source      |
-| -------- | ------------------ | ----------------- |
-| [`Edge.sendEvent(experienceEvent,callback)`](api-reference.md#sendevent) | com.adobe.eventType.edge | com.adobe.eventSource.updateIdentity |
+| API                             | Event type                 | Event source                         |
+| ------------------------------- | -------------------------- | ------------------------------------ |
+| [`Edge.setLocationHint(hint)`](api-reference.md#setlocationhint) | com.adobe.eventType.edge   | com.adobe.eventSource.updateIdentity  |
 
 #### Data payload definition<!-- omit in toc -->
 
 | Key       | Value type    | Required | Description           |
 | --------- | ------------- | -------- | --------------------- |
-| locationHint       | `@Nullable String` | Yes      | The Edge Network location hint to use when connecting to  Edge Network. Property is set automatically; it is not user modifiable. implementation for a better XDM data ingestion and format control. |
-| data      | `Map<String, Object>` | No       | Optional free-form data associated with this event. |
-| datasetId | `String`        | No       | Optional custom dataset ID. If not set, the event uses the default Experience dataset ID set in the datastream configuration |
+| locationHint      | `@Nullable String`      | Yes      | Location hint value. Passing `null` or an empty string (`""`) clears the existing location hint. See  the [list of valid location hints for the `EdgeNetwork` scope](https://experienceleague.adobe.com/docs/experience-platform/edge-network-server-api/location-hints.html). |
+
+-----
 
 
-**Edge.java**
+<!-- **Edge.java**
 sendEvent
 EventType.EDGE
 EventSource.REQUEST_CONTENT
 
 setLocationHint
 EventType.EDGE,
-EventSource.UPDATE_IDENTITY
+EventSource.UPDATE_IDENTITY -->
 
 **EdgeExtension.java**
 handleGetLocationHint
