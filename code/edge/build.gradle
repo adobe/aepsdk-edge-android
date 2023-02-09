@@ -245,7 +245,7 @@ dependencies {
     testImplementation 'org.json:json:20180813'
 
     androidTestImplementation('com.adobe.marketing.mobile:edgeconsent:2.+') {
-        transitive = false
+        exclude group: 'com.adobe.marketing.mobile', module: 'edge'
     }
 
     androidTestImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"

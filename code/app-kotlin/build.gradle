@@ -54,7 +54,7 @@ dependencies {
     implementation 'com.adobe.marketing.mobile:core:2.+'
     implementation 'com.adobe.marketing.mobile:edgeidentity:2.+'
     implementation('com.adobe.marketing.mobile:edgeconsent:2.+') {
-        transitive = false
+        exclude group: 'com.adobe.marketing.mobile', module: 'edge'
     }
     implementation 'com.adobe.marketing.mobile:assurance:2.+'
 
