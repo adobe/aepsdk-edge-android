@@ -2,22 +2,22 @@
 
 ## Table of Contents<!-- omit in toc -->
 - [Events handled by Edge](#events-handled-by-edge)
-  - [Edge request content (event processing)](#edge-request-content-event-processing)
+  - [Edge request content](#edge-request-content)
   - [Edge request identity](#edge-request-identity)
   - [Edge update consent](#edge-update-consent)
   - [Edge update identity (event processing)](#edge-update-identity-event-processing)
   - [Edge consent response content](#edge-consent-response-content)
   - [Edge identity reset complete](#edge-identity-reset-complete)
 - [Events dispatched by Edge](#events-dispatched-by-edge)
-  - [Edge request content (event creation)](#edge-request-content-event-creation)
-  - [Edge update identity (event creation)](#edge-update-identity-event-creation)
-
+  - [Edge identity response](#edge-identity-response)
+  - [Edge content response error](#edge-content-response-error)
+  - [Edge event response](#edge-event-response)
 
 ## Events handled by Edge
 
 The following events are handled by the Edge extension client-side.
 
-### Edge request content (event processing)
+### Edge request content
 
 This event is a request to process and deliver an Experience event to Edge Network. This event is created when the `Edge.sendEvent(ExperienceEvent)` API is called. This event is captured by the Edge Network extension's event listener in the Event Hub for processing and sent to the Edge Network.
 
@@ -59,7 +59,7 @@ This event is a request to get the current location hint being used by the Edge 
 
 | Key          | Value type    | Required | Description                |
 | ------------ | ------------- | -------- | -------------------------- |
-| locationHint | `boolean`     | Yes      | The Edge Network location hint to use when connecting to  Edge Network. Property is set automatically; it is not user modifiable. |
+| locationHint | `boolean`     | Yes      | The Edge Network location hint to use when connecting to Edge Network. Property is set to `true` automatically; it is not user modifiable. |
 
 -----
 
@@ -148,74 +148,62 @@ This event has no data payload.
 
 The following events are dispatched by the Edge extension client-side.
 
-### Edge request content (event creation)
+### Edge identity response
 
-This event is a request to process and deliver an Experience event to Edge Network. This event is created when the `Edge.sendEvent(ExperienceEvent)` API is called. It is then sent to the Event Hub where the Edge Network extension's listener captures the event.
+This event is a response to the [Edge request identity event](#edge-request-identity)) and provides the location hint being used by the Edge Network extension in requests to the Edge Network. The Edge Network location hint may be used when building the URL for Edge Network requests to hint at the server cluster to use.
+
+| Value | Behavior |
+| ------ | -------- |
+| Yes (`y`) | Hits are sent |
+| No (`n`) | Hits are dropped and not sent |
+| Pending (`p`) | Hits are queued until `y`/`n` is set; when set, queued events follow the value's behavior |
 
 #### Event Details<!-- omit in toc -->
 
-| Event type                 | Event source                         |
-| -------------------------- | ------------------------------------ |
-| com.adobe.eventType.edge   | com.adobe.eventSource.requestContent |
-
-| API      | Event type         | Event source      |
-| -------- | ------------------ | ----------------- |
-| [`Edge.sendEvent(experienceEvent,callback)`](api-reference.md#sendevent) | com.adobe.eventType.edge | com.adobe.eventSource.requestContent |
+| Event type                        | Event source                          |
+| --------------------------------- | ------------------------------------- |
+| com.adobe.eventType.edge          | com.adobe.eventSource.responseIdentity |
 
 #### Data payload definition<!-- omit in toc -->
 
 | Key       | Value type    | Required | Description           |
 | --------- | ------------- | -------- | --------------------- |
-| xdm       | `Map<String, Object>` | Yes      | XDM formatted data; use an `XDMSchema` implementation for a better XDM data ingestion and format control. |
-| data      | `Map<String, Object>` | No       | Optional free-form data associated with this event. |
-| datasetId | `String`        | No       | Optional custom dataset ID. If not set, the event uses the default Experience dataset ID set in the datastream configuration |
+| locationHint  | `String` | Yes       | The Edge Network location hint currently set for use when connecting to Edge Network. |
 
-> **Note**  
-> Events of this type and source are only processed if the data collection consent status stored in the `collect` property is **not** `n` (no); that is, either yes (`y`) or pending (`p`).
+----- 
 
------
+### Edge content response error
 
-### Edge update identity (event creation)
-
-This event is a request to set the Edge Network location hint used by the Edge Network extension in requests to Edge Network.
-
-> **Warning**  
-> Use caution when setting the location hint. Only use valid [location hints defined within the `EdgeNetwork` scope](https://experienceleague.adobe.com/docs/experience-platform/edge-network-server-api/location-hints.html). An invalid location hint value will cause all Edge Network requests to fail with a `404` response code.
+This event is a response to the [Edge request identity event](#edge-request-identity)) and provides the location hint being used by the Edge Network extension in requests to the Edge Network. The Edge Network location hint may be used when building the URL for Edge Network requests to hint at the server cluster to use.
 
 #### Event Details<!-- omit in toc -->
 
-| API                             | Event type                 | Event source                         |
-| ------------------------------- | -------------------------- | ------------------------------------ |
-| [`Edge.setLocationHint(hint)`](api-reference.md#setlocationhint) | com.adobe.eventType.edge   | com.adobe.eventSource.updateIdentity  |
+| Event type                        | Event source                          |
+| --------------------------------- | ------------------------------------- |
+| com.adobe.eventType.edge          | com.adobe.eventSource.errorResponseContent |
 
 #### Data payload definition<!-- omit in toc -->
 
 | Key       | Value type    | Required | Description           |
 | --------- | ------------- | -------- | --------------------- |
-| locationHint      | `@Nullable String`      | Yes      | Location hint value. Passing `null` or an empty string (`""`) clears the existing location hint. See  the [list of valid location hints for the `EdgeNetwork` scope](https://experienceleague.adobe.com/docs/experience-platform/edge-network-server-api/location-hints.html). |
+| locationHint  | `String` | Yes       | The Edge Network location hint currently set for use when connecting to Edge Network. |
 
------
+----- 
+
+### Edge event response
+
+This event is a response to the [Edge request identity event](#edge-request-identity)) and provides the location hint being used by the Edge Network extension in requests to the Edge Network. The Edge Network location hint may be used when building the URL for Edge Network requests to hint at the server cluster to use.
 
 
-<!-- **Edge.java**
-sendEvent
-EventType.EDGE
-EventSource.REQUEST_CONTENT
+#### Event Details<!-- omit in toc -->
 
-setLocationHint
-EventType.EDGE,
-EventSource.UPDATE_IDENTITY -->
+| Event type                        | Event source                          |
+| --------------------------------- | ------------------------------------- |
+| com.adobe.eventType.edge          | This value is copied from the event being responded to |
 
-**EdgeExtension.java**
-handleGetLocationHint
-EventType.EDGE,
-EventSource.RESPONSE_IDENTITY
+#### Data payload definition<!-- omit in toc -->
 
-**NetworkResponseHandler.java**
-processResponseOnError
-EventType.EDGE,
-EventSource.ERROR_RESPONSE_CONTENT
+| Key       | Value type    | Required | Description           |
+| --------- | ------------- | -------- | --------------------- |
+| locationHint  | `String` | Yes       | The Edge Network location hint currently set for use when connecting to Edge Network. |
 
-dispatchResponse
-EventType.EDGE
-programmatic SOURCE
