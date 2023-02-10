@@ -174,7 +174,7 @@ This event is a response to the [Edge request identity event](#edge-request-iden
 
 ### Edge content response error
 
-This event is a response to the [Edge request identity event](#edge-request-identity)) and provides the location hint being used by the Edge Network extension in requests to the Edge Network. The Edge Network location hint may be used when building the URL for Edge Network requests to hint at the server cluster to use.
+This event is an error response to an originating event. If there are multiple error responses for a given triggering event, separate error event instances will be dispatched for each error. 
 
 #### Event Details<!-- omit in toc -->
 
@@ -186,24 +186,23 @@ This event is a response to the [Edge request identity event](#edge-request-iden
 
 | Key       | Value type    | Required | Description           |
 | --------- | ------------- | -------- | --------------------- |
-| locationHint  | `String` | Yes       | The Edge Network location hint currently set for use when connecting to Edge Network. |
+| requestId  | `String` | Yes       | The ID (`UUID`) of the batched Edge Network request tied to the event that triggered the error response. |
+| requestEventId  | `String` | Yes       | The ID (`UUID`) of the event that triggered the error response. |
 
 ----- 
 
 ### Edge event response
 
-This event is a response to the [Edge request identity event](#edge-request-identity)) and provides the location hint being used by the Edge Network extension in requests to the Edge Network. The Edge Network location hint may be used when building the URL for Edge Network requests to hint at the server cluster to use.
+This event is a response to an event.
 
 
 #### Event Details<!-- omit in toc -->
 
 | Event type                        | Event source                          |
 | --------------------------------- | ------------------------------------- |
-| com.adobe.eventType.edge          | This value is copied from the event being responded to |
+| com.adobe.eventType.edge          | This value is copied from the event being responded to; if not set or `null`, has a default value of com.adobe.eventSource.responseContent |
 
 #### Data payload definition<!-- omit in toc -->
 
-| Key       | Value type    | Required | Description           |
-| --------- | ------------- | -------- | --------------------- |
-| locationHint  | `String` | Yes       | The Edge Network location hint currently set for use when connecting to Edge Network. |
+This event has no standard keys.
 
