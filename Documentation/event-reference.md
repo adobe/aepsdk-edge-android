@@ -25,10 +25,6 @@ If the required `xdm` key is not present in the event data payload, the event is
 
 #### Event Details<!-- omit in toc -->
 
-| Event type                 | Event source                         |
-| -------------------------- | ------------------------------------ |
-| com.adobe.eventType.edge   | com.adobe.eventSource.requestContent |
-
 | API      | Event type         | Event source      |
 | -------- | ------------------ | ----------------- |
 | [`Edge.sendEvent(experienceEvent,callback)`](api-reference.md#sendevent) | com.adobe.eventType.edge | com.adobe.eventSource.requestContent |
@@ -53,7 +49,7 @@ This event is a request to get the current location hint being used by the Edge 
 
 | API      | Event type         | Event source      |
 | -------- | ------------------ | ----------------- |
-| [`Edge.getLocationHint(callback)`](api-reference.md#getlocationhint) | com.adobe.eventType.edge | com.adobe.eventSource.updateConsent |
+| [`Edge.getLocationHint(callback)`](api-reference.md#getlocationhint) | com.adobe.eventType.edge | com.adobe.eventSource.requestIdentity |
 
 #### Data payload definition<!-- omit in toc -->
 
