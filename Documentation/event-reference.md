@@ -34,13 +34,13 @@ If the required `xdm` key is not present in the event data payload, the event is
 Event dispatched by:
 * [`Edge.sendEvent(ExperienceEvent experienceEvent, EdgeCallback callback)`](api-reference.md#sendevent)
 
-#### Data payload definition<!-- omit in toc -->
+#### Event data payload definition<!-- omit in toc -->
 
 | Key | Value type | Required | Description |
 | --- | ---------- | -------- | ----------- |
-| xdm | `Map<String, Object>` | Yes | XDM formatted data; use an `XDMSchema` implementation for better XDM data ingestion and data format control. |
-| data | `Map<String, Object>` | No | Optional free-form data associated with this event. |
-| datasetId | `String` | No | Optional custom dataset ID. If not set, the event uses the default Experience dataset ID set in the datastream configuration. |
+| xdm | Map<String,&nbsp;Object> | Yes | XDM formatted data; use an `XDMSchema` implementation for better XDM data ingestion and data format control. |
+| data | Map<String,&nbsp;Object> | No | Optional free-form data associated with this event. |
+| datasetId | String | No | Optional custom dataset ID. If not set, the event uses the default Experience dataset ID set in the datastream configuration. |
 
 > **Note**  
 > Events of this type and source are only processed if the data collection consent status stored in the `collect` property is **not** `n` (no); that is, either `y` (yes) or `p` (pending).
@@ -60,11 +60,11 @@ This event is a request to get the current location hint being used by the Edge 
 Event dispatched by:
 * [`Edge.getLocationHint(AdobeCallback<String> callback)`](api-reference.md#getlocationhint)
 
-#### Data payload definition<!-- omit in toc -->
+#### Event data payload definition<!-- omit in toc -->
 
 | Key | Value type | Required | Description |
 | --- | ---------- | -------- | ----------- |
-| locationHint | `boolean` | Yes | Flag used to signal that this event is requesting the current location hint. Property is set to `true` automatically; it is not user modifiable. |
+| locationHint | boolean | Yes | Flag used to signal that this event is requesting the current location hint. Property is set to `true` automatically; it is not user modifiable. |
 
 -----
 
@@ -81,11 +81,11 @@ This event is a request to process and deliver a Consent update event to Edge Ne
 Event dispatched by:
 * [`Consent.update(Map<String, Object> consents)`](https://github.com/adobe/aepsdk-edgeconsent-android/blob/main/Documentation/api-reference.md#updateConsents)
 
-#### Data payload definition<!-- omit in toc -->
+#### Event data payload definition<!-- omit in toc -->
 
 | Key | Value type | Required | Description |
 | --- | ---------- | -------- | ----------- |
-| consents | `Map<String, Object>` | Yes | XDM formatted consent preferences. See the [`Consent.update(consents)`](https://github.com/adobe/aepsdk-edgeconsent-android/blob/main/Documentation/api-reference.md#updateConsents) API reference for how to properly format this property. |
+| consents | Map<String,&nbsp;Object> | Yes | XDM formatted consent preferences. See the [`Consent.update(consents)`](https://github.com/adobe/aepsdk-edgeconsent-android/blob/main/Documentation/api-reference.md#updateConsents) API reference for how to properly format this property. |
 
 -----
 
@@ -105,11 +105,11 @@ This event is a request to set the Edge Network location hint used by the Edge N
 Event dispatched by:
 * [`Edge.setLocationHint(String hint)`](api-reference.md#setlocationhint)
 
-#### Data payload definition<!-- omit in toc -->
+#### Event data payload definition<!-- omit in toc -->
 
 | Key | Value type | Required | Description |
 | --- | ---------- | ------------- | ----------- |
-| locationHint | `String` | Yes | Location hint value. Passing `null` or an empty string (`""`) clears the existing location hint. See the [list of valid location hints for the `EdgeNetwork` scope](https://experienceleague.adobe.com/docs/experience-platform/edge-network-server-api/location-hints.html). |
+| locationHint | String | Yes | Location hint value. Passing `null` or an empty string (`""`) clears the existing location hint. See the [list of valid location hints for the `EdgeNetwork` scope](https://experienceleague.adobe.com/docs/experience-platform/edge-network-server-api/location-hints.html). |
 
 -----
 
@@ -132,11 +132,11 @@ This event contains the latest consent preferences synced with the SDK. The Edge
 Event dispatched by:
 * [`Consent.update(Map<String, Object> consents)`](https://github.com/adobe/aepsdk-edgeconsent-android/blob/main/Documentation/api-reference.md#updateConsents) 
 
-#### Data payload definition<!-- omit in toc -->
+#### Event data payload definition<!-- omit in toc -->
 
 | Key | Value type | Required | Description |
 | --- | ---------- | -------- | ----------- |
-| consents | `Map<String, Object>` | No | XDM formatted consent preferences containing current collect consent settings. If not specified, defaults to `p` (pending) until the value is updated. |
+| consents | Map<String,&nbsp;Object> | No | XDM formatted consent preferences containing current collect consent settings.<br/>If not specified, defaults to `p` (pending) until the value is updated. |
 
 ----- 
 
@@ -155,7 +155,7 @@ When this event is received, the Edge extension queues it up and removes the cac
 Event dispatched by:
 * [`MobileCore.resetIdentities()`](https://github.com/adobe/aepsdk-core-android/blob/main/Documentation/MobileCore/api-reference.md)
 
-#### Data payload definition<!-- omit in toc -->
+#### Event data payload definition<!-- omit in toc -->
 
 This event has no data payload.
 
@@ -175,11 +175,11 @@ This event is a response to the [Edge request identity event](#edge-request-iden
 | ---------- | ------------ |
 | com.adobe.eventType.edge | com.adobe.eventSource.responseIdentity |
 
-#### Data payload definition<!-- omit in toc -->
+#### Event data payload definition<!-- omit in toc -->
 
 | Key | Value type | Required | Description |
 | --- | ---------- | -------- | ----------- |
-| locationHint | `String` | Yes | The Edge Network location hint currently set for use when connecting to Edge Network. |
+| locationHint | String | Yes | The Edge Network location hint currently set for use when connecting to Edge Network. |
 
 ----- 
 
@@ -193,12 +193,12 @@ This event is an error response to an originating event. If there are multiple e
 | ---------- | ------------ |
 | com.adobe.eventType.edge | com.adobe.eventSource.errorResponseContent |
 
-#### Data payload definition<!-- omit in toc -->
+#### Event data payload definition<!-- omit in toc -->
 
 | Key | Value type | Required | Description |
 | --- | ---------- | -------- | ----------- |
-| requestId | `String` | Yes | The ID (`UUID`) of the batched Edge Network request tied to the event that triggered the error response. |
-| requestEventId | `String` | Yes | The ID (`UUID`) of the event that triggered the error response. |
+| requestId | String | Yes | The ID (`UUID`) of the batched Edge Network request tied to the event that triggered the error response. |
+| requestEventId | String | Yes | The ID (`UUID`) of the event that triggered the error response. |
 
 ----- 
 
@@ -212,7 +212,7 @@ This event is a response to an event.
 | ---------- | ------------ |
 | com.adobe.eventType.edge | com.adobe.eventSource.responseContent |
 
-#### Data payload definition<!-- omit in toc -->
+#### Event data payload definition<!-- omit in toc -->
 
 This event does not have standard keys.
 
@@ -228,7 +228,7 @@ This event tells the Edge Network extension to persist the event payload to the 
 | ---------- | ------------ |
 | com.adobe.eventType.edge | state:store |
 
-#### Data payload definition<!-- omit in toc -->
+#### Event data payload definition<!-- omit in toc -->
 
 This event does not have standard keys.
 
@@ -244,10 +244,10 @@ This event tells the Edge Network extension to persist the location hint to the 
 | ---------- | ------------ |
 | com.adobe.eventType.edge | locationHint:result |
 
-#### Data payload definition<!-- omit in toc -->
+#### Event data payload definition<!-- omit in toc -->
 
 | Key | Value type | Required | Description |
 | --- | ---------- | -------- | ----------- |
-| scope | `String` | No | The scope that the location hint applies to, for example `EdgeNetwork`. |
-| hint | `String` | No | The location hint string. |
-| ttlSeconds | `Integer` | No | The time period the location hint should be valid for. |
+| scope | String | No | The scope that the location hint applies to, for example `EdgeNetwork`. |
+| hint | String | No | The location hint string. |
+| ttlSeconds | Integer | No | The time period the location hint should be valid for. |
