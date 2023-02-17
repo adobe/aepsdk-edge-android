@@ -12,6 +12,8 @@
   - [Edge identity response](#edge-identity-response)
   - [Edge content response error](#edge-content-response-error)
   - [Edge event response](#edge-event-response)
+  - [Edge state store](#edge-state-store)
+  - [Edge location hint result](#edge-location-hint-result)
 
 ## Events handled by Edge
 
@@ -210,3 +212,38 @@ This event is a response to an event.
 
 This event does not have standard keys.
 
+-----
+
+### Edge state store
+
+This event tells the Edge Network extension to persist the event payload in the data store. This event is constructed using the response fragment from the Edge Network service for a sent XDM Experience Event; Edge Network extension does not modify any values received and constructs a response event with the event source and data payload as-is.
+
+#### Event Details<!-- omit in toc -->
+
+| Event type | Event source |
+| ---------- | ------------ |
+| com.adobe.eventType.edge | state:store |
+
+#### Data payload definition<!-- omit in toc -->
+
+This event does not have standard keys.
+
+----- 
+
+### Edge location hint result
+
+This event tells the Edge Network extension to persist the location hint to the data store. This event is constructed using the response fragment from the Edge Network service for a sent XDM Experience Event; Edge Network extension does not modify any values received and constructs a response event with the event source and data payload as-is.
+
+#### Event Details<!-- omit in toc -->
+
+| Event type | Event source |
+| ---------- | ------------ |
+| com.adobe.eventType.edge | locationHint:result |
+
+#### Data payload definition<!-- omit in toc -->
+
+| Key | Value type | Mandatory Key | Description |
+| --- | ---------- | ------------- | ----------- |
+| scope  | `String` | No       | The scope that the location hint is relevant for, for example `EdgeNetwork`. |
+| hint  | `String` | No       | The location hint string. |
+| ttlSeconds  | `Integer` | No       | The time period the location hint should be valid for. |
