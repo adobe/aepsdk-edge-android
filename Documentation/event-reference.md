@@ -200,12 +200,11 @@ This event is an error response to an originating event. If there are multiple e
 
 This event is a response to an event.
 
-
 #### Event Details<!-- omit in toc -->
 
 | Event type | Event source |
 | ---------- | ------------ |
-| com.adobe.eventType.edge | This value is copied from the event being responded to; if not set or `null`, has a default value of com.adobe.eventSource.responseContent |
+| com.adobe.eventType.edge | com.adobe.eventSource.responseContent |
 
 #### Data payload definition<!-- omit in toc -->
 
