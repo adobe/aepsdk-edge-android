@@ -117,11 +117,11 @@ Event dispatched by:
 
 This event contains the latest consent preferences synced with the SDK. The Edge Network extension reads the current data collection consent settings stored in the `collect` property and adjusts its internal queueing behavior based on the value as follows:
 
-| Value | Behavior |
-| ----- | -------- |
-| Yes (`y`) | Hits are sent |
-| No (`n`) | Hits are dropped and not sent |
-| Pending (`p`) | Hits are queued until `y`/`n` is set; when set, queued events follow the value's behavior |
+| Value | Description | Behavior |
+| ----- | ----------- | -------- |
+| `y` | Yes | Hits are sent |
+| `n` | No | Hits are dropped and not sent |
+| `p` | Pending | Hits are queued until `y`/`n` is set; when set, queued events follow the value's behavior |
 
 #### Event Details<!-- omit in toc -->
 
