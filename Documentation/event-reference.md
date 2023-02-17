@@ -38,9 +38,9 @@ Event dispatched by:
 
 | Key | Value type | Required | Description |
 | --- | ---------- | -------- | ----------- |
-| xdm | Map<String,&nbsp;Object> | Yes | XDM formatted data; use an `XDMSchema` implementation for better XDM data ingestion and data format control. |
-| data | Map<String,&nbsp;Object> | No | Optional free-form data associated with this event. |
-| datasetId | String | No | Optional custom dataset ID. If not set, the event uses the default Experience dataset ID set in the datastream configuration. |
+| xdm | <code>Map<String,&nbsp;Object></code> | Yes | XDM formatted data; use an `XDMSchema` implementation for better XDM data ingestion and data format control. |
+| data | <code>Map<String,&nbsp;Object></code> | No | Optional free-form data associated with this event. |
+| datasetId | `String` | No | Optional custom dataset ID. If not set, the event uses the default Experience dataset ID set in the datastream configuration. |
 
 > **Note**  
 > Events of this type and source are only processed if the data collection consent status stored in the `collect` property is **not** `n` (no); that is, either `y` (yes) or `p` (pending).
@@ -64,7 +64,7 @@ Event dispatched by:
 
 | Key | Value type | Required | Description |
 | --- | ---------- | -------- | ----------- |
-| locationHint | boolean | Yes | Flag used to signal that this event is requesting the current location hint. Property is set to `true` automatically; it is not user modifiable. |
+| locationHint | `boolean` | Yes | Flag used to signal that this event is requesting the current location hint. Property is set to `true` automatically; it is not user modifiable. |
 
 -----
 
@@ -85,7 +85,7 @@ Event dispatched by:
 
 | Key | Value type | Required | Description |
 | --- | ---------- | -------- | ----------- |
-| consents | Map<String,&nbsp;Object> | Yes | XDM formatted consent preferences. See the [`Consent.update(consents)`](https://github.com/adobe/aepsdk-edgeconsent-android/blob/main/Documentation/api-reference.md#updateConsents) API reference for how to properly format this property. |
+| consents | <code>Map<String,&nbsp;Object></code> | Yes | XDM formatted consent preferences. See the [`Consent.update(consents)`](https://github.com/adobe/aepsdk-edgeconsent-android/blob/main/Documentation/api-reference.md#updateConsents) API reference for how to properly format this property. |
 
 -----
 
@@ -109,7 +109,7 @@ Event dispatched by:
 
 | Key | Value type | Required | Description |
 | --- | ---------- | ------------- | ----------- |
-| locationHint | String | Yes | Location hint value. Passing `null` or an empty string (`""`) clears the existing location hint. See the [list of valid location hints for the `EdgeNetwork` scope](https://experienceleague.adobe.com/docs/experience-platform/edge-network-server-api/location-hints.html). |
+| locationHint | `String` | Yes | Location hint value. Passing `null` or an empty string (`""`) clears the existing location hint. See the [list of valid location hints for the `EdgeNetwork` scope](https://experienceleague.adobe.com/docs/experience-platform/edge-network-server-api/location-hints.html). |
 
 -----
 
@@ -136,7 +136,7 @@ Event dispatched by:
 
 | Key | Value type | Required | Description |
 | --- | ---------- | -------- | ----------- |
-| consents | Map<String,&nbsp;Object> | No | XDM formatted consent preferences containing current collect consent settings.<br/>If not specified, defaults to `p` (pending) until the value is updated. |
+| consents | <code>Map<String,&nbsp;Object></code> | No | XDM formatted consent preferences containing current collect consent settings.<br/>If not specified, defaults to `p` (pending) until the value is updated. |
 
 ----- 
 
@@ -179,7 +179,7 @@ This event is a response to the [Edge request identity event](#edge-request-iden
 
 | Key | Value type | Required | Description |
 | --- | ---------- | -------- | ----------- |
-| locationHint | String | Yes | The Edge Network location hint currently set for use when connecting to Edge Network. |
+| locationHint | `String` | Yes | The Edge Network location hint currently set for use when connecting to Edge Network. |
 
 ----- 
 
@@ -197,8 +197,8 @@ This event is an error response to an originating event. If there are multiple e
 
 | Key | Value type | Required | Description |
 | --- | ---------- | -------- | ----------- |
-| requestId | String | Yes | The ID (`UUID`) of the batched Edge Network request tied to the event that triggered the error response. |
-| requestEventId | String | Yes | The ID (`UUID`) of the event that triggered the error response. |
+| requestId | `String` | Yes | The ID (`UUID`) of the batched Edge Network request tied to the event that triggered the error response. |
+| requestEventId | `String` | Yes | The ID (`UUID`) of the event that triggered the error response. |
 
 ----- 
 
@@ -248,6 +248,6 @@ This event tells the Edge Network extension to persist the location hint to the 
 
 | Key | Value type | Required | Description |
 | --- | ---------- | -------- | ----------- |
-| scope | String | No | The scope that the location hint applies to, for example `EdgeNetwork`. |
-| hint | String | No | The location hint string. |
-| ttlSeconds | Integer | No | The time period the location hint should be valid for. |
+| scope | `String` | No | The scope that the location hint applies to, for example `EdgeNetwork`. |
+| hint | `String` | No | The location hint string. |
+| ttlSeconds | `Integer` | No | The time period the location hint should be valid for. |
