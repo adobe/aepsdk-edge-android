@@ -36,7 +36,7 @@ APIs that create this event:
 
 #### Data payload definition<!-- omit in toc -->
 
-| Key | Value type | Mandatory Key | Description |
+| Key | Value type | Required Key | Description |
 | --- | ---------- | ------------- | ----------- |
 | xdm       | `Map<String, Object>` | Yes      | XDM formatted data; use an `XDMSchema` implementation for a better XDM data ingestion and format control. |
 | data      | `Map<String, Object>` | No       | Optional free-form data associated with this event. |
@@ -61,7 +61,7 @@ APIs that create this event:
 
 #### Data payload definition<!-- omit in toc -->
 
-| Key | Value type | Mandatory Key | Description |
+| Key | Value type | Required Key | Description |
 | --- | ---------- | ------------- | ----------- |
 | locationHint | `boolean`     | Yes      | Flag used to signal that this event is requesting the current location hint. Property is set to `true` automatically; it is not user modifiable. |
 
@@ -82,7 +82,7 @@ APIs that create this event:
 
 #### Data payload definition<!-- omit in toc -->
 
-| Key | Value type | Mandatory Key | Description |
+| Key | Value type | Required Key | Description |
 | --- | ---------- | ------------- | ----------- |
 | consents  | `Map<String, Object>` | Yes      | XDM formatted consent preferences. See the [`Consent.update(consents)`](https://github.com/adobe/aepsdk-edgeconsent-android/blob/main/Documentation/api-reference.md) API reference for how to properly format this property. |
 
@@ -106,7 +106,7 @@ APIs that create this event:
 
 #### Data payload definition<!-- omit in toc -->
 
-| Key | Value type | Mandatory Key | Description |
+| Key | Value type | Required Key | Description |
 | --- | ---------- | ------------- | ----------- |
 | locationHint      | `String`      | Yes      | Location hint value. Passing `null` or an empty string (`""`) clears the existing location hint. See  the [list of valid location hints for the `EdgeNetwork` scope](https://experienceleague.adobe.com/docs/experience-platform/edge-network-server-api/location-hints.html). |
 
@@ -130,7 +130,7 @@ This event contains the latest consent preferences synced with the SDK, and is u
 
 #### Data payload definition<!-- omit in toc -->
 
-| Key | Value type | Mandatory Key | Description |
+| Key | Value type | Required Key | Description |
 | --- | ---------- | ------------- | ----------- |
 | consents  | `Map<String, Object>` | No       | XDM formatted consent preferences containing current collect consent settings. If not specified, defaults to pending (`p`) until the value is updated. |
 
@@ -173,7 +173,7 @@ This event is a response to the [Edge request identity event](#edge-request-iden
 
 #### Data payload definition<!-- omit in toc -->
 
-| Key | Value type | Mandatory Key | Description |
+| Key | Value type | Required Key | Description |
 | --- | ---------- | ------------- | ----------- |
 | locationHint  | `String` | Yes       | The Edge Network location hint currently set for use when connecting to Edge Network. |
 
@@ -191,7 +191,7 @@ This event is an error response to an originating event. If there are multiple e
 
 #### Data payload definition<!-- omit in toc -->
 
-| Key | Value type | Mandatory Key | Description |
+| Key | Value type | Required Key | Description |
 | --- | ---------- | ------------- | ----------- |
 | requestId  | `String` | Yes       | The ID (`UUID`) of the batched Edge Network request tied to the event that triggered the error response. |
 | requestEventId  | `String` | Yes       | The ID (`UUID`) of the event that triggered the error response. |
@@ -242,7 +242,7 @@ This event tells the Edge Network extension to persist the location hint to the 
 
 #### Data payload definition<!-- omit in toc -->
 
-| Key | Value type | Mandatory Key | Description |
+| Key | Value type | Required Key | Description |
 | --- | ---------- | ------------- | ----------- |
 | scope  | `String` | No       | The scope that the location hint is relevant for, for example `EdgeNetwork`. |
 | hint  | `String` | No       | The location hint string. |
