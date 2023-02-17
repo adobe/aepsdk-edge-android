@@ -136,7 +136,7 @@ Event dispatched by:
 
 | Key | Value type | Required | Description |
 | --- | ---------- | -------- | ----------- |
-| consents | <code>Map<String,&nbsp;Object></code> | No | XDM formatted consent preferences containing current collect consent settings.<br/>If not specified, defaults to `p` (pending) until the value is updated. |
+| consents | <code>Map<String,&nbsp;Object></code> | No | XDM formatted consent preferences containing current collect consent settings. If not specified, defaults to `p` (pending) until the value is updated. |
 
 ----- 
 
