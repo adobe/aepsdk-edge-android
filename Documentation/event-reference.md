@@ -37,7 +37,7 @@ Event dispatched by:
 #### Data payload definition<!-- omit in toc -->
 
 | Key | Value type | Required | Description |
-| --- | ---------- | ------------- | ----------- |
+| --- | ---------- | -------- | ----------- |
 | xdm | `Map<String, Object>` | Yes | XDM formatted data; use an `XDMSchema` implementation for better XDM data ingestion and data format control. |
 | data | `Map<String, Object>` | No | Optional free-form data associated with this event. |
 | datasetId | `String` | No | Optional custom dataset ID. If not set, the event uses the default Experience dataset ID set in the datastream configuration. |
@@ -63,7 +63,7 @@ Event dispatched by:
 #### Data payload definition<!-- omit in toc -->
 
 | Key | Value type | Required | Description |
-| --- | ---------- | ------------- | ----------- |
+| --- | ---------- | -------- | ----------- |
 | locationHint | `boolean` | Yes | Flag used to signal that this event is requesting the current location hint. Property is set to `true` automatically; it is not user modifiable. |
 
 -----
@@ -84,7 +84,7 @@ Event dispatched by:
 #### Data payload definition<!-- omit in toc -->
 
 | Key | Value type | Required | Description |
-| --- | ---------- | ------------- | ----------- |
+| --- | ---------- | -------- | ----------- |
 | consents | `Map<String, Object>` | Yes | XDM formatted consent preferences. See the [`Consent.update(consents)`](https://github.com/adobe/aepsdk-edgeconsent-android/blob/main/Documentation/api-reference.md#updateConsents) API reference for how to properly format this property. |
 
 -----
@@ -135,7 +135,7 @@ Event dispatched by:
 #### Data payload definition<!-- omit in toc -->
 
 | Key | Value type | Required | Description |
-| --- | ---------- | ------------- | ----------- |
+| --- | ---------- | -------- | ----------- |
 | consents | `Map<String, Object>` | No | XDM formatted consent preferences containing current collect consent settings. If not specified, defaults to `p` (pending) until the value is updated. |
 
 ----- 
@@ -178,7 +178,7 @@ This event is a response to the [Edge request identity event](#edge-request-iden
 #### Data payload definition<!-- omit in toc -->
 
 | Key | Value type | Required | Description |
-| --- | ---------- | ------------- | ----------- |
+| --- | ---------- | -------- | ----------- |
 | locationHint | `String` | Yes | The Edge Network location hint currently set for use when connecting to Edge Network. |
 
 ----- 
@@ -196,7 +196,7 @@ This event is an error response to an originating event. If there are multiple e
 #### Data payload definition<!-- omit in toc -->
 
 | Key | Value type | Required | Description |
-| --- | ---------- | ------------- | ----------- |
+| --- | ---------- | -------- | ----------- |
 | requestId | `String` | Yes | The ID (`UUID`) of the batched Edge Network request tied to the event that triggered the error response. |
 | requestEventId | `String` | Yes | The ID (`UUID`) of the event that triggered the error response. |
 
@@ -247,7 +247,7 @@ This event tells the Edge Network extension to persist the location hint to the 
 #### Data payload definition<!-- omit in toc -->
 
 | Key | Value type | Required | Description |
-| --- | ---------- | ------------- | ----------- |
+| --- | ---------- | -------- | ----------- |
 | scope | `String` | No | The scope that the location hint applies to, for example `EdgeNetwork`. |
 | hint | `String` | No | The location hint string. |
 | ttlSeconds | `Integer` | No | The time period the location hint should be valid for. |
