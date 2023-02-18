@@ -204,7 +204,7 @@ This event is an error response to an originating event. If there are multiple e
 
 ### Edge response content
 
-This event is a response to an event.
+This event is a response to an [Edge request content](#edge-request-content) event.
 
 #### Event details<!-- omit in toc -->
 
@@ -250,4 +250,4 @@ This event tells the Edge Network extension to persist the location hint to the 
 | --- | ---------- | -------- | ----------- |
 | scope | `String` | No | The scope that the location hint applies to, for example `EdgeNetwork`. |
 | hint | `String` | No | The location hint string. |
-| ttlSeconds | `Integer` | No | The time period the location hint should be valid for. |
+| ttlSeconds | `int` | No | The time period the location hint should be valid for. |
