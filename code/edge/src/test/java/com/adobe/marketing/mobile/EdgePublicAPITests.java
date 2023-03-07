@@ -219,7 +219,7 @@ public class EdgePublicAPITests {
 			.setEventData(
 				new HashMap<String, Object>() {
 					{
-						put(EdgeConstants.EventDataKey.LOCATION_HINT, "hint");
+						put(EdgeConstants.EventDataKeys.LOCATION_HINT, "hint");
 					}
 				}
 			)
@@ -275,7 +275,7 @@ public class EdgePublicAPITests {
 			.setEventData(
 				new HashMap<String, Object>() {
 					{
-						put(EdgeConstants.EventDataKey.LOCATION_HINT, "hint");
+						put(EdgeConstants.EventDataKeys.LOCATION_HINT, "hint");
 					}
 				}
 			)
@@ -330,7 +330,7 @@ public class EdgePublicAPITests {
 			.setEventData(
 				new HashMap<String, Object>() {
 					{
-						put(EdgeConstants.EventDataKey.LOCATION_HINT, null);
+						put(EdgeConstants.EventDataKeys.LOCATION_HINT, null);
 					}
 				}
 			)
@@ -531,7 +531,7 @@ public class EdgePublicAPITests {
 			.setEventData(
 				new HashMap<String, Object>() {
 					{
-						put(EdgeConstants.EventDataKey.LOCATION_HINT, 5);
+						put(EdgeConstants.EventDataKeys.LOCATION_HINT, 5);
 					}
 				}
 			)

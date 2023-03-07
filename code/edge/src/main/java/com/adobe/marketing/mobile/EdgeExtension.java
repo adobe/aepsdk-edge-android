@@ -285,7 +285,7 @@ class EdgeExtension extends Extension {
 			.setEventData(
 				new HashMap<String, Object>() {
 					{
-						put(EdgeConstants.EventDataKey.LOCATION_HINT, state.getLocationHint());
+						put(EdgeConstants.EventDataKeys.LOCATION_HINT, state.getLocationHint());
 					}
 				}
 			)
@@ -313,7 +313,7 @@ class EdgeExtension extends Extension {
 		}
 
 		try {
-			final String hint = DataReader.getString(eventData, EdgeConstants.EventDataKey.LOCATION_HINT);
+			final String hint = DataReader.getString(eventData, EdgeConstants.EventDataKeys.LOCATION_HINT);
 			state.setLocationHint(hint, EdgeConstants.Defaults.LOCATION_HINT_TTL_SEC);
 		} catch (DataReaderException e) {
 			Log.debug(

@@ -20,12 +20,15 @@ import com.adobe.marketing.mobile.services.HitProcessingResult;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.MapUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -42,6 +45,7 @@ class EdgeHitProcessor implements HitProcessing {
 	private final EdgeStateCallback stateCallback;
 	private final ConcurrentHashMap<String, Integer> entityRetryIntervalMapping = new ConcurrentHashMap<>();
 	static EdgeNetworkService networkService;
+	private static final String VALID_PATH_REGEX_PATTERN = "^\\/[/.a-zA-Z0-9-~_]+$";
 
 	EdgeHitProcessor(
 		final NetworkResponseHandler networkResponseHandler,
@@ -145,12 +149,7 @@ class EdgeHitProcessor implements HitProcessing {
 			}
 		};
 
-		String url = networkService.buildUrl(
-			edgeHit.getType(),
-			edgeHit.getEdgeEndpoint(),
-			edgeHit.getConfigId(),
-			edgeHit.getRequestId()
-		);
+		String url = networkService.buildUrl(edgeHit.getEdgeEndpoint(), edgeHit.getConfigId(), edgeHit.getRequestId());
 
 		try {
 			Log.debug(
@@ -250,14 +249,14 @@ class EdgeHitProcessor implements HitProcessing {
 			return true; // Request complete, don't retry hit
 		}
 
-		final EdgeEndpoint edgeEndpoint = getEdgeEndpoint(edgeConfig);
-
-		final EdgeHit edgeHit = new EdgeHit(
-			edgeConfigId,
-			requestPayload,
+		Map<String, Object> requestProperties = getRequestProperties(entity.getEvent());
+		final EdgeEndpoint edgeEndpoint = getEdgeEndpoint(
 			EdgeNetworkService.RequestType.INTERACT,
-			edgeEndpoint
+			edgeConfig,
+			requestProperties
 		);
+
+		final EdgeHit edgeHit = new EdgeHit(edgeConfigId, requestPayload, edgeEndpoint);
 
 		// NOTE: the order of these events need to be maintained as they were sent in the network request
 		// otherwise the response callback cannot be matched
@@ -313,14 +312,9 @@ class EdgeHitProcessor implements HitProcessing {
 			return true; // Request complete, don't retry hit
 		}
 
-		final EdgeEndpoint edgeEndpoint = getEdgeEndpoint(edgeConfig);
+		final EdgeEndpoint edgeEndpoint = getEdgeEndpoint(EdgeNetworkService.RequestType.CONSENT, edgeConfig, null);
 
-		final EdgeHit edgeHit = new EdgeHit(
-			edgeConfigId,
-			consentPayload,
-			EdgeNetworkService.RequestType.CONSENT,
-			edgeEndpoint
-		);
+		final EdgeHit edgeHit = new EdgeHit(edgeConfigId, consentPayload, edgeEndpoint);
 
 		networkResponseHandler.addWaitingEvent(edgeHit.getRequestId(), entity.getEvent());
 		final Map<String, String> requestHeaders = getRequestHeaders();
@@ -332,7 +326,11 @@ class EdgeHitProcessor implements HitProcessing {
 	 * @param edgeConfiguration the current Edge configuration
 	 * @return a new {@code EdgeEndpoint} instance
 	 */
-	private EdgeEndpoint getEdgeEndpoint(final Map<String, Object> edgeConfiguration) {
+	private EdgeEndpoint getEdgeEndpoint(
+		final EdgeNetworkService.RequestType requestType,
+		final Map<String, Object> edgeConfiguration,
+		final Map<String, Object> requestProperties
+	) {
 		// Use null fallback value, which defaults to Prod environment when building EdgeEndpoint
 		String requestEnvironment = DataReader.optString(
 			edgeConfiguration,
@@ -347,7 +345,94 @@ class EdgeHitProcessor implements HitProcessing {
 		);
 
 		final String locationHint = stateCallback != null ? stateCallback.getLocationHint() : null;
-		return new EdgeEndpoint(requestEnvironment, requestDomain, locationHint);
+
+		// Use null fallback value for request without custom path value
+		String customPath = DataReader.optString(requestProperties, EdgeConstants.EventDataKeys.Request.PATH, null);
+
+		return new EdgeEndpoint(requestType, requestEnvironment, requestDomain, customPath, locationHint);
+	}
+
+	/**
+	 * Extracts all the custom request properties to overwrite the default values
+	 * @param event current event for which the request properties are to be extracted
+	 * @return the map of extracted request properties and their custom values
+	 */
+	private Map<String, Object> getRequestProperties(final Event event) {
+		Map<String, Object> requestProperties = new HashMap<>();
+
+		String overwritePath = getCustomRequestPath(event);
+		if (overwritePath != null) {
+			Log.trace(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Got custom path:(%s) for event:(%s), which will overwrite the default interaction request path.",
+				overwritePath,
+				event.getUniqueIdentifier()
+			);
+			requestProperties.put(EdgeConstants.EventDataKeys.Request.PATH, overwritePath);
+		}
+		return requestProperties;
+	}
+
+	/**
+	 * Extracts network request path property to overwrite the default endpoint path value
+	 * @param event current event for which the request path property is to be extracted
+	 * @return the custom path string
+	 */
+	private String getCustomRequestPath(final Event event) {
+		String path = null;
+
+		Map<String, Object> eventData = event.getEventData();
+		try {
+			if (!MapUtils.isNullOrEmpty(eventData)) {
+				Map<String, Object> requestData = (Map<String, Object>) eventData.get(
+					EdgeConstants.EventDataKeys.Request.KEY
+				);
+				if (!MapUtils.isNullOrEmpty(requestData)) {
+					path = (String) requestData.get(EdgeConstants.EventDataKeys.Request.PATH);
+				}
+			}
+		} catch (ClassCastException e) {
+			Log.error(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Exception while getting custom path from the experience event (%s).",
+				e.getLocalizedMessage()
+			);
+		}
+
+		if (!isValidPath(path)) {
+			Log.error(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Dropping the overwrite path value: (%s), since it contains invalid characters or is empty or null.",
+				path
+			);
+			return null;
+		}
+
+		return path;
+	}
+
+	/**
+	 * Validates a given path does not contain invalid characters.
+	 * A 'path'  may only contain alphanumeric characters, forward slash, period, hyphen, underscore, or tilde, but may not contain a double forward slash.
+	 * @param path the path to validate
+	 * @return true if 'path' passes validation, false if 'path' contains invalid characters.
+	 */
+	private boolean isValidPath(final String path) {
+		if (path == null || path.isEmpty()) {
+			return false;
+		}
+
+		if (path.contains("//")) {
+			return false;
+		}
+
+		Pattern pattern = Pattern.compile(VALID_PATH_REGEX_PATTERN);
+		Matcher matcher = pattern.matcher(path);
+
+		return matcher.find();
 	}
 
 	/**
