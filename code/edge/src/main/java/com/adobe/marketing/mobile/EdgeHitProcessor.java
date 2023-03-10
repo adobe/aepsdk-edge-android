@@ -20,7 +20,6 @@ import com.adobe.marketing.mobile.services.HitProcessingResult;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.DataReader;
-import com.adobe.marketing.mobile.util.MapUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -46,6 +45,7 @@ class EdgeHitProcessor implements HitProcessing {
 	private final ConcurrentHashMap<String, Integer> entityRetryIntervalMapping = new ConcurrentHashMap<>();
 	static EdgeNetworkService networkService;
 	private static final String VALID_PATH_REGEX_PATTERN = "^\\/[/.a-zA-Z0-9-~_]+$";
+	private static final Pattern pattern = Pattern.compile(VALID_PATH_REGEX_PATTERN);
 
 	EdgeHitProcessor(
 		final NetworkResponseHandler networkResponseHandler,
@@ -359,9 +359,8 @@ class EdgeHitProcessor implements HitProcessing {
 	 */
 	private Map<String, Object> getRequestProperties(final Event event) {
 		Map<String, Object> requestProperties = new HashMap<>();
-
 		String overwritePath = getCustomRequestPath(event);
-		if (overwritePath != null) {
+		if (!StringUtils.isNullOrEmpty(overwritePath)) {
 			Log.trace(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -380,26 +379,13 @@ class EdgeHitProcessor implements HitProcessing {
 	 * @return the custom path string
 	 */
 	private String getCustomRequestPath(final Event event) {
-		String path = null;
-
-		Map<String, Object> eventData = event.getEventData();
-		try {
-			if (!MapUtils.isNullOrEmpty(eventData)) {
-				Map<String, Object> requestData = (Map<String, Object>) eventData.get(
-					EdgeConstants.EventDataKeys.Request.KEY
-				);
-				if (!MapUtils.isNullOrEmpty(requestData)) {
-					path = (String) requestData.get(EdgeConstants.EventDataKeys.Request.PATH);
-				}
-			}
-		} catch (ClassCastException e) {
-			Log.error(
-				LOG_TAG,
-				LOG_SOURCE,
-				"Exception while getting custom path from the experience event (%s).",
-				e.getLocalizedMessage()
-			);
-		}
+		Map<String, Object> requestData = DataReader.optTypedMap(
+			Object.class,
+			event.getEventData(),
+			EdgeConstants.EventDataKeys.Request.KEY,
+			null
+		);
+		String path = DataReader.optString(requestData, EdgeConstants.EventDataKeys.Request.PATH, null);
 
 		if (!isValidPath(path)) {
 			Log.error(
@@ -429,7 +415,6 @@ class EdgeHitProcessor implements HitProcessing {
 			return false;
 		}
 
-		Pattern pattern = Pattern.compile(VALID_PATH_REGEX_PATTERN);
 		Matcher matcher = pattern.matcher(path);
 
 		return matcher.find();

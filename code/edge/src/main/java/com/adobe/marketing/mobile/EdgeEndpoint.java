@@ -79,7 +79,6 @@ class EdgeEndpoint {
 		final String edgeDomain = !StringUtils.isNullOrEmpty(domain)
 			? domain
 			: EdgeConstants.NetworkKeys.DEFAULT_DOMAIN;
-		final String customPath = (path != null && !path.isEmpty()) ? path : null;
 		final String edgeLocationHint = !StringUtils.isNullOrEmpty(locationHint) ? "/" + locationHint : "";
 
 		switch (type) {
@@ -106,12 +105,12 @@ class EdgeEndpoint {
 		// Append locationHint
 		endpointBuilder.append(edgeLocationHint);
 
-		if (customPath != null) {
+		if (!StringUtils.isNullOrEmpty(path)) {
 			// path should contain the leading "/"
-			endpointBuilder.append(customPath);
+			endpointBuilder.append(path);
 		} else {
 			endpointBuilder.append(EdgeConstants.NetworkKeys.REQUEST_URL_VERSION);
-			endpointBuilder.append("/" + requestType.type);
+			endpointBuilder.append("/").append(requestType.type);
 		}
 
 		endpoint = endpointBuilder.toString();
