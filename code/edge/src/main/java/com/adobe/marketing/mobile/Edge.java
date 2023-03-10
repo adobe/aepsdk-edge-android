@@ -131,7 +131,7 @@ public class Edge {
 
 		final Map<String, Object> requestData = new HashMap<String, Object>() {
 			{
-				put(EdgeConstants.EventDataKey.LOCATION_HINT, true);
+				put(EdgeConstants.EventDataKeys.LOCATION_HINT, true);
 			}
 		};
 
@@ -156,7 +156,7 @@ public class Edge {
 
 					final Map<String, Object> responseData = responseEvent.getEventData();
 
-					if (responseData == null || !responseData.containsKey(EdgeConstants.EventDataKey.LOCATION_HINT)) {
+					if (responseData == null || !responseData.containsKey(EdgeConstants.EventDataKeys.LOCATION_HINT)) {
 						returnError(callback, AdobeError.UNEXPECTED_ERROR);
 						return;
 					}
@@ -164,7 +164,7 @@ public class Edge {
 					try {
 						String locationHint = DataReader.getString(
 							responseData,
-							EdgeConstants.EventDataKey.LOCATION_HINT
+							EdgeConstants.EventDataKeys.LOCATION_HINT
 						);
 						callback.call(locationHint); // hint may be null (hint not set or expired)
 					} catch (DataReaderException e) {
@@ -209,7 +209,7 @@ public class Edge {
 	public static void setLocationHint(@Nullable final String hint) {
 		Map<String, Object> requestData = new HashMap<String, Object>() {
 			{
-				put(EdgeConstants.EventDataKey.LOCATION_HINT, hint);
+				put(EdgeConstants.EventDataKeys.LOCATION_HINT, hint);
 			}
 		};
 

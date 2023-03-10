@@ -53,41 +53,214 @@ import org.mockito.junit.MockitoJUnitRunner;
 public class EdgeHitProcessorTests {
 
 	// for Endpoint tests
-	public static final String ENDPOINT_PROD = buildEndpoint(DEFAULT_DOMAIN, REQUEST_URL_PROD_PATH, null);
-	public static final String ENDPOINT_PRE_PROD = buildEndpoint(DEFAULT_DOMAIN, REQUEST_URL_PRE_PROD_PATH, null);
-	public static final String ENDPOINT_INT = buildEndpoint(REQUEST_DOMAIN_INT, REQUEST_URL_PROD_PATH, null);
+	public static final String ENDPOINT_PROD_INTERACT = buildEndpoint(
+		EdgeNetworkService.RequestType.INTERACT,
+		DEFAULT_DOMAIN,
+		REQUEST_URL_PROD_PATH,
+		null,
+		null
+	);
+	public static final String ENDPOINT_PRE_PROD_INTERACT = buildEndpoint(
+		EdgeNetworkService.RequestType.INTERACT,
+		DEFAULT_DOMAIN,
+		REQUEST_URL_PRE_PROD_PATH,
+		null,
+		null
+	);
+	public static final String ENDPOINT_INT_INTERACT = buildEndpoint(
+		EdgeNetworkService.RequestType.INTERACT,
+		REQUEST_DOMAIN_INT,
+		REQUEST_URL_PROD_PATH,
+		null,
+		null
+	);
+
+	public static final String ENDPOINT_PROD_CONSENT = buildEndpoint(
+		EdgeNetworkService.RequestType.CONSENT,
+		DEFAULT_DOMAIN,
+		REQUEST_URL_PROD_PATH,
+		null,
+		null
+	);
+	public static final String ENDPOINT_PRE_PROD_CONSENT = buildEndpoint(
+		EdgeNetworkService.RequestType.CONSENT,
+		DEFAULT_DOMAIN,
+		REQUEST_URL_PRE_PROD_PATH,
+		null,
+		null
+	);
+	public static final String ENDPOINT_INT_CONSENT = buildEndpoint(
+		EdgeNetworkService.RequestType.CONSENT,
+		REQUEST_DOMAIN_INT,
+		REQUEST_URL_PROD_PATH,
+		null,
+		null
+	);
 
 	public static final String CUSTOM_DOMAIN = "my.awesome.site";
-	public static final String ENDPOINT_PROD_CUSTOM = buildEndpoint(CUSTOM_DOMAIN, REQUEST_URL_PROD_PATH, null);
-	public static final String ENDPOINT_PRE_PROD_CUSTOM = buildEndpoint(CUSTOM_DOMAIN, REQUEST_URL_PRE_PROD_PATH, null);
+	public static final String ENDPOINT_PROD_CUSTOM_INTERACT = buildEndpoint(
+		EdgeNetworkService.RequestType.INTERACT,
+		CUSTOM_DOMAIN,
+		REQUEST_URL_PROD_PATH,
+		null,
+		null
+	);
+	public static final String ENDPOINT_PRE_PROD_CUSTOM_INTERACT = buildEndpoint(
+		EdgeNetworkService.RequestType.INTERACT,
+		CUSTOM_DOMAIN,
+		REQUEST_URL_PRE_PROD_PATH,
+		null,
+		null
+	);
+
+	public static final String ENDPOINT_PROD_CUSTOM_CONSENT = buildEndpoint(
+		EdgeNetworkService.RequestType.CONSENT,
+		CUSTOM_DOMAIN,
+		REQUEST_URL_PROD_PATH,
+		null,
+		null
+	);
+	public static final String ENDPOINT_PRE_PROD_CUSTOM_CONSENT = buildEndpoint(
+		EdgeNetworkService.RequestType.CONSENT,
+		CUSTOM_DOMAIN,
+		REQUEST_URL_PRE_PROD_PATH,
+		null,
+		null
+	);
 
 	// Endpoint with location hint
 	public static final String LOC_HINT = "lh1";
-	public static final String ENDPOINT_PROD_LOC_HINT = buildEndpoint(DEFAULT_DOMAIN, REQUEST_URL_PROD_PATH, LOC_HINT);
-	public static final String ENDPOINT_PRE_PROD_LOC_HINT = buildEndpoint(
+	public static final String OVERWRITE_PATH = "/va/v1/sessionstart";
+	public static final String ENDPOINT_PROD_LOC_HINT_INTERACT = buildEndpoint(
+		EdgeNetworkService.RequestType.INTERACT,
+		DEFAULT_DOMAIN,
+		REQUEST_URL_PROD_PATH,
+		null,
+		LOC_HINT
+	);
+	public static final String ENDPOINT_PRE_PROD_LOC_HINT_INTERACT = buildEndpoint(
+		EdgeNetworkService.RequestType.INTERACT,
 		DEFAULT_DOMAIN,
 		REQUEST_URL_PRE_PROD_PATH,
+		null,
 		LOC_HINT
 	);
-	public static final String ENDPOINT_INT_LOC_HINT = buildEndpoint(
+	public static final String ENDPOINT_INT_LOC_HINT_INTERACT = buildEndpoint(
+		EdgeNetworkService.RequestType.INTERACT,
 		REQUEST_DOMAIN_INT,
 		REQUEST_URL_PROD_PATH,
+		null,
 		LOC_HINT
 	);
-	public static final String ENDPOINT_PROD_CUSTOM_LOC_HINT = buildEndpoint(
+	public static final String ENDPOINT_PROD_CUSTOM_LOC_HINT_INTERACT = buildEndpoint(
+		EdgeNetworkService.RequestType.INTERACT,
 		CUSTOM_DOMAIN,
 		REQUEST_URL_PROD_PATH,
+		null,
 		LOC_HINT
 	);
-	public static final String ENDPOINT_PRE_PROD_CUSTOM_LOC_HINT = buildEndpoint(
+	public static final String ENDPOINT_PRE_PROD_CUSTOM_LOC_HINT_INTERACT = buildEndpoint(
+		EdgeNetworkService.RequestType.INTERACT,
 		CUSTOM_DOMAIN,
 		REQUEST_URL_PRE_PROD_PATH,
+		null,
+		LOC_HINT
+	);
+
+	public static final String ENDPOINT_PROD_LOC_HINT_CONSENT = buildEndpoint(
+		EdgeNetworkService.RequestType.CONSENT,
+		DEFAULT_DOMAIN,
+		REQUEST_URL_PROD_PATH,
+		null,
+		LOC_HINT
+	);
+	public static final String ENDPOINT_PRE_PROD_LOC_HINT_CONSENT = buildEndpoint(
+		EdgeNetworkService.RequestType.CONSENT,
+		DEFAULT_DOMAIN,
+		REQUEST_URL_PRE_PROD_PATH,
+		null,
+		LOC_HINT
+	);
+	public static final String ENDPOINT_INT_LOC_HINT_CONSENT = buildEndpoint(
+		EdgeNetworkService.RequestType.CONSENT,
+		REQUEST_DOMAIN_INT,
+		REQUEST_URL_PROD_PATH,
+		null,
+		LOC_HINT
+	);
+	public static final String ENDPOINT_PROD_CUSTOM_LOC_HINT_CONSENT = buildEndpoint(
+		EdgeNetworkService.RequestType.CONSENT,
+		CUSTOM_DOMAIN,
+		REQUEST_URL_PROD_PATH,
+		null,
+		LOC_HINT
+	);
+	public static final String ENDPOINT_PRE_PROD_CUSTOM_LOC_HINT_CONSENT = buildEndpoint(
+		EdgeNetworkService.RequestType.CONSENT,
+		CUSTOM_DOMAIN,
+		REQUEST_URL_PRE_PROD_PATH,
+		null,
+		LOC_HINT
+	);
+
+	public static final String ENDPOINT_PROD_OVERWRITE_PATH_INTERACT = buildEndpoint(
+		EdgeNetworkService.RequestType.INTERACT,
+		DEFAULT_DOMAIN,
+		REQUEST_URL_PROD_PATH,
+		OVERWRITE_PATH,
+		LOC_HINT
+	);
+	public static final String ENDPOINT_PRE_PROD_OVERWRITE_PATH_INTERACT = buildEndpoint(
+		EdgeNetworkService.RequestType.INTERACT,
+		DEFAULT_DOMAIN,
+		REQUEST_URL_PRE_PROD_PATH,
+		OVERWRITE_PATH,
+		LOC_HINT
+	);
+	public static final String ENDPOINT_INT_OVERWRITE_PATH_INTERACT = buildEndpoint(
+		EdgeNetworkService.RequestType.INTERACT,
+		REQUEST_DOMAIN_INT,
+		REQUEST_URL_PROD_PATH,
+		OVERWRITE_PATH,
+		LOC_HINT
+	);
+	public static final String ENDPOINT_INT_CUSTOM_OVERWRITE_PATH_INTERACT = buildEndpoint(
+		EdgeNetworkService.RequestType.INTERACT,
+		REQUEST_DOMAIN_INT,
+		REQUEST_URL_PROD_PATH,
+		OVERWRITE_PATH,
+		LOC_HINT
+	);
+	public static final String ENDPOINT_PROD_CUSTOM_OVERWRITE_PATH_INTERACT = buildEndpoint(
+		EdgeNetworkService.RequestType.INTERACT,
+		CUSTOM_DOMAIN,
+		REQUEST_URL_PROD_PATH,
+		OVERWRITE_PATH,
+		LOC_HINT
+	);
+	public static final String ENDPOINT_PRE_PROD_CUSTOM_OVERWRITE_PATH_INTERACT = buildEndpoint(
+		EdgeNetworkService.RequestType.INTERACT,
+		CUSTOM_DOMAIN,
+		REQUEST_URL_PRE_PROD_PATH,
+		OVERWRITE_PATH,
 		LOC_HINT
 	);
 
 	// Build request endpoint URL string based on domain, path, and location hint
-	private static String buildEndpoint(final String domain, final String path, final String hint) {
-		return String.format("https://%s%s%s/v1", domain, path, hint != null ? "/" + hint : "");
+	private static String buildEndpoint(
+		final EdgeNetworkService.RequestType requestType,
+		final String domain,
+		final String path,
+		final String overwritePath,
+		final String hint
+	) {
+		return String.format(
+			"https://%s%s%s%s",
+			domain,
+			path,
+			hint != null ? "/" + hint : "",
+			(overwritePath != null && !overwritePath.isEmpty()) ? overwritePath : "/v1/" + requestType.type
+		);
 	}
 
 	private EdgeHitProcessor hitProcessor;
@@ -117,6 +290,42 @@ public class EdgeHitProcessorTests {
 		.build();
 
 	private final Event consentEvent = new Event.Builder(
+		"test-consent-event",
+		EventType.EDGE,
+		EventSource.UPDATE_CONSENT
+	)
+		.setEventData(
+			new HashMap<String, Object>() {
+				{
+					put(
+						"consents",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"collect",
+									new HashMap<String, Object>() {
+										{
+											put("val", "y");
+										}
+									}
+								);
+								put(
+									"request",
+									new HashMap<String, Object>() {
+										{
+											put("path", "/va/v1/sessionstart");
+										}
+									}
+								);
+							}
+						}
+					);
+				}
+			}
+		)
+		.build();
+
+	private final Event consentEventWithOverwritePath = new Event.Builder(
 		"test-consent-event",
 		EventType.EDGE,
 		EventSource.UPDATE_CONSENT
@@ -278,17 +487,15 @@ public class EdgeHitProcessorTests {
 		// setup
 		final String configId = "456";
 		final JSONObject requestBody = getOneEventJson();
-		final EdgeEndpoint endpoint = new EdgeEndpoint("prod", null, null);
-		final EdgeHit hit = new EdgeHit(configId, requestBody, EdgeNetworkService.RequestType.INTERACT, endpoint);
-		when(
-			mockEdgeNetworkService.buildUrl(
-				EdgeNetworkService.RequestType.INTERACT,
-				endpoint,
-				configId,
-				hit.getRequestId()
-			)
-		)
-			.thenReturn("https://test.com");
+		final EdgeEndpoint endpoint = new EdgeEndpoint(
+			EdgeNetworkService.RequestType.INTERACT,
+			"prod",
+			null,
+			null,
+			null
+		);
+		final EdgeHit hit = new EdgeHit(configId, requestBody, endpoint);
+		when(mockEdgeNetworkService.buildUrl(endpoint, configId, hit.getRequestId())).thenReturn("https://test.com");
 		when(
 			mockEdgeNetworkService.doRequest(
 				anyString(),
@@ -336,17 +543,15 @@ public class EdgeHitProcessorTests {
 		// setup
 		final String configId = "456";
 		final JSONObject requestBody = getOneEventJson();
-		final EdgeEndpoint endpoint = new EdgeEndpoint("prod", null, null);
-		final EdgeHit hit = new EdgeHit(configId, requestBody, EdgeNetworkService.RequestType.INTERACT, endpoint);
-		when(
-			mockEdgeNetworkService.buildUrl(
-				EdgeNetworkService.RequestType.INTERACT,
-				endpoint,
-				configId,
-				hit.getRequestId()
-			)
-		)
-			.thenReturn("https://test.com");
+		final EdgeEndpoint endpoint = new EdgeEndpoint(
+			EdgeNetworkService.RequestType.INTERACT,
+			"prod",
+			null,
+			null,
+			null
+		);
+		final EdgeHit hit = new EdgeHit(configId, requestBody, endpoint);
+		when(mockEdgeNetworkService.buildUrl(endpoint, configId, hit.getRequestId())).thenReturn("https://test.com");
 		when(
 			mockEdgeNetworkService.doRequest(
 				anyString(),
@@ -385,17 +590,15 @@ public class EdgeHitProcessorTests {
 		// setup
 		final String configId = "456";
 		final JSONObject requestBody = getConsentPayloadJson();
-		final EdgeEndpoint endpoint = new EdgeEndpoint("prod", null, null);
-		final EdgeHit hit = new EdgeHit(configId, requestBody, EdgeNetworkService.RequestType.CONSENT, endpoint);
-		when(
-			mockEdgeNetworkService.buildUrl(
-				EdgeNetworkService.RequestType.CONSENT,
-				endpoint,
-				configId,
-				hit.getRequestId()
-			)
-		)
-			.thenReturn("https://test.com");
+		final EdgeEndpoint endpoint = new EdgeEndpoint(
+			EdgeNetworkService.RequestType.CONSENT,
+			"prod",
+			null,
+			null,
+			null
+		);
+		final EdgeHit hit = new EdgeHit(configId, requestBody, endpoint);
+		when(mockEdgeNetworkService.buildUrl(endpoint, configId, hit.getRequestId())).thenReturn("https://test.com");
 		when(mockNetworkResponseHandler.removeWaitingEvents(hit.getRequestId()))
 			.thenReturn(
 				new ArrayList<String>() {
@@ -612,76 +815,129 @@ public class EdgeHitProcessorTests {
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentProd_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(experienceEvent, "prod", null, ENDPOINT_PROD, EdgeNetworkService.RequestType.INTERACT);
+		assertProcessHitEndpoint(experienceEvent, "prod", null, ENDPOINT_PROD_INTERACT);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentProd_withLocationHint_buildUrlWithProdEndpoint() {
 		locationHitResult = LOC_HINT;
+		assertProcessHitEndpoint(experienceEvent, "prod", null, ENDPOINT_PROD_LOC_HINT_INTERACT);
+	}
+
+	@Test
+	public void testProcessHit_experienceEvent_edgeEnvironmentProd_withOverwritePath_buildUrlWithProdEndpoint() {
+		locationHitResult = LOC_HINT;
 		assertProcessHitEndpoint(
-			experienceEvent,
+			getExperienceEventWithOverwritePath("/va/v1/sessionstart"),
 			"prod",
 			null,
-			ENDPOINT_PROD_LOC_HINT,
-			EdgeNetworkService.RequestType.INTERACT
+			ENDPOINT_PROD_OVERWRITE_PATH_INTERACT
+		);
+	}
+
+	@Test
+	public void testProcessHit_experienceEvent_edgeEnvironmentProd_withNullOverwritePath_doesNotOverwritePath()
+		throws Exception {
+		locationHitResult = LOC_HINT;
+		assertProcessHitEndpoint(
+			getExperienceEventWithOverwritePath(null),
+			"prod",
+			null,
+			ENDPOINT_PROD_LOC_HINT_INTERACT
+		);
+	}
+
+	@Test
+	public void testProcessHit_experienceEvent_edgeEnvironmentProd_withEmptyOverwritePath_doesNotOverwritePath() {
+		locationHitResult = LOC_HINT;
+		assertProcessHitEndpoint(
+			getExperienceEventWithOverwritePath(""),
+			"prod",
+			null,
+			ENDPOINT_PROD_LOC_HINT_INTERACT
+		);
+	}
+
+	@Test
+	public void testProcessHit_experienceEvent_edgeEnvironmentProd_withOverwritePathContainingDoubleSlashes_doesNotOverwritePath() {
+		locationHitResult = LOC_HINT;
+		assertProcessHitEndpoint(
+			getExperienceEventWithOverwritePath("//va/v1/sessionstart"),
+			"prod",
+			null,
+			ENDPOINT_PROD_LOC_HINT_INTERACT
+		);
+	}
+
+	@Test
+	public void testProcessHit_experienceEvent_edgeEnvironmentProd_withOverwritePathContainingQueryParameter_doesNotOverwritePath() {
+		locationHitResult = LOC_HINT;
+		assertProcessHitEndpoint(
+			getExperienceEventWithOverwritePath("/va/v1/sessionstart?query=value"),
+			"prod",
+			null,
+			ENDPOINT_PROD_LOC_HINT_INTERACT
+		);
+	}
+
+	@Test
+	public void testProcessHit_experienceEvent_edgeEnvironmentProd_withOverwritePathContainingInvalidCharacter_doesNotOverwritePath() {
+		locationHitResult = LOC_HINT;
+		assertProcessHitEndpoint(
+			getExperienceEventWithOverwritePath("/va/v1/sessionstart/@test"),
+			"prod",
+			null,
+			ENDPOINT_PROD_LOC_HINT_INTERACT
 		);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentProdAndCustomDomain_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(
-			experienceEvent,
-			"prod",
-			CUSTOM_DOMAIN,
-			ENDPOINT_PROD_CUSTOM,
-			EdgeNetworkService.RequestType.INTERACT
-		);
+		assertProcessHitEndpoint(experienceEvent, "prod", CUSTOM_DOMAIN, ENDPOINT_PROD_CUSTOM_INTERACT);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentProdAndCustomDomain_withLocationHint_buildUrlWithProdEndpoint() {
 		locationHitResult = LOC_HINT;
+		assertProcessHitEndpoint(experienceEvent, "prod", CUSTOM_DOMAIN, ENDPOINT_PROD_CUSTOM_LOC_HINT_INTERACT);
+	}
+
+	@Test
+	public void testProcessHit_experienceEvent_edgeEnvironmentProdAndCustomDomain_withOverwritePath_buildUrlWithProdEndpoint() {
+		locationHitResult = LOC_HINT;
 		assertProcessHitEndpoint(
-			experienceEvent,
+			getExperienceEventWithOverwritePath("/va/v1/sessionstart"),
 			"prod",
 			CUSTOM_DOMAIN,
-			ENDPOINT_PROD_CUSTOM_LOC_HINT,
-			EdgeNetworkService.RequestType.INTERACT
+			ENDPOINT_PROD_CUSTOM_OVERWRITE_PATH_INTERACT
 		);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentPreProd_buildUrlWithPreProdEndpoint() {
-		assertProcessHitEndpoint(
-			experienceEvent,
-			"pre-prod",
-			null,
-			ENDPOINT_PRE_PROD,
-			EdgeNetworkService.RequestType.INTERACT
-		);
+		assertProcessHitEndpoint(experienceEvent, "pre-prod", null, ENDPOINT_PRE_PROD_INTERACT);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentPreProd_withLocationHint_buildUrlWithPreProdEndpoint() {
 		locationHitResult = LOC_HINT;
+		assertProcessHitEndpoint(experienceEvent, "pre-prod", null, ENDPOINT_PRE_PROD_LOC_HINT_INTERACT);
+	}
+
+	@Test
+	public void testProcessHit_experienceEvent_edgeEnvironmentPreProd_withOverwritePath_buildUrlWithProdEndpoint() {
+		locationHitResult = LOC_HINT;
 		assertProcessHitEndpoint(
-			experienceEvent,
+			getExperienceEventWithOverwritePath("/va/v1/sessionstart"),
 			"pre-prod",
 			null,
-			ENDPOINT_PRE_PROD_LOC_HINT,
-			EdgeNetworkService.RequestType.INTERACT
+			ENDPOINT_PRE_PROD_OVERWRITE_PATH_INTERACT
 		);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentPreProdAndCustomDomain_buildUrlWithPreProdEndpoint() {
-		assertProcessHitEndpoint(
-			experienceEvent,
-			"pre-prod",
-			CUSTOM_DOMAIN,
-			ENDPOINT_PRE_PROD_CUSTOM,
-			EdgeNetworkService.RequestType.INTERACT
-		);
+		assertProcessHitEndpoint(experienceEvent, "pre-prod", CUSTOM_DOMAIN, ENDPOINT_PRE_PROD_CUSTOM_INTERACT);
 	}
 
 	@Test
@@ -691,221 +947,170 @@ public class EdgeHitProcessorTests {
 			experienceEvent,
 			"pre-prod",
 			CUSTOM_DOMAIN,
-			ENDPOINT_PRE_PROD_CUSTOM_LOC_HINT,
-			EdgeNetworkService.RequestType.INTERACT
+			ENDPOINT_PRE_PROD_CUSTOM_LOC_HINT_INTERACT
+		);
+	}
+
+	@Test
+	public void testProcessHit_experienceEvent_edgeEnvironmentPreProdAndCustomDomain_withOverwritePath_buildUrlWithProdEndpoint() {
+		locationHitResult = LOC_HINT;
+		assertProcessHitEndpoint(
+			getExperienceEventWithOverwritePath("/va/v1/sessionstart"),
+			"pre-prod",
+			CUSTOM_DOMAIN,
+			ENDPOINT_PRE_PROD_CUSTOM_OVERWRITE_PATH_INTERACT
 		);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentInt_buildUrlWithIntEndpoint() {
-		assertProcessHitEndpoint(experienceEvent, "int", null, ENDPOINT_INT, EdgeNetworkService.RequestType.INTERACT);
+		assertProcessHitEndpoint(experienceEvent, "int", null, ENDPOINT_INT_INTERACT);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentInt_withLocationHint_buildUrlWithIntEndpoint() {
 		locationHitResult = LOC_HINT;
+		assertProcessHitEndpoint(experienceEvent, "int", null, ENDPOINT_INT_LOC_HINT_INTERACT);
+	}
+
+	@Test
+	public void testProcessHit_experienceEvent_edgeEnvironmentInt_withOverwritePath_buildUrlWithIntEndpoint() {
+		locationHitResult = LOC_HINT;
 		assertProcessHitEndpoint(
-			experienceEvent,
+			getExperienceEventWithOverwritePath("/va/v1/sessionstart"),
 			"int",
 			null,
-			ENDPOINT_INT_LOC_HINT,
-			EdgeNetworkService.RequestType.INTERACT
+			ENDPOINT_INT_OVERWRITE_PATH_INTERACT
 		);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentIntAndCustomDomain_buildUrlWithIntEndpoint() {
 		// Integration endpoint does not support custom domains
-		assertProcessHitEndpoint(
-			experienceEvent,
-			"int",
-			CUSTOM_DOMAIN,
-			ENDPOINT_INT,
-			EdgeNetworkService.RequestType.INTERACT
-		);
+		assertProcessHitEndpoint(experienceEvent, "int", CUSTOM_DOMAIN, ENDPOINT_INT_INTERACT);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentIntAndCustomDomain_withLocationHint_buildUrlWithIntEndpoint() {
 		locationHitResult = LOC_HINT;
 		// Integration endpoint does not support custom domains
+		assertProcessHitEndpoint(experienceEvent, "int", CUSTOM_DOMAIN, ENDPOINT_INT_LOC_HINT_INTERACT);
+	}
+
+	@Test
+	public void testProcessHit_experienceEvent_edgeEnvironmentIntAndCustomDomain_withOverwritePath_buildUrlWithIntEndpoint() {
+		locationHitResult = LOC_HINT;
+		// Integration endpoint does not support custom domains
 		assertProcessHitEndpoint(
-			experienceEvent,
+			getExperienceEventWithOverwritePath("/va/v1/sessionstart"),
 			"int",
 			CUSTOM_DOMAIN,
-			ENDPOINT_INT_LOC_HINT,
-			EdgeNetworkService.RequestType.INTERACT
+			ENDPOINT_INT_OVERWRITE_PATH_INTERACT
 		);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentEmpty_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(experienceEvent, "", null, ENDPOINT_PROD, EdgeNetworkService.RequestType.INTERACT);
+		assertProcessHitEndpoint(experienceEvent, "", null, ENDPOINT_PROD_INTERACT);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentNull_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(experienceEvent, null, null, ENDPOINT_PROD, EdgeNetworkService.RequestType.INTERACT);
+		assertProcessHitEndpoint(experienceEvent, null, null, ENDPOINT_PROD_INTERACT);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentInvalid_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(
-			experienceEvent,
-			"somevalue",
-			null,
-			ENDPOINT_PROD,
-			EdgeNetworkService.RequestType.INTERACT
-		);
+		assertProcessHitEndpoint(experienceEvent, "somevalue", null, ENDPOINT_PROD_INTERACT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentProd_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(consentEvent, "prod", null, ENDPOINT_PROD, EdgeNetworkService.RequestType.CONSENT);
+		assertProcessHitEndpoint(consentEvent, "prod", null, ENDPOINT_PROD_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentProd_withLocationHint_buildUrlWithProdEndpoint() {
 		locationHitResult = LOC_HINT;
-		assertProcessHitEndpoint(
-			consentEvent,
-			"prod",
-			null,
-			ENDPOINT_PROD_LOC_HINT,
-			EdgeNetworkService.RequestType.CONSENT
-		);
+		assertProcessHitEndpoint(consentEvent, "prod", null, ENDPOINT_PROD_LOC_HINT_CONSENT);
+	}
+
+	@Test
+	public void testProcessHit_consentEvent_edgeEnvironmentProd_withOverwritePath_doesNotOverwriteThePath() {
+		locationHitResult = LOC_HINT;
+		assertProcessHitEndpoint(consentEventWithOverwritePath, "prod", null, ENDPOINT_PROD_LOC_HINT_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentProdAndCustomDomain_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(
-			consentEvent,
-			"prod",
-			CUSTOM_DOMAIN,
-			ENDPOINT_PROD_CUSTOM,
-			EdgeNetworkService.RequestType.CONSENT
-		);
+		assertProcessHitEndpoint(consentEvent, "prod", CUSTOM_DOMAIN, ENDPOINT_PROD_CUSTOM_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentProdAndCustomDomain_withLocationHint_buildUrlWithProdEndpoint() {
 		locationHitResult = LOC_HINT;
-		assertProcessHitEndpoint(
-			consentEvent,
-			"prod",
-			CUSTOM_DOMAIN,
-			ENDPOINT_PROD_CUSTOM_LOC_HINT,
-			EdgeNetworkService.RequestType.CONSENT
-		);
+		assertProcessHitEndpoint(consentEvent, "prod", CUSTOM_DOMAIN, ENDPOINT_PROD_CUSTOM_LOC_HINT_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentPreProd_buildUrlWithPreProdEndpoint() {
-		assertProcessHitEndpoint(
-			consentEvent,
-			"pre-prod",
-			null,
-			ENDPOINT_PRE_PROD,
-			EdgeNetworkService.RequestType.CONSENT
-		);
+		assertProcessHitEndpoint(consentEvent, "pre-prod", null, ENDPOINT_PRE_PROD_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentPreProd_withLocationHint_buildUrlWithPreProdEndpoint() {
 		locationHitResult = LOC_HINT;
-		assertProcessHitEndpoint(
-			consentEvent,
-			"pre-prod",
-			null,
-			ENDPOINT_PRE_PROD_LOC_HINT,
-			EdgeNetworkService.RequestType.CONSENT
-		);
+		assertProcessHitEndpoint(consentEvent, "pre-prod", null, ENDPOINT_PRE_PROD_LOC_HINT_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentPreProdAndCustomDomain_buildUrlWithPreProdEndpoint() {
-		assertProcessHitEndpoint(
-			consentEvent,
-			"pre-prod",
-			CUSTOM_DOMAIN,
-			ENDPOINT_PRE_PROD_CUSTOM,
-			EdgeNetworkService.RequestType.CONSENT
-		);
+		assertProcessHitEndpoint(consentEvent, "pre-prod", CUSTOM_DOMAIN, ENDPOINT_PRE_PROD_CUSTOM_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentPreProdAndCustomDomain_withLocationHint_buildUrlWithPreProdEndpoint() {
 		locationHitResult = LOC_HINT;
-		assertProcessHitEndpoint(
-			consentEvent,
-			"pre-prod",
-			CUSTOM_DOMAIN,
-			ENDPOINT_PRE_PROD_CUSTOM_LOC_HINT,
-			EdgeNetworkService.RequestType.CONSENT
-		);
+		assertProcessHitEndpoint(consentEvent, "pre-prod", CUSTOM_DOMAIN, ENDPOINT_PRE_PROD_CUSTOM_LOC_HINT_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentInt_buildUrlWithIntEndpoint() {
-		assertProcessHitEndpoint(consentEvent, "int", null, ENDPOINT_INT, EdgeNetworkService.RequestType.CONSENT);
+		assertProcessHitEndpoint(consentEvent, "int", null, ENDPOINT_INT_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentInt_withLocationHint_buildUrlWithIntEndpoint() {
 		locationHitResult = LOC_HINT;
-		assertProcessHitEndpoint(
-			consentEvent,
-			"int",
-			null,
-			ENDPOINT_INT_LOC_HINT,
-			EdgeNetworkService.RequestType.CONSENT
-		);
+		assertProcessHitEndpoint(consentEvent, "int", null, ENDPOINT_INT_LOC_HINT_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentIntAndCustomDomain_buildUrlWithIntEndpoint() {
 		// Integration endpoint does not support custom domains
-		assertProcessHitEndpoint(
-			consentEvent,
-			"int",
-			CUSTOM_DOMAIN,
-			ENDPOINT_INT,
-			EdgeNetworkService.RequestType.CONSENT
-		);
+		assertProcessHitEndpoint(consentEvent, "int", CUSTOM_DOMAIN, ENDPOINT_INT_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentIntAndCustomDomain_withLocationHint_buildUrlWithIntEndpoint() {
 		locationHitResult = LOC_HINT;
 		// Integration endpoint does not support custom domains
-		assertProcessHitEndpoint(
-			consentEvent,
-			"int",
-			CUSTOM_DOMAIN,
-			ENDPOINT_INT_LOC_HINT,
-			EdgeNetworkService.RequestType.CONSENT
-		);
+		assertProcessHitEndpoint(consentEvent, "int", CUSTOM_DOMAIN, ENDPOINT_INT_LOC_HINT_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentEmpty_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(consentEvent, "", null, ENDPOINT_PROD, EdgeNetworkService.RequestType.CONSENT);
+		assertProcessHitEndpoint(consentEvent, "", null, ENDPOINT_PROD_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentNull_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(consentEvent, null, null, ENDPOINT_PROD, EdgeNetworkService.RequestType.CONSENT);
+		assertProcessHitEndpoint(consentEvent, null, null, ENDPOINT_PROD_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentInvalid_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(
-			consentEvent,
-			"somevalue",
-			null,
-			ENDPOINT_PROD,
-			EdgeNetworkService.RequestType.CONSENT
-		);
+		assertProcessHitEndpoint(consentEvent, "somevalue", null, ENDPOINT_PROD_CONSENT);
 	}
 
 	@Test
@@ -1163,14 +1368,7 @@ public class EdgeHitProcessorTests {
 	}
 
 	private void mockNetworkServiceResponse(final String returnBuildUrl, final RetryResult returnRetry) {
-		when(
-			mockEdgeNetworkService.buildUrl(
-				any(EdgeNetworkService.RequestType.class),
-				any(EdgeEndpoint.class),
-				anyString(),
-				anyString()
-			)
-		)
+		when(mockEdgeNetworkService.buildUrl(any(EdgeEndpoint.class), anyString(), anyString()))
 			.thenReturn(returnBuildUrl);
 		when(
 			mockEdgeNetworkService.doRequest(
@@ -1187,8 +1385,7 @@ public class EdgeHitProcessorTests {
 		final Event event,
 		final String environment,
 		final String domain,
-		final String expectedUrl,
-		final EdgeNetworkService.RequestType expectedRequestType
+		final String expectedUrl
 	) {
 		// setup
 		edgeConfig = new HashMap<>();
@@ -1202,14 +1399,7 @@ public class EdgeHitProcessorTests {
 			edgeConfig.put("edge.domain", domain);
 		}
 
-		when(
-			mockEdgeNetworkService.buildUrl(
-				any(EdgeNetworkService.RequestType.class),
-				any(EdgeEndpoint.class),
-				anyString(),
-				anyString()
-			)
-		)
+		when(mockEdgeNetworkService.buildUrl(any(EdgeEndpoint.class), anyString(), anyString()))
 			.thenReturn("https://test.com");
 
 		DataEntity dataEntity = new EdgeDataEntity(event, edgeConfig, identityMap).toDataEntity();
@@ -1233,10 +1423,8 @@ public class EdgeHitProcessorTests {
 		ArgumentCaptor<EdgeNetworkService.RequestType> requestTypeCaptor = ArgumentCaptor.forClass(
 			EdgeNetworkService.RequestType.class
 		);
-		verify(mockEdgeNetworkService, times(1))
-			.buildUrl(requestTypeCaptor.capture(), envCaptor.capture(), anyString(), anyString());
+		verify(mockEdgeNetworkService, times(1)).buildUrl(envCaptor.capture(), anyString(), anyString());
 		assertEquals(expectedUrl, envCaptor.getValue().getEndpoint());
-		assertEquals(expectedRequestType, requestTypeCaptor.getValue());
 	}
 
 	private JSONObject getOneEventJson() {
@@ -1298,5 +1486,33 @@ public class EdgeHitProcessorTests {
 		}
 
 		return null;
+	}
+
+	private Event getExperienceEventWithOverwritePath(final String path) {
+		return new Event.Builder("test-experience-event", EventType.EDGE, EventSource.REQUEST_CONTENT)
+			.setEventData(
+				new HashMap<String, Object>() {
+					{
+						put(
+							"xdm",
+							new HashMap<String, Object>() {
+								{
+									put("test", "data");
+								}
+							}
+						);
+
+						put(
+							"request",
+							new HashMap<String, Object>() {
+								{
+									put("path", path);
+								}
+							}
+						);
+					}
+				}
+			)
+			.build();
 	}
 }

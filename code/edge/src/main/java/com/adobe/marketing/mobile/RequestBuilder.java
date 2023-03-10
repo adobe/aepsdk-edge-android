@@ -127,7 +127,7 @@ class RequestBuilder {
 			return null;
 		}
 
-		if (!event.getEventData().containsKey(EdgeConstants.EventDataKey.CONSENTS)) {
+		if (!event.getEventData().containsKey(EdgeConstants.EventDataKeys.CONSENTS)) {
 			Log.debug(LOG_TAG, LOG_SOURCE, "Unable to process the consent update request, no consents data");
 			return null;
 		}
@@ -135,7 +135,7 @@ class RequestBuilder {
 		final Map<String, Object> consentMap = DataReader.optTypedMap(
 			Object.class,
 			event.getEventData(),
-			EdgeConstants.EventDataKey.CONSENTS,
+			EdgeConstants.EventDataKeys.CONSENTS,
 			null
 		);
 		if (MapUtils.isNullOrEmpty(consentMap)) {
@@ -154,7 +154,7 @@ class RequestBuilder {
 		final Map<String, Object> identityMap = DataReader.optTypedMap(
 			Object.class,
 			xdmPayloads,
-			EdgeConstants.EventDataKey.IDENTITY_MAP,
+			EdgeConstants.EventDataKeys.IDENTITY_MAP,
 			null
 		);
 		if (MapUtils.isNullOrEmpty(identityMap)) {
@@ -205,6 +205,11 @@ class RequestBuilder {
 					setDatasetIdToExperienceEvent(data);
 					setTimestampToExperienceEvent(data, e);
 					setEventIdToExperienceEvent(data, e);
+					if (data.containsKey(EdgeConstants.EventDataKeys.Request.KEY)) {
+						// Remove this request object as it is internal to the SDK
+						// request object contains custom values to overwrite different request properties like path
+						data.remove(EdgeConstants.EventDataKeys.Request.KEY);
+					}
 					experienceEvents.add(data);
 				}
 			} catch (CloneFailedException ex) {
@@ -271,7 +276,7 @@ class RequestBuilder {
 
 	@SuppressWarnings("unchecked")
 	private void setDatasetIdToExperienceEvent(final Map<String, Object> data) {
-		String datasetId = (String) data.remove(EdgeConstants.EventDataKey.DATASET_ID);
+		String datasetId = (String) data.remove(EdgeConstants.EventDataKeys.DATASET_ID);
 
 		if (datasetId == null || (datasetId = datasetId.trim()).isEmpty()) {
 			return;

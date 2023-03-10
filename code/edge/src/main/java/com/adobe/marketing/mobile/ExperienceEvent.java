@@ -194,7 +194,7 @@ public final class ExperienceEvent {
 		}
 
 		if (!StringUtils.isNullOrEmpty(datasetIdentifier)) {
-			serializedMap.put(EdgeConstants.EventDataKey.DATASET_ID, datasetIdentifier);
+			serializedMap.put(EdgeConstants.EventDataKeys.DATASET_ID, datasetIdentifier);
 		}
 
 		return serializedMap;

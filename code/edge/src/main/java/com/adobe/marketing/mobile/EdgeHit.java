@@ -22,7 +22,6 @@ class EdgeHit {
 	private final String configId;
 	private final String requestId;
 	private final JSONObject payload;
-	private final EdgeNetworkService.RequestType requestType;
 	private final EdgeEndpoint edgeEndpoint;
 
 	/**
@@ -30,18 +29,11 @@ class EdgeHit {
 	 * to be used as {@code requestId}.
 	 *  @param configId the Edge configuration identifier (obtained from Configuration); should not be null
 	 * @param payload the network request payload
-	 * @param requestType the hit {@link EdgeNetworkService.RequestType}; if not provided, by default it is {@code RequestType.INTERACT}
 	 * @param edgeEndpoint the endpoint URL for this hit
 	 */
-	EdgeHit(
-		final String configId,
-		final JSONObject payload,
-		final EdgeNetworkService.RequestType requestType,
-		final EdgeEndpoint edgeEndpoint
-	) {
+	EdgeHit(final String configId, final JSONObject payload, final EdgeEndpoint edgeEndpoint) {
 		this.configId = configId;
 		this.payload = payload;
-		this.requestType = requestType != null ? requestType : EdgeNetworkService.RequestType.INTERACT;
 		this.edgeEndpoint = edgeEndpoint;
 		this.requestId = UUID.randomUUID().toString();
 	}
@@ -63,13 +55,6 @@ class EdgeHit {
 	 */
 	String getRequestId() {
 		return requestId;
-	}
-
-	/**
-	 * @return the {@link EdgeNetworkService.RequestType} to be used for this {@link EdgeHit}
-	 */
-	EdgeNetworkService.RequestType getType() {
-		return requestType;
 	}
 
 	/**
