@@ -387,7 +387,7 @@ class EdgeHitProcessor implements HitProcessing {
 		);
 		String path = DataReader.optString(requestData, EdgeConstants.EventDataKeys.Request.PATH, null);
 
-		if (path == null || path.isEmpty()) {
+		if (StringUtils.isNullOrEmpty(path)) {
 			return null;
 		}
 
