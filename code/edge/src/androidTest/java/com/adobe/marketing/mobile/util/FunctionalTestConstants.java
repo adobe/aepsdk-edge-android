@@ -56,6 +56,9 @@ public class FunctionalTestConstants {
 			"https://edge.adobedc.net/ee-pre-prd/v1/privacy/set-consent";
 		public static final String EXEDGE_CONSENT_INT_URL_STRING =
 			"https://edge-int.adobedc.net/ee/v1/privacy/set-consent";
+		public static final String EXEDGE_MEDIA_PROD_URL_STRING = "https://edge.adobedc.net/ee/va/v1/sessionstart";
+		public static final String EXEDGE_MEDIA_OR2_LOC_URL_STRING =
+			"https://edge.adobedc.net/ee/or2/va/v1/sessionstart";
 
 		private Defaults() {}
 	}

@@ -260,20 +260,13 @@ class EdgeNetworkService {
 
 	/**
 	 *
-	 * @param requestType the {@link RequestType} used to determine the Experience Edge endpoint
 	 * @param edgeEndpoint the {@link EdgeEndpoint} containing the base Experience Edge endpoint
 	 * @param configId required globally unique identifier
 	 * @param requestId optional request ID. If one is not given, the Adobe Edge Network generates one in the response
 	 * @return the computed URL
 	 */
-	public String buildUrl(
-		final RequestType requestType,
-		final EdgeEndpoint edgeEndpoint,
-		final String configId,
-		final String requestId
-	) {
+	public String buildUrl(final EdgeEndpoint edgeEndpoint, final String configId, final String requestId) {
 		StringBuilder url = new StringBuilder(edgeEndpoint.getEndpoint());
-		url.append('/').append(requestType.type);
 		url.append("?").append(EdgeConstants.NetworkKeys.REQUEST_PARAMETER_KEY_CONFIG_ID).append("=").append(configId);
 
 		if (requestId != null && !requestId.isEmpty()) {

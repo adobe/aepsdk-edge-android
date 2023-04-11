@@ -14,7 +14,7 @@ package com.adobe.marketing.mobile;
 final class EdgeConstants {
 
 	static final String EDGE_DATA_STORAGE = "EdgeDataStorage";
-	static final String EXTENSION_VERSION = "2.0.0";
+	static final String EXTENSION_VERSION = "2.1.0";
 	static final String EXTENSION_NAME = "com.adobe.edge";
 	static final String FRIENDLY_NAME = "Edge";
 	static final String LOG_TAG = FRIENDLY_NAME;
@@ -45,7 +45,7 @@ final class EdgeConstants {
 		private Defaults() {}
 	}
 
-	static final class EventDataKey {
+	static final class EventDataKeys {
 
 		static final String EDGE_REQUEST_ID = "requestId";
 		static final String REQUEST_EVENT_ID = "requestEventId";
@@ -54,7 +54,15 @@ final class EdgeConstants {
 		static final String IDENTITY_MAP = "identityMap";
 		static final String LOCATION_HINT = "locationHint";
 
-		private EventDataKey() {}
+		static final class Request {
+
+			static final String KEY = "request";
+			static final String PATH = "path";
+
+			private Request() {}
+		}
+
+		private EventDataKeys() {}
 	}
 
 	static final class DataStoreKeys {

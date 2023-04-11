@@ -37,11 +37,6 @@ String extensionVersion = Edge.extensionVersion();
 
 #### Kotlin
 
-##### Syntax
-```kotlin
-fun extensionVersion(): String
-```
-
 ##### Examples
 ```kotlin
 val extensionVersion = EdgeBridge.extensionVersion()
@@ -77,11 +72,6 @@ Edge.getLocationHint(new AdobeCallbackWithError<String>() {
 ```
 
 #### Kotlin
-
-##### Syntax
-```kotlin
-fun getLocationHint(callback: AdobeCallback<String>)
-```
 
 ##### Example
 ```kotlin
@@ -122,10 +112,6 @@ Edge.registerExtension();
 
 #### Kotlin
 
-##### Syntax
-```kotlin
-fun registerExtension()
-```
 ##### Example
 ```kotlin
 import com.adobe.marketing.mobile.Edge
@@ -185,11 +171,6 @@ Edge.sendEvent(experienceEvent, new EdgeCallback() {
 ```
 #### Kotlin
 
-##### Syntax
-```kotlin
-fun sendEvent(experienceEvent: ExperienceEvent, callback: EdgeCallback?)
-```
-
 #### Example
 ```kotlin
 // Create experience event from Map
@@ -219,7 +200,7 @@ Edge.sendEvent(experienceEvent) {
 Sets the Edge Network location hint used in requests to the Edge Network. Passing `null` or an empty string clears the existing location hint. Edge Network responses may overwrite the location hint to a new value when necessary to manage network traffic.
 
 > **Warning**  
-> Use caution when setting the location hint. Only use location hints for the **EdgeNetwork** scope. An incorrect location hint value will cause all Edge Network requests to fail with a `404` response code.
+> Use caution when setting the location hint. Only use valid [location hints for the `EdgeNetwork` scope](https://experienceleague.adobe.com/docs/experience-platform/edge-network-server-api/location-hints.html). An invalid location hint value will cause all Edge Network requests to fail with a `404` response code.
 
 #### Java
 
@@ -235,11 +216,6 @@ Edge.setLocationHint(hint);
 ```
 
 #### Kotlin
-
-##### Syntax
-```kotlin
-fun setLocationHint(hint: String?)
-```
 
 ##### Example
 ```kotlin
