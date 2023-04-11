@@ -387,8 +387,12 @@ class EdgeHitProcessor implements HitProcessing {
 		);
 		String path = DataReader.optString(requestData, EdgeConstants.EventDataKeys.Request.PATH, null);
 
+		if (path == null || path.isEmpty()) {
+			return null;
+		}
+
 		if (!isValidPath(path)) {
-			Log.trace(
+			Log.error(
 				LOG_TAG,
 				LOG_SOURCE,
 				"Dropping the overwrite path value: (%s), since it contains invalid characters or is empty or null.",
@@ -407,10 +411,6 @@ class EdgeHitProcessor implements HitProcessing {
 	 * @return true if 'path' passes validation, false if 'path' contains invalid characters.
 	 */
 	private boolean isValidPath(final String path) {
-		if (path == null || path.isEmpty()) {
-			return false;
-		}
-
 		if (path.contains("//")) {
 			return false;
 		}
