@@ -387,6 +387,10 @@ class EdgeHitProcessor implements HitProcessing {
 		);
 		String path = DataReader.optString(requestData, EdgeConstants.EventDataKeys.Request.PATH, null);
 
+		if (StringUtils.isNullOrEmpty(path)) {
+			return null;
+		}
+
 		if (!isValidPath(path)) {
 			Log.error(
 				LOG_TAG,
@@ -407,10 +411,6 @@ class EdgeHitProcessor implements HitProcessing {
 	 * @return true if 'path' passes validation, false if 'path' contains invalid characters.
 	 */
 	private boolean isValidPath(final String path) {
-		if (path == null || path.isEmpty()) {
-			return false;
-		}
-
 		if (path.contains("//")) {
 			return false;
 		}
