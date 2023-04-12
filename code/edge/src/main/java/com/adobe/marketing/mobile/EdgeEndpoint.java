@@ -61,12 +61,19 @@ class EdgeEndpoint {
 	 * Construct a new {@code EdgeEndpoint} based on the Edge request environment and custom domain.
 	 * If the given {@code environment} is not a known value, the {@code EdgeEnvironmentType#PROD} is used.
 	 * If the given {@code domain} is null, then the default Edge domain is used.
+	 * @param requestType the {@link EdgeNetworkService.RequestType} used to determine the Experience Edge endpoint
 	 * @param environment the Edge request environment
 	 * @param domain the custom Edge domain, or null if using the default domain
 	 * @param locationHint an optional location hint for the {@code EdgeEndpoint} which hints at the
 	 *                        Edge Network cluster to send requests.
 	 */
-	EdgeEndpoint(final String environment, final String domain, final String locationHint) {
+	EdgeEndpoint(
+		final EdgeNetworkService.RequestType requestType,
+		final String environment,
+		final String domain,
+		final String path,
+		final String locationHint
+	) {
 		final StringBuilder endpointBuilder = new StringBuilder();
 		final EdgeEnvironmentType type = EdgeEnvironmentType.get(environment);
 		final String edgeDomain = !StringUtils.isNullOrEmpty(domain)
@@ -79,26 +86,31 @@ class EdgeEndpoint {
 				endpointBuilder
 					.append(EdgeConstants.NetworkKeys.SCHEME_HTTPS)
 					.append(edgeDomain)
-					.append(EdgeConstants.NetworkKeys.REQUEST_URL_PRE_PROD_PATH)
-					.append(edgeLocationHint)
-					.append(EdgeConstants.NetworkKeys.REQUEST_URL_VERSION);
+					.append(EdgeConstants.NetworkKeys.REQUEST_URL_PRE_PROD_PATH);
 				break;
 			case INT:
 				// Integration endpoint does not support custom domains
 				endpointBuilder
 					.append(EdgeConstants.NetworkKeys.SCHEME_HTTPS)
 					.append(EdgeConstants.NetworkKeys.REQUEST_DOMAIN_INT)
-					.append(EdgeConstants.NetworkKeys.REQUEST_URL_PROD_PATH)
-					.append(edgeLocationHint)
-					.append(EdgeConstants.NetworkKeys.REQUEST_URL_VERSION);
+					.append(EdgeConstants.NetworkKeys.REQUEST_URL_PROD_PATH);
 				break;
 			default:
 				endpointBuilder
 					.append(EdgeConstants.NetworkKeys.SCHEME_HTTPS)
 					.append(edgeDomain)
-					.append(EdgeConstants.NetworkKeys.REQUEST_URL_PROD_PATH)
-					.append(edgeLocationHint)
-					.append(EdgeConstants.NetworkKeys.REQUEST_URL_VERSION);
+					.append(EdgeConstants.NetworkKeys.REQUEST_URL_PROD_PATH);
+		}
+
+		// Append locationHint
+		endpointBuilder.append(edgeLocationHint);
+
+		if (!StringUtils.isNullOrEmpty(path)) {
+			// path should contain the leading "/"
+			endpointBuilder.append(path);
+		} else {
+			endpointBuilder.append(EdgeConstants.NetworkKeys.REQUEST_URL_VERSION);
+			endpointBuilder.append("/").append(requestType.type);
 		}
 
 		endpoint = endpointBuilder.toString();

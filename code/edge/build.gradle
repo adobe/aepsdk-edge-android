@@ -128,7 +128,9 @@ publishing {
                 url = 'https://developer.adobe.com/client-sdks'
                 licenses {
                     license {
-                        name = 'Adobe Proprietary'
+                        name = 'The Apache License, Version 2.0'
+                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution = 'repo'
                     }
                 }
                 developers {
@@ -244,7 +246,9 @@ dependencies {
     testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.12.7'
     testImplementation 'org.json:json:20180813'
 
-    androidTestImplementation 'com.adobe.marketing.mobile:edgeconsent:2.+'
+    androidTestImplementation('com.adobe.marketing.mobile:edgeconsent:2.+') {
+        exclude group: 'com.adobe.marketing.mobile', module: 'edge'
+    }
 
     androidTestImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'

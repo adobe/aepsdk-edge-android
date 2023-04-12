@@ -282,7 +282,7 @@ class NetworkResponseHandler {
 					return;
 				}
 
-				eventDataResponse.put(EdgeConstants.EventDataKey.EDGE_REQUEST_ID, requestId);
+				eventDataResponse.put(EdgeConstants.EventDataKeys.EDGE_REQUEST_ID, requestId);
 				Event responseEvent = new Event.Builder(
 					EdgeConstants.EventName.ERROR_RESPONSE_CONTENT,
 					EventType.EDGE,
@@ -446,10 +446,10 @@ class NetworkResponseHandler {
 		final String requestId,
 		final String eventId
 	) {
-		eventData.put(EdgeConstants.EventDataKey.EDGE_REQUEST_ID, requestId);
+		eventData.put(EdgeConstants.EventDataKeys.EDGE_REQUEST_ID, requestId);
 
 		if (!StringUtils.isNullOrEmpty(eventId)) {
-			eventData.put(EdgeConstants.EventDataKey.REQUEST_EVENT_ID, eventId);
+			eventData.put(EdgeConstants.EventDataKeys.REQUEST_EVENT_ID, eventId);
 		}
 	}
 
