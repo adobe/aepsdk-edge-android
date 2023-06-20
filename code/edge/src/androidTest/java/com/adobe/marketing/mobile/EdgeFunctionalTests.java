@@ -1470,6 +1470,29 @@ public class EdgeFunctionalTests {
 		assertEquals("test@AdobeOrg", eventData.get("report.orgId"));
 	}
 
+	// --------------------------------------------------------------------------------------------
+	// test chained event
+	// --------------------------------------------------------------------------------------------
+
+	@Test
+	public void testGetLocationHint_responseEventChainedToParentId() throws InterruptedException {
+		final CountDownLatch latch = new CountDownLatch(1);
+
+		Edge.setLocationHint("or2");
+		Edge.getLocationHint(s -> {
+			latch.countDown();
+		});
+
+		latch.await(2000, TimeUnit.MILLISECONDS);
+
+		List<Event> dispatchedRequests = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_IDENTITY);
+		assertEquals(1, dispatchedRequests.size());
+		List<Event> dispatchedResponses = getDispatchedEventsWith(EventType.EDGE, EventSource.RESPONSE_IDENTITY);
+		assertEquals(1, dispatchedResponses.size());
+
+		assertEquals(dispatchedRequests.get(0).getUniqueIdentifier(), dispatchedResponses.get(0).getParentID());
+	}
+
 	private void updateConfiguration(final Map<String, Object> config) throws InterruptedException {
 		final CountDownLatch latch = new CountDownLatch(1);
 		MobileCore.updateConfiguration(config);
