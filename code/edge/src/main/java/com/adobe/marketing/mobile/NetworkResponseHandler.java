@@ -277,20 +277,9 @@ class NetworkResponseHandler {
 				}
 			} else {
 				// generic server error, return the error as is
-				Map<String, Object> eventDataResponse = JSONUtils.toMap(json);
-				if (eventDataResponse == null) {
-					return;
-				}
-
-				eventDataResponse.put(EdgeConstants.EventDataKeys.EDGE_REQUEST_ID, requestId);
-				Event responseEvent = new Event.Builder(
-					EdgeConstants.EventName.ERROR_RESPONSE_CONTENT,
-					EventType.EDGE,
-					EventSource.ERROR_RESPONSE_CONTENT
-				)
-					.setEventData(eventDataResponse)
-					.build();
-				MobileCore.dispatchEvent(responseEvent);
+				JSONArray errorsArray = new JSONArray();
+				errorsArray.put(json);
+				dispatchEventErrors(errorsArray, true, requestId);
 			}
 		} catch (JSONException e) {
 			Log.warning(
@@ -372,7 +361,7 @@ class NetworkResponseHandler {
 	/**
 	 * Dispatches a new event with the provided {@code eventData} as responseContent or as errorResponseContent based on the {@code isError} setting
 	 * @param eventData Event data to be dispatched, should not be empty
-	 * @param requestId The request identifier associated with this response event, used for logging
+	 * @param parentId The triggering parent event identifier associated with this response event
 	 * @param isError indicates if this should be dispatched as an error or regular response content event
 	 * @param eventSource an optional {@link String} to be used as the event source.
 	 *        If {@code eventSource} is nil, either {@link EventSource#ERROR_RESPONSE_CONTENT} or
@@ -380,7 +369,7 @@ class NetworkResponseHandler {
 	 */
 	private void dispatchResponse(
 		final Map<String, Object> eventData,
-		final String requestId,
+		final String parentId,
 		final boolean isError,
 		final String eventSource
 	) {
@@ -400,6 +389,7 @@ class NetworkResponseHandler {
 			source
 		)
 			.setEventData(eventData)
+			.setParentId(parentId)
 			.build();
 
 		MobileCore.dispatchEvent(responseEvent);
@@ -430,7 +420,7 @@ class NetworkResponseHandler {
 		final String eventSource
 	) {
 		addEventAndRequestIdToData(eventData, requestId, eventId);
-		dispatchResponse(eventData, requestId, false, eventSource);
+		dispatchResponse(eventData, eventId, false, eventSource);
 	}
 
 	/**
@@ -556,7 +546,7 @@ class NetworkResponseHandler {
 
 			// set eventRequestId and edge requestId on the response event and dispatch data
 			addEventAndRequestIdToData(eventDataResponse, requestId, eventId);
-			dispatchResponse(eventDataResponse, requestId, true, null);
+			dispatchResponse(eventDataResponse, eventId, true, null);
 		}
 	}
 
