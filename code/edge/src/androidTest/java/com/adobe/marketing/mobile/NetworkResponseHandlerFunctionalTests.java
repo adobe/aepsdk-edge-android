@@ -122,7 +122,8 @@ public class NetworkResponseHandlerFunctionalTests {
 	}
 
 	@Test
-	public void testProcessResponseOnError_WhenGenericJsonError_dispatchesEvent() throws InterruptedException {
+	public void testProcessResponseOnError_WhenGenericJsonError_noWaitingEvents_dispatchesEvent()
+		throws InterruptedException {
 		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
 		final String jsonError =
 			"{\n" +
@@ -138,6 +139,31 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0201-503", flattenReceivedData.get("type"));
 		assertEquals("Request to Data platform failed with an unknown exception", flattenReceivedData.get("title"));
 		assertEquals("123", flattenReceivedData.get("requestId"));
+		assertNull(flattenReceivedData.get("requestEventId"));
+		assertNull(dispatchEvents.get(0).getParentID());
+	}
+
+	@Test
+	public void testProcessResponseOnError_WhenGenericJsonError_dispatchesEventChainedToParentEvent()
+		throws InterruptedException {
+		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
+		final String jsonError =
+			"{\n" +
+			"\"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
+			"\"title\": \"Request to Data platform failed with an unknown exception\"" +
+			"\n}";
+		networkResponseHandler.addWaitingEvent("123", event1);
+		networkResponseHandler.processResponseOnError(jsonError, "123");
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 5000);
+		assertEquals(1, dispatchEvents.size());
+
+		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		assertEquals(4, flattenReceivedData.size());
+		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0201-503", flattenReceivedData.get("type"));
+		assertEquals("Request to Data platform failed with an unknown exception", flattenReceivedData.get("title"));
+		assertEquals("123", flattenReceivedData.get("requestId"));
+		assertEquals(event1.getUniqueIdentifier(), flattenReceivedData.get("requestEventId"));
+		assertEquals(event1.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
 	}
 
 	@Test
@@ -168,6 +194,7 @@ public class NetworkResponseHandlerFunctionalTests {
 			flattenReceivedData.get("title")
 		);
 		assertEquals("123", flattenReceivedData.get("requestId"));
+		assertNull(dispatchEvents.get(0).getParentID());
 	}
 
 	@Test
@@ -183,7 +210,7 @@ public class NetworkResponseHandlerFunctionalTests {
 			"          \"status\": 100,\n" +
 			"          \"type\": \"personalization\",\n" +
 			"          \"title\": \"Button color not found\",\n" +
-			"           \"eventIndex\": 0\n" +
+			"           \"eventIndex\": 1\n" +
 			"        }\n" +
 			"      ]\n" +
 			"    }";
@@ -205,9 +232,10 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals("personalization", flattenReceivedData.get("type"));
 		assertEquals("100", flattenReceivedData.get("status"));
 		assertEquals("Button color not found", flattenReceivedData.get("title"));
-		assertEquals("0", flattenReceivedData.get("eventIndex"));
+		assertEquals("1", flattenReceivedData.get("eventIndex"));
 		assertEquals(requestId, flattenReceivedData.get("requestId"));
-		assertEquals(event1.getUniqueIdentifier(), flattenReceivedData.get("requestEventId"));
+		assertEquals(event2.getUniqueIdentifier(), flattenReceivedData.get("requestEventId"));
+		assertEquals(event2.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
 	}
 
 	@Test
@@ -247,6 +275,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals("Button color not found", flattenReceivedData.get("title"));
 		assertEquals("10", flattenReceivedData.get("eventIndex"));
 		assertEquals(requestId, flattenReceivedData.get("requestId"));
+		assertNull(dispatchEvents.get(0).getParentID());
 	}
 
 	@Test
@@ -286,6 +315,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals("Button color not found", flattenReceivedData.get("title"));
 		assertEquals("0", flattenReceivedData.get("eventIndex"));
 		assertEquals("567", flattenReceivedData.get("requestId"));
+		assertNull(dispatchEvents.get(0).getParentID());
 	}
 
 	@Test
@@ -309,12 +339,13 @@ public class NetworkResponseHandlerFunctionalTests {
 			"        }\n" +
 			"      ]\n" +
 			"    }";
+		networkResponseHandler.addWaitingEvent(requestId, event1);
 		networkResponseHandler.processResponseOnError(jsonError, requestId);
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(2, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData1 = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
-		assertEquals(4, flattenReceivedData1.size());
+		assertEquals(5, flattenReceivedData1.size());
 		assertEquals("0", flattenReceivedData1.get("status"));
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0201-503", flattenReceivedData1.get("type"));
 		assertEquals(
@@ -322,13 +353,17 @@ public class NetworkResponseHandlerFunctionalTests {
 			flattenReceivedData1.get("title")
 		);
 		assertEquals(requestId, flattenReceivedData1.get("requestId"));
+		assertEquals(event1.getUniqueIdentifier(), flattenReceivedData1.get("requestEventId"));
+		assertEquals(event1.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
 
 		Map<String, String> flattenReceivedData2 = FunctionalTestUtils.flattenMap(dispatchEvents.get(1).getEventData());
-		assertEquals(4, flattenReceivedData2.size());
+		assertEquals(5, flattenReceivedData2.size());
 		assertEquals("2003", flattenReceivedData2.get("status"));
 		assertEquals("personalization", flattenReceivedData2.get("type"));
 		assertEquals("Failed to process personalization event", flattenReceivedData2.get("title"));
 		assertEquals(requestId, flattenReceivedData2.get("requestId"));
+		assertEquals(event1.getUniqueIdentifier(), flattenReceivedData2.get("requestEventId"));
+		assertEquals(event1.getUniqueIdentifier(), dispatchEvents.get(1).getParentID());
 	}
 
 	// ---------------------------------------------------------------------------------------------
@@ -371,18 +406,21 @@ public class NetworkResponseHandlerFunctionalTests {
 			"        }],\n" +
 			"      \"errors\": []\n" +
 			"    }";
+		networkResponseHandler.addWaitingEvent("123", event1);
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "state:store");
 		assertEquals(1, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
-		assertEquals(5, flattenReceivedData.size());
+		assertEquals(6, flattenReceivedData.size());
 		assertEquals("state:store", flattenReceivedData.get("type"));
 		assertEquals("123", flattenReceivedData.get("requestId"));
 		assertEquals("s_ecid", flattenReceivedData.get("payload[0].key"));
 		assertEquals("MCMID|29068398647607325310376254630528178721", flattenReceivedData.get("payload[0].value"));
 		assertEquals("15552000", flattenReceivedData.get("payload[0].maxAge"));
+		assertEquals(event1.getUniqueIdentifier(), flattenReceivedData.get("requestEventId"));
+		assertEquals(event1.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
 	}
 
 	@Test
@@ -493,6 +531,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals("s_ecid", flattenReceivedData1.get("payload[0].key"));
 		assertEquals("MCMID|29068398647607325310376254630528178721", flattenReceivedData1.get("payload[0].value"));
 		assertEquals("15552000", flattenReceivedData1.get("payload[0].maxAge"));
+		assertNull(dispatchEvents.get(0).getParentID());
 
 		// verify event 2
 		Map<String, String> flattenReceivedData2 = FunctionalTestUtils.flattenMap(dispatchEvents.get(1).getEventData());
@@ -501,6 +540,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals("123", flattenReceivedData2.get("requestId"));
 		assertEquals("29068398647607325310376254630528178721", flattenReceivedData2.get("payload[0].id"));
 		assertEquals("ECID", flattenReceivedData2.get("payload[0].namespace.code"));
+		assertNull(dispatchEvents.get(1).getParentID());
 	}
 
 	@Test
@@ -556,6 +596,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals("15552000", flattenReceivedData1.get("payload[0].maxAge"));
 		assertEquals("123", flattenReceivedData1.get("requestId"));
 		assertEquals(event1.getUniqueIdentifier(), flattenReceivedData1.get("requestEventId"));
+		assertEquals(event1.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
 
 		// verify event 2
 		Map<String, String> flattenReceivedData2 = FunctionalTestUtils.flattenMap(dispatchEvents.get(1).getEventData());
@@ -564,6 +605,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals("123612123812381", flattenReceivedData2.get("payload[0].id"));
 		assertEquals("123", flattenReceivedData2.get("requestId"));
 		assertEquals(event2.getUniqueIdentifier(), flattenReceivedData2.get("requestEventId"));
+		assertEquals(event2.getUniqueIdentifier(), dispatchEvents.get(1).getParentID());
 	}
 
 	@Test
@@ -606,6 +648,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals("pairedeventexample", flattenReceivedData.get("type"));
 		assertEquals("123", flattenReceivedData.get("requestId"));
 		assertEquals("123612123812381", flattenReceivedData.get("payload[0].id"));
+		assertNull(dispatchEvents.get(0).getParentID());
 	}
 
 	@Test
@@ -647,6 +690,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals("pairedeventexample", flattenReceivedData.get("type"));
 		assertEquals("123", flattenReceivedData.get("requestId"));
 		assertEquals("123612123812381", flattenReceivedData.get("payload[0].id"));
+		assertNull(dispatchEvents.get(0).getParentID());
 	}
 
 	// ---------------------------------------------------------------------------------------------
@@ -680,18 +724,21 @@ public class NetworkResponseHandlerFunctionalTests {
 			"       ]\n" +
 			"    }";
 
+		networkResponseHandler.addWaitingEvents(requestId, Arrays.asList(event1, event2));
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, requestId);
 
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "state:store");
 		assertEquals(1, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData1 = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
-		assertEquals(5, flattenReceivedData1.size());
+		assertEquals(6, flattenReceivedData1.size());
 		assertEquals("state:store", flattenReceivedData1.get("type"));
 		assertEquals("123", flattenReceivedData1.get("requestId"));
 		assertEquals("s_ecid", flattenReceivedData1.get("payload[0].key"));
 		assertEquals("MCMID|29068398647607325310376254630528178721", flattenReceivedData1.get("payload[0].value"));
 		assertEquals("15552000", flattenReceivedData1.get("payload[0].maxAge"));
+		assertEquals(event1.getUniqueIdentifier(), flattenReceivedData1.get("requestEventId"));
+		assertEquals(event1.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
 
 		List<Event> dispatchErrorEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, dispatchErrorEvents.size());
@@ -699,11 +746,13 @@ public class NetworkResponseHandlerFunctionalTests {
 		Map<String, String> flattenReceivedData2 = FunctionalTestUtils.flattenMap(
 			dispatchErrorEvents.get(0).getEventData()
 		);
-		assertEquals(4, flattenReceivedData2.size());
+		assertEquals(5, flattenReceivedData2.size());
 		assertEquals("personalization", flattenReceivedData2.get("type"));
 		assertEquals("2003", flattenReceivedData2.get("status"));
 		assertEquals("Failed to process personalization event", flattenReceivedData2.get("title"));
 		assertEquals("123", flattenReceivedData2.get("requestId"));
+		assertEquals(event1.getUniqueIdentifier(), flattenReceivedData2.get("requestEventId"));
+		assertEquals(event1.getUniqueIdentifier(), dispatchErrorEvents.get(0).getParentID());
 	}
 
 	@Test
@@ -718,7 +767,7 @@ public class NetworkResponseHandlerFunctionalTests {
 			"        {\n" +
 			"          \"status\": 2003,\n" +
 			"          \"title\": \"Failed to process personalization event\",\n" +
-			"          \"eventIndex\": 2 \n" +
+			"          \"eventIndex\": 1 \n" +
 			"        }\n" +
 			"       ],\n" +
 			"      \"warnings\": [" +
@@ -726,7 +775,7 @@ public class NetworkResponseHandlerFunctionalTests {
 			"          \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0204-200\",\n" +
 			"          \"status\": 98,\n" +
 			"          \"title\": \"Some Informative stuff here\",\n" +
-			"          \"eventIndex\": 10, \n" +
+			"          \"eventIndex\": 0, \n" +
 			"          \"report\": {" +
 			"             \"cause\": {" +
 			"                \"message\": \"Some Informative stuff here\",\n" +
@@ -737,27 +786,32 @@ public class NetworkResponseHandlerFunctionalTests {
 			"       ]\n" +
 			"    }";
 
+		networkResponseHandler.addWaitingEvents(requestId, Arrays.asList(event1, event2));
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, requestId);
 
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(2, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData1 = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
-		assertEquals(4, flattenReceivedData1.size());
+		assertEquals(5, flattenReceivedData1.size());
 		assertEquals("2003", flattenReceivedData1.get("status"));
 		assertEquals("Failed to process personalization event", flattenReceivedData1.get("title"));
-		assertEquals("2", flattenReceivedData1.get("eventIndex"));
+		assertEquals("1", flattenReceivedData1.get("eventIndex"));
 		assertEquals("123", flattenReceivedData1.get("requestId"));
+		assertEquals(event2.getUniqueIdentifier(), flattenReceivedData1.get("requestEventId"));
+		assertEquals(event2.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
 
 		Map<String, String> flattenReceivedData2 = FunctionalTestUtils.flattenMap(dispatchEvents.get(1).getEventData());
-		assertEquals(7, flattenReceivedData2.size());
+		assertEquals(8, flattenReceivedData2.size());
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0204-200", flattenReceivedData2.get("type"));
 		assertEquals("98", flattenReceivedData2.get("status"));
 		assertEquals("Some Informative stuff here", flattenReceivedData2.get("title"));
 		assertEquals("Some Informative stuff here", flattenReceivedData2.get("report.cause.message"));
 		assertEquals("202", flattenReceivedData2.get("report.cause.code"));
-		assertEquals("10", flattenReceivedData2.get("eventIndex"));
+		assertEquals("0", flattenReceivedData2.get("eventIndex"));
 		assertEquals("123", flattenReceivedData2.get("requestId"));
+		assertEquals(event1.getUniqueIdentifier(), flattenReceivedData2.get("requestEventId"));
+		assertEquals(event1.getUniqueIdentifier(), dispatchEvents.get(1).getParentID());
 	}
 
 	// ---------------------------------------------------------------------------------------------
@@ -788,13 +842,14 @@ public class NetworkResponseHandlerFunctionalTests {
 			"            ]\n" +
 			"        }]\n" +
 			"    }";
+		networkResponseHandler.addWaitingEvent("123", event1);
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "locationHint:result");
 		assertEquals(1, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
-		assertEquals(8, flattenReceivedData.size());
+		assertEquals(9, flattenReceivedData.size());
 		assertEquals("locationHint:result", flattenReceivedData.get("type"));
 		assertEquals("123", flattenReceivedData.get("requestId"));
 		assertEquals("EdgeNetwork", flattenReceivedData.get("payload[0].scope"));
@@ -803,6 +858,8 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals("Target", flattenReceivedData.get("payload[1].scope"));
 		assertEquals("edge34", flattenReceivedData.get("payload[1].hint"));
 		assertEquals("600", flattenReceivedData.get("payload[1].ttlSeconds"));
+		assertEquals(event1.getUniqueIdentifier(), flattenReceivedData.get("requestEventId"));
+		assertEquals(event1.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
 	}
 
 	@Test
