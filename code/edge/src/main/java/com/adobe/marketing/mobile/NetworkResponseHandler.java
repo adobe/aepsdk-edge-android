@@ -392,6 +392,10 @@ class NetworkResponseHandler {
 			.setParentId(parentId)
 			.build();
 
+		if (responseEvent.getParentID() == null) {
+			Log.debug(LOG_TAG, LOG_SOURCE, "dispatchResponse - Parent Event is null, dispatching response event without chained parent.");
+		}
+
 		MobileCore.dispatchEvent(responseEvent);
 	}
 
