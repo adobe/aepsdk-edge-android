@@ -122,7 +122,7 @@ public class NetworkResponseHandlerFunctionalTests {
 	}
 
 	@Test
-	public void testProcessResponseOnError_WhenGenericJsonError_noWaitingEvents_dispatchesEvent()
+	public void testProcessResponseOnError_WhenGenericJsonError_noMatchingEvents_dispatchesEvent()
 		throws InterruptedException {
 		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
 		final String jsonError =
@@ -130,6 +130,7 @@ public class NetworkResponseHandlerFunctionalTests {
 			"\"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
 			"\"title\": \"Request to Data platform failed with an unknown exception\"" +
 			"\n}";
+		networkResponseHandler.addWaitingEvent("abc", event1); // Request ID does not match
 		networkResponseHandler.processResponseOnError(jsonError, "123");
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 5000);
 		assertEquals(1, dispatchEvents.size());
