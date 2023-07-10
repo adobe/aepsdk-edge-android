@@ -914,6 +914,7 @@ public class EdgeFunctionalTests {
 		assertEquals("buttonColor", flattenedEventData.get("payload[0].scope"));
 		assertEquals(requestId, flattenedEventData.get("requestId"));
 		assertEquals(requestEventUuid, flattenedEventData.get("requestEventId"));
+		assertEquals(requestEventUuid, responseEvents.get(0).getParentID());
 	}
 
 	@Test
@@ -967,6 +968,7 @@ public class EdgeFunctionalTests {
 		assertEquals("0", flattenedEventData.get("eventIndex"));
 		assertEquals(requestId, flattenedEventData.get("requestId"));
 		assertEquals(requestEventUuid, flattenedEventData.get("requestEventId"));
+		assertEquals(requestEventUuid, errorResponseEvents.get(0).getParentID());
 	}
 
 	// --------------------------------------------------------------------------------------------
@@ -1237,6 +1239,25 @@ public class EdgeFunctionalTests {
 		assertEquals(expectedHint, result[0]);
 	}
 
+	@Test
+	public void testGetLocationHint_responseEventChainedToParentId() throws InterruptedException {
+		final CountDownLatch latch = new CountDownLatch(1);
+
+		Edge.setLocationHint("or2");
+		Edge.getLocationHint(s -> {
+			latch.countDown();
+		});
+
+		latch.await(2000, TimeUnit.MILLISECONDS);
+
+		List<Event> dispatchedRequests = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_IDENTITY);
+		assertEquals(1, dispatchedRequests.size());
+		List<Event> dispatchedResponses = getDispatchedEventsWith(EventType.EDGE, EventSource.RESPONSE_IDENTITY);
+		assertEquals(1, dispatchedResponses.size());
+
+		assertEquals(dispatchedRequests.get(0).getUniqueIdentifier(), dispatchedResponses.get(0).getParentID());
+	}
+
 	// --------------------------------------------------------------------------------------------
 	// test persisted hits (recoverable errors)
 	// --------------------------------------------------------------------------------------------
@@ -1389,6 +1410,9 @@ public class EdgeFunctionalTests {
 		assertNetworkRequestCount();
 		assertExpectedEvents(false);
 
+		List<Event> requestEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
+		assertEquals(1, requestEvents.size());
+
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(2, resultEvents.size());
 
@@ -1401,6 +1425,8 @@ public class EdgeFunctionalTests {
 			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.",
 			eventData1.get("title")
 		);
+		assertEquals(requestEvents.get(0).getUniqueIdentifier(), eventData1.get("requestEventId"));
+		assertEquals(requestEvents.get(0).getUniqueIdentifier(), resultEvents.get(0).getParentID());
 
 		Map<String, String> eventData2 = FunctionalTestUtils.flattenMap(resultEvents.get(1).getEventData());
 		assertEquals(8, eventData2.size());
@@ -1413,6 +1439,8 @@ public class EdgeFunctionalTests {
 		);
 		assertEquals("Cannot read related customer for device id: ...", eventData2.get("report.cause.message"));
 		assertEquals("202", eventData2.get("report.cause.code"));
+		assertEquals(requestEvents.get(0).getUniqueIdentifier(), eventData2.get("requestEventId"));
+		assertEquals(requestEvents.get(0).getUniqueIdentifier(), resultEvents.get(1).getParentID());
 	}
 
 	@Test
@@ -1447,12 +1475,15 @@ public class EdgeFunctionalTests {
 		assertNetworkRequestCount();
 		assertExpectedEvents(false);
 
+		List<Event> requestEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
+		assertEquals(1, requestEvents.size());
+
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, resultEvents.size());
 
 		Map<String, String> eventData = FunctionalTestUtils.flattenMap(resultEvents.get(0).getEventData());
 
-		assertEquals(10, eventData.size());
+		assertEquals(11, eventData.size());
 		assertEquals("422", eventData.get("status"));
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0104-422", eventData.get("type"));
 		assertEquals("Unprocessable Entity", eventData.get("title"));
@@ -1468,6 +1499,8 @@ public class EdgeFunctionalTests {
 		);
 		assertEquals("0f8821e5-ed1a-4301-b445-5f336fb50ee8", eventData.get("report.requestId"));
 		assertEquals("test@AdobeOrg", eventData.get("report.orgId"));
+		assertEquals(requestEvents.get(0).getUniqueIdentifier(), eventData.get("requestEventId"));
+		assertEquals(requestEvents.get(0).getUniqueIdentifier(), resultEvents.get(0).getParentID());
 	}
 
 	private void updateConfiguration(final Map<String, Object> config) throws InterruptedException {
