@@ -99,6 +99,7 @@ class EdgeJson {
 			static final String TYPE = "type";
 			static final String PAYLOAD = "payload";
 			static final String EVENT_INDEX = "eventIndex";
+			static final String REPORT = "report";
 
 			static class Store {
 

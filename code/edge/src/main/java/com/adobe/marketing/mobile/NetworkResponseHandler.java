@@ -547,7 +547,13 @@ class NetworkResponseHandler {
 			}
 
 			// if eventIndex not found in the response, it fallbacks to 0 as per Edge Network spec
-			int eventIndex = currentError.optInt(EdgeJson.Response.EventHandle.EVENT_INDEX, 0);
+			Map<String, Object> report = DataReader.optTypedMap(
+				Object.class,
+				eventDataResponse,
+				EdgeJson.Response.EventHandle.REPORT,
+				null
+			);
+			int eventIndex = DataReader.optInt(report, EdgeJson.Response.EventHandle.EVENT_INDEX, 0);
 			String eventId = extractRequestEventId(eventIndex, requestId);
 
 			logErrorMessage(currentError, isError, requestId);

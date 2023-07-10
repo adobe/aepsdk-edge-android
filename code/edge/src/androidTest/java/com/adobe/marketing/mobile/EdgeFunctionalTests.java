@@ -924,7 +924,7 @@ public class EdgeFunctionalTests {
 		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
 
 		final String responseBody =
-			"\u0000{\"requestId\": \"0ee43289-4a4e-469a-bf5c-1d8186919a26\",\"handle\": [],\"warnings\": [{\"eventIndex\": 0,\"code\": \"personalization:0\",\"message\": \"Failed due to unrecoverable system error\"}]}\n";
+			"\u0000{\"requestId\": \"0ee43289-4a4e-469a-bf5c-1d8186919a26\",\"handle\": [],\"warnings\": [{\"code\": \"personalization:0\",\"message\": \"Failed due to unrecoverable system error\",\"report\":{\"eventIndex\":0}}]}\n";
 		HttpConnecting responseConnection = createNetworkResponse(responseBody, 200);
 		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
@@ -965,7 +965,7 @@ public class EdgeFunctionalTests {
 		assertEquals(5, flattenedEventData.size());
 		assertEquals("personalization:0", flattenedEventData.get("code"));
 		assertEquals("Failed due to unrecoverable system error", flattenedEventData.get("message"));
-		assertEquals("0", flattenedEventData.get("eventIndex"));
+		assertEquals("0", flattenedEventData.get("report.eventIndex"));
 		assertEquals(requestId, flattenedEventData.get("requestId"));
 		assertEquals(requestEventUuid, flattenedEventData.get("requestEventId"));
 		assertEquals(requestEventUuid, errorResponseEvents.get(0).getParentID());
@@ -1396,7 +1396,7 @@ public class EdgeFunctionalTests {
 	public void testSendEvent_multiStatusResponse_dispatchesEvents() throws InterruptedException {
 		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 		final String response =
-			"\u0000{\"requestId\":\"72eaa048-207e-4dde-bf16-0cb2b21336d5\",\"handle\":[],\"errors\":[{\"type\":\"https://ns.adobe.com/aep/errors/EXEG-0201-504\",\"status\":504,\"title\":\"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\"eventIndex\":0}],\"warnings\":[{\"type\":\"https://ns.adobe.com/aep/errors/EXEG-0204-200\",\"status\":200,\"title\":\"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request.\",\"eventIndex\":0,\"report\":{\"cause\":{\"message\":\"Cannot read related customer for device id: ...\",\"code\":202}}}]}\n";
+			"\u0000{\"requestId\":\"72eaa048-207e-4dde-bf16-0cb2b21336d5\",\"handle\":[],\"errors\":[{\"type\":\"https://ns.adobe.com/aep/errors/EXEG-0201-504\",\"status\":504,\"title\":\"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\"report\":{\"eventIndex\":0}}],\"warnings\":[{\"type\":\"https://ns.adobe.com/aep/errors/EXEG-0204-200\",\"status\":200,\"title\":\"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request.\",\"report\":{\"eventIndex\":0,\"cause\":{\"message\":\"Cannot read related customer for device id: ...\",\"code\":202}}}]}\n";
 		HttpConnecting responseConnection = createNetworkResponse(response, 207);
 
 		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
@@ -1419,7 +1419,7 @@ public class EdgeFunctionalTests {
 		Map<String, String> eventData1 = FunctionalTestUtils.flattenMap(resultEvents.get(0).getEventData());
 		assertEquals(6, eventData1.size());
 		assertEquals("504", eventData1.get("status"));
-		assertEquals("0", eventData1.get("eventIndex"));
+		assertEquals("0", eventData1.get("report.eventIndex"));
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0201-504", eventData1.get("type"));
 		assertEquals(
 			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.",
@@ -1431,7 +1431,7 @@ public class EdgeFunctionalTests {
 		Map<String, String> eventData2 = FunctionalTestUtils.flattenMap(resultEvents.get(1).getEventData());
 		assertEquals(8, eventData2.size());
 		assertEquals("200", eventData2.get("status"));
-		assertEquals("0", eventData2.get("eventIndex"));
+		assertEquals("0", eventData2.get("report.eventIndex"));
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0204-200", eventData2.get("type"));
 		assertEquals(
 			"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request.",

@@ -193,7 +193,9 @@ public class NetworkResponseHandlerTest {
 			"          \"status\": 503,\n" +
 			"          \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
 			"          \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\n" +
-			"		   \"eventIndex\": 0\n" +
+			"          \"report\": {\n" +
+			"            \"eventIndex\": 0\n" +
+			"          }\n" +
 			"        }\n" +
 			"      ]\n" +
 			"    }";
@@ -222,7 +224,14 @@ public class NetworkResponseHandlerTest {
 			"title",
 			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later."
 		);
-		expectedEventData.put("eventIndex", 0);
+		expectedEventData.put(
+			"report",
+			new HashMap<String, Object>() {
+				{
+					put("eventIndex", 0);
+				}
+			}
+		);
 		expectedEventData.put(REQUEST_ID, "123");
 		expectedEventData.put(REQUEST_EVENT_ID, requestEvent1.getUniqueIdentifier());
 		assertResponseErrorEventWithData(expectedEventData);
@@ -239,7 +248,9 @@ public class NetworkResponseHandlerTest {
 			"          \"status\": 503,\n" +
 			"          \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
 			"          \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\n" +
-			"		   \"eventIndex\": 10\n" +
+			"          \"report\": {\n" +
+			"            \"eventIndex\": 10\n" +
+			"          }\n" +
 			"        }\n" +
 			"      ]\n" +
 			"    }";
@@ -268,7 +279,14 @@ public class NetworkResponseHandlerTest {
 			"title",
 			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later."
 		);
-		expectedEventData.put("eventIndex", 10);
+		expectedEventData.put(
+			"report",
+			new HashMap<String, Object>() {
+				{
+					put("eventIndex", 10);
+				}
+			}
+		);
 		expectedEventData.put(REQUEST_ID, "123");
 		assertResponseErrorEventWithData(expectedEventData);
 	}
@@ -284,7 +302,9 @@ public class NetworkResponseHandlerTest {
 			"          \"status\": 503,\n" +
 			"          \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
 			"          \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\n" +
-			"		   \"eventIndex\": 0\n" +
+			"          \"report\": {\n" +
+			"            \"eventIndex\": 0\n" +
+			"          }\n" +
 			"        }\n" +
 			"      ]\n" +
 			"    }";
@@ -313,7 +333,14 @@ public class NetworkResponseHandlerTest {
 			"title",
 			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later."
 		);
-		expectedEventData.put("eventIndex", 0);
+		expectedEventData.put(
+			"report",
+			new HashMap<String, Object>() {
+				{
+					put("eventIndex", 0);
+				}
+			}
+		);
 		expectedEventData.put(REQUEST_ID, "567");
 		assertResponseErrorEventWithData(expectedEventData);
 	}
@@ -906,7 +933,9 @@ public class NetworkResponseHandlerTest {
 			"        {\n" +
 			"          \"status\": 503,\n" +
 			"          \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\n" +
-			"          \"eventIndex\": 2 \n" +
+			"          \"report\": {\n" +
+			"            \"eventIndex\": 2 \n" +
+			"          }\n" +
 			"        }\n" +
 			"       ],\n" +
 			"      \"warnings\": [\n" +
@@ -915,12 +944,12 @@ public class NetworkResponseHandlerTest {
 			"          \"status\": 202,\n" +
 			"          \"title\": \"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request.\",\n" +
 			"          \"report\": {\n" +
+			"          \"eventIndex\": 10, \n" +
 			"              \"cause\": {\n" +
 			"                  \"message\": \"Cannot read related customer for device id: ...\",\n" +
 			"                  \"code\": 202\n" +
 			"          	    }\n" +
-			"          	},\n" +
-			"          \"eventIndex\": 10 \n" +
+			"          	}\n" +
 			"        }\n" +
 			"       ]\n" +
 			"    }";
@@ -942,7 +971,14 @@ public class NetworkResponseHandlerTest {
 		assertTrue(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT.equalsIgnoreCase(returnedEvent.getSource()));
 		Map<String, Object> expectedEventData = new HashMap<>();
 		expectedEventData.put("status", 503);
-		expectedEventData.put("eventIndex", 2);
+		expectedEventData.put(
+			"report",
+			new HashMap<String, Object>() {
+				{
+					put("eventIndex", 2);
+				}
+			}
+		);
 		expectedEventData.put(
 			"title",
 			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later."
@@ -961,11 +997,11 @@ public class NetworkResponseHandlerTest {
 			"title",
 			"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request."
 		);
-		expectedEventData.put("eventIndex", 10);
 		HashMap<String, Object> expectedReport = new HashMap<>();
 		HashMap<String, Object> expectedCause = new HashMap<>();
 		expectedCause.put("message", "Cannot read related customer for device id: ...");
 		expectedCause.put("code", 202);
+		expectedReport.put("eventIndex", 10);
 		expectedReport.put("cause", expectedCause);
 		expectedEventData.put("report", expectedReport);
 		expectedEventData.put(REQUEST_ID, "123");
@@ -1179,14 +1215,18 @@ public class NetworkResponseHandlerTest {
 			"        {\n" +
 			"          \"status\": 503,\n" +
 			"          \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\n" +
-			"          \"eventIndex\": 1 \n" +
+			"          \"report\": {\n" +
+			"            \"eventIndex\": 1\n" +
+			"          }\n" +
 			"        }\n" +
 			"       ],\n" +
 			"      \"warnings\": [" +
 			"        {\n" +
 			"          \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0204-20\",\n" +
 			"          \"title\": \"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request.\",\n" +
-			"          \"eventIndex\": 2 \n" +
+			"          \"report\": {\n" +
+			"            \"eventIndex\": 2 \n" +
+			"          }\n" +
 			"        }\n" +
 			"       ]\n" +
 			"    }";
@@ -1280,14 +1320,18 @@ public class NetworkResponseHandlerTest {
 			"        {\n" +
 			"          \"status\": 503,\n" +
 			"          \"title\": \"Failed to process personalization event\",\n" +
-			"          \"eventIndex\": 2 \n" +
+			"          \"report\": {\n" +
+			"            \"eventIndex\": 2\n" +
+			"          }\n" +
 			"        }\n" +
 			"       ],\n" +
 			"      \"warnings\": [" +
 			"        {\n" +
 			"          \"status\": 202,\n" +
 			"          \"title\": \"Some Informative stuff here\",\n" +
-			"          \"eventIndex\": 10 \n" +
+			"          \"report\": {\n" +
+			"            \"eventIndex\": 10\n" +
+			"          }\n" +
 			"        }\n" +
 			"       ]\n" +
 			"    }";
@@ -1297,7 +1341,7 @@ public class NetworkResponseHandlerTest {
 		expectedErrorLogs.add(
 			"Received event error for request id (123), error details:\n " +
 			"{\n" +
-			"  \"eventIndex\": 2,\n" +
+			"  \"report\": {\"eventIndex\": 2},\n" +
 			"  \"title\": \"Failed to process personalization event\",\n" +
 			"  \"status\": 503\n" +
 			"}"
@@ -1306,7 +1350,7 @@ public class NetworkResponseHandlerTest {
 		expectedWarningLogs.add(
 			"Received event error for request id (123), error details:\n " +
 			"{\n" +
-			"  \"eventIndex\": 10,\n" +
+			"  \"report\": {\"eventIndex\": 10},\n" +
 			"  \"title\": \"Some Informative stuff here\",\n" +
 			"  \"status\": 202\n" +
 			"}"
