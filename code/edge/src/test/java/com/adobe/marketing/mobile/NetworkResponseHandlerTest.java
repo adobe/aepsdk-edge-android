@@ -31,6 +31,7 @@ import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.JSONUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -183,7 +184,7 @@ public class NetworkResponseHandlerTest {
 	}
 
 	@Test
-	public void testProcessResponseOnError_WhenValidEventIndex_dispatchesPairedEvent() {
+	public void testProcessResponseOnError_WhenValidEventIndex_dispatchesPairedEvent_doesNotEncodeEmptyReport() {
 		final String jsonError =
 			"{\n" +
 			"      \"requestId\": \"d81c93e5-7558-4996-a93c-489d550748b8\",\n" +
@@ -224,11 +225,102 @@ public class NetworkResponseHandlerTest {
 			"title",
 			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later."
 		);
+		expectedEventData.put(REQUEST_ID, "123");
+		expectedEventData.put(REQUEST_EVENT_ID, requestEvent1.getUniqueIdentifier());
+		assertResponseErrorEventWithData(expectedEventData);
+	}
+
+	@Test
+	public void testProcessResponseOnSuccess_WhenWarning_dispatchesPairedEvent_doesNotEncodeEmptyReport() {
+		final String jsonResponse =
+			"{\n" +
+			"      \"requestId\": \"d81c93e5-7558-4996-a93c-489d550748b8\",\n" +
+			"      \"handle\": [],\n" +
+			"      \"warnings\": [\n" +
+			"        {\n" +
+			"          \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0204-200\",\n" +
+			"          \"status\": 202,\n" +
+			"          \"title\": \"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request.\",\n" +
+			"          \"report\": {\n" +
+			"              \"eventIndex\": 10, \n" +
+			"          	}\n" +
+			"        }\n" +
+			"       ]\n" +
+			"    }";
+		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
+
+		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
+		mockCore.verify(() -> MobileCore.dispatchEvent(eventArgCaptor.capture()), times(1));
+
+		List<Event> returnedEvents = eventArgCaptor.getAllValues();
+		assertEquals(1, returnedEvents.size());
+		Map<String, Object> expectedEventData = new HashMap<>();
+		Event returnedEvent = returnedEvents.get(0);
+		assertNotNull(returnedEvent);
+		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
+		assertTrue(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT.equalsIgnoreCase(returnedEvent.getSource()));
+		expectedEventData.put("type", "https://ns.adobe.com/aep/errors/EXEG-0204-200");
+		expectedEventData.put("status", 202);
+		expectedEventData.put(
+			"title",
+			"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request."
+		);
+		expectedEventData.put(REQUEST_ID, "123");
+		assertEquals(expectedEventData, returnedEvent.getEventData());
+	}
+
+	@Test
+	public void testProcessResponseOnError_WhenValidEventIndex_dispatchesPairedEvent() {
+		final String jsonError =
+			"{\n" +
+			"      \"requestId\": \"d81c93e5-7558-4996-a93c-489d550748b8\",\n" +
+			"      \"handle\": [],\n" +
+			"      \"errors\": [\n" +
+			"        {\n" +
+			"          \"status\": 503,\n" +
+			"          \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
+			"          \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\n" +
+			"          \"report\": {\n" +
+			"            \"eventIndex\": 0,\n" +
+			"            \"requestId\": \"d81c93e5-7558-4996-a93c-489d550748b8\",\n" +
+			"            \"orgId\": \"1234@AdobeOrg\",\n" +
+			"            \"errors\": [\"error1\",\"error2\"]\n" +
+			"          }\n" +
+			"        }\n" +
+			"      ]\n" +
+			"    }";
+
+		final String requestId = "123";
+		final Event requestEvent1 = new Event.Builder("test1", "testType", "testSource").build();
+		final Event requestEvent2 = new Event.Builder("test2", "testType", "testSource").build();
+
+		// test
+		networkResponseHandler.addWaitingEvents(
+			requestId,
+			new ArrayList<Event>() {
+				{
+					add(requestEvent1);
+					add(requestEvent2);
+				}
+			}
+		);
+		networkResponseHandler.processResponseOnError(jsonError, requestId);
+
+		// verify
+		Map<String, Object> expectedEventData = new HashMap<>();
+		expectedEventData.put("type", "https://ns.adobe.com/aep/errors/EXEG-0201-503");
+		expectedEventData.put("status", 503);
+		expectedEventData.put(
+			"title",
+			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later."
+		);
 		expectedEventData.put(
 			"report",
 			new HashMap<String, Object>() {
 				{
-					put("eventIndex", 0);
+					put("requestId", "d81c93e5-7558-4996-a93c-489d550748b8");
+					put("orgId", "1234@AdobeOrg");
+					put("errors", Arrays.asList("error1", "error2"));
 				}
 			}
 		);
@@ -279,14 +371,6 @@ public class NetworkResponseHandlerTest {
 			"title",
 			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later."
 		);
-		expectedEventData.put(
-			"report",
-			new HashMap<String, Object>() {
-				{
-					put("eventIndex", 10);
-				}
-			}
-		);
 		expectedEventData.put(REQUEST_ID, "123");
 		assertResponseErrorEventWithData(expectedEventData);
 	}
@@ -332,14 +416,6 @@ public class NetworkResponseHandlerTest {
 		expectedEventData.put(
 			"title",
 			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later."
-		);
-		expectedEventData.put(
-			"report",
-			new HashMap<String, Object>() {
-				{
-					put("eventIndex", 0);
-				}
-			}
 		);
 		expectedEventData.put(REQUEST_ID, "567");
 		assertResponseErrorEventWithData(expectedEventData);
@@ -944,7 +1020,7 @@ public class NetworkResponseHandlerTest {
 			"          \"status\": 202,\n" +
 			"          \"title\": \"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request.\",\n" +
 			"          \"report\": {\n" +
-			"          \"eventIndex\": 10, \n" +
+			"              \"eventIndex\": 10, \n" +
 			"              \"cause\": {\n" +
 			"                  \"message\": \"Cannot read related customer for device id: ...\",\n" +
 			"                  \"code\": 202\n" +
@@ -972,14 +1048,6 @@ public class NetworkResponseHandlerTest {
 		Map<String, Object> expectedEventData = new HashMap<>();
 		expectedEventData.put("status", 503);
 		expectedEventData.put(
-			"report",
-			new HashMap<String, Object>() {
-				{
-					put("eventIndex", 2);
-				}
-			}
-		);
-		expectedEventData.put(
 			"title",
 			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later."
 		);
@@ -1001,7 +1069,6 @@ public class NetworkResponseHandlerTest {
 		HashMap<String, Object> expectedCause = new HashMap<>();
 		expectedCause.put("message", "Cannot read related customer for device id: ...");
 		expectedCause.put("code", 202);
-		expectedReport.put("eventIndex", 10);
 		expectedReport.put("cause", expectedCause);
 		expectedEventData.put("report", expectedReport);
 		expectedEventData.put(REQUEST_ID, "123");

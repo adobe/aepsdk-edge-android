@@ -962,10 +962,9 @@ public class EdgeFunctionalTests {
 		assertNotNull(responseEventData);
 
 		Map<String, String> flattenedEventData = FunctionalTestUtils.flattenMap(responseEventData);
-		assertEquals(5, flattenedEventData.size());
+		assertEquals(4, flattenedEventData.size());
 		assertEquals("personalization:0", flattenedEventData.get("code"));
 		assertEquals("Failed due to unrecoverable system error", flattenedEventData.get("message"));
-		assertEquals("0", flattenedEventData.get("report.eventIndex"));
 		assertEquals(requestId, flattenedEventData.get("requestId"));
 		assertEquals(requestEventUuid, flattenedEventData.get("requestEventId"));
 		assertEquals(requestEventUuid, errorResponseEvents.get(0).getParentID());
@@ -1417,9 +1416,8 @@ public class EdgeFunctionalTests {
 		assertEquals(2, resultEvents.size());
 
 		Map<String, String> eventData1 = FunctionalTestUtils.flattenMap(resultEvents.get(0).getEventData());
-		assertEquals(6, eventData1.size());
+		assertEquals(5, eventData1.size());
 		assertEquals("504", eventData1.get("status"));
-		assertEquals("0", eventData1.get("report.eventIndex"));
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0201-504", eventData1.get("type"));
 		assertEquals(
 			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.",
@@ -1429,9 +1427,8 @@ public class EdgeFunctionalTests {
 		assertEquals(requestEvents.get(0).getUniqueIdentifier(), resultEvents.get(0).getParentID());
 
 		Map<String, String> eventData2 = FunctionalTestUtils.flattenMap(resultEvents.get(1).getEventData());
-		assertEquals(8, eventData2.size());
+		assertEquals(7, eventData2.size());
 		assertEquals("200", eventData2.get("status"));
-		assertEquals("0", eventData2.get("report.eventIndex"));
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0204-200", eventData2.get("type"));
 		assertEquals(
 			"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request.",

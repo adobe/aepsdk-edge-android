@@ -558,6 +558,15 @@ class NetworkResponseHandler {
 
 			logErrorMessage(currentError, isError, requestId);
 
+			if (report != null) {
+				// Do not include eventIndex in the response
+				report.remove(EdgeJson.Response.EventHandle.EVENT_INDEX);
+				if (report.isEmpty()) {
+					// Do not include report in the response if it is empty
+					eventDataResponse.remove(EdgeJson.Response.EventHandle.REPORT);
+				}
+			}
+
 			// set eventRequestId and edge requestId on the response event and dispatch data
 			addEventAndRequestIdToData(eventDataResponse, requestId, eventId);
 			dispatchResponse(eventDataResponse, eventId, true, null);
