@@ -558,18 +558,32 @@ class NetworkResponseHandler {
 
 			logErrorMessage(currentError, isError, requestId);
 
-			if (report != null) {
-				// Do not include eventIndex in the response
-				report.remove(EdgeJson.Response.EventHandle.EVENT_INDEX);
-				if (report.isEmpty()) {
-					// Do not include report in the response if it is empty
-					eventDataResponse.remove(EdgeJson.Response.EventHandle.REPORT);
-				}
-			}
+			// do not include eventIndex in the response event
+			removeEventIndexFromReport(eventDataResponse);
 
 			// set eventRequestId and edge requestId on the response event and dispatch data
 			addEventAndRequestIdToData(eventDataResponse, requestId, eventId);
 			dispatchResponse(eventDataResponse, eventId, true, null);
+		}
+	}
+
+	/**
+	 * Removes the eventIndex from the report object of the provided {@code eventDataResponse}.
+	 * If the report object is empty after removing the eventIndex, it is removed from the response.
+	 * @param eventDataResponse the event data response for the error or warning
+	 */
+	private void removeEventIndexFromReport(Map<String, Object> eventDataResponse) {
+		Map<String, Object> report = null;
+		try {
+			report = (Map<String, Object>) eventDataResponse.get(EdgeJson.Response.EventHandle.REPORT);
+		} catch (ClassCastException e) {
+			Log.debug(LOG_TAG, LOG_SOURCE, "Failed to cast 'report' to Map<String, Object>");
+		}
+		if (report != null) {
+			report.remove(EdgeJson.Response.EventHandle.EVENT_INDEX);
+			if (report.isEmpty()) {
+				eventDataResponse.remove(EdgeJson.Response.EventHandle.REPORT);
+			}
 		}
 	}
 
