@@ -211,7 +211,9 @@ public class NetworkResponseHandlerFunctionalTests {
 			"          \"status\": 100,\n" +
 			"          \"type\": \"personalization\",\n" +
 			"          \"title\": \"Button color not found\",\n" +
+			"          \"report\": {\n" +
 			"           \"eventIndex\": 1\n" +
+			"          }\n" +
 			"        }\n" +
 			"      ]\n" +
 			"    }";
@@ -229,11 +231,10 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals(1, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
-		assertEquals(6, flattenReceivedData.size());
+		assertEquals(5, flattenReceivedData.size());
 		assertEquals("personalization", flattenReceivedData.get("type"));
 		assertEquals("100", flattenReceivedData.get("status"));
 		assertEquals("Button color not found", flattenReceivedData.get("title"));
-		assertEquals("1", flattenReceivedData.get("eventIndex"));
 		assertEquals(requestId, flattenReceivedData.get("requestId"));
 		assertEquals(event2.getUniqueIdentifier(), flattenReceivedData.get("requestEventId"));
 		assertEquals(event2.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
@@ -252,7 +253,9 @@ public class NetworkResponseHandlerFunctionalTests {
 			"          \"status\": 100,\n" +
 			"          \"type\": \"personalization\",\n" +
 			"          \"title\": \"Button color not found\",\n" +
+			"          \"report\": {\n" +
 			"           \"eventIndex\": 10\n" +
+			"          }\n" +
 			"        }\n" +
 			"      ]\n" +
 			"    }";
@@ -270,11 +273,10 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals(1, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
-		assertEquals(5, flattenReceivedData.size());
+		assertEquals(4, flattenReceivedData.size());
 		assertEquals("personalization", flattenReceivedData.get("type"));
 		assertEquals("100", flattenReceivedData.get("status"));
 		assertEquals("Button color not found", flattenReceivedData.get("title"));
-		assertEquals("10", flattenReceivedData.get("eventIndex"));
 		assertEquals(requestId, flattenReceivedData.get("requestId"));
 		assertNull(dispatchEvents.get(0).getParentID());
 	}
@@ -292,7 +294,9 @@ public class NetworkResponseHandlerFunctionalTests {
 			"          \"status\": 100,\n" +
 			"          \"type\": \"personalization\",\n" +
 			"          \"title\": \"Button color not found\",\n" +
+			"          \"report\": {\n" +
 			"           \"eventIndex\": 0\n" +
+			"          }\n" +
 			"        }\n" +
 			"      ]\n" +
 			"    }";
@@ -310,11 +314,10 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals(1, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
-		assertEquals(5, flattenReceivedData.size());
+		assertEquals(4, flattenReceivedData.size());
 		assertEquals("personalization", flattenReceivedData.get("type"));
 		assertEquals("100", flattenReceivedData.get("status"));
 		assertEquals("Button color not found", flattenReceivedData.get("title"));
-		assertEquals("0", flattenReceivedData.get("eventIndex"));
 		assertEquals("567", flattenReceivedData.get("requestId"));
 		assertNull(dispatchEvents.get(0).getParentID());
 	}
@@ -768,7 +771,9 @@ public class NetworkResponseHandlerFunctionalTests {
 			"        {\n" +
 			"          \"status\": 2003,\n" +
 			"          \"title\": \"Failed to process personalization event\",\n" +
-			"          \"eventIndex\": 1 \n" +
+			"          \"report\": {\n" +
+			"           \"eventIndex\": 1 \n" +
+			"          }\n" +
 			"        }\n" +
 			"       ],\n" +
 			"      \"warnings\": [" +
@@ -776,8 +781,8 @@ public class NetworkResponseHandlerFunctionalTests {
 			"          \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0204-200\",\n" +
 			"          \"status\": 98,\n" +
 			"          \"title\": \"Some Informative stuff here\",\n" +
-			"          \"eventIndex\": 0, \n" +
 			"          \"report\": {" +
+			"             \"eventIndex\": 0, \n" +
 			"             \"cause\": {" +
 			"                \"message\": \"Some Informative stuff here\",\n" +
 			"                \"code\": 202\n" +
@@ -794,22 +799,20 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals(2, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData1 = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
-		assertEquals(5, flattenReceivedData1.size());
+		assertEquals(4, flattenReceivedData1.size());
 		assertEquals("2003", flattenReceivedData1.get("status"));
 		assertEquals("Failed to process personalization event", flattenReceivedData1.get("title"));
-		assertEquals("1", flattenReceivedData1.get("eventIndex"));
 		assertEquals("123", flattenReceivedData1.get("requestId"));
 		assertEquals(event2.getUniqueIdentifier(), flattenReceivedData1.get("requestEventId"));
 		assertEquals(event2.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
 
 		Map<String, String> flattenReceivedData2 = FunctionalTestUtils.flattenMap(dispatchEvents.get(1).getEventData());
-		assertEquals(8, flattenReceivedData2.size());
+		assertEquals(7, flattenReceivedData2.size());
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0204-200", flattenReceivedData2.get("type"));
 		assertEquals("98", flattenReceivedData2.get("status"));
 		assertEquals("Some Informative stuff here", flattenReceivedData2.get("title"));
 		assertEquals("Some Informative stuff here", flattenReceivedData2.get("report.cause.message"));
 		assertEquals("202", flattenReceivedData2.get("report.cause.code"));
-		assertEquals("0", flattenReceivedData2.get("eventIndex"));
 		assertEquals("123", flattenReceivedData2.get("requestId"));
 		assertEquals(event1.getUniqueIdentifier(), flattenReceivedData2.get("requestEventId"));
 		assertEquals(event1.getUniqueIdentifier(), dispatchEvents.get(1).getParentID());

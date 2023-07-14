@@ -547,14 +547,43 @@ class NetworkResponseHandler {
 			}
 
 			// if eventIndex not found in the response, it fallbacks to 0 as per Edge Network spec
-			int eventIndex = currentError.optInt(EdgeJson.Response.EventHandle.EVENT_INDEX, 0);
+			Map<String, Object> report = DataReader.optTypedMap(
+				Object.class,
+				eventDataResponse,
+				EdgeJson.Response.EventHandle.REPORT,
+				null
+			);
+			int eventIndex = DataReader.optInt(report, EdgeJson.Response.EventHandle.EVENT_INDEX, 0);
 			String eventId = extractRequestEventId(eventIndex, requestId);
 
 			logErrorMessage(currentError, isError, requestId);
 
+			// do not include eventIndex in the response event
+			removeEventIndexFromReport(eventDataResponse);
+
 			// set eventRequestId and edge requestId on the response event and dispatch data
 			addEventAndRequestIdToData(eventDataResponse, requestId, eventId);
 			dispatchResponse(eventDataResponse, eventId, true, null);
+		}
+	}
+
+	/**
+	 * Removes the eventIndex from the report object of the provided {@code eventDataResponse}.
+	 * If the report object is empty after removing the eventIndex, it is removed from the response.
+	 * @param eventDataResponse the event data response for the error or warning
+	 */
+	private void removeEventIndexFromReport(Map<String, Object> eventDataResponse) {
+		Map<String, Object> report = null;
+		try {
+			report = (Map<String, Object>) eventDataResponse.get(EdgeJson.Response.EventHandle.REPORT);
+		} catch (ClassCastException e) {
+			Log.debug(LOG_TAG, LOG_SOURCE, "Failed to cast 'report' to Map<String, Object>");
+		}
+		if (report != null) {
+			report.remove(EdgeJson.Response.EventHandle.EVENT_INDEX);
+			if (report.isEmpty()) {
+				eventDataResponse.remove(EdgeJson.Response.EventHandle.REPORT);
+			}
 		}
 	}
 
