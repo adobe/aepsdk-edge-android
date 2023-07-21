@@ -914,6 +914,7 @@ public class EdgeFunctionalTests {
 		assertEquals("buttonColor", flattenedEventData.get("payload[0].scope"));
 		assertEquals(requestId, flattenedEventData.get("requestId"));
 		assertEquals(requestEventUuid, flattenedEventData.get("requestEventId"));
+		assertEquals(requestEventUuid, responseEvents.get(0).getParentID());
 	}
 
 	@Test
@@ -923,7 +924,7 @@ public class EdgeFunctionalTests {
 		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
 
 		final String responseBody =
-			"\u0000{\"requestId\": \"0ee43289-4a4e-469a-bf5c-1d8186919a26\",\"handle\": [],\"warnings\": [{\"eventIndex\": 0,\"code\": \"personalization:0\",\"message\": \"Failed due to unrecoverable system error\"}]}\n";
+			"\u0000{\"requestId\": \"0ee43289-4a4e-469a-bf5c-1d8186919a26\",\"handle\": [],\"warnings\": [{\"code\": \"personalization:0\",\"message\": \"Failed due to unrecoverable system error\",\"report\":{\"eventIndex\":0}}]}\n";
 		HttpConnecting responseConnection = createNetworkResponse(responseBody, 200);
 		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
@@ -961,12 +962,12 @@ public class EdgeFunctionalTests {
 		assertNotNull(responseEventData);
 
 		Map<String, String> flattenedEventData = FunctionalTestUtils.flattenMap(responseEventData);
-		assertEquals(5, flattenedEventData.size());
+		assertEquals(4, flattenedEventData.size());
 		assertEquals("personalization:0", flattenedEventData.get("code"));
 		assertEquals("Failed due to unrecoverable system error", flattenedEventData.get("message"));
-		assertEquals("0", flattenedEventData.get("eventIndex"));
 		assertEquals(requestId, flattenedEventData.get("requestId"));
 		assertEquals(requestEventUuid, flattenedEventData.get("requestEventId"));
+		assertEquals(requestEventUuid, errorResponseEvents.get(0).getParentID());
 	}
 
 	// --------------------------------------------------------------------------------------------
@@ -1237,6 +1238,25 @@ public class EdgeFunctionalTests {
 		assertEquals(expectedHint, result[0]);
 	}
 
+	@Test
+	public void testGetLocationHint_responseEventChainedToParentId() throws InterruptedException {
+		final CountDownLatch latch = new CountDownLatch(1);
+
+		Edge.setLocationHint("or2");
+		Edge.getLocationHint(s -> {
+			latch.countDown();
+		});
+
+		latch.await(2000, TimeUnit.MILLISECONDS);
+
+		List<Event> dispatchedRequests = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_IDENTITY);
+		assertEquals(1, dispatchedRequests.size());
+		List<Event> dispatchedResponses = getDispatchedEventsWith(EventType.EDGE, EventSource.RESPONSE_IDENTITY);
+		assertEquals(1, dispatchedResponses.size());
+
+		assertEquals(dispatchedRequests.get(0).getUniqueIdentifier(), dispatchedResponses.get(0).getParentID());
+	}
+
 	// --------------------------------------------------------------------------------------------
 	// test persisted hits (recoverable errors)
 	// --------------------------------------------------------------------------------------------
@@ -1375,7 +1395,7 @@ public class EdgeFunctionalTests {
 	public void testSendEvent_multiStatusResponse_dispatchesEvents() throws InterruptedException {
 		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 		final String response =
-			"\u0000{\"requestId\":\"72eaa048-207e-4dde-bf16-0cb2b21336d5\",\"handle\":[],\"errors\":[{\"type\":\"https://ns.adobe.com/aep/errors/EXEG-0201-504\",\"status\":504,\"title\":\"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\"eventIndex\":0}],\"warnings\":[{\"type\":\"https://ns.adobe.com/aep/errors/EXEG-0204-200\",\"status\":200,\"title\":\"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request.\",\"eventIndex\":0,\"report\":{\"cause\":{\"message\":\"Cannot read related customer for device id: ...\",\"code\":202}}}]}\n";
+			"\u0000{\"requestId\":\"72eaa048-207e-4dde-bf16-0cb2b21336d5\",\"handle\":[],\"errors\":[{\"type\":\"https://ns.adobe.com/aep/errors/EXEG-0201-504\",\"status\":504,\"title\":\"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\"report\":{\"eventIndex\":0}}],\"warnings\":[{\"type\":\"https://ns.adobe.com/aep/errors/EXEG-0204-200\",\"status\":200,\"title\":\"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request.\",\"report\":{\"eventIndex\":0,\"cause\":{\"message\":\"Cannot read related customer for device id: ...\",\"code\":202}}}]}\n";
 		HttpConnecting responseConnection = createNetworkResponse(response, 207);
 
 		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
@@ -1389,23 +1409,26 @@ public class EdgeFunctionalTests {
 		assertNetworkRequestCount();
 		assertExpectedEvents(false);
 
+		List<Event> requestEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
+		assertEquals(1, requestEvents.size());
+
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(2, resultEvents.size());
 
 		Map<String, String> eventData1 = FunctionalTestUtils.flattenMap(resultEvents.get(0).getEventData());
-		assertEquals(6, eventData1.size());
+		assertEquals(5, eventData1.size());
 		assertEquals("504", eventData1.get("status"));
-		assertEquals("0", eventData1.get("eventIndex"));
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0201-504", eventData1.get("type"));
 		assertEquals(
 			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.",
 			eventData1.get("title")
 		);
+		assertEquals(requestEvents.get(0).getUniqueIdentifier(), eventData1.get("requestEventId"));
+		assertEquals(requestEvents.get(0).getUniqueIdentifier(), resultEvents.get(0).getParentID());
 
 		Map<String, String> eventData2 = FunctionalTestUtils.flattenMap(resultEvents.get(1).getEventData());
-		assertEquals(8, eventData2.size());
+		assertEquals(7, eventData2.size());
 		assertEquals("200", eventData2.get("status"));
-		assertEquals("0", eventData2.get("eventIndex"));
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0204-200", eventData2.get("type"));
 		assertEquals(
 			"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request.",
@@ -1413,6 +1436,8 @@ public class EdgeFunctionalTests {
 		);
 		assertEquals("Cannot read related customer for device id: ...", eventData2.get("report.cause.message"));
 		assertEquals("202", eventData2.get("report.cause.code"));
+		assertEquals(requestEvents.get(0).getUniqueIdentifier(), eventData2.get("requestEventId"));
+		assertEquals(requestEvents.get(0).getUniqueIdentifier(), resultEvents.get(1).getParentID());
 	}
 
 	@Test
@@ -1447,12 +1472,15 @@ public class EdgeFunctionalTests {
 		assertNetworkRequestCount();
 		assertExpectedEvents(false);
 
+		List<Event> requestEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
+		assertEquals(1, requestEvents.size());
+
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, resultEvents.size());
 
 		Map<String, String> eventData = FunctionalTestUtils.flattenMap(resultEvents.get(0).getEventData());
 
-		assertEquals(10, eventData.size());
+		assertEquals(11, eventData.size());
 		assertEquals("422", eventData.get("status"));
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0104-422", eventData.get("type"));
 		assertEquals("Unprocessable Entity", eventData.get("title"));
@@ -1468,6 +1496,8 @@ public class EdgeFunctionalTests {
 		);
 		assertEquals("0f8821e5-ed1a-4301-b445-5f336fb50ee8", eventData.get("report.requestId"));
 		assertEquals("test@AdobeOrg", eventData.get("report.orgId"));
+		assertEquals(requestEvents.get(0).getUniqueIdentifier(), eventData.get("requestEventId"));
+		assertEquals(requestEvents.get(0).getUniqueIdentifier(), resultEvents.get(0).getParentID());
 	}
 
 	private void updateConfiguration(final Map<String, Object> config) throws InterruptedException {
