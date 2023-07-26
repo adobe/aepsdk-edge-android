@@ -27,6 +27,7 @@ import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.FunctionalTestConstants;
 import com.adobe.marketing.mobile.util.FunctionalTestUtils;
 import com.adobe.marketing.mobile.util.TestXDMSchema;
+import com.adobe.marketing.tester.util.Testclass;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -97,6 +98,9 @@ public class EdgeFunctionalTests {
 	@Test
 	public void testSendEvent_withXDMData_sendsCorrectRequestEvent() throws InterruptedException {
 		setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 1);
+
+		Testclass test = new Testclass();
+		test.printMessage();
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
 			.setXdmSchema(
