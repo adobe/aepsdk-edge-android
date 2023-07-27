@@ -35,6 +35,17 @@ workflows:
           build-cache-prefix: v1
           requires:
             - validate-code
+      
+      - integration-test:
+          gradle-cache-prefix: v1
+          build-cache-prefix: v1
+          requires:
+            - validate-code
+          # filters:
+          #   branches:
+          #     only:
+          #       - main
+          #       - staging
 
 jobs:
   validate-code:
@@ -181,3 +192,43 @@ jobs:
       # On test failures, the step in the Makefile to copy the reports to ci/ is not run, so store test results from build folder instead.
       - store_test_results:
           path: code/edge/build/outputs/androidTest-results
+
+  integration-test:
+    parameters:
+      gradle-cache-prefix:
+        type: string
+        default: v1
+      build-cache-prefix:
+        type: string
+        default: v1
+
+    # list of available Android machine images: https://circleci.com/developer/machine/image/android#image-tags
+    executor:
+      name: android/android-machine
+      resource-class: large
+      tag: 2022.09.1
+    steps:
+      - checkout
+
+      - android/restore-build-cache:
+          cache-prefix: << parameters.build-cache-prefix >>
+
+      - run:
+          name: List available emulator images
+          command: sdkmanager --list
+
+      - android/start-emulator-and-run-tests:
+          #   It should match the name seen in the "sdkmanager --list" output
+          system-image: system-images;android-29;default;x86
+          #   The command to be run, while waiting for emulator startup
+          post-emulator-launch-assemble-command: make ci-build
+          #   The test command
+          test-command: make ci-integration-test
+          restore-gradle-cache-prefix: << parameters.gradle-cache-prefix >>
+
+      - android/save-build-cache:
+          cache-prefix: << parameters.build-cache-prefix >>
+
+      # On test failures, the step in the Makefile to copy the reports to ci/ is not run, so store test results from build folder instead.
+      - store_test_results:
+          path: code/integration-tests/build/outputs/androidTest-results/connected
