@@ -231,9 +231,10 @@ task platformFunctionalTestJacocoReport(type: JacocoReport, dependsOn: "createPh
     }
 }
 
-configurations.all {
-    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
-}
+// Uncomment to disable Gradle dependency caching and get the latest version of dependencies
+//configurations.all {
+//    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+//}
 
 dependencies {
     implementation "com.adobe.marketing.mobile:core:${rootProject.mavenCoreVersion}"
