@@ -70,6 +70,10 @@ ci-functional-test: create-ci
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) connectedPhoneDebugAndroidTest platformFunctionalTestJacocoReport)
 	(cp -r ./code/$(EXTENSION-LIBRARY-FOLDER-NAME)/build ./ci/functional-test)
 
+ci-integration-test:
+	(./code/gradlew -p code/integration-tests uninstallDebugAndroidTest)
+	(./code/gradlew -p code/integration-tests connectedDebugAndroidTest)
+
 ci-javadoc: create-ci
 	(mkdir -p ci/javadoc)
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) javadocPublic > ci/javadocPublic.log 2>&1)
