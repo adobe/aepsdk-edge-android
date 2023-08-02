@@ -223,7 +223,7 @@ jobs:
           #   The command to be run, while waiting for emulator startup
           post-emulator-launch-assemble-command: make ci-build
           #   The test command
-          test-command: make ci-integration-test
+          test-command: make ci-upstream-integration-test
           restore-gradle-cache-prefix: << parameters.gradle-cache-prefix >>
 
       - android/save-build-cache:
