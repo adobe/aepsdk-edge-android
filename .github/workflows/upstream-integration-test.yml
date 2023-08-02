@@ -97,7 +97,7 @@ jobs:
         force-avd-creation: false
         emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
         disable-animations: true
-        script: make ci-integration-test
+        script: make ci-upstream-integration-test
     
     # Potential workflow solutions on job failure
     - name: On failure
