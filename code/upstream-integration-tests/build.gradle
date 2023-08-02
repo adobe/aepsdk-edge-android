@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace 'com.adobe.marketing.mobile'
+    namespace 'com.adobe.marketing.mobile.integration'
     compileSdk rootProject.ext.compileSdkVersion
 
     defaultConfig {
