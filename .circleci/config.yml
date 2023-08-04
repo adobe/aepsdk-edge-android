@@ -41,11 +41,11 @@ workflows:
           build-cache-prefix: v1
           requires:
             - validate-code
-          # filters:
-          #   branches:
-          #     only:
-          #       - main
-          #       - staging
+          filters:
+            branches:
+              only:
+                - main
+                - staging
 
 jobs:
   validate-code:
