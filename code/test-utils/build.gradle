@@ -36,32 +36,6 @@ android {
         targetCompatibility rootProject.ext.targetCompatibility
     }
 }
-plugins {
-    id 'com.android.library'
-    id 'org.jetbrains.kotlin.android'
-}
-
-android {
-    namespace 'com.adobe.marketing.tester.util'
-    compileSdk rootProject.ext.compileSdkVersion
-
-    defaultConfig {
-        minSdk rootProject.ext.minSdkVersion
-        targetSdk rootProject.ext.targetSdkVersion
-    }
-
-    flavorDimensions "target"
-    productFlavors {
-        phone {
-            dimension "target"
-        }
-    }
-
-    compileOptions {
-        sourceCompatibility rootProject.ext.sourceCompatibility
-        targetCompatibility rootProject.ext.targetCompatibility
-    }
-}
 
 dependencies {
     implementation project(':edge')
