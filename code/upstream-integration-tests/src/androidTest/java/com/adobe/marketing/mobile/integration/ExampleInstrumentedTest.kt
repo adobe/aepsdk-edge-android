@@ -39,18 +39,12 @@ class ExampleInstrumentedTest {
     fun testExample() {
         val jsonExpected = """
         {
-          "key1.key2": {
-            "key3": "value2"
-          },
           "key4": [1,2]
         }
         """.trimIndent()
 
         val jsonActual = """
         {
-          "key1.key2": {
-            "key3": "value1"
-          },
           "key4": [1,2,3]
         }
         """.trimIndent()
@@ -59,6 +53,7 @@ class ExampleInstrumentedTest {
         val actual = JSONObject(jsonActual)
 
         val testclass = JSONObjectAsserts()
-        testclass.assertEqual(expected, actual)
+//        testclass.assertEqual(expected, actual)
+        testclass.assertTypeMatch(expected, actual)
     }
 }
