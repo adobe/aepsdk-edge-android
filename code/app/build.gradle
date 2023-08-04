@@ -76,6 +76,7 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.9'
 }
 
-configurations.all {
-    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
-}
+// Uncomment to disable Gradle dependency caching and get the latest version of dependencies
+//configurations.all {
+//    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+//}
