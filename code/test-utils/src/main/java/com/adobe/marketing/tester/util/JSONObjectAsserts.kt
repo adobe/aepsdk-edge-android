@@ -16,13 +16,14 @@ import org.json.JSONObject
 import org.junit.Assert.*
 import java.util.regex.PatternSyntaxException
 
-class JSONObjectAsserts {
+object JSONObjectAsserts {
     /**
      * Performs exact equality testing assertions between two `JSONObject`/`JSONArray` instances.
      * Provides a trace of the key path, including dictionary keys and array indices, on assertion failure to facilitate easier debugging.
      *
      * This is the main entry point for exact equality JSON testing assertions.
      */
+    @JvmStatic
     fun assertEqual(expected: Any?, actual: Any?) {
         assertEqual(expected = expected, actual = actual, keyPath = mutableListOf(), shouldAssert = true)
     }
@@ -53,6 +54,7 @@ class JSONObjectAsserts {
      * @param actual The actual JSON in `JSONObject`/`JSONArray` format that is validated against `expected`.
      * @param exactMatchPaths The key paths in the expected JSON that should use exact matching mode, where values require both the same type and literal value.
      */
+    @JvmStatic
     fun assertTypeMatch(expected: Any, actual: Any?, exactMatchPaths: List<String> = emptyList()) {
         val pathTree = generatePathTree(paths = exactMatchPaths)
         assertFlexibleEqual(expected = expected, actual = actual, pathTree = pathTree, exactMatchMode = false)
@@ -83,6 +85,7 @@ class JSONObjectAsserts {
      * @param actual The actual JSON in `JSONObject`/`JSONArray` format that is validated against `expected`.
      * @param typeMatchPaths The key paths in the expected JSON that should use type matching mode, where values require only the same type (and are non-null if the expected value is not null).
      */
+    @JvmStatic
     fun assertExactMatch(expected: Any, actual: Any?, typeMatchPaths: List<String> = emptyList()) {
         val pathTree = generatePathTree(paths = typeMatchPaths)
         assertFlexibleEqual(expected = expected, actual = actual, pathTree = pathTree, exactMatchMode = true)
