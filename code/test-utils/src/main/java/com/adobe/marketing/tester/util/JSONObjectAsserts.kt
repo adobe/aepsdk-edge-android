@@ -18,7 +18,7 @@ import java.util.regex.PatternSyntaxException
 
 class JSONObjectAsserts {
     fun assertEqual(expected: Any?, actual: Any?) {
-        assertEqual(expected = expected, actual = actual, keyPath = mutableListOf())
+        assertEqual(expected = expected, actual = actual, keyPath = mutableListOf(), shouldAssert = true)
     }
     fun assertTypeMatch(expected: Any, actual: Any?, exactMatchPaths: List<String> = emptyList()) {
         val pathTree = generatePathTree(paths = exactMatchPaths)
@@ -33,134 +33,163 @@ class JSONObjectAsserts {
     /**
      * Performs equality testing assertions between two `JSONObject` instances.
      */
-    fun assertEqual(expected: Any?, actual: Any?, keyPath: MutableList<Any> = mutableListOf()) {
+    fun assertEqual(expected: Any?, actual: Any?, keyPath: MutableList<Any> = mutableListOf(), shouldAssert: Boolean): Boolean {
         if (expected == null && actual == null) {
-            return
+            return true
         }
         if (expected == null || actual == null) {
-            fail(
-                """
-                ${if (expected == null) "Expected is null" else "Actual is null"} and 
-                ${if (expected == null) "Actual" else "Expected"} is non-null.
-                Expected: $expected
-                Actual: $actual
-                Key path: ${keyPathAsString(keyPath)}
-            """.trimIndent()
-            )
-            return
+            if (shouldAssert) {
+                fail(
+                    """
+                    ${if (expected == null) "Expected is null" else "Actual is null"} and 
+                    ${if (expected == null) "Actual" else "Expected"} is non-null.
+                    Expected: $expected
+                    Actual: $actual
+                    Key path: ${keyPathAsString(keyPath)}
+                """.trimIndent()
+                )
+            }
+            return false
         }
 
-        when {
-            expected is String && actual is String -> assertEquals("Key path: ${keyPathAsString(keyPath)}", expected, actual)
-            expected is Boolean && actual is Boolean -> assertEquals("Key path: ${keyPathAsString(keyPath)}", expected, actual)
-            expected is Int && actual is Int -> assertEquals("Key path: ${keyPathAsString(keyPath)}", expected, actual)
-            expected is Double && actual is Double -> assertEquals("Key path: ${keyPathAsString(keyPath)}", expected, actual)
-            expected is JSONObject && actual is JSONObject -> assertEqual(expected, actual, keyPath)
-            expected is JSONArray && actual is JSONArray -> assertEqual(expected, actual, keyPath)
-
-            // Not sure in what situations a raw List or Map would be present in a JSON string decoded using
-            // the JSONObject init
-//            expected is List<*> && actual is List<*> -> assertEqual(JSONObject(expected.toString()), JSONObject(actual.toString()), keyPath)
-//            expected is Map<*, *> && actual is Map<*, *> -> assertEqual(JSONObject(expected.toString()), JSONObject(actual.toString()), keyPath)
-            else -> fail(
-                """
-                Expected and Actual types do not match.
-                Expected: $expected
-                Actual: $actual
-                Key path: ${keyPathAsString(keyPath)}
-            """.trimIndent()
-            )
+        return when {
+            expected is String && actual is String -> {
+                if (shouldAssert) assertEquals("Key path: ${keyPathAsString(keyPath)}", expected, actual)
+                expected == actual
+            }
+            expected is Boolean && actual is Boolean -> {
+                if (shouldAssert) assertEquals("Key path: ${keyPathAsString(keyPath)}", expected, actual)
+                expected == actual
+            }
+            expected is Int && actual is Int -> {
+                if (shouldAssert) assertEquals("Key path: ${keyPathAsString(keyPath)}", expected, actual)
+                expected == actual
+            }
+            expected is Double && actual is Double -> {
+                if (shouldAssert) assertEquals("Key path: ${keyPathAsString(keyPath)}", expected, actual)
+                expected == actual
+            }
+            expected is JSONObject && actual is JSONObject -> assertEqual(expected, actual, keyPath, shouldAssert = shouldAssert)
+            expected is JSONArray && actual is JSONArray -> assertEqual(expected, actual, keyPath, shouldAssert = shouldAssert)
+            else -> {
+                if (shouldAssert) {
+                    fail(
+                        """
+                        Expected and Actual types do not match.
+                        Expected: $expected
+                        Actual: $actual
+                        Key path: ${keyPathAsString(keyPath)}
+                    """.trimIndent()
+                    )
+                }
+                false
+            }
         }
     }
 
     /**
      * Performs equality testing assertions between two `Map<String, Any>` instances.
      */
-    fun assertEqual(expected: JSONObject?, actual: JSONObject?, keyPath: MutableList<Any> = mutableListOf()) {
+    fun assertEqual(expected: JSONObject?, actual: JSONObject?, keyPath: MutableList<Any> = mutableListOf(), shouldAssert: Boolean): Boolean {
         if (expected == null && actual == null) {
-            return
+            return true
         }
         if (expected == null || actual == null) {
-            fail(
-                """
-                ${if (expected == null) "Expected is null" else "Actual is null"} and 
-                ${if (expected == null) "Actual" else "Expected"} is non-null.
-                Expected: $expected
-                Actual: $actual
-                Key path: ${keyPathAsString(keyPath)}
-            """.trimIndent()
-            )
-            return
+            if (shouldAssert) {
+                fail(
+                    """
+                    ${if (expected == null) "Expected is null" else "Actual is null"} and 
+                    ${if (expected == null) "Actual" else "Expected"} is non-null.
+                    Expected: $expected
+                    Actual: $actual
+                    Key path: ${keyPathAsString(keyPath)}
+                """.trimIndent()
+                )
+            }
+            return false
         }
         if (expected.length() != actual.length()) {
-            fail(
-                """
-                Expected and Actual counts do not match (exact equality).
-                Expected count: ${expected.length()}
-                Actual count: ${actual.length()}
-                Expected: $expected
-                Actual: $actual
-                Key path: ${keyPathAsString(keyPath)}
-            """.trimIndent()
-            )
-            return
+            if (shouldAssert) {
+                fail(
+                    """
+                    Expected and Actual counts do not match (exact equality).
+                    Expected count: ${expected.length()}
+                    Actual count: ${actual.length()}
+                    Expected: $expected
+                    Actual: $actual
+                    Key path: ${keyPathAsString(keyPath)}
+                """.trimIndent()
+                )
+            }
+            return false
         }
+        var finalResult = true
         for (key in expected.keys()) {
             val newKeyPath = keyPath.toMutableList()
             newKeyPath.add(key)
-            assertEqual(
+            finalResult = assertEqual(
                 expected = expected.get(key),
                 actual = actual.opt(key),
-                keyPath = newKeyPath
-            )
+                keyPath = newKeyPath,
+                shouldAssert = shouldAssert
+            ) && finalResult
         }
+        return finalResult
     }
 
     // Function to perform equality testing assertions between two `List<Any?>` instances.
     private fun assertEqual(
         expected: JSONArray?,
         actual: JSONArray?,
-        keyPath: MutableList<Any>
-    ) {
+        keyPath: MutableList<Any>,
+        shouldAssert: Boolean
+    ): Boolean {
         if (expected == null && actual == null) {
-            return
+            return true
         }
         if (expected == null || actual == null) {
-            fail("""
-            ${if (expected == null) "Expected is null" else "Actual is nil"} and ${if (expected == null) "Actual" else "Expected"} is non-nil.
-
-            Expected: ${expected.toString()}
-
-            Actual: ${actual.toString()}
-
-            Key path: ${keyPathAsString(keyPath)}
-            """.trimIndent())
-            return
+            if (shouldAssert) {
+                fail("""
+                ${if (expected == null) "Expected is null" else "Actual is nil"} and ${if (expected == null) "Actual" else "Expected"} is non-nil.
+    
+                Expected: ${expected.toString()}
+    
+                Actual: ${actual.toString()}
+    
+                Key path: ${keyPathAsString(keyPath)}
+                """.trimIndent())
+            }
+            return false
         }
         if (expected.length() != actual.length()) {
-            fail("""
-            Expected and Actual counts do not match (exact equality).
-
-            Expected count: ${expected.length()}
-            Actual count: ${actual.length()}
-
-            Expected: $expected
-
-            Actual: $actual
-
-            Key path: ${keyPathAsString(keyPath)}
-            """.trimIndent())
-            return
+            if (shouldAssert) {
+                fail("""
+                Expected and Actual counts do not match (exact equality).
+    
+                Expected count: ${expected.length()}
+                Actual count: ${actual.length()}
+    
+                Expected: $expected
+    
+                Actual: $actual
+    
+                Key path: ${keyPathAsString(keyPath)}
+                """.trimIndent())
+            }
+            return false
         }
+        var finalResult = true
         for (index in 0 until expected.length()) {
             val newKeyPath = keyPath.toMutableList()
             newKeyPath.add(index)
-            assertEqual(
+            finalResult = assertEqual(
                 expected = expected.get(index),
                 actual = actual.get(index),
-                keyPath = keyPath
-            )
+                keyPath = keyPath,
+                shouldAssert = shouldAssert
+            ) && finalResult
         }
+        return finalResult
     }
 
     // region Flexible assertion methods
@@ -194,20 +223,28 @@ class JSONObjectAsserts {
             expected is Boolean && actual is Boolean -> return compareValues(expected, actual, keyPath, exactMatchMode, shouldAssert)
             expected is Int && actual is Int -> return compareValues(expected, actual, keyPath, exactMatchMode, shouldAssert)
             expected is Double && actual is Double -> return compareValues(expected, actual, keyPath, exactMatchMode, shouldAssert)
-            expected is JSONArray && actual is JSONArray -> return assertFlexibleEqual(
-                expected = expected,
-                actual = actual,
-                keyPath = keyPath,
-                pathTree = pathTree,
-                exactMatchMode = exactMatchMode,
-                shouldAssert = shouldAssert)
-            expected is JSONObject && actual is JSONObject -> return assertFlexibleEqual(
-                expected = expected,
-                actual = actual,
-                keyPath = keyPath,
-                pathTree = pathTree,
-                exactMatchMode = exactMatchMode,
-                shouldAssert = shouldAssert)
+            expected is JSONArray && actual is JSONArray -> return if (exactMatchMode) {
+                assertEqual(expected, actual, keyPath = keyPath, shouldAssert = shouldAssert)
+            } else {
+                assertFlexibleEqual(
+                    expected = expected,
+                    actual = actual,
+                    keyPath = keyPath,
+                    pathTree = pathTree,
+                    exactMatchMode = exactMatchMode,
+                    shouldAssert = shouldAssert)
+            }
+            expected is JSONObject && actual is JSONObject -> return if (exactMatchMode) {
+                assertEqual(expected, actual, keyPath = keyPath, shouldAssert = shouldAssert)
+            } else {
+                assertFlexibleEqual(
+                    expected = expected,
+                    actual = actual,
+                    keyPath = keyPath,
+                    pathTree = pathTree,
+                    exactMatchMode = exactMatchMode,
+                    shouldAssert = shouldAssert)
+            }
             else -> {
                 if (shouldAssert) {
                     fail("""
@@ -235,7 +272,7 @@ class JSONObjectAsserts {
         return when {
             exactMatchMode -> {
                 if (shouldAssert) {
-                    assertEqual(expected, actual, keyPath)
+                    assertEqual(expected, actual, keyPath, shouldAssert = shouldAssert)
                 }
                 expected == actual
             }
@@ -326,7 +363,7 @@ class JSONObjectAsserts {
         exactIndexes = createSortedValidatedRange(exactIndexes)
         wildcardIndexes = createSortedValidatedRange(wildcardIndexes)
 
-        val unmatchedLHSIndices: Set<Int> = (0 until expected.length()).toSet()
+        val unmatchedExpectedIndices: Set<Int> = (0 until expected.length()).toSet()
             .subtract(exactIndexes.toSet())
             .subtract(wildcardIndexes.toSet())
 
@@ -348,7 +385,7 @@ class JSONObjectAsserts {
                 shouldAssert = shouldAssert) && finalResult
         }
 
-        var unmatchedRHSElements = (0 until actual.length()).toSet()
+        var unmatchedActualElements = (0 until actual.length()).toSet()
             .subtract(exactIndexes.toSet())
             .sorted()
             .map { Pair(it, actual.opt(it)) }
@@ -361,7 +398,7 @@ class JSONObjectAsserts {
 
                 val isPathEnd = matchTreeValue is String
 
-                val result = unmatchedRHSElements.indexOfFirst {
+                val result = unmatchedActualElements.indexOfFirst {
                     assertFlexibleEqual(
                         expected = expected.opt(index),
                         actual = it.second,
@@ -379,14 +416,14 @@ class JSONObjectAsserts {
 
                     Expected: ${expected.opt(index)}
 
-                    Actual (remaining unmatched elements): ${unmatchedRHSElements.map { it.second }}
+                    Actual (remaining unmatched elements): ${unmatchedActualElements.map { it.second }}
 
                     Key path: ${keyPathAsString(keyPath)}
                 """.trimIndent())
                     finalResult = false
                     continue
                 }
-                unmatchedRHSElements.removeAt(result)
+                unmatchedActualElements.removeAt(result)
 
                 finalResult = finalResult && true
             }
@@ -397,32 +434,33 @@ class JSONObjectAsserts {
 
         // Handle alternate match paths with format: [*]
         if (hasWildcardAny) {
-            performWildcardMatch(expectedIndexes = unmatchedLHSIndices.sorted(), isGeneralWildcard = true)
+            performWildcardMatch(expectedIndexes = unmatchedExpectedIndices.sorted(), isGeneralWildcard = true)
         } else {
-            for (index in unmatchedRHSElements.map { it.first }.sorted()) {
+            for (index in unmatchedExpectedIndices.sorted()) {
                 keyPath.add(index)
 
-                if (unmatchedRHSElements.any { it.first == index }) {
+                if (unmatchedActualElements.any { it.first == index }) {
+                    finalResult = assertFlexibleEqual(
+                        expected = expected.opt(index),
+                        actual = actual.opt(index),
+                        keyPath = keyPath,
+                        pathTree = null,
+                        exactMatchMode = exactMatchMode,
+                        shouldAssert = shouldAssert) && finalResult
+                }
+                else {
                     fail("""
                     Actual side's index $index has already been taken by a wildcard match. Verify the test setup for correctness.
 
                     Expected: ${expected.opt(index)}
 
-                    Actual (remaining unmatched elements): ${unmatchedRHSElements.map { it.second }}
+                    Actual (remaining unmatched elements): ${unmatchedActualElements.map { it.second }}
 
                     Key path: ${keyPathAsString(keyPath)}
                 """.trimIndent())
                     finalResult = false
                     continue
                 }
-
-                finalResult = assertFlexibleEqual(
-                    expected = expected.opt(index),
-                    actual = actual.opt(index),
-                    keyPath = keyPath,
-                    pathTree = null,
-                    exactMatchMode = exactMatchMode,
-                    shouldAssert = shouldAssert) && finalResult
             }
         }
 
@@ -520,7 +558,7 @@ class JSONObjectAsserts {
     }
 
     // Performs regex match on the provided String, returning the original match and non-nil capture group results
-    private fun extractRegexCaptureGroups(text: String, regexPattern: String): List<Pair<String, List<String>>>? {
+    fun extractRegexCaptureGroups(text: String, regexPattern: String): List<Pair<String, List<String>>>? {
         return try {
             val regex = Regex(regexPattern)
             val matchResults = regex.findAll(text).toList()
@@ -546,7 +584,7 @@ class JSONObjectAsserts {
     }
 
     // Extracts all key path components from a given key path string
-    private fun getKeyPathComponents(text: String): List<String> {
+    fun getKeyPathComponents(text: String): List<String> {
         // The empty string is a special case that the regex doesn't handle
         if (text.isEmpty()) return listOf("")
 
@@ -557,12 +595,14 @@ class JSONObjectAsserts {
         //
         // Matches key path access in the style of: "key0\.key1.key2[1][2].key3". Captures each of the groups separated by `.` character and ignores `\.` as nesting.
         // the path example would result in: ["key0\.key1", "key2[1][2]", "key3"]
-        val jsonNestingRegex = "(.*?)(?<!\\\\)(?:\\.)|(.+?)(?:$)"
+        val jsonNestingRegex = """(.*?)(?<!\\)(?:\.)|(.+?)(?:$)"""
 
         val matchResult = extractRegexCaptureGroups(text, jsonNestingRegex) ?: return listOf()
 
-        var captureGroups = matchResult.flatMap { it.second }
+        var captureGroups = matchResult.flatMap { it.second }.filter { it.isNotEmpty() }
 
+        // Handles the special case where nesting character is the last character in the path
+        // Meaning an empty string ("") is nested after the key before the nesting character: (ex: "key." -> key."")
         if (matchResult.last().first.last() == '.') {
             captureGroups += ""
         }
@@ -572,11 +612,11 @@ class JSONObjectAsserts {
     // Merges two constructed key path dictionaries, replacing `current` values with `new` ones, with the exception
 // of existing values that are String types, which mean that it is a final key path from a different path string
 // Merge order doesn't matter, the final result should always be the same
-    private fun merge(current: MutableMap<String, Any>, new: Map<String, Any>): Map<String, Any> {
+    fun merge(current: MutableMap<String, Any>, new: MutableMap<String, Any>): Map<String, Any> {
         for ((key, newValue) in new) {
             val currentValue = current[key]
-            if (currentValue is MutableMap<*, *> && newValue is Map<*, *>) {
-                current[key] = merge(currentValue as MutableMap<String, Any>, newValue as Map<String, Any>)
+            if (currentValue is MutableMap<*, *> && newValue is MutableMap<*, *>) {
+                current[key] = merge(currentValue as MutableMap<String, Any>, newValue as MutableMap<String, Any>)
             } else {
                 if (current[key] is String) {
                     continue
@@ -589,19 +629,19 @@ class JSONObjectAsserts {
 
     // Constructs a key path dictionary from a given key path component array, and the final value is
 // assigned the original path string used to construct the path
-    private fun construct(path: MutableList<String>, pathString: String): Map<String, Any> {
-        if (path.isEmpty()) return mapOf()
+    fun construct(path: MutableList<String>, pathString: String): MutableMap<String, Any> {
+        if (path.isEmpty()) return mutableMapOf()
         val first = path.removeAt(0)
         return if (path.isEmpty()) {
-            mapOf(first to pathString)
+            mutableMapOf(first to pathString)
         } else {
-            mapOf(first to construct(path, pathString))
+            mutableMapOf(first to construct(path, pathString))
         }
     }
 
-    private fun generatePathTree(paths: List<String>): Map<String, Any>? {
+    fun generatePathTree(paths: List<String>): Map<String, Any>? {
         // Matches array subscripts and all the inner content. Captures the surrounding brackets and inner content: ex: "[123]", "[*123]"
-        val arrayIndexRegex = "(\\[.*?\\])"
+        val arrayIndexRegex = """(\[.*?\])"""
         val tree: MutableMap<String, Any> = mutableMapOf()
 
         for (exactValuePath in paths) {
