@@ -16,7 +16,7 @@ plugins {
 }
 
 android {
-    namespace 'com.adobe.marketing.tester.util'
+    namespace 'com.adobe.marketing.mobile.util'
     compileSdk rootProject.ext.compileSdkVersion
 
     defaultConfig {
@@ -41,6 +41,7 @@ dependencies {
     implementation project(':edge')
     implementation "com.adobe.marketing.mobile:core:${rootProject.mavenCoreVersion}"
     implementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.7'
 
     testImplementation "junit:junit:4.13.2"
     testImplementation 'org.json:json:20180813'
