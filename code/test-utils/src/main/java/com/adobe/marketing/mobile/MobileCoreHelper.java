@@ -11,8 +11,6 @@
 
 package com.adobe.marketing.mobile;
 
-import com.adobe.marketing.mobile.MobileCore;
-
 /**
  * Helper class for testing to access methods provided in Core
  */
