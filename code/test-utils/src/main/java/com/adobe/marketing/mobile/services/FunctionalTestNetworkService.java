@@ -14,7 +14,6 @@ package com.adobe.marketing.mobile.services;
 import static com.adobe.marketing.mobile.util.TestConstants.LOG_TAG;
 
 import com.adobe.marketing.mobile.util.ADBCountDownLatch;
-import com.adobe.marketing.mobile.util.TestableNetworkRequest;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
