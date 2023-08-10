@@ -9,7 +9,7 @@
   governing permissions and limitations under the License.
 */
 
-package com.adobe.marketing.tester.util
+package com.adobe.marketing.mobile.util
 
 import org.json.JSONArray
 import org.json.JSONObject
