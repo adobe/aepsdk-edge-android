@@ -33,7 +33,7 @@ android {
         testInstrumentationRunner rootProject.ext.testInstrumentationRunner
     }
 
-    flavorDimensions "target"
+    flavorDimensions = ["target"]
     productFlavors {
         phone {
             dimension "target"
