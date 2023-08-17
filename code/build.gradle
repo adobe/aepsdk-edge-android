@@ -44,7 +44,7 @@ ext {
     jacocoVersion = "0.8.8"
 }
 
-task clean(type: Delete) {
+tasks.register('clean', Delete) {
     delete rootProject.buildDir
 }
 
@@ -55,7 +55,7 @@ license {
 }
 
 // Add and maintain licence header to all project files of type XML, YAML, Properties, and Gradle
-task licenseFormatProject(type: LicenseFormat) {
+tasks.register('licenseFormatProject', LicenseFormat) {
     source = fileTree(dir: "../")
             .exclude(["**/.idea/*", "**/build/*", "**/*.java", "**/*.kt", "**/.git/*", "**/.gradle/*", "**/gradle/wrapper/*", "config/*", "**/local.properties"])
             .include(["**/*.xml", "**/*.yml", "**/*.properties", "**/*.gradle"])

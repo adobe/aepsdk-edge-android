@@ -76,6 +76,6 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.9'
 }
 
-configurations.all {
+configurations.configureEach {
     resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
 }
