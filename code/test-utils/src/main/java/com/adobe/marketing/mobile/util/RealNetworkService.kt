@@ -11,8 +11,6 @@
 
 package com.adobe.marketing.mobile.util
 
-import android.net.Network
-import com.adobe.marketing.mobile.services.HttpConnecting
 import com.adobe.marketing.mobile.services.NetworkCallback
 import com.adobe.marketing.mobile.services.NetworkRequest
 import com.adobe.marketing.mobile.services.NetworkServiceHelper
@@ -36,5 +34,14 @@ internal class RealNetworkService: NetworkServiceHelper() {
         }
     }
 
-    
+    // Passthrough for shared helper APIs
+    fun reset() {
+        helper.reset()
+    }
+
+    fun assertAllNetworkRequestExpectations() {
+        helper.assertAllNetworkRequestExpectations()
+    }
+
+
 }
