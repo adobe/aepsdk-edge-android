@@ -18,7 +18,6 @@ import com.adobe.marketing.mobile.services.NetworkCallback
 import com.adobe.marketing.mobile.services.NetworkRequest
 import com.adobe.marketing.mobile.services.Networking
 import com.adobe.marketing.mobile.services.TestableNetworkRequest
-import org.junit.Assert
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.nio.charset.StandardCharsets
@@ -92,6 +91,7 @@ class MockNetworkService: Networking {
     }
 
     fun reset() {
+        delayedResponse = 0
         helper.reset()
     }
 

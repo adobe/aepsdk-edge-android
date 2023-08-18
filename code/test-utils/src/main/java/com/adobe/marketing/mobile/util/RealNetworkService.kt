@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile.util
 
+import com.adobe.marketing.mobile.services.HttpMethod
 import com.adobe.marketing.mobile.services.NetworkCallback
 import com.adobe.marketing.mobile.services.NetworkRequest
 import com.adobe.marketing.mobile.services.NetworkServiceHelper
@@ -35,13 +36,50 @@ internal class RealNetworkService: NetworkServiceHelper() {
     }
 
     // Passthrough for shared helper APIs
-    fun reset() {
-        helper.reset()
-    }
-
     fun assertAllNetworkRequestExpectations() {
         helper.assertAllNetworkRequestExpectations()
     }
 
+    /**
+     * Returns the [TestableNetworkRequest](s) sent through the
+     * Core NetworkService, or empty if none was found. Use this API after calling
+     * [.setExpectationNetworkRequest] to wait for each request.
+     *
+     * @param url The url string for which to retrieved the network requests sent
+     * @param method the HTTP method for which to retrieve the network requests
+     * @param timeoutMillis how long should this method wait for the expected network requests, in milliseconds
+     * @return list of network requests with the provided `url` and `command`, or empty if none was dispatched
+     * @throws InterruptedException
+     */
+    @Throws(InterruptedException::class)
+    @JvmOverloads
+    fun getNetworkRequestsWith(url: String?,
+                               method: HttpMethod?,
+                               timeoutMillis: Int = TestConstants.Defaults.WAIT_NETWORK_REQUEST_TIMEOUT_MS
+    ): List<TestableNetworkRequest?> {
+        return helper.getNetworkRequestsWith(url, method, timeoutMillis)
+    }
 
+    fun reset() {
+        helper.reset()
+    }
+
+    /**
+     * Set a network request expectation.
+     * @param url the url string for which to set the expectation
+     * @param method the HTTP method for which to set the expectation
+     * @param expectedCount how many times a request with this `url` and `method` is expected to be sent
+     */
+    fun setExpectationForNetworkRequest(
+        url: String?,
+        method: HttpMethod?,
+        expectedCount: Int
+    ) {
+        helper.setExpectedNetworkRequest(
+            TestableNetworkRequest(
+                url,
+                method
+            ), expectedCount
+        )
+    }
 }
