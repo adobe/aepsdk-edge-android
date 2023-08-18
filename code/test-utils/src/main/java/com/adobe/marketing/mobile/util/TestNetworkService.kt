@@ -12,8 +12,10 @@
 package com.adobe.marketing.mobile.util
 
 import com.adobe.marketing.mobile.services.HttpConnecting
+import com.adobe.marketing.mobile.services.HttpMethod
 import com.adobe.marketing.mobile.services.Log
 import com.adobe.marketing.mobile.services.TestableNetworkRequest
+import org.junit.Assert
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.util.concurrent.ExecutorService
@@ -71,6 +73,39 @@ class TestNetworkService {
         return emptyList()
     }
 
+    /**
+     * Returns the [TestableNetworkRequest](s) sent through the
+     * Core NetworkService, or empty if none was found. Use this API after calling
+     * [.setExpectationNetworkRequest] to wait for each request.
+     *
+     * @param url The url string for which to retrieved the network requests sent
+     * @param method the HTTP method for which to retrieve the network requests
+     * @param timeoutMillis how long should this method wait for the expected network requests, in milliseconds
+     * @return list of network requests with the provided `url` and `command`, or empty if none was dispatched
+     * @throws InterruptedException
+     */
+    @Throws(InterruptedException::class)
+    fun getNetworkRequestsWith(
+        url: String?,
+        method: HttpMethod?,
+        timeoutMillis: Int
+    ): List<TestableNetworkRequest?> {
+        val networkRequest = TestableNetworkRequest(url, method)
+        if (isNetworkRequestExpected(networkRequest)) {
+            Assert.assertTrue(
+                "Time out waiting for network request(s) with URL '" +
+                        networkRequest.url +
+                        "' and method '" +
+                        networkRequest.method.name +
+                        "'",
+                awaitFor(networkRequest, timeoutMillis)
+            )
+        } else {
+            TestHelper.sleep(timeoutMillis)
+        }
+        return getReceivedNetworkRequestsMatching(networkRequest)
+    }
+
     fun isNetworkRequestExpected(request: TestableNetworkRequest): Boolean {
         return expectedTestableNetworkRequests.containsKey(request)
     }
@@ -83,6 +118,45 @@ class TestNetworkService {
             }
         }
         return true
+    }
+
+    /**
+     * Asserts that the correct number of network requests were being sent, based on the previously set expectations.
+     * @throws InterruptedException
+     * @see .setExpectationNetworkRequest
+     */
+    @Throws(InterruptedException::class)
+    fun assertAllNetworkRequestExpectations() {
+        TestHelper.waitForThreads(2000) // allow for some extra time for threads to finish before asserts
+        val expectedNetworkRequests: Map<TestableNetworkRequest, ADBCountDownLatch> =
+            getExpectedNetworkRequests()
+        if (expectedNetworkRequests.isEmpty()) {
+            Assert.fail(
+                "There are no network request expectations set, use this API after calling setExpectationNetworkRequest"
+            )
+            return
+        }
+        for ((key, value) in expectedNetworkRequests) {
+            val awaitResult = value.await(5, TimeUnit.SECONDS)
+            Assert.assertTrue(
+                "Time out waiting for network request with URL '" +
+                        key.url +
+                        "' and method '" +
+                        key.method.name +
+                        "'",
+                awaitResult
+            )
+            val expectedCount = value.initialCount
+            val receivedCount = value.currentCount
+            val message = String.format(
+                "Expected %d network requests for URL %s (%s), but received %d",
+                expectedCount,
+                key.url,
+                key.method,
+                receivedCount
+            )
+            Assert.assertEquals(message, expectedCount.toLong(), receivedCount.toLong())
+        }
     }
 
     fun recordSentNetworkRequest(networkRequest: TestableNetworkRequest) {

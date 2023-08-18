@@ -24,7 +24,6 @@ import java.io.InputStream
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
 class MockNetworkService: Networking {
     private val helper = TestNetworkService()
@@ -136,62 +135,8 @@ class MockNetworkService: Networking {
         )
     }
 
-    /**
-     * Asserts that the correct number of network requests were being sent, based on the previously set expectations.
-     * @throws InterruptedException
-     * @see .setExpectationNetworkRequest
-     */
-    @Throws(InterruptedException::class)
     fun assertAllNetworkRequestExpectations() {
-        TestHelper.waitForThreads(2000) // allow for some extra time for threads to finish before asserts
-        val expectedNetworkRequests: Map<TestableNetworkRequest, ADBCountDownLatch> =
-            helper.getExpectedNetworkRequests()
-        if (expectedNetworkRequests.isEmpty()) {
-            Assert.fail(
-                "There are no network request expectations set, use this API after calling setExpectationNetworkRequest"
-            )
-            return
-        }
-        for ((key, value) in expectedNetworkRequests) {
-            val awaitResult = value.await(5, TimeUnit.SECONDS)
-            Assert.assertTrue(
-                "Time out waiting for network request with URL '" +
-                        key.url +
-                        "' and method '" +
-                        key.method.name +
-                        "'",
-                awaitResult
-            )
-            val expectedCount = value.initialCount
-            val receivedCount = value.currentCount
-            val message = String.format(
-                "Expected %d network requests for URL %s (%s), but received %d",
-                expectedCount,
-                key.url,
-                key.method,
-                receivedCount
-            )
-            Assert.assertEquals(message, expectedCount.toLong(), receivedCount.toLong())
-        }
-    }
-
-    /**
-     * Returns the [TestableNetworkRequest](s) sent through the
-     * Core NetworkService, or empty if none was found. Use this API after calling
-     * [.setExpectationNetworkRequest] to wait 2 seconds for each request.
-     *
-     * @param url The url string for which to retrieved the network requests sent
-     * @param method the HTTP method for which to retrieve the network requests
-     * @return list of network requests with the provided `url` and `method`, or empty if none was dispatched
-     * @throws InterruptedException
-     */
-    @Throws(InterruptedException::class)
-    fun getNetworkRequestsWith(url: String?, method: HttpMethod?): List<TestableNetworkRequest?>? {
-        return getNetworkRequestsWith(
-            url,
-            method,
-            TestConstants.Defaults.WAIT_NETWORK_REQUEST_TIMEOUT_MS
-        )
+        helper.assertAllNetworkRequestExpectations()
     }
 
     /**
@@ -206,25 +151,12 @@ class MockNetworkService: Networking {
      * @throws InterruptedException
      */
     @Throws(InterruptedException::class)
-    fun getNetworkRequestsWith(
-        url: String?,
+    @JvmOverloads
+    fun getNetworkRequestsWith(url: String?,
         method: HttpMethod?,
-        timeoutMillis: Int
-    ): List<TestableNetworkRequest?>? {
-        val networkRequest = TestableNetworkRequest(url, method)
-        if (helper.isNetworkRequestExpected(networkRequest)) {
-            Assert.assertTrue(
-                "Time out waiting for network request(s) with URL '" +
-                        networkRequest.url +
-                        "' and method '" +
-                        networkRequest.method.name +
-                        "'",
-                helper.awaitFor(networkRequest, timeoutMillis)
-            )
-        } else {
-            TestHelper.sleep(timeoutMillis)
-        }
-        return helper.getReceivedNetworkRequestsMatching(networkRequest)
+        timeoutMillis: Int = TestConstants.Defaults.WAIT_NETWORK_REQUEST_TIMEOUT_MS
+    ): List<TestableNetworkRequest?> {
+        return helper.getNetworkRequestsWith(url, method, timeoutMillis)
     }
 
     /**
