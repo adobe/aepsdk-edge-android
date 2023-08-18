@@ -62,9 +62,7 @@ import org.junit.runners.model.Statement;
 
 public class TestHelper {
 
-    private static final String LOG_SOURCE = "FunctionalTestHelper";
-
-    private static final FunctionalTestNetworkService testNetworkService = new FunctionalTestNetworkService();
+    private static final String LOG_SOURCE = "TestHelper";
     private static Application defaultApplication;
 
     // List of threads to wait for after test execution
@@ -82,7 +80,7 @@ public class TestHelper {
      * To use, add the following to your test class:
      * <pre>
      * 	&#064;Rule
-     * 	public FunctionalTestHelper.SetupCoreRule coreRule = new FunctionalTestHelper.SetupCoreRule();
+     * 	public TestHelper.SetupCoreRule coreRule = new TestHelper.SetupCoreRule();
      * </pre>
      */
     public static class SetupCoreRule implements TestRule {
@@ -100,7 +98,6 @@ public class TestHelper {
                     }
 
                     MobileCoreHelper.resetSDK();
-                    setTestableNetworkService();
                     MobileCore.setLogLevel(LoggingMode.VERBOSE);
                     MobileCore.setApplication(defaultApplication);
                     FunctionalTestDataStoreService.clearStores();
@@ -137,7 +134,6 @@ public class TestHelper {
     public static void resetCoreHelper() {
         MobileCoreHelper.resetSDK();
         ServiceProviderHelper.resetServices();
-        setTestableNetworkService();
         MobileCore.setLogLevel(LoggingMode.VERBOSE);
         MobileCore.setApplication(defaultApplication);
     }
@@ -231,7 +227,7 @@ public class TestHelper {
      *
      * @param timeoutMillis max waiting time
      */
-    private static void waitForThreads(final int timeoutMillis) {
+    static void waitForThreads(final int timeoutMillis) {
         int TEST_DEFAULT_TIMEOUT_MS = 1000;
         int TEST_DEFAULT_SLEEP_MS = 50;
         int TEST_INITIAL_SLEEP_MS = 100;
@@ -340,10 +336,6 @@ public class TestHelper {
      */
     public static void resetTestExpectations() {
         Log.debug(LOG_TAG, LOG_SOURCE, "Resetting functional test expectations for events and network requests");
-
-        if (testNetworkService != null) {
-            testNetworkService.reset();
-        }
 
         MonitorExtension.reset();
     }
@@ -586,211 +578,6 @@ public class TestHelper {
         return sharedState.isEmpty() ? null : sharedState;
     }
 
-    // ---------------------------------------------------------------------------------------------
-    // Network Test Helpers
-    // ---------------------------------------------------------------------------------------------
-
-    /**
-     * Set a custom network response to an Edge network request.
-     * @param url the url string for which to return the response
-     * @param method the HTTP method for which to return the response
-     * @param responseConnection the network response to be returned when a request matching the
-     *                           {@code url} and {@code method} is received. If null is provided,
-     *                           a default '200' response is used.
-     */
-    public static void setNetworkResponseFor(
-            final String url,
-            final HttpMethod method,
-            final HttpConnecting responseConnection
-    ) {
-        testNetworkService.setResponseConnectionFor(new TestableNetworkRequest(url, method), responseConnection);
-    }
-
-    /**
-     * Set a network request expectation.
-     * @param url the url string for which to set the expectation
-     * @param method the HTTP method for which to set the expectation
-     * @param expectedCount how many times a request with this {@code url} and {@code method} is expected to be sent
-     */
-    public static void setExpectationNetworkRequest(
-            final String url,
-            final HttpMethod method,
-            final int expectedCount
-    ) {
-        testNetworkService.setExpectedNetworkRequest(new TestableNetworkRequest(url, method), expectedCount);
-    }
-
-    /**
-     * Asserts that the correct number of network requests were being sent, based on the previously set expectations.
-     * @throws InterruptedException
-     * @see #setExpectationNetworkRequest(String, HttpMethod, int)
-     */
-    public static void assertNetworkRequestCount() throws InterruptedException {
-        waitForThreads(2000); // allow for some extra time for threads to finish before asserts
-        Map<TestableNetworkRequest, ADBCountDownLatch> expectedNetworkRequests = testNetworkService.getExpectedNetworkRequests();
-
-        if (expectedNetworkRequests.isEmpty()) {
-            fail(
-                    "There are no network request expectations set, use this API after calling setExpectationNetworkRequest"
-            );
-            return;
-        }
-
-        for (Map.Entry<TestableNetworkRequest, ADBCountDownLatch> expectedRequest : expectedNetworkRequests.entrySet()) {
-            boolean awaitResult = expectedRequest.getValue().await(5, TimeUnit.SECONDS);
-            assertTrue(
-                    "Time out waiting for network request with URL '" +
-                            expectedRequest.getKey().getUrl() +
-                            "' and method '" +
-                            expectedRequest.getKey().getMethod().name() +
-                            "'",
-                    awaitResult
-            );
-            int expectedCount = expectedRequest.getValue().getInitialCount();
-            int receivedCount = expectedRequest.getValue().getCurrentCount();
-            String message = String.format(
-                    "Expected %d network requests for URL %s (%s), but received %d",
-                    expectedCount,
-                    expectedRequest.getKey().getUrl(),
-                    expectedRequest.getKey().getMethod(),
-                    receivedCount
-            );
-            assertEquals(message, expectedCount, receivedCount);
-        }
-    }
-
-    /**
-     * Returns the {@link TestableNetworkRequest}(s) sent through the
-     * Core NetworkService, or empty if none was found. Use this API after calling
-     * {@link #setExpectationNetworkRequest(String, HttpMethod, int)} to wait 2 seconds for each request.
-     *
-     * @param url The url string for which to retrieved the network requests sent
-     * @param method the HTTP method for which to retrieve the network requests
-     * @return list of network requests with the provided {@code url} and {@code method}, or empty if none was dispatched
-     * @throws InterruptedException
-     */
-    public static List<TestableNetworkRequest> getNetworkRequestsWith(final String url, final HttpMethod method)
-            throws InterruptedException {
-        return getNetworkRequestsWith(url, method, TestConstants.Defaults.WAIT_NETWORK_REQUEST_TIMEOUT_MS);
-    }
-
-    /**
-     * Returns the {@link TestableNetworkRequest}(s) sent through the
-     * Core NetworkService, or empty if none was found. Use this API after calling
-     * {@link #setExpectationNetworkRequest(String, HttpMethod, int)} to wait for each request.
-     *
-     * @param url The url string for which to retrieved the network requests sent
-     * @param method the HTTP method for which to retrieve the network requests
-     * @param timeoutMillis how long should this method wait for the expected network requests, in milliseconds
-     * @return list of network requests with the provided {@code url} and {@code command}, or empty if none was dispatched
-     * @throws InterruptedException
-     */
-    public static List<TestableNetworkRequest> getNetworkRequestsWith(
-            final String url,
-            final HttpMethod method,
-            final int timeoutMillis
-    ) throws InterruptedException {
-        TestableNetworkRequest networkRequest = new TestableNetworkRequest(url, method);
-
-        if (testNetworkService.isNetworkRequestExpected(networkRequest)) {
-            assertTrue(
-                    "Time out waiting for network request(s) with URL '" +
-                            networkRequest.getUrl() +
-                            "' and method '" +
-                            networkRequest.getMethod().name() +
-                            "'",
-                    testNetworkService.awaitFor(networkRequest, timeoutMillis)
-            );
-        } else {
-            sleep(timeoutMillis);
-        }
-
-        return testNetworkService.getReceivedNetworkRequestsMatching(networkRequest);
-    }
-
-    /**
-     * Create a network response to be used when calling {@link #setNetworkResponseFor(String, HttpMethod, HttpConnecting)}.
-     * @param responseString the network response string, returned by {@link HttpConnecting#getInputStream()}
-     * @param code the HTTP status code, returned by {@link HttpConnecting#getResponseCode()}
-     * @return an {@link HttpConnecting} object
-     * @see #setNetworkResponseFor(String, HttpMethod, HttpConnecting)
-     */
-    public static HttpConnecting createNetworkResponse(final String responseString, final int code) {
-        return createNetworkResponse(responseString, null, code, null, null);
-    }
-
-    /**
-     * Create a network response to be used when calling {@link #setNetworkResponseFor(String, HttpMethod, HttpConnecting)}.
-     * @param responseString the network response string, returned by {@link HttpConnecting#getInputStream()}
-     * @param errorString the network error string, returned by {@link HttpConnecting#getErrorStream()}
-     * @param code the HTTP status code, returned by {@link HttpConnecting#getResponseCode()}
-     * @param responseMessage the network response message, returned by {@link HttpConnecting#getResponseMessage()}
-     * @param propertyMap the network response header map, returned by {@link HttpConnecting#getResponsePropertyValue(String)}
-     * @return an {@link HttpConnecting} object
-     * @see #setNetworkResponseFor(String, HttpMethod, HttpConnecting)
-     */
-    public static HttpConnecting createNetworkResponse(
-            final String responseString,
-            final String errorString,
-            final int code,
-            final String responseMessage,
-            final Map<String, String> propertyMap
-    ) {
-        return new HttpConnecting() {
-            @Override
-            public InputStream getInputStream() {
-                if (responseString != null) {
-                    return new ByteArrayInputStream(responseString.getBytes(StandardCharsets.UTF_8));
-                }
-
-                return null;
-            }
-
-            @Override
-            public InputStream getErrorStream() {
-                if (errorString != null) {
-                    return new ByteArrayInputStream(errorString.getBytes(StandardCharsets.UTF_8));
-                }
-
-                return null;
-            }
-
-            @Override
-            public int getResponseCode() {
-                return code;
-            }
-
-            @Override
-            public String getResponseMessage() {
-                return responseMessage;
-            }
-
-            @Override
-            public String getResponsePropertyValue(String responsePropertyKey) {
-                if (propertyMap != null) {
-                    return propertyMap.get(responsePropertyKey);
-                }
-
-                return null;
-            }
-
-            @Override
-            public void close() {}
-        };
-    }
-
-    /**
-     * Sets the provided delay for all network responses, until reset
-     * @param delaySec delay in seconds
-     */
-    public static void enableNetworkResponseDelay(final Integer delaySec) {
-        if (delaySec < 0) {
-            return;
-        }
-
-        testNetworkService.enableDelayedResponse(delaySec);
-    }
-
     /**
      * Pause test execution for the given {@code milliseconds}
      * @param milliseconds the time to sleep the current thread.
@@ -801,15 +588,6 @@ public class TestHelper {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    /**
-     * Use this API for JSON formatted {@code NetworkRequest} body in order to retrieve a flattened map containing its data.
-     * @param networkRequest the {@link NetworkRequest} to parse
-     * @return The JSON request body represented as a flatten map
-     */
-    public static Map<String, String> getFlattenedNetworkRequestBody(final NetworkRequest networkRequest) {
-        return TestUtils.flattenBytes(networkRequest.getBody());
     }
 
     /**
@@ -832,13 +610,13 @@ public class TestHelper {
         final Application application = TestHelper.defaultApplication;
 
         if (application == null) {
-            fail("FunctionalTestHelper - Unable to clear datastores. Application is null, fast failing the test case.");
+            fail("TestHelper - Unable to clear datastores. Application is null, fast failing the test case.");
         }
 
         final Context context = application.getApplicationContext();
 
         if (context == null) {
-            fail("FunctionalTestHelper - Unable to clear datastores. Context is null, fast failing the test case.");
+            fail("TestHelper - Unable to clear datastores. Context is null, fast failing the test case.");
         }
 
         for (String datastore : knownDatastores) {
@@ -846,7 +624,7 @@ public class TestHelper {
 
             if (sharedPreferences == null) {
                 fail(
-                        "FunctionalTestHelper - Unable to clear datastores. sharedPreferences is null, fast failing the test case."
+                        "TestHelper - Unable to clear datastores. sharedPreferences is null, fast failing the test case."
                 );
             }
 
@@ -864,12 +642,5 @@ public class TestHelper {
         ServiceProviderHelper.cleanCacheDir();
         ServiceProviderHelper.cleanDatabaseDir();
         ServiceProviderHelper.resetServices();
-    }
-
-    /**
-     * Replaces the {@link Networking} service with a mock network service.
-     */
-    private static void setTestableNetworkService() {
-        ServiceProvider.getInstance().setNetworkService(testNetworkService);
     }
 }

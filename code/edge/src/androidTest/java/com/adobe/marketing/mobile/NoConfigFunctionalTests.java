@@ -11,7 +11,7 @@
 
 package com.adobe.marketing.mobile;
 
-import static com.adobe.marketing.mobile.util.FunctionalTestHelper.*;
+import static com.adobe.marketing.mobile.util.TestHelper.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -19,11 +19,13 @@ import static org.junit.Assert.assertTrue;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.HttpMethod;
+import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.FakeIdentity;
-import com.adobe.marketing.mobile.util.FunctionalTestConstants;
-import com.adobe.marketing.mobile.util.FunctionalTestUtils;
 import com.adobe.marketing.mobile.util.JSONUtils;
+import com.adobe.marketing.mobile.util.MockNetworkService;
+import com.adobe.marketing.mobile.util.TestConstants;
+import com.adobe.marketing.mobile.util.TestUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,6 +34,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.json.JSONObject;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,8 +44,8 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class NoConfigFunctionalTests {
 
-	private static final String EXEDGE_INTERACT_URL_STRING =
-		FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
+	private static final MockNetworkService mockNetworkService = new MockNetworkService();
+	private static final String EXEDGE_INTERACT_URL_STRING = TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
 
 	@Rule
 	public RuleChain rule = RuleChain
@@ -52,6 +55,8 @@ public class NoConfigFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
+		ServiceProvider.getInstance().setNetworkService(mockNetworkService);
+
 		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 2);
 
 		final CountDownLatch latch = new CountDownLatch(1);
@@ -60,15 +65,21 @@ public class NoConfigFunctionalTests {
 		latch.await();
 
 		assertExpectedEvents(false);
+		mockNetworkService.reset();
 		resetTestExpectations();
+	}
+
+	@After
+	public void tearDown() {
+		mockNetworkService.reset();
 	}
 
 	@Test
 	public void testHandleExperienceEventRequest_withPendingConfigurationState_expectEventsQueueIsBlocked()
 		throws Exception {
 		Map<String, Object> configState = getSharedStateFor(
-			FunctionalTestConstants.SharedState.CONFIGURATION,
-			FunctionalTestConstants.Defaults.WAIT_SHARED_STATE_TIMEOUT_MS
+			TestConstants.SharedState.CONFIGURATION,
+			TestConstants.Defaults.WAIT_SHARED_STATE_TIMEOUT_MS
 		);
 		assertNull(configState); // verify Configuration state is pending
 
@@ -91,6 +102,7 @@ public class NoConfigFunctionalTests {
 		final JSONObject jsonObject = new JSONObject(jsonStr);
 		final Map<String, Object> identityMap = JSONUtils.toMap(jsonObject);
 
+		mockNetworkService.reset();
 		resetTestExpectations(); // reset received events
 		setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 1);
 
@@ -109,7 +121,10 @@ public class NoConfigFunctionalTests {
 		assertExpectedEvents(false);
 
 		// verify the network request was not sent
-		List<TestableNetworkRequest> requests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, HttpMethod.POST);
+		List<TestableNetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
+			EXEDGE_INTERACT_URL_STRING,
+			HttpMethod.POST
+		);
 		assertTrue(requests.isEmpty());
 	}
 
@@ -119,8 +134,8 @@ public class NoConfigFunctionalTests {
 		final String responseBody =
 			"\u0000{\"requestId\": \"0ee43289-4a4e-469a-bf5c-1d8186919a26\",\"handle\": [{\"payload\": [{\"id\": \"AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9\",\"scope\": \"buttonColor\",\"items\": [{                           \"schema\": \"https://ns.adobe.com/personalization/json-content-item\",\"data\": {\"content\": {\"value\": \"#D41DBA\"}}}]}],\"type\": \"personalization:decisions\"},{\"payload\": [{\"type\": \"url\",\"id\": 411,\"spec\": {\"url\": \"//example.url?d_uuid=9876\",\"hideReferrer\": false,\"ttlMinutes\": 10080}}],\"type\": \"identity:exchange\"}]}\n";
 
-		HttpConnecting responseConnection = createNetworkResponse(responseBody, 200);
-		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, HttpMethod.POST, responseConnection);
+		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(responseBody, 200);
+		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, HttpMethod.POST, responseConnection);
 
 		// Set "fake" ECID
 		final String jsonStr =
@@ -163,13 +178,13 @@ public class NoConfigFunctionalTests {
 			}
 		);
 
-		List<TestableNetworkRequest> resultNetworkRequests = getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultNetworkRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			HttpMethod.POST
 		);
 		assertTrue(resultNetworkRequests.isEmpty());
 
-		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, HttpMethod.POST, 1);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, HttpMethod.POST, 1);
 
 		HashMap<String, Object> config = new HashMap<String, Object>() {
 			{
@@ -178,7 +193,7 @@ public class NoConfigFunctionalTests {
 		};
 		MobileCore.updateConfiguration(config);
 
-		assertNetworkRequestCount();
+		mockNetworkService.assertAllNetworkRequestExpectations();
 		assertTrue(latch.await(1, TimeUnit.SECONDS));
 
 		assertEquals(2, receivedHandles.size());
@@ -187,7 +202,7 @@ public class NoConfigFunctionalTests {
 		assertEquals("personalization:decisions", receivedHandles.get(0).getType());
 		assertEquals(1, receivedHandles.get(0).getPayload().size());
 
-		Map<String, String> handle1 = FunctionalTestUtils.flattenMap(receivedHandles.get(0).getPayload().get(0));
+		Map<String, String> handle1 = TestUtils.flattenMap(receivedHandles.get(0).getPayload().get(0));
 
 		assertEquals(4, handle1.size());
 		assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9", handle1.get("id"));
@@ -199,7 +214,7 @@ public class NoConfigFunctionalTests {
 		assertEquals("identity:exchange", receivedHandles.get(1).getType());
 		assertEquals(1, receivedHandles.get(1).getPayload().size());
 
-		Map<String, String> handle2 = FunctionalTestUtils.flattenMap(receivedHandles.get(1).getPayload().get(0));
+		Map<String, String> handle2 = TestUtils.flattenMap(receivedHandles.get(1).getPayload().get(0));
 
 		assertEquals(5, handle2.size());
 		assertEquals("411", handle2.get("id"));

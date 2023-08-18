@@ -12,16 +12,18 @@
 package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
-import static com.adobe.marketing.mobile.util.FunctionalTestHelper.*;
+import static com.adobe.marketing.mobile.util.TestHelper.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
+import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
-import com.adobe.marketing.mobile.util.FunctionalTestConstants;
-import com.adobe.marketing.mobile.util.FunctionalTestUtils;
+import com.adobe.marketing.mobile.util.MockNetworkService;
+import com.adobe.marketing.mobile.util.TestConstants;
+import com.adobe.marketing.mobile.util.TestUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -38,8 +40,8 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class CompletionHandlerFunctionalTests {
 
-	private static final String EXEDGE_INTERACT_URL_STRING =
-		FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
+	private static final MockNetworkService mockNetworkService = new MockNetworkService();
+	private static final String EXEDGE_INTERACT_URL_STRING = TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
 	private static final String CONFIG_ID = "1234abcd-abcd-1234-5678-123456abcdef";
 
 	private static final String RESPONSE_BODY_WITH_HANDLE =
@@ -55,6 +57,8 @@ public class CompletionHandlerFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
+		ServiceProvider.getInstance().setNetworkService(mockNetworkService);
+
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1);
 		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 4); // Edge, Config, Identity, Hub
@@ -70,14 +74,15 @@ public class CompletionHandlerFunctionalTests {
 		MobileCore.registerExtensions(Arrays.asList(Edge.EXTENSION, Identity.EXTENSION), o -> latch.countDown());
 		latch.await();
 		assertExpectedEvents(false);
+		mockNetworkService.reset();
 		resetTestExpectations();
 	}
 
 	@Test
 	public void testSendEvent_withCompletionHandler_callsCompletionCorrectly() throws InterruptedException {
-		HttpConnecting responseConnection = createNetworkResponse(RESPONSE_BODY_WITH_HANDLE, 200);
-		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
-		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
+		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(RESPONSE_BODY_WITH_HANDLE, 200);
+		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
 			.setXdmSchema(
@@ -99,17 +104,21 @@ public class CompletionHandlerFunctionalTests {
 			}
 		);
 
-		assertNetworkRequestCount();
+		mockNetworkService.assertAllNetworkRequestExpectations();
+
 		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch.await(1, TimeUnit.SECONDS));
 
-		List<TestableNetworkRequest> resultNetworkRequests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST);
+		List<TestableNetworkRequest> resultNetworkRequests = mockNetworkService.getNetworkRequestsWith(
+			EXEDGE_INTERACT_URL_STRING,
+			POST
+		);
 		assertEquals(1, resultNetworkRequests.size());
 		assertEquals(1, receivedHandles.size());
 
 		assertEquals("personalization:decisions", receivedHandles.get(0).getType());
 		assertEquals(1, receivedHandles.get(0).getPayload().size());
 
-		Map<String, String> data = FunctionalTestUtils.flattenMap(receivedHandles.get(0).getPayload().get(0));
+		Map<String, String> data = TestUtils.flattenMap(receivedHandles.get(0).getPayload().get(0));
 
 		assertEquals(4, data.size());
 		assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9", data.get("id"));
@@ -121,9 +130,9 @@ public class CompletionHandlerFunctionalTests {
 	@Test
 	public void testSendEventx2_withCompletionHandler_whenResponseHandle_callsCompletionCorrectly()
 		throws InterruptedException {
-		HttpConnecting responseConnection = createNetworkResponse(RESPONSE_BODY_WITH_HANDLE, 200);
-		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
-		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 2);
+		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(RESPONSE_BODY_WITH_HANDLE, 200);
+		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 2);
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
 			.setXdmSchema(
@@ -154,7 +163,7 @@ public class CompletionHandlerFunctionalTests {
 			}
 		);
 
-		assertNetworkRequestCount();
+		mockNetworkService.assertAllNetworkRequestExpectations();
 		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch1.await(1, TimeUnit.SECONDS));
 		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch2.await(1, TimeUnit.SECONDS));
 	}
@@ -173,9 +182,9 @@ public class CompletionHandlerFunctionalTests {
 			.build();
 
 		// set expectations and send first event
-		HttpConnecting responseConnection1 = createNetworkResponse(RESPONSE_BODY_WITH_HANDLE, 200);
-		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection1);
-		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
+		HttpConnecting responseConnection1 = mockNetworkService.createNetworkResponse(RESPONSE_BODY_WITH_HANDLE, 200);
+		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection1);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 
 		final CountDownLatch latch1 = new CountDownLatch(1);
 		Edge.sendEvent(
@@ -186,15 +195,19 @@ public class CompletionHandlerFunctionalTests {
 			}
 		);
 
-		assertNetworkRequestCount();
+		mockNetworkService.assertAllNetworkRequestExpectations();
 		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch1.await(1, TimeUnit.SECONDS));
 
+		mockNetworkService.reset();
 		resetTestExpectations();
 
 		// set expectations and send second event
-		HttpConnecting responseConnection2 = createNetworkResponse(RESPONSE_BODY_WITH_TWO_ERRORS, 200);
-		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection2);
-		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
+		HttpConnecting responseConnection2 = mockNetworkService.createNetworkResponse(
+			RESPONSE_BODY_WITH_TWO_ERRORS,
+			200
+		);
+		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection2);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 
 		final CountDownLatch latch2 = new CountDownLatch(1);
 		Edge.sendEvent(
@@ -206,7 +219,7 @@ public class CompletionHandlerFunctionalTests {
 			}
 		);
 
-		assertNetworkRequestCount();
+		mockNetworkService.assertAllNetworkRequestExpectations();
 		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch2.await(1, TimeUnit.SECONDS));
 	}
 
@@ -215,9 +228,12 @@ public class CompletionHandlerFunctionalTests {
 		throws InterruptedException {
 		final String responseBodyWithHandleAndError =
 			"\u0000{\"requestId\": \"0ee43289-4a4e-469a-bf5c-1d8186919a26\",\"handle\": [{\"payload\": [{\"id\": \"AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9\",\"scope\": \"buttonColor\",\"items\": [{                           \"schema\": \"https://ns.adobe.com/personalization/json-content-item\",\"data\": {\"content\": {\"value\": \"#D41DBA\"}}}]}],\"type\": \"personalization:decisions\"}],\"errors\": [{\"message\": \"An error occurred while calling the 'X' service for this request. Please try again.\", \"code\": \"502\"}, {\"message\": \"An error occurred while calling the 'Y', service unavailable\", \"code\": \"503\"}]}\n";
-		HttpConnecting responseConnection = createNetworkResponse(responseBodyWithHandleAndError, 200);
-		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
-		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
+		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(
+			responseBodyWithHandleAndError,
+			200
+		);
+		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
 			.setXdmSchema(
@@ -238,16 +254,16 @@ public class CompletionHandlerFunctionalTests {
 			}
 		);
 
-		assertNetworkRequestCount();
+		mockNetworkService.assertAllNetworkRequestExpectations();
 		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch.await(1, TimeUnit.SECONDS));
 	}
 
 	@Test
 	public void testSendEvent_withCompletionHandler_whenExceptionThrownFromCallback_callsCompletionCorrectly()
 		throws InterruptedException {
-		HttpConnecting responseConnection = createNetworkResponse(RESPONSE_BODY_WITH_HANDLE, 200);
-		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
-		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 2);
+		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(RESPONSE_BODY_WITH_HANDLE, 200);
+		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 2);
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
 			.setXdmSchema(
@@ -280,7 +296,7 @@ public class CompletionHandlerFunctionalTests {
 			}
 		);
 
-		assertNetworkRequestCount();
+		mockNetworkService.assertAllNetworkRequestExpectations();
 		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch1.await(1, TimeUnit.SECONDS));
 		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch2.await(1, TimeUnit.SECONDS));
 	}
