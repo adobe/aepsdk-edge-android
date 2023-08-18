@@ -757,7 +757,7 @@ object JSONAsserts {
         // Iterate over each character in the input string with its index
         for ((index, char) in text.withIndex()) {
             // If current character is a backslash and we're not already in an escape sequence
-            if (char == '\\' && !inEscapeSequence) {
+            if (char == '\\') {
                 inEscapeSequence = true
             }
             // If current character is a dot and we're not in an escape sequence
@@ -778,7 +778,7 @@ object JSONAsserts {
         segments.add(text.substring(startIndex))
 
         // Handle edge case where input ends with a dot (but not an escaped dot)
-        if (text.endsWith(".") && !text.endsWith("\\.")) {
+        if (text.endsWith(".") && !text.endsWith("\\.") && segments.last() != "") {
             segments.add("")
         }
 

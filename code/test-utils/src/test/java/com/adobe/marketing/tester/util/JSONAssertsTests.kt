@@ -857,6 +857,114 @@ class JSONAssertsTests {
     }
 
     @Test
+    fun `test alternate path regular then special key nested empty string`() {
+        val expectedJSONString = """
+        {
+            "key1": {
+                "": "a"
+            }
+        }
+        """.trimIndent()
+
+        val actualJSONString = """
+        {
+            "key1": {
+                "": "b"
+            }
+        }    
+        """.trimIndent()
+        val expected = JSONObject(expectedJSONString)
+        val actual = JSONObject(actualJSONString)
+
+        assertExactMatch(expected, actual, typeMatchPaths = listOf("key1."))
+        assertThrows(AssertionError::class.java) {
+            assertTypeMatch(expected, actual, exactMatchPaths = listOf("key1."))
+        }
+    }
+
+    @Test
+    fun `test alternate path regular then empty string then regular`() {
+        val expectedJSONString = """
+        {
+            "key1": {
+                "": {
+                    "key3": "a"
+                }
+            }
+        }
+        """.trimIndent()
+
+        val actualJSONString = """
+        {
+            "key1": {
+                "": {
+                    "key3": "b"
+                }
+            }
+        }    
+        """.trimIndent()
+        val expected = JSONObject(expectedJSONString)
+        val actual = JSONObject(actualJSONString)
+
+        assertExactMatch(expected, actual, typeMatchPaths = listOf("key1..key3"))
+        assertThrows(AssertionError::class.java) {
+            assertTypeMatch(expected, actual, exactMatchPaths = listOf("key1..key3"))
+        }
+    }
+
+    @Test
+    fun `test alternate path empty then regular then empty`() {
+        val expectedJSONString = """
+        {
+            "": {
+                "key2": {
+                    "": "a"
+                }
+            }
+        }
+        """.trimIndent()
+
+        val actualJSONString = """
+        {
+            "": {
+                "key2": {
+                    "": "b"
+                }
+            }
+        }    
+        """.trimIndent()
+        val expected = JSONObject(expectedJSONString)
+        val actual = JSONObject(actualJSONString)
+
+        assertExactMatch(expected, actual, typeMatchPaths = listOf(".key2."))
+        assertThrows(AssertionError::class.java) {
+            assertTypeMatch(expected, actual, exactMatchPaths = listOf(".key2."))
+        }
+    }
+
+    @Test
+    fun `test alternate path special key backslash period`() {
+        val expectedJSONString = """
+        {
+            "\\.": "a"
+        }
+        """.trimIndent()
+
+        val actualJSONString = """
+        {
+            "\\.": "b"
+        }    
+        """.trimIndent()
+        val expected = JSONObject(expectedJSONString)
+        val actual = JSONObject(actualJSONString)
+
+        assertExactMatch(expected, actual, typeMatchPaths = listOf("\\\\."))
+        assertThrows(AssertionError::class.java) {
+            assertTypeMatch(expected, actual, exactMatchPaths = listOf("\\\\."))
+        }
+    }
+
+    @Test
     fun `test alternate path special key empty string`() {
         val expectedJSONString = """
         {
@@ -875,6 +983,66 @@ class JSONAssertsTests {
         assertExactMatch(expected, actual, typeMatchPaths = listOf(""))
         assertThrows(AssertionError::class.java) {
             assertTypeMatch(expected, actual, exactMatchPaths = listOf(""))
+        }
+    }
+
+    @Test
+    fun `test alternate path special key nested empty string`() {
+        val expectedJSONString = """
+        {
+            "": {
+                "": "a"
+            }
+        }
+        """.trimIndent()
+
+        val actualJSONString = """
+        {
+            "": {
+                "": "b"
+            }
+        }    
+        """.trimIndent()
+        val expected = JSONObject(expectedJSONString)
+        val actual = JSONObject(actualJSONString)
+
+        assertExactMatch(expected, actual, typeMatchPaths = listOf("."))
+        assertThrows(AssertionError::class.java) {
+            assertTypeMatch(expected, actual, exactMatchPaths = listOf("."))
+        }
+    }
+
+    @Test
+    fun `test alternate path special key nested 4x empty string`() {
+        val expectedJSONString = """
+        {
+            "": {
+                "": {
+                    "": {
+                        "": "a"
+                    }
+                }
+            }
+        }
+        """.trimIndent()
+
+        val actualJSONString = """
+        {
+            "": {
+                "": {
+                    "": {
+                        "": "b"
+                    }
+                }
+            }
+        }    
+        """.trimIndent()
+        val expected = JSONObject(expectedJSONString)
+        val actual = JSONObject(actualJSONString)
+
+        assertExactMatch(expected, actual, typeMatchPaths = listOf("..."))
+        assertThrows(AssertionError::class.java) {
+            assertTypeMatch(expected, actual, exactMatchPaths = listOf("..."))
         }
     }
 
@@ -1356,6 +1524,25 @@ class JSONAssertsTests {
 
         assertThrows(AssertionError::class.java) {
             assertTypeMatch(expected, actual, exactMatchPaths = listOf("[0][0]"))
+        }
+    }
+
+    @Test
+    fun `test alternate path 4D array chained wildcard`() {
+        val expectedJSONString = """
+        [[[[1]]]]
+        """.trimIndent()
+
+        val actualJSONString = """
+        [[[[2]]]]
+        """.trimIndent()
+        val expected = JSONArray(expectedJSONString)
+        val actual = JSONArray(actualJSONString)
+
+        assertExactMatch(expected, actual, typeMatchPaths = listOf("[0][0][0][0]"))
+
+        assertThrows(AssertionError::class.java) {
+            assertTypeMatch(expected, actual, exactMatchPaths = listOf("[0][0][0][0]"))
         }
     }
 
