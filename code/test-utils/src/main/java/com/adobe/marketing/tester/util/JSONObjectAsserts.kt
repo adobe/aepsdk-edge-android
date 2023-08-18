@@ -13,7 +13,8 @@ package com.adobe.marketing.tester.util
 
 import org.json.JSONArray
 import org.json.JSONObject
-import org.junit.Assert.*
+import org.junit.Assert.fail
+import org.junit.Assert.assertEquals
 import java.util.regex.PatternSyntaxException
 
 object JSONObjectAsserts {
@@ -107,15 +108,15 @@ object JSONObjectAsserts {
      * @throws AssertionError If [shouldAssert] is true and the [expected] and [actual] values are not equal.
      */
     private fun assertEqual(expected: Any?, actual: Any?, keyPath: MutableList<Any> = mutableListOf(), shouldAssert: Boolean): Boolean {
-        if (expected == null && actual == null) {
+        if ((expected == null || expected == JSONObject.NULL) && (actual == null || actual == JSONObject.NULL)) {
             return true
         }
-        if (expected == null || actual == null) {
+        if (expected == null || expected == JSONObject.NULL || actual == null || actual == JSONObject.NULL) {
             if (shouldAssert) {
                 fail(
                     """
-                    ${if (expected == null) "Expected is null" else "Actual is null"} and 
-                    ${if (expected == null) "Actual" else "Expected"} is non-null.
+                    ${if (expected == null || expected == JSONObject.NULL) "Expected is null" else "Actual is null"} and 
+                    ${if (expected == null || actual == JSONObject.NULL) "Actual" else "Expected"} is non-null.
                     Expected: $expected
                     Actual: $actual
                     Key path: ${keyPathAsString(keyPath)}
@@ -139,7 +140,9 @@ object JSONObjectAsserts {
                 expected == actual
             }
             expected is Double && actual is Double -> {
-                if (shouldAssert) assertEquals("Key path: ${keyPathAsString(keyPath)}", expected, actual)
+                if (shouldAssert) assertEquals("Key path: ${keyPathAsString(keyPath)}", expected, actual,
+                    0.0
+                )
                 expected == actual
             }
             expected is JSONObject && actual is JSONObject -> assertEqual(expected, actual, keyPath, shouldAssert = shouldAssert)
@@ -325,10 +328,10 @@ object JSONObjectAsserts {
         pathTree: Map<String, Any>?,
         exactMatchMode: Boolean,
         shouldAssert: Boolean = true): Boolean {
-        if (expected == null) {
+        if (expected == null || expected == JSONObject.NULL) {
             return true
         }
-        if (actual == null) {
+        if (actual == null || actual == JSONObject.NULL) {
             if (shouldAssert) {
                 fail("""
                     Expected JSON is non-nil but Actual JSON is nil.
@@ -348,28 +351,20 @@ object JSONObjectAsserts {
             expected is Boolean && actual is Boolean -> return compareValues(expected, actual, keyPath, exactMatchMode, shouldAssert)
             expected is Int && actual is Int -> return compareValues(expected, actual, keyPath, exactMatchMode, shouldAssert)
             expected is Double && actual is Double -> return compareValues(expected, actual, keyPath, exactMatchMode, shouldAssert)
-            expected is JSONArray && actual is JSONArray -> return if (exactMatchMode) {
-                assertEqual(expected, actual, keyPath = keyPath, shouldAssert = shouldAssert)
-            } else {
-                assertFlexibleEqual(
-                    expected = expected,
-                    actual = actual,
-                    keyPath = keyPath,
-                    pathTree = pathTree,
-                    exactMatchMode = exactMatchMode,
-                    shouldAssert = shouldAssert)
-            }
-            expected is JSONObject && actual is JSONObject -> return if (exactMatchMode) {
-                assertEqual(expected, actual, keyPath = keyPath, shouldAssert = shouldAssert)
-            } else {
-                assertFlexibleEqual(
-                    expected = expected,
-                    actual = actual,
-                    keyPath = keyPath,
-                    pathTree = pathTree,
-                    exactMatchMode = exactMatchMode,
-                    shouldAssert = shouldAssert)
-            }
+            expected is JSONArray && actual is JSONArray -> return assertFlexibleEqual(
+                expected = expected,
+                actual = actual,
+                keyPath = keyPath,
+                pathTree = pathTree,
+                exactMatchMode = exactMatchMode,
+                shouldAssert = shouldAssert)
+            expected is JSONObject && actual is JSONObject -> return assertFlexibleEqual(
+                expected = expected,
+                actual = actual,
+                keyPath = keyPath,
+                pathTree = pathTree,
+                exactMatchMode = exactMatchMode,
+                shouldAssert = shouldAssert)
             else -> {
                 if (shouldAssert) {
                     fail("""
@@ -468,7 +463,6 @@ object JSONObjectAsserts {
             }
             return false
         }
-
         if (expected.length() > actual.length()) {
             if (shouldAssert) {
                 fail("""
@@ -486,142 +480,102 @@ object JSONObjectAsserts {
             }
             return false
         }
+        // Convert the array into a map
+        var actualMap = (0 until actual.length()).associateBy({ it }, { actual[it] }).toMutableMap()
 
-        val arrayIndexValueRegex = "\\[(.*?)\\]"
-        val indexValues = pathTree?.keys
-            ?.flatMap { key -> getCapturedRegexGroups(text = key, regexPattern = arrayIndexValueRegex) }
-            ?.filterNotNull() ?: emptyList()
+        // collect sets of all:
+        // specific index [0]
+        // wildcard specific [*0] - means any position, the fact that it terminates at the wildcard means
+        // that the alternate match mode should be used there...
 
-        var exactIndexes: List<Int> = indexValues
-            .filter { !it.contains("*") }
-            .mapNotNull { it.toIntOrNull() }
+        // subtract all of these indices from the full set of expected indices
+        var expectedIndexes = (0 until expected.length()).toSet()
+        var wildcardIndexes: Set<Int>
 
-        var wildcardIndexes: List<Int> = indexValues
-            .filter { it.contains("*") }
-            .mapNotNull { it.replace("*", "").toIntOrNull() }
+        // check for general wildcards: [*] or [^], which override all other settings
+        // they are just special cases of the specific indexes
 
-        val hasWildcardAny: Boolean = indexValues.contains("*")
+        // this is collecting path end (regardless of index) and asterisk regardless of index
+        val pathEndKeys = pathTree?.filter{ (key, value) ->
+            value is String || key.contains('*')
+        }?.keys ?: setOf()
+        if (pathEndKeys.contains("[*]")) {
+            wildcardIndexes = (0 until expected.length()).toSet()
+            expectedIndexes = setOf()
+        }
+        else {
+            // TODO: update this to be flat? since there's only 1 operation now instead of 3
+            // this strongly validates index notation
+            val arrayIndexValueRegex = """^\[(.*?)\]$"""
+            val indexValues = pathEndKeys
+                .flatMap { key -> getCapturedRegexGroups(text = key, regexPattern = arrayIndexValueRegex) }
+                .toSet()
 
-        var seenIndexes: MutableSet<Int> = mutableSetOf()
-
-        fun createSortedValidatedRange(range: List<Int>): List<Int> {
-            val result: MutableList<Int> = mutableListOf()
-            for (index in range) {
-                if (index !in 0 until expected.length()) {
-                    fail("TEST ERROR: alternate match path using index ($index) is out of bounds. Verify the test setup for correctness.")
-                    continue
-                }
-                if (!seenIndexes.add(index)) {
-                    fail("TEST ERROR: index already seen: $index. Verify the test setup for correctness.")
-                    continue
-                }
-                result.add(index)
+            fun filterConvertAndIntersect(
+                condition: (String) -> Boolean,
+                replacement: (String) -> String = { it }
+            ): Set<Int> {
+                var result = indexValues.filter(condition).mapNotNull { replacement(it).toIntOrNull() }.toSet()
+                val intersection = expectedIndexes.intersect(result)
+                result = intersection
+                expectedIndexes = expectedIndexes - intersection
+                return result
             }
-            return result.sorted()
+
+            wildcardIndexes = filterConvertAndIntersect({ it.contains('*') }, { it.replace("*", "") })
         }
 
-        exactIndexes = createSortedValidatedRange(exactIndexes)
-        wildcardIndexes = createSortedValidatedRange(wildcardIndexes)
-
-        val unmatchedExpectedIndices: Set<Int> = (0 until expected.length()).toSet()
-            .subtract(exactIndexes.toSet())
-            .subtract(wildcardIndexes.toSet())
-
         var finalResult = true
-
-        // Handle alternate match paths with format: [0]
-        for (index in exactIndexes) {
-            keyPath.add(index)
-            val matchTreeValue = pathTree?.get("[$index]")
-
-            val isPathEnd = matchTreeValue is String
-
+        for (index in expectedIndexes) {
+            var nextKeyPath = keyPath.toMutableList()
+            nextKeyPath.add(index)
+            val isPathEnd = pathTree?.get("[$index]") is String
             finalResult = assertFlexibleEqual(
                 expected = expected.opt(index),
                 actual = actual.opt(index),
-                keyPath = keyPath,
-                pathTree = if (isPathEnd) null else matchTreeValue as Map<String, Any>,
-                exactMatchMode = if (isPathEnd) !exactMatchMode else exactMatchMode,
+                keyPath = nextKeyPath,
+                pathTree = pathTree?.get("[$index]") as? Map<String, Any>,
+                exactMatchMode = isPathEnd xor exactMatchMode,
                 shouldAssert = shouldAssert) && finalResult
+            actualMap.remove(index)
         }
 
-        var unmatchedActualElements = (0 until actual.length()).toSet()
-            .subtract(exactIndexes.toSet())
-            .sorted()
-            .map { Pair(it, actual.opt(it)) }
-            .toMutableList()
+        for (index in wildcardIndexes) {
+            var nextKeyPath = keyPath.toMutableList()
+            nextKeyPath.add(index)
+            val pathTreeValue = pathTree?.get("[*]")
+                ?: pathTree?.get("[*$index]")
+                ?: pathTree?.get("[$index*]")
 
-        fun performWildcardMatch(expectedIndexes: List<Int>, isGeneralWildcard: Boolean) {
-            for (index in expectedIndexes) {
-                keyPath.add(index)
-                val matchTreeValue = if (isGeneralWildcard) pathTree?.get("[*]") else pathTree?.get("[*$index]")
+            val isPathEnd = pathTreeValue is String
 
-                val isPathEnd = matchTreeValue is String
-
-                val result = unmatchedActualElements.indexOfFirst {
-                    assertFlexibleEqual(
-                        expected = expected.opt(index),
-                        actual = it.second,
-                        keyPath = keyPath,
-                        pathTree = if (isPathEnd) null else matchTreeValue as MutableMap<String, Any>,
-                        exactMatchMode = if (isPathEnd) !exactMatchMode else exactMatchMode,
-                        shouldAssert = false)
-                }
-
-                if (result == -1) {
-                    fail("""
-                    Wildcard ${if (isPathEnd != exactMatchMode) "exact" else "type"} match found no matches on Actual side satisfying the Expected requirement.
-
-                    Requirement: $matchTreeValue
-
-                    Expected: ${expected.opt(index)}
-
-                    Actual (remaining unmatched elements): ${unmatchedActualElements.map { it.second }}
-
-                    Key path: ${keyPathAsString(keyPath)}
-                """.trimIndent())
-                    finalResult = false
-                    continue
-                }
-                unmatchedActualElements.removeAt(result)
-
-                finalResult = finalResult && true
+            val result = actualMap.toList().indexOfFirst {
+                assertFlexibleEqual(
+                    expected = expected.opt(index),
+                    actual = it.second,
+                    keyPath = nextKeyPath,
+                    pathTree = pathTreeValue as? Map<String, Any>,
+                    exactMatchMode = isPathEnd xor exactMatchMode,
+                    shouldAssert = false)
             }
-        }
-
-        // Handle alternate match paths with format: [*<INT>]
-        performWildcardMatch(expectedIndexes = wildcardIndexes.sorted(), isGeneralWildcard = false)
-
-        // Handle alternate match paths with format: [*]
-        if (hasWildcardAny) {
-            performWildcardMatch(expectedIndexes = unmatchedExpectedIndices.sorted(), isGeneralWildcard = true)
-        } else {
-            for (index in unmatchedExpectedIndices.sorted()) {
-                keyPath.add(index)
-
-                if (unmatchedActualElements.any { it.first == index }) {
-                    finalResult = assertFlexibleEqual(
-                        expected = expected.opt(index),
-                        actual = actual.opt(index),
-                        keyPath = keyPath,
-                        pathTree = null,
-                        exactMatchMode = exactMatchMode,
-                        shouldAssert = shouldAssert) && finalResult
-                }
-                else {
+            if (result == -1) {
+                if (shouldAssert) {
                     fail("""
-                    Actual side's index $index has already been taken by a wildcard match. Verify the test setup for correctness.
-
-                    Expected: ${expected.opt(index)}
-
-                    Actual (remaining unmatched elements): ${unmatchedActualElements.map { it.second }}
-
-                    Key path: ${keyPathAsString(keyPath)}
-                """.trimIndent())
-                    finalResult = false
-                    continue
+                            Wildcard ${if (isPathEnd != exactMatchMode) "exact" else "type"} match found no matches on Actual side satisfying the Expected requirement.
+            
+                            Requirement: $pathTreeValue
+            
+                            Expected: ${expected.opt(index)}
+            
+                            Actual (remaining unmatched elements): ${actualMap.values}
+            
+                            Key path: ${keyPathAsString(keyPath)}
+                        """.trimIndent())
                 }
+                finalResult = false
+                break
             }
+            actualMap.remove(result)
         }
 
         return finalResult
@@ -664,9 +618,9 @@ object JSONObjectAsserts {
                 fail("""
                     Expected JSON is non-nil but Actual JSON is nil.
 
-                    Expected: ${expected.toString()}
+                    Expected: $expected
 
-                    Actual: ${actual.toString()}
+                    Actual: $actual
 
                     Key path: ${keyPathAsString(keyPath)}
                 """)
@@ -681,9 +635,9 @@ object JSONObjectAsserts {
                     Expected count: ${expected.length()}
                     Actual count: ${actual.length()}
 
-                    Expected: ${expected.toString()}
+                    Expected: $expected
 
-                    Actual: ${actual.toString()}
+                    Actual: $actual
 
                     Key path: ${keyPathAsString(keyPath)}
                 """)
@@ -818,26 +772,28 @@ object JSONObjectAsserts {
         // Handle the special case where the input is an empty string because the regex does not cover this case.
         if (text.isEmpty()) return listOf("")
 
-        // The regex captures groups in two scenarios:
-        // 1. Characters (or an empty string) preceding a `.` that is NOT preceded by a `\`.
-        // 2. Any non-empty text right before the end of the string.
-        //
-        // This regex is designed to match key path access in styles like "key0\.key1.key2[1][2].key3".
-        // It captures groups separated by the `.` character, but treats "\." as part of the key (i.e., it ignores "\." as a nesting separator).
-        // For the given example, the result would be: ["key0\.key1", "key2[1][2]", "key3"].
-        val jsonNestingRegex = """(.*?)(?<!\\)(?:\.)|(.+?)(?:$)"""
+        val segments = mutableListOf<String>()
+        var startIndex = 0
+        var inEscapeSequence = false
 
-        val matchResult = extractRegexCaptureGroups(text, jsonNestingRegex) ?: return listOf()
-
-        var captureGroups = matchResult.flatMap { it.second }.filter { it.isNotEmpty() }
-
-        // Address the special case where the `.` character is the last character in the path.
-        // In such cases, an empty string ("") is considered to be nested after the preceding key.
-        // For instance, "key." would be split into "key" and "".
-        if (matchResult.last().first.last() == '.') {
-            captureGroups += ""
+        for ((index, char) in text.withIndex()) {
+            if (char == '\\' && !inEscapeSequence) {
+                inEscapeSequence = true
+            } else if (char == '.' && !inEscapeSequence) {
+                segments.add(text.substring(startIndex, index))
+                startIndex = index + 1
+            } else {
+                inEscapeSequence = false
+            }
         }
-        return captureGroups
+
+        segments.add(text.substring(startIndex))
+
+        // Handle edge case: if input ends with a dot, add an empty string
+        if (text.endsWith(".") && !text.endsWith("\\.")) {
+            segments.add("")
+        }
+        return segments
     }
 
     /**
