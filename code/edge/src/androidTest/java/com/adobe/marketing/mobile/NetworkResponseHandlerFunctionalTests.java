@@ -21,7 +21,7 @@ import static org.junit.Assert.assertNull;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.edge.identity.Identity;
-import com.adobe.marketing.mobile.services.FunctionalTestDataStoreService;
+import com.adobe.marketing.mobile.services.TestDataStoreService;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
@@ -50,7 +50,7 @@ public class NetworkResponseHandlerFunctionalTests {
 
 	private String receivedSetLocationHint;
 	private Integer receivedSetTtlSeconds;
-	private final FunctionalTestDataStoreService testDataStoreService = new FunctionalTestDataStoreService();
+	private final TestDataStoreService testDataStoreService = new TestDataStoreService();
 	private NamedCollection testNamedCollection;
 
 	private final EdgeStateCallback edgeStateCallback = new EdgeStateCallback() {
