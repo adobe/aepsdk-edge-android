@@ -11,10 +11,10 @@
 
 package com.adobe.marketing.mobile;
 
-import static com.adobe.marketing.mobile.util.FunctionalTestHelper.assertExpectedEvents;
-import static com.adobe.marketing.mobile.util.FunctionalTestHelper.getDispatchedEventsWith;
-import static com.adobe.marketing.mobile.util.FunctionalTestHelper.resetTestExpectations;
-import static com.adobe.marketing.mobile.util.FunctionalTestHelper.setExpectationEvent;
+import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
+import static com.adobe.marketing.mobile.util.TestHelper.getDispatchedEventsWith;
+import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
+import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -23,9 +23,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.FunctionalTestDataStoreService;
 import com.adobe.marketing.mobile.services.NamedCollection;
-import com.adobe.marketing.mobile.util.FunctionalTestConstants;
-import com.adobe.marketing.mobile.util.FunctionalTestHelper;
-import com.adobe.marketing.mobile.util.FunctionalTestUtils;
+import com.adobe.marketing.mobile.util.TestConstants;
+import com.adobe.marketing.mobile.util.TestHelper;
+import com.adobe.marketing.mobile.util.TestUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -73,9 +73,9 @@ public class NetworkResponseHandlerFunctionalTests {
 
 	@Rule
 	public RuleChain rule = RuleChain
-		.outerRule(new FunctionalTestHelper.LogOnErrorRule())
-		.around(new FunctionalTestHelper.SetupCoreRule())
-		.around(new FunctionalTestHelper.RegisterMonitorExtensionRule());
+		.outerRule(new TestHelper.LogOnErrorRule())
+		.around(new TestHelper.SetupCoreRule())
+		.around(new TestHelper.RegisterMonitorExtensionRule());
 
 	@Before
 	public void setup() throws Exception {
@@ -97,7 +97,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertExpectedEvents(false);
 		resetTestExpectations();
 
-		this.testNamedCollection = testDataStoreService.getNamedCollection(FunctionalTestConstants.EDGE_DATA_STORAGE);
+		this.testNamedCollection = testDataStoreService.getNamedCollection(TestConstants.EDGE_DATA_STORAGE);
 		this.networkResponseHandler = new NetworkResponseHandler(testNamedCollection, edgeStateCallback);
 	}
 
@@ -135,7 +135,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 5000);
 		assertEquals(1, dispatchEvents.size());
 
-		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		Map<String, String> flattenReceivedData = TestUtils.flattenMap(dispatchEvents.get(0).getEventData());
 		assertEquals(3, flattenReceivedData.size());
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0201-503", flattenReceivedData.get("type"));
 		assertEquals("Request to Data platform failed with an unknown exception", flattenReceivedData.get("title"));
@@ -158,7 +158,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 5000);
 		assertEquals(1, dispatchEvents.size());
 
-		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		Map<String, String> flattenReceivedData = TestUtils.flattenMap(dispatchEvents.get(0).getEventData());
 		assertEquals(4, flattenReceivedData.size());
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0201-503", flattenReceivedData.get("type"));
 		assertEquals("Request to Data platform failed with an unknown exception", flattenReceivedData.get("title"));
@@ -186,7 +186,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, dispatchEvents.size());
 
-		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		Map<String, String> flattenReceivedData = TestUtils.flattenMap(dispatchEvents.get(0).getEventData());
 		assertEquals(4, flattenReceivedData.size());
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0201-503", flattenReceivedData.get("type"));
 		assertEquals("500", flattenReceivedData.get("status"));
@@ -230,7 +230,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, dispatchEvents.size());
 
-		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		Map<String, String> flattenReceivedData = TestUtils.flattenMap(dispatchEvents.get(0).getEventData());
 		assertEquals(5, flattenReceivedData.size());
 		assertEquals("personalization", flattenReceivedData.get("type"));
 		assertEquals("100", flattenReceivedData.get("status"));
@@ -272,7 +272,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, dispatchEvents.size());
 
-		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		Map<String, String> flattenReceivedData = TestUtils.flattenMap(dispatchEvents.get(0).getEventData());
 		assertEquals(4, flattenReceivedData.size());
 		assertEquals("personalization", flattenReceivedData.get("type"));
 		assertEquals("100", flattenReceivedData.get("status"));
@@ -313,7 +313,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, dispatchEvents.size());
 
-		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		Map<String, String> flattenReceivedData = TestUtils.flattenMap(dispatchEvents.get(0).getEventData());
 		assertEquals(4, flattenReceivedData.size());
 		assertEquals("personalization", flattenReceivedData.get("type"));
 		assertEquals("100", flattenReceivedData.get("status"));
@@ -348,7 +348,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(2, dispatchEvents.size());
 
-		Map<String, String> flattenReceivedData1 = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		Map<String, String> flattenReceivedData1 = TestUtils.flattenMap(dispatchEvents.get(0).getEventData());
 		assertEquals(5, flattenReceivedData1.size());
 		assertEquals("0", flattenReceivedData1.get("status"));
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0201-503", flattenReceivedData1.get("type"));
@@ -360,7 +360,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals(event1.getUniqueIdentifier(), flattenReceivedData1.get("requestEventId"));
 		assertEquals(event1.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
 
-		Map<String, String> flattenReceivedData2 = FunctionalTestUtils.flattenMap(dispatchEvents.get(1).getEventData());
+		Map<String, String> flattenReceivedData2 = TestUtils.flattenMap(dispatchEvents.get(1).getEventData());
 		assertEquals(5, flattenReceivedData2.size());
 		assertEquals("2003", flattenReceivedData2.get("status"));
 		assertEquals("personalization", flattenReceivedData2.get("type"));
@@ -416,7 +416,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "state:store");
 		assertEquals(1, dispatchEvents.size());
 
-		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		Map<String, String> flattenReceivedData = TestUtils.flattenMap(dispatchEvents.get(0).getEventData());
 		assertEquals(6, flattenReceivedData.size());
 		assertEquals("state:store", flattenReceivedData.get("type"));
 		assertEquals("123", flattenReceivedData.get("requestId"));
@@ -452,7 +452,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.RESPONSE_CONTENT);
 		assertEquals(1, dispatchEvents.size());
 
-		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		Map<String, String> flattenReceivedData = TestUtils.flattenMap(dispatchEvents.get(0).getEventData());
 		assertEquals(4, flattenReceivedData.size());
 		assertEquals("123", flattenReceivedData.get("requestId"));
 		assertEquals("s_ecid", flattenReceivedData.get("payload[0].key"));
@@ -484,7 +484,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.RESPONSE_CONTENT);
 		assertEquals(1, dispatchEvents.size());
 
-		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		Map<String, String> flattenReceivedData = TestUtils.flattenMap(dispatchEvents.get(0).getEventData());
 		assertEquals(4, flattenReceivedData.size());
 		assertEquals("123", flattenReceivedData.get("requestId"));
 		assertEquals("s_ecid", flattenReceivedData.get("payload[0].key"));
@@ -528,7 +528,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals(2, dispatchEvents.size());
 
 		// verify event 1
-		Map<String, String> flattenReceivedData1 = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		Map<String, String> flattenReceivedData1 = TestUtils.flattenMap(dispatchEvents.get(0).getEventData());
 		assertEquals(5, flattenReceivedData1.size());
 		assertEquals("state:store", flattenReceivedData1.get("type"));
 		assertEquals("123", flattenReceivedData1.get("requestId"));
@@ -538,7 +538,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertNull(dispatchEvents.get(0).getParentID());
 
 		// verify event 2
-		Map<String, String> flattenReceivedData2 = FunctionalTestUtils.flattenMap(dispatchEvents.get(1).getEventData());
+		Map<String, String> flattenReceivedData2 = TestUtils.flattenMap(dispatchEvents.get(1).getEventData());
 		assertEquals(4, flattenReceivedData2.size());
 		assertEquals("identity:persist", flattenReceivedData2.get("type"));
 		assertEquals("123", flattenReceivedData2.get("requestId"));
@@ -592,7 +592,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		dispatchEvents.addAll(getDispatchedEventsWith(EventType.EDGE, "pairedeventexample"));
 		assertEquals(2, dispatchEvents.size());
 
-		Map<String, String> flattenReceivedData1 = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		Map<String, String> flattenReceivedData1 = TestUtils.flattenMap(dispatchEvents.get(0).getEventData());
 		assertEquals(6, flattenReceivedData1.size());
 		assertEquals("state:store", flattenReceivedData1.get("type"));
 		assertEquals("s_ecid", flattenReceivedData1.get("payload[0].key"));
@@ -603,7 +603,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals(event1.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
 
 		// verify event 2
-		Map<String, String> flattenReceivedData2 = FunctionalTestUtils.flattenMap(dispatchEvents.get(1).getEventData());
+		Map<String, String> flattenReceivedData2 = TestUtils.flattenMap(dispatchEvents.get(1).getEventData());
 		assertEquals(4, flattenReceivedData2.size());
 		assertEquals("pairedeventexample", flattenReceivedData2.get("type"));
 		assertEquals("123612123812381", flattenReceivedData2.get("payload[0].id"));
@@ -647,7 +647,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "pairedeventexample");
 		assertEquals(1, dispatchEvents.size());
 
-		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		Map<String, String> flattenReceivedData = TestUtils.flattenMap(dispatchEvents.get(0).getEventData());
 		assertEquals(3, flattenReceivedData.size());
 		assertEquals("pairedeventexample", flattenReceivedData.get("type"));
 		assertEquals("123", flattenReceivedData.get("requestId"));
@@ -689,7 +689,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "pairedeventexample");
 		assertEquals(1, dispatchEvents.size());
 
-		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		Map<String, String> flattenReceivedData = TestUtils.flattenMap(dispatchEvents.get(0).getEventData());
 		assertEquals(3, flattenReceivedData.size());
 		assertEquals("pairedeventexample", flattenReceivedData.get("type"));
 		assertEquals("123", flattenReceivedData.get("requestId"));
@@ -734,7 +734,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "state:store");
 		assertEquals(1, dispatchEvents.size());
 
-		Map<String, String> flattenReceivedData1 = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		Map<String, String> flattenReceivedData1 = TestUtils.flattenMap(dispatchEvents.get(0).getEventData());
 		assertEquals(6, flattenReceivedData1.size());
 		assertEquals("state:store", flattenReceivedData1.get("type"));
 		assertEquals("123", flattenReceivedData1.get("requestId"));
@@ -747,9 +747,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchErrorEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, dispatchErrorEvents.size());
 
-		Map<String, String> flattenReceivedData2 = FunctionalTestUtils.flattenMap(
-			dispatchErrorEvents.get(0).getEventData()
-		);
+		Map<String, String> flattenReceivedData2 = TestUtils.flattenMap(dispatchErrorEvents.get(0).getEventData());
 		assertEquals(5, flattenReceivedData2.size());
 		assertEquals("personalization", flattenReceivedData2.get("type"));
 		assertEquals("2003", flattenReceivedData2.get("status"));
@@ -798,7 +796,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(2, dispatchEvents.size());
 
-		Map<String, String> flattenReceivedData1 = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		Map<String, String> flattenReceivedData1 = TestUtils.flattenMap(dispatchEvents.get(0).getEventData());
 		assertEquals(4, flattenReceivedData1.size());
 		assertEquals("2003", flattenReceivedData1.get("status"));
 		assertEquals("Failed to process personalization event", flattenReceivedData1.get("title"));
@@ -806,7 +804,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals(event2.getUniqueIdentifier(), flattenReceivedData1.get("requestEventId"));
 		assertEquals(event2.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
 
-		Map<String, String> flattenReceivedData2 = FunctionalTestUtils.flattenMap(dispatchEvents.get(1).getEventData());
+		Map<String, String> flattenReceivedData2 = TestUtils.flattenMap(dispatchEvents.get(1).getEventData());
 		assertEquals(7, flattenReceivedData2.size());
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0204-200", flattenReceivedData2.get("type"));
 		assertEquals("98", flattenReceivedData2.get("status"));
@@ -852,7 +850,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "locationHint:result");
 		assertEquals(1, dispatchEvents.size());
 
-		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		Map<String, String> flattenReceivedData = TestUtils.flattenMap(dispatchEvents.get(0).getEventData());
 		assertEquals(9, flattenReceivedData.size());
 		assertEquals("locationHint:result", flattenReceivedData.get("type"));
 		assertEquals("123", flattenReceivedData.get("requestId"));

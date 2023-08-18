@@ -14,6 +14,8 @@ package com.adobe.marketing.mobile.util
 import com.adobe.marketing.mobile.services.HttpConnecting
 import com.adobe.marketing.mobile.services.Log
 import com.adobe.marketing.mobile.services.TestableNetworkRequest
+import java.io.ByteArrayInputStream
+import java.io.InputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -29,6 +31,29 @@ class TestNetworkService {
 
     companion object {
         private const val LOG_SOURCE = "TestNetworkService"
+        private val defaultResponse: HttpConnecting = object : HttpConnecting {
+            override fun getInputStream(): InputStream {
+                return ByteArrayInputStream("".toByteArray())
+            }
+
+            override fun getErrorStream(): InputStream? {
+                return null
+            }
+
+            override fun getResponseCode(): Int {
+                return 200
+            }
+
+            override fun getResponseMessage(): String {
+                return ""
+            }
+
+            override fun getResponsePropertyValue(responsePropertyKey: String): String? {
+                return null
+            }
+
+            override fun close() {}
+        }
     }
 
     init {

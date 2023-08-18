@@ -12,7 +12,7 @@
 package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
-import static com.adobe.marketing.mobile.util.FunctionalTestHelper.*;
+import static com.adobe.marketing.mobile.util.TestHelper.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -20,16 +20,19 @@ import static org.junit.Assert.assertTrue;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.edge.consent.Consent;
 import com.adobe.marketing.mobile.edge.identity.Identity;
+import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.ADBCountDownLatch;
-import com.adobe.marketing.mobile.util.FunctionalTestConstants;
-import com.adobe.marketing.mobile.util.FunctionalTestHelper;
+import com.adobe.marketing.mobile.util.MockNetworkService;
+import com.adobe.marketing.mobile.util.TestConstants;
+import com.adobe.marketing.mobile.util.TestHelper;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,20 +42,22 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class ConsentStatusChangeFunctionalTests {
 
-	private static final String EXEDGE_INTERACT_URL_STRING =
-		FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
-	private static final String EXEDGE_CONSENT_URL_STRING = FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING;
+	private static final MockNetworkService mockNetworkService = new MockNetworkService();
+	private static final String EXEDGE_INTERACT_URL_STRING = TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
+	private static final String EXEDGE_CONSENT_URL_STRING = TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING;
 	private static final String CONFIG_ID = "1234abcd-abcd-1234-5678-123456abcdef";
 	private static final int EVENTS_COUNT = 5;
 
 	@Rule
 	public RuleChain rule = RuleChain
-		.outerRule(new FunctionalTestHelper.LogOnErrorRule())
-		.around(new FunctionalTestHelper.SetupCoreRule())
-		.around(new FunctionalTestHelper.RegisterMonitorExtensionRule());
+		.outerRule(new TestHelper.LogOnErrorRule())
+		.around(new TestHelper.SetupCoreRule())
+		.around(new TestHelper.RegisterMonitorExtensionRule());
 
 	@Before
 	public void setup() throws Exception {
+		ServiceProvider.getInstance().setNetworkService(mockNetworkService);
+
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1);
 
@@ -74,7 +79,13 @@ public class ConsentStatusChangeFunctionalTests {
 		latch.await();
 
 		assertExpectedEvents(false);
+		mockNetworkService.reset();
 		resetTestExpectations();
+	}
+
+	@After
+	public void tearDown() {
+		mockNetworkService.reset();
 	}
 
 	// Test sendNetworkRequest(final EdgeHit edgeHit, final Map<String, String> requestHeaders, final int attemptCount)
@@ -83,13 +94,18 @@ public class ConsentStatusChangeFunctionalTests {
 		// setup
 		updateCollectConsent(ConsentStatus.NO);
 		getConsentsSync();
+		mockNetworkService.reset();
 		resetTestExpectations();
 
 		// test
 		fireManyEvents();
 
 		// verify
-		List<TestableNetworkRequest> resultRequests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, 1000);
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+			EXEDGE_INTERACT_URL_STRING,
+			POST,
+			1000
+		);
 		assertEquals(0, resultRequests.size());
 	}
 
@@ -98,14 +114,16 @@ public class ConsentStatusChangeFunctionalTests {
 		// setup
 		updateCollectConsent(ConsentStatus.YES);
 		getConsentsSync();
+		mockNetworkService.reset();
 		resetTestExpectations();
 
 		// test
-		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, EVENTS_COUNT);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, EVENTS_COUNT);
 		fireManyEvents();
 
 		// verify
-		assertNetworkRequestCount();
+		mockNetworkService.assertAllNetworkRequestExpectations();
+		mockNetworkService.assertAllNetworkRequestExpectations();
 	}
 
 	@Test
@@ -116,16 +134,20 @@ public class ConsentStatusChangeFunctionalTests {
 		fireManyEvents();
 
 		//verify
-		List<TestableNetworkRequest> resultRequests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, 1000);
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+			EXEDGE_INTERACT_URL_STRING,
+			POST,
+			1000
+		);
 		assertEquals(0, resultRequests.size());
 
 		// test - change to yes
-		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, EVENTS_COUNT);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, EVENTS_COUNT);
 		updateCollectConsent(ConsentStatus.YES);
 		getConsentsSync();
 
 		// verify
-		assertNetworkRequestCount();
+		mockNetworkService.assertAllNetworkRequestExpectations();
 	}
 
 	@Test
@@ -140,7 +162,11 @@ public class ConsentStatusChangeFunctionalTests {
 		getConsentsSync();
 
 		// verify
-		List<TestableNetworkRequest> resultRequests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, 1000);
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+			EXEDGE_INTERACT_URL_STRING,
+			POST,
+			1000
+		);
 		assertEquals(0, resultRequests.size());
 	}
 
@@ -157,7 +183,11 @@ public class ConsentStatusChangeFunctionalTests {
 		getConsentsSync();
 
 		// verify
-		List<TestableNetworkRequest> resultRequests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, 1000);
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+			EXEDGE_INTERACT_URL_STRING,
+			POST,
+			1000
+		);
 		assertEquals(0, resultRequests.size());
 	}
 
@@ -173,13 +203,17 @@ public class ConsentStatusChangeFunctionalTests {
 		updateCollectConsent(ConsentStatus.NO);
 
 		// verify
-		List<TestableNetworkRequest> resultRequests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, 1000);
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+			EXEDGE_INTERACT_URL_STRING,
+			POST,
+			1000
+		);
 		assertEquals(0, resultRequests.size());
 	}
 
 	@Test
 	public void testCollectConsent_whenNo_thenPending_thenHits_thenYes_hitsSent() throws Exception {
-		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, EVENTS_COUNT);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, EVENTS_COUNT);
 
 		// initial no, pending
 		updateCollectConsent(ConsentStatus.NO);
@@ -191,24 +225,32 @@ public class ConsentStatusChangeFunctionalTests {
 		updateCollectConsent(ConsentStatus.YES);
 
 		// verify
-		assertNetworkRequestCount();
+		mockNetworkService.assertAllNetworkRequestExpectations();
 	}
 
 	// Test consent events are being sent to Edge Network
 	@Test
 	public void testCollectConsentNo_sendsRequestToEdgeNetwork() throws Exception {
-		setExpectationNetworkRequest(EXEDGE_CONSENT_URL_STRING, POST, 1);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_CONSENT_URL_STRING, POST, 1);
 
 		// test
 		updateCollectConsent(ConsentStatus.NO);
 
 		// verify
-		assertNetworkRequestCount();
-		List<TestableNetworkRequest> interactRequests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, 1000);
+		mockNetworkService.assertAllNetworkRequestExpectations();
+		List<TestableNetworkRequest> interactRequests = mockNetworkService.getNetworkRequestsWith(
+			EXEDGE_INTERACT_URL_STRING,
+			POST,
+			1000
+		);
 		assertEquals(0, interactRequests.size());
-		List<TestableNetworkRequest> consentRequests = getNetworkRequestsWith(EXEDGE_CONSENT_URL_STRING, POST, 1000);
+		List<TestableNetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
+			EXEDGE_CONSENT_URL_STRING,
+			POST,
+			1000
+		);
 		assertEquals(POST, consentRequests.get(0).getMethod());
-		Map<String, String> requestBody = getFlattenedNetworkRequestBody(consentRequests.get(0));
+		Map<String, String> requestBody = mockNetworkService.getFlattenedNetworkRequestBody(consentRequests.get(0));
 		assertEquals(11, requestBody.size());
 		assertEquals("update", requestBody.get("query.consent.operation"));
 		assertNotNull(requestBody.get("identityMap.ECID[0].id"));
@@ -225,18 +267,26 @@ public class ConsentStatusChangeFunctionalTests {
 
 	@Test
 	public void testCollectConsentYes_sendsRequestToEdgeNetwork() throws Exception {
-		setExpectationNetworkRequest(EXEDGE_CONSENT_URL_STRING, POST, 1);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_CONSENT_URL_STRING, POST, 1);
 
 		// test
 		updateCollectConsent(ConsentStatus.YES);
 
 		// verify
-		assertNetworkRequestCount();
-		List<TestableNetworkRequest> interactRequests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, 1000);
+		mockNetworkService.assertAllNetworkRequestExpectations();
+		List<TestableNetworkRequest> interactRequests = mockNetworkService.getNetworkRequestsWith(
+			EXEDGE_INTERACT_URL_STRING,
+			POST,
+			1000
+		);
 		assertEquals(0, interactRequests.size());
-		List<TestableNetworkRequest> consentRequests = getNetworkRequestsWith(EXEDGE_CONSENT_URL_STRING, POST, 1000);
+		List<TestableNetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
+			EXEDGE_CONSENT_URL_STRING,
+			POST,
+			1000
+		);
 		assertEquals(POST, consentRequests.get(0).getMethod());
-		Map<String, String> requestBody = getFlattenedNetworkRequestBody(consentRequests.get(0));
+		Map<String, String> requestBody = mockNetworkService.getFlattenedNetworkRequestBody(consentRequests.get(0));
 		assertEquals(11, requestBody.size());
 		assertEquals("update", requestBody.get("query.consent.operation"));
 		assertNotNull(requestBody.get("identityMap.ECID[0].id"));
@@ -259,30 +309,36 @@ public class ConsentStatusChangeFunctionalTests {
 		updateCollectConsent("some value");
 
 		// verify
-		List<TestableNetworkRequest> interactRequests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, 1000);
+		List<TestableNetworkRequest> interactRequests = mockNetworkService.getNetworkRequestsWith(
+			EXEDGE_INTERACT_URL_STRING,
+			POST,
+			1000
+		);
 		assertEquals(0, interactRequests.size());
-		List<TestableNetworkRequest> consentRequests = getNetworkRequestsWith(EXEDGE_CONSENT_URL_STRING, POST, 1000);
+		List<TestableNetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
+			EXEDGE_CONSENT_URL_STRING,
+			POST,
+			1000
+		);
 		assertEquals(0, consentRequests.size());
 	}
 
 	@Test
 	public void testCollectConsent_withConfigurableEndpoint_withEmptyConfigEndpoint_UsesProduction() throws Exception {
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING, POST, 1);
+		mockNetworkService.setExpectationForNetworkRequest(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING, POST, 1);
 
 		// test
 		updateCollectConsent(ConsentStatus.YES);
 
 		// verify
-		assertNetworkRequestCount();
-		List<TestableNetworkRequest> consentRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING,
+		mockNetworkService.assertAllNetworkRequestExpectations();
+		List<TestableNetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
+			TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING,
 			POST,
 			1000
 		);
 		assertEquals(POST, consentRequests.get(0).getMethod());
-		assertTrue(
-			consentRequests.get(0).getUrl().startsWith(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING)
-		);
+		assertTrue(consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING));
 	}
 
 	@Test
@@ -296,22 +352,20 @@ public class ConsentStatusChangeFunctionalTests {
 			}
 		);
 
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING, POST, 1);
+		mockNetworkService.setExpectationForNetworkRequest(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING, POST, 1);
 
 		// test
 		updateCollectConsent(ConsentStatus.YES);
 
 		// verify
-		assertNetworkRequestCount();
-		List<TestableNetworkRequest> consentRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING,
+		mockNetworkService.assertAllNetworkRequestExpectations();
+		List<TestableNetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
+			TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING,
 			POST,
 			1000
 		);
 		assertEquals(POST, consentRequests.get(0).getMethod());
-		assertTrue(
-			consentRequests.get(0).getUrl().startsWith(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING)
-		);
+		assertTrue(consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING));
 	}
 
 	@Test
@@ -325,22 +379,20 @@ public class ConsentStatusChangeFunctionalTests {
 			}
 		);
 
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING, POST, 1);
+		mockNetworkService.setExpectationForNetworkRequest(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING, POST, 1);
 
 		// test
 		updateCollectConsent(ConsentStatus.YES);
 
 		// verify
-		assertNetworkRequestCount();
-		List<TestableNetworkRequest> consentRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING,
+		mockNetworkService.assertAllNetworkRequestExpectations();
+		List<TestableNetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
+			TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING,
 			POST,
 			1000
 		);
 		assertEquals(POST, consentRequests.get(0).getMethod());
-		assertTrue(
-			consentRequests.get(0).getUrl().startsWith(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING)
-		);
+		assertTrue(consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING));
 	}
 
 	@Test
@@ -354,24 +406,25 @@ public class ConsentStatusChangeFunctionalTests {
 			}
 		);
 
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_PRE_PROD_URL_STRING, POST, 1);
+		mockNetworkService.setExpectationForNetworkRequest(
+			TestConstants.Defaults.EXEDGE_CONSENT_PRE_PROD_URL_STRING,
+			POST,
+			1
+		);
 
 		// test
 		updateCollectConsent(ConsentStatus.YES);
 
 		// verify
-		assertNetworkRequestCount();
-		List<TestableNetworkRequest> consentRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_CONSENT_PRE_PROD_URL_STRING,
+		mockNetworkService.assertAllNetworkRequestExpectations();
+		List<TestableNetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
+			TestConstants.Defaults.EXEDGE_CONSENT_PRE_PROD_URL_STRING,
 			POST,
 			1000
 		);
 		assertEquals(POST, consentRequests.get(0).getMethod());
 		assertTrue(
-			consentRequests
-				.get(0)
-				.getUrl()
-				.startsWith(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_PRE_PROD_URL_STRING)
+			consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_PRE_PROD_URL_STRING)
 		);
 	}
 
@@ -386,22 +439,24 @@ public class ConsentStatusChangeFunctionalTests {
 			}
 		);
 
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_INT_URL_STRING, POST, 1);
+		mockNetworkService.setExpectationForNetworkRequest(
+			TestConstants.Defaults.EXEDGE_CONSENT_INT_URL_STRING,
+			POST,
+			1
+		);
 
 		// test
 		updateCollectConsent(ConsentStatus.YES);
 
 		// verify
-		assertNetworkRequestCount();
-		List<TestableNetworkRequest> consentRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_CONSENT_INT_URL_STRING,
+		mockNetworkService.assertAllNetworkRequestExpectations();
+		List<TestableNetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
+			TestConstants.Defaults.EXEDGE_CONSENT_INT_URL_STRING,
 			POST,
 			1000
 		);
 		assertEquals(POST, consentRequests.get(0).getMethod());
-		assertTrue(
-			consentRequests.get(0).getUrl().startsWith(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_INT_URL_STRING)
-		);
+		assertTrue(consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_INT_URL_STRING));
 	}
 
 	private void fireManyEvents() {
