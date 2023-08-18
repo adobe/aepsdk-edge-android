@@ -694,14 +694,23 @@ object JSONAsserts {
         return try {
             val regex = Regex(regexPattern)
             val matchResults = regex.findAll(text).toList()
+
+            // Create an empty mutable list to store matched strings and their corresponding capture groups
             val matchResult: MutableList<Pair<String, List<String>>> = mutableListOf()
+
             for (match in matchResults) {
+                // Get all groups for the current match, including the entire match itself
                 val groups = match.groupValues
+                // If no groups are found, skip the current iteration
                 if (groups.isEmpty()) continue
+                // The first item in the groups list is the entire matched string
                 val matchString = groups[0]
+                // Drop the first item to get only the capture groups
                 val captureGroups = groups.drop(1)
+                // Add the matched string and its capture groups to the result list
                 matchResult.add(Pair(matchString, captureGroups))
             }
+
             matchResult
         } catch (e: PatternSyntaxException) {
             println("TEST ERROR: Invalid regex: ${e.message}")
@@ -738,30 +747,41 @@ object JSONAsserts {
      * a list containing an empty string is returned. If no components are found, an empty list is returned.
      */
     private fun getKeyPathComponents(text: String): List<String> {
-        // Handle the special case where the input is an empty string because the regex does not cover this case.
+        // Handle edge case where input is empty
         if (text.isEmpty()) return listOf("")
 
         val segments = mutableListOf<String>()
         var startIndex = 0
         var inEscapeSequence = false
 
+        // Iterate over each character in the input string with its index
         for ((index, char) in text.withIndex()) {
+            // If current character is a backslash and we're not already in an escape sequence
             if (char == '\\' && !inEscapeSequence) {
                 inEscapeSequence = true
-            } else if (char == '.' && !inEscapeSequence) {
+            }
+            // If current character is a dot and we're not in an escape sequence
+            else if (char == '.' && !inEscapeSequence) {
+                // Add the segment from the start index to current index (excluding the dot)
                 segments.add(text.substring(startIndex, index))
+
+                // Update the start index for the next segment
                 startIndex = index + 1
-            } else {
+            }
+            // Any other character or if we're ending an escape sequence
+            else {
                 inEscapeSequence = false
             }
         }
 
+        // Add the remaining segment after the last dot (if any)
         segments.add(text.substring(startIndex))
 
-        // Handle edge case: if input ends with a dot, add an empty string
+        // Handle edge case where input ends with a dot (but not an escaped dot)
         if (text.endsWith(".") && !text.endsWith("\\.")) {
             segments.add("")
         }
+
         return segments
     }
 
@@ -813,52 +833,125 @@ object JSONAsserts {
         }
     }
 
+    /**
+     * Generates a tree structure from a list of path strings.
+     *
+     * This function processes each path in [paths], extracts its individual components using [processPathComponents], and
+     * constructs a nested map structure. The constructed map is then merged into the main tree. If the resulting tree
+     * is empty after processing all paths, this function returns `null`.
+     *
+     * @param paths A list of path strings to be processed. Each path represents a nested structure to be transformed
+     * into a tree-like map.
+     *
+     * @return A tree-like map structure representing the nested structure of the provided paths. Returns `null` if the
+     * resulting tree is empty.
+     *
+     * @see processPathComponents
+     * @see construct
+     * @see merge
+     */
     private fun generatePathTree(paths: List<String>): Map<String, Any>? {
-        // Matches array subscripts, capturing the brackets and inner content (e.g., "[123]", "[*123]").
-        val arrayIndexRegex = """(\[.*?\])"""
         val tree: MutableMap<String, Any> = mutableMapOf()
 
         for (exactValuePath in paths) {
-            var allPathComponents: MutableList<String> = mutableListOf()
+            val allPathComponents = processPathComponents(exactValuePath)
 
-            // Break the path string into its individual components.
-            val keyPathComponents = getKeyPathComponents(exactValuePath)
-            for (pathComponent in keyPathComponents) {
-                // Convert any escaped periods to actual periods, because the actual key names with periods in the JSON
-                // will not be escaped
-                val pathComponent = pathComponent.replace("\\.", ".")
-
-                // Extract all array access levels from the pathComponent, if they exist.
-                // Note: This regex extracts sequences of square brackets and their contents ("[___]").
-                // However, positions of these brackets within the path component are not considered (e.g., "key0[2]key1[3]" will yield "key0" and "[2][3]").
-                val arrayComponents = getCapturedRegexGroups(pathComponent, arrayIndexRegex)
-
-                // If no array subscripts are detected, directly add the entire path component.
-                if (arrayComponents.isEmpty()) {
-                    allPathComponents.add(pathComponent)
-                }
-                // If array subscripts are detected, extract the path preceding the first subscript.
-                else {
-                    val bracketIndex = pathComponent.indexOf("[")
-                    if (bracketIndex == -1) {
-                        println("TEST ERROR: unable to get bracket position from path: $pathComponent. Skipping exact path: $exactValuePath")
-                        continue
-                    }
-                    val extractedPathComponent = pathComponent.substring(0, bracketIndex)
-                    // Handle cases where the path starts directly with an array index (e.g., "[0][1]").
-                    // Avoid adding an empty string and directly add the array components.
-                    if (extractedPathComponent.isNotEmpty()) {
-                        allPathComponents.add(extractedPathComponent)
-                    }
-                    allPathComponents.addAll(arrayComponents)
-                }
-            }
-            // Construct a nested map structure based on the path components.
             val constructedTree = construct(allPathComponents, exactValuePath)
-            // Merge the newly constructed tree into the main tree.
             tree.putAll(merge(tree, constructedTree))
         }
+
         return if (tree.isEmpty()) null else tree
+    }
+
+
+    /**
+     * Processes a given key path string to extract individual path components.
+     *
+     * This function divides the input key path into its components, handling the following special cases:
+     * 1. Array style access: "key1[0][1]" is split into "key1", "[0]", and "[1]".
+     * 2. Dot notation for nesting: "key1.key2" is split into "key1" and "key2".
+     *
+     * Special cases can be escaped using a preceding backslash character. For instance:
+     * - "key1\[0\]" is interpreted as the single component "key1[0]".
+     * - "key1\.key2" is interpreted as the single key "key1.key2".
+     *
+     * @param path The input key path string to be split into components.
+     *
+     * @return A list of strings representing the individual components of the key path. If [path] is empty,
+     * the function returns an empty list.
+     */
+    private fun processPathComponents(path: String): MutableList<String> {
+        val allPathComponents: MutableList<String> = mutableListOf()
+
+        val keyPathComponents = getKeyPathComponents(path)
+        for (pathComponent in keyPathComponents) {
+            val cleanedPathComponent = pathComponent.replace("\\.", ".")
+
+            val components = extractArrayStyleComponents(cleanedPathComponent)
+            allPathComponents.addAll(components)
+        }
+        return allPathComponents
+    }
+    private fun extractArrayStyleComponents(str: String): List<String> {
+        // Handle edge case where input is empty
+        if (str.isEmpty()) return listOf("")
+
+        val components = mutableListOf<String>()
+        var bracketCount = 0
+        var componentBuilder = StringBuilder()
+        var nextCharIsBackslash = false
+        var lastArrayAccessEnd = str.length // to track the end of the last valid array-style access
+
+        fun isNextCharBackslash(i: Int): Boolean {
+            // Since we're iterating in reverse, the "previous" character is at i + 1
+            nextCharIsBackslash = if (i - 1 >= 0) str[i - 1] == '\\' else false
+            return nextCharIsBackslash
+        }
+
+        for (i in str.indices.reversed()) {
+            when {
+                str[i] == ']' && !isNextCharBackslash(i) -> {
+                    bracketCount++
+                    componentBuilder.append(']')
+                }
+                str[i] == '[' && !isNextCharBackslash(i) -> {
+                    bracketCount--
+                    componentBuilder.append('[')
+                    if (bracketCount == 0) {
+                        components.add(0, componentBuilder.reverse().toString())
+                        componentBuilder = StringBuilder()
+                        lastArrayAccessEnd = i
+                    }
+                }
+                str[i] == '\\' -> {
+                    if (nextCharIsBackslash) {
+                        nextCharIsBackslash = false
+                        continue
+                    }
+                    else {
+                        componentBuilder.append('\\')
+                    }
+                }
+                else -> {
+                    // if we encounter a character outside brackets after valid array access,
+                    // we treat all subsequent characters as one component until the start of the string or next valid array access.
+                    if (bracketCount == 0 && i < lastArrayAccessEnd) {
+                        components.add(0, str.substring(0, i + 1))
+                        break
+                    }
+                    componentBuilder.append(str[i])
+                }
+            }
+        }
+
+        // Add any remaining component that's not yet added
+        if (componentBuilder.isNotEmpty()) {
+            components.add(0, componentBuilder.reverse().toString())
+        }
+        if (components.isNotEmpty()) {
+            components[0] = components[0].replace("\\[", "[").replace("\\]", "]")
+        }
+        return components
     }
     // endregion
 }
