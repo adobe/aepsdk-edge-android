@@ -43,6 +43,17 @@ public class TestableNetworkRequest extends NetworkRequest {
         queryParamMap = splitQueryParameters(url);
     }
 
+    public TestableNetworkRequest(NetworkRequest request) {
+        this(
+                request.getUrl(),
+                request.getMethod(),
+                request.getBody(),
+                request.getHeaders(),
+                request.getConnectTimeout(),
+                request.getReadTimeout()
+        );
+    }
+
     public String queryParam(final String key) {
         return queryParamMap.get(key);
     }
