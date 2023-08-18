@@ -22,45 +22,18 @@ import java.util.concurrent.TimeUnit
 
 
 class TestNetworkService {
-    private val receivedTestableNetworkRequests: MutableMap<TestableNetworkRequest, MutableList<TestableNetworkRequest>>
-    private val responseMatchers: MutableMap<TestableNetworkRequest, HttpConnecting>
+    private val sentTestableNetworkRequests: MutableMap<TestableNetworkRequest, MutableList<TestableNetworkRequest>>
+    private val networkResponses: MutableMap<TestableNetworkRequest, HttpConnecting>
     private val expectedTestableNetworkRequests: MutableMap<TestableNetworkRequest, ADBCountDownLatch>
-    // Simulating the async network service
-    val executorService: ExecutorService
-    private var delayedResponse = 0
 
     companion object {
         private const val LOG_SOURCE = "TestNetworkService"
-        private val defaultResponse: HttpConnecting = object : HttpConnecting {
-            override fun getInputStream(): InputStream {
-                return ByteArrayInputStream("".toByteArray())
-            }
-
-            override fun getErrorStream(): InputStream? {
-                return null
-            }
-
-            override fun getResponseCode(): Int {
-                return 200
-            }
-
-            override fun getResponseMessage(): String {
-                return ""
-            }
-
-            override fun getResponsePropertyValue(responsePropertyKey: String): String? {
-                return null
-            }
-
-            override fun close() {}
-        }
     }
 
     init {
-        receivedTestableNetworkRequests = HashMap()
-        responseMatchers = HashMap()
+        sentTestableNetworkRequests = HashMap()
+        networkResponses = HashMap()
         expectedTestableNetworkRequests = HashMap()
-        executorService = Executors.newCachedThreadPool()
     }
 
     fun reset() {
@@ -69,17 +42,16 @@ class TestNetworkService {
             LOG_SOURCE,
             "Reset received and expected network requests."
         )
-        receivedTestableNetworkRequests.clear()
-        responseMatchers.clear()
+        sentTestableNetworkRequests.clear()
+        networkResponses.clear()
         expectedTestableNetworkRequests.clear()
-        delayedResponse = 0
     }
 
     fun setResponseConnectionFor(
         request: TestableNetworkRequest,
         responseConnection: HttpConnecting
     ) {
-        responseMatchers[request] = responseConnection
+        networkResponses[request] = responseConnection
     }
 
     fun setExpectedNetworkRequest(request: TestableNetworkRequest, count: Int) {
@@ -91,7 +63,7 @@ class TestNetworkService {
     }
 
     fun getReceivedNetworkRequestsMatching(request: TestableNetworkRequest): List<TestableNetworkRequest> {
-        for ((key, value) in receivedTestableNetworkRequests) {
+        for ((key, value) in sentTestableNetworkRequests) {
             if (key == request) {
                 return value
             }
@@ -113,60 +85,42 @@ class TestNetworkService {
         return true
     }
 
-    fun enableDelayedResponse(delaySec: Int) {
-        if (delaySec < 0) {
-            return
+    fun recordSentNetworkRequest(networkRequest: TestableNetworkRequest) {
+        Log.trace(TestConstants.LOG_TAG,
+            LOG_SOURCE,
+            "Received connectAsync to URL ${networkRequest.url} and HTTPMethod ${networkRequest.method}")
+
+        val equalNetworkRequest = sentTestableNetworkRequests.entries.firstOrNull { (key, _) ->
+            key == networkRequest
         }
-        delayedResponse = delaySec
+
+        if (equalNetworkRequest != null) {
+            sentTestableNetworkRequests[equalNetworkRequest.key]?.add(networkRequest)
+        } else {
+            sentTestableNetworkRequests[networkRequest] = mutableListOf(networkRequest)
+        }
     }
 
-//    override fun connectAsync(networkRequest: NetworkRequest, resultCallback: NetworkCallback) {
-//        Log.trace(
-//            TestConstants.LOG_TAG,
-//            LOG_SOURCE,
-//            "Received connectUrlAsync to URL '%s' and HttpMethod '%s'.",
-//            networkRequest.url,
-//            networkRequest.method.name
-//        )
-//        executorService.submit {
-//            val response = setNetworkRequest(
-//                TestableNetworkRequest(
-//                    networkRequest.url,
-//                    networkRequest.method,
-//                    networkRequest.body,
-//                    networkRequest.headers,
-//                    networkRequest.connectTimeout,
-//                    networkRequest.readTimeout
-//                )
-//            )
-//            if (resultCallback != null) {
-//                if (delayedResponse > 0) {
-//                    try {
-//                        Thread.sleep((delayedResponse * 1000).toLong())
-//                    } catch (e: InterruptedException) {
-//                        e.printStackTrace()
-//                    }
-//                }
-//                resultCallback.call(response ?: defaultResponse)
-//            }
-//        }
-//    }
-
     /**
-     * Add the network request to the list of received requests. Returns the matching response, or
-     * the default response if no matching response was found.
+     * Records a mock network request and retrieves a matched response.
+     *
+     * This function adds the provided [networkRequest] to the list of sent testable network requests.
+     *
+     * @param networkRequest The mock network request to be recorded.
+     * @param defaultResponse The default response to be returned if no matched response is found.
+     * @return The matched response for the provided [networkRequest] or the [defaultResponse] if none is found.
      */
-    fun setNetworkRequest(networkRequest: TestableNetworkRequest): HttpConnecting {
-        if (!receivedTestableNetworkRequests.containsKey(networkRequest)) {
-            receivedTestableNetworkRequests[networkRequest] = ArrayList()
+    fun setMockNetworkRequest(networkRequest: TestableNetworkRequest, defaultResponse: HttpConnecting): HttpConnecting {
+        if (!sentTestableNetworkRequests.containsKey(networkRequest)) {
+            sentTestableNetworkRequests[networkRequest] = ArrayList()
         }
-        receivedTestableNetworkRequests[networkRequest]!!.add(networkRequest)
+        sentTestableNetworkRequests[networkRequest]!!.add(networkRequest)
         val response = getMatchedResponse(networkRequest)
         countDownExpected(networkRequest)
         return response ?: defaultResponse
     }
 
-    private fun countDownExpected(request: TestableNetworkRequest) {
+    fun countDownExpected(request: TestableNetworkRequest) {
         for ((key, value) in expectedTestableNetworkRequests) {
             if (key == request) {
                 value.countDown()
@@ -175,7 +129,7 @@ class TestNetworkService {
     }
 
     private fun getMatchedResponse(request: TestableNetworkRequest): HttpConnecting? {
-        for ((key, value) in responseMatchers) {
+        for ((key, value) in networkResponses) {
             if (key == request) {
                 return value
             }
