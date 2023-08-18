@@ -29,23 +29,14 @@ import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.MobileCoreHelper;
-import com.adobe.marketing.mobile.services.FunctionalTestDataStoreService;
-import com.adobe.marketing.mobile.services.FunctionalTestNetworkService;
-import com.adobe.marketing.mobile.services.HttpConnecting;
-import com.adobe.marketing.mobile.services.HttpMethod;
+import com.adobe.marketing.mobile.services.TestDataStoreService;
 import com.adobe.marketing.mobile.services.Log;
-import com.adobe.marketing.mobile.services.NetworkRequest;
-import com.adobe.marketing.mobile.services.Networking;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.ServiceProviderHelper;
-import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -100,7 +91,7 @@ public class TestHelper {
                     MobileCoreHelper.resetSDK();
                     MobileCore.setLogLevel(LoggingMode.VERBOSE);
                     MobileCore.setApplication(defaultApplication);
-                    FunctionalTestDataStoreService.clearStores();
+                    TestDataStoreService.clearStores();
                     clearAllDatastores();
                     Log.debug(LOG_TAG, LOG_SOURCE, "Execute '%s'", description.getMethodName());
 
@@ -114,7 +105,7 @@ public class TestHelper {
                         Log.debug(LOG_TAG, LOG_SOURCE, "Finished '%s'", description.getMethodName());
                         waitForThreads(5000); // wait to allow thread to run after test execution
                         MobileCoreHelper.resetSDK();
-                        FunctionalTestDataStoreService.clearStores();
+                        TestDataStoreService.clearStores();
                         clearAllDatastores();
                         resetTestExpectations();
                         resetServiceProvider();
@@ -125,11 +116,16 @@ public class TestHelper {
     }
 
     /**
-     * Reset the {@link MobileCore} and {@link ServiceProvider} without clearing persistence or database.
-     * Initializes {@code MobileCore} and {@code ServiceProvider} for testing after resetting by,
-     * setting the {@link FunctionalTestNetworkService} to the {@code ServiceProvider}, and setting
-     * the instrumented test application to {@code MobileCore}.
-     * This method does not clear the shared preferences, application cache directory, or database directory.
+     * Resets both the {@link MobileCore} and {@link ServiceProvider} instances without clearing persistence or database.
+     *
+     * After reset, this method initializes {@code MobileCore} and {@code ServiceProvider} for testing by
+     * setting the instrumented test application to {@code MobileCore}.
+     *
+     * Warning: If a custom network service is registered with the {@link ServiceProvider} to be
+     * used in the test case, it must be set again after calling this method.
+     *
+     * Note: This method does not clear shared preferences, the application cache directory,
+     * or the database directory.
      */
     public static void resetCoreHelper() {
         MobileCoreHelper.resetSDK();
