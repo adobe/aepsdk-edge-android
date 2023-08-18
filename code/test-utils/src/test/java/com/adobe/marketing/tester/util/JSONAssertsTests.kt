@@ -10,15 +10,15 @@
 */
 package com.adobe.marketing.tester.util
 
-import com.adobe.marketing.tester.util.JSONObjectAsserts.assertEqual
-import com.adobe.marketing.tester.util.JSONObjectAsserts.assertExactMatch
-import com.adobe.marketing.tester.util.JSONObjectAsserts.assertTypeMatch
+import com.adobe.marketing.tester.util.JSONAsserts.assertEqual
+import com.adobe.marketing.tester.util.JSONAsserts.assertExactMatch
+import com.adobe.marketing.tester.util.JSONAsserts.assertTypeMatch
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertThrows
 import org.junit.Test
 
-class JSONObjectAssertsTests {
+class JSONAssertsTests {
 
     // Value matching validation
     @Test

@@ -13,7 +13,6 @@ package com.adobe.marketing.mobile.integration
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.adobe.marketing.tester.util.JSONObjectAsserts
 import org.json.JSONObject
 
 import org.junit.Test

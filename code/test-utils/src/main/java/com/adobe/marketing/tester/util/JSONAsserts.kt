@@ -17,7 +17,7 @@ import org.junit.Assert.fail
 import org.junit.Assert.assertEquals
 import java.util.regex.PatternSyntaxException
 
-object JSONObjectAsserts {
+object JSONAsserts {
     /**
      * Performs exact equality testing assertions between two `JSONObject`/`JSONArray` instances.
      * Provides a trace of the key path, including dictionary keys and array indices, on assertion failure to facilitate easier debugging.
@@ -258,11 +258,8 @@ object JSONObjectAsserts {
             if (shouldAssert) {
                 fail("""
                 ${if (expected == null) "Expected is null" else "Actual is nil"} and ${if (expected == null) "Actual" else "Expected"} is non-nil.
-    
                 Expected: ${expected.toString()}
-    
                 Actual: ${actual.toString()}
-    
                 Key path: ${keyPathAsString(keyPath)}
                 """.trimIndent())
             }
@@ -272,14 +269,10 @@ object JSONObjectAsserts {
             if (shouldAssert) {
                 fail("""
                 Expected and Actual counts do not match (exact equality).
-    
                 Expected count: ${expected.length()}
                 Actual count: ${actual.length()}
-    
                 Expected: $expected
-    
                 Actual: $actual
-    
                 Key path: ${keyPathAsString(keyPath)}
                 """.trimIndent())
             }
@@ -335,11 +328,8 @@ object JSONObjectAsserts {
             if (shouldAssert) {
                 fail("""
                     Expected JSON is non-nil but Actual JSON is nil.
-
                     Expected: $expected
-
                     Actual: $actual
-
                     Key path: ${keyPathAsString(keyPath)}
                 """)
             }
@@ -369,11 +359,8 @@ object JSONObjectAsserts {
                 if (shouldAssert) {
                     fail("""
                     Expected and Actual types do not match.
-
                     Expected: $expected
-
                     Actual: $actual
-
                     Key path: ${keyPathAsString(keyPath)}
                 """)
                 }
@@ -453,11 +440,8 @@ object JSONObjectAsserts {
             if (shouldAssert) {
                 fail("""
                 Expected JSON is non-nil but Actual JSON is nil.
-
                 Expected: $expected
-
                 Actual: $actual
-
                 Key path: ${keyPathAsString(keyPath)}
             """.trimIndent())
             }
@@ -467,14 +451,10 @@ object JSONObjectAsserts {
             if (shouldAssert) {
                 fail("""
                 Expected JSON has more elements than Actual JSON. Impossible for Actual to fulfill Expected requirements.
-
                 Expected count: ${expected.length()}
                 Actual count: ${actual.length()}
-
                 Expected: $expected
-
                 Actual: $actual
-
                 Key path: ${keyPathAsString(keyPath)}
             """.trimIndent())
             }
@@ -562,13 +542,9 @@ object JSONObjectAsserts {
                 if (shouldAssert) {
                     fail("""
                             Wildcard ${if (isPathEnd != exactMatchMode) "exact" else "type"} match found no matches on Actual side satisfying the Expected requirement.
-            
                             Requirement: $pathTreeValue
-            
                             Expected: ${expected.opt(index)}
-            
                             Actual (remaining unmatched elements): ${actualMap.values}
-            
                             Key path: ${keyPathAsString(keyPath)}
                         """.trimIndent())
                 }
@@ -617,11 +593,8 @@ object JSONObjectAsserts {
             if (shouldAssert) {
                 fail("""
                     Expected JSON is non-nil but Actual JSON is nil.
-
                     Expected: $expected
-
                     Actual: $actual
-
                     Key path: ${keyPathAsString(keyPath)}
                 """)
             }
@@ -631,14 +604,10 @@ object JSONObjectAsserts {
             if (shouldAssert) {
                 fail("""
                     Expected JSON has more elements than Actual JSON.
-
                     Expected count: ${expected.length()}
                     Actual count: ${actual.length()}
-
                     Expected: $expected
-
                     Actual: $actual
-
                     Key path: ${keyPathAsString(keyPath)}
                 """)
             }
