@@ -22,14 +22,18 @@ import org.junit.Assert
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class MockNetworkService: Networking {
     private val helper = TestNetworkService()
+    // Simulating the async network service
+    private val executorService: ExecutorService = Executors.newCachedThreadPool()
 
     companion object {
         private const val LOG_SOURCE = "MockNetworkService"
-        private const val delayedResponse = 0
+        private var delayedResponse = 0
         private val defaultResponse: HttpConnecting = object : HttpConnecting {
             override fun getInputStream(): InputStream {
                 return ByteArrayInputStream("".toByteArray())
@@ -55,7 +59,7 @@ class MockNetworkService: Networking {
         }
     }
 
-    override fun connectAsync(networkRequest: NetworkRequest, resultCallback: NetworkCallback) {
+    override fun connectAsync(networkRequest: NetworkRequest, resultCallback: NetworkCallback?) {
         Log.trace(
             TestConstants.LOG_TAG,
             LOG_SOURCE,
@@ -63,8 +67,8 @@ class MockNetworkService: Networking {
             networkRequest.url,
             networkRequest.method.name
         )
-        helper.executorService.submit {
-            val response = helper.setNetworkRequest(
+        executorService.submit {
+            val response = helper.setMockNetworkRequest(
                 TestableNetworkRequest(
                     networkRequest.url,
                     networkRequest.method,
@@ -72,7 +76,8 @@ class MockNetworkService: Networking {
                     networkRequest.headers,
                     networkRequest.connectTimeout,
                     networkRequest.readTimeout
-                )
+                ),
+                defaultResponse
             )
             if (resultCallback != null) {
                 if (delayedResponse > 0) {
@@ -82,7 +87,7 @@ class MockNetworkService: Networking {
                         e.printStackTrace()
                     }
                 }
-                resultCallback.call(response ?: defaultResponse)
+                resultCallback.call(response)
             }
         }
     }
@@ -289,7 +294,7 @@ class MockNetworkService: Networking {
         if (delaySec < 0) {
             return
         }
-        helper.enableDelayedResponse(delaySec)
+        delayedResponse = delaySec
     }
 
     /**
