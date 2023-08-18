@@ -33,26 +33,4 @@ class ExampleInstrumentedTest {
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
         assertEquals("com.adobe.marketing.mobile.integration.test", appContext.packageName)
     }
-
-    @Test
-    fun testExample() {
-        val jsonExpected = """
-        {
-          "key4": [1,2]
-        }
-        """.trimIndent()
-
-        val jsonActual = """
-        {
-          "key4": [1,2,3]
-        }
-        """.trimIndent()
-
-        val expected = JSONObject(jsonExpected)
-        val actual = JSONObject(jsonActual)
-
-        val testclass = JSONObjectAsserts()
-//        testclass.assertEqual(expected, actual)
-        testclass.assertTypeMatch(expected, actual)
-    }
 }
