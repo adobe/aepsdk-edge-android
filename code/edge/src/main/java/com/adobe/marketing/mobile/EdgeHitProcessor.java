@@ -138,14 +138,7 @@ class EdgeHitProcessor implements HitProcessing {
 
 			@Override
 			public void onComplete() {
-				List<String> removedWaitingEvents = networkResponseHandler.removeWaitingEvents(edgeHit.getRequestId());
-
-				// unregister currently known completion callbacks
-				if (removedWaitingEvents != null) {
-					for (String eventId : removedWaitingEvents) {
-						CompletionCallbacksManager.getInstance().unregisterCallback(eventId);
-					}
-				}
+				networkResponseHandler.processResponseOnComplete(edgeHit.getRequestId());
 			}
 		};
 

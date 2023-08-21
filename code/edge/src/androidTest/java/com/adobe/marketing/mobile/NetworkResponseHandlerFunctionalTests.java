@@ -46,6 +46,30 @@ public class NetworkResponseHandlerFunctionalTests {
 
 	private static final Event event1 = new Event.Builder("e1", "eventType", "eventSource").build();
 	private static final Event event2 = new Event.Builder("e2", "eventType", "eventSource").build();
+	private static final Event eventSendComplete = new Event.Builder("ec", "eventType", "eventSource")
+		.setEventData(
+			new HashMap<String, Object>() {
+				{
+					put(
+						"xdm",
+						new HashMap<String, Object>() {
+							{
+								put("test", "data");
+							}
+						}
+					);
+					put(
+						"request",
+						new HashMap<String, Object>() {
+							{
+								put("sendCompletion", true);
+							}
+						}
+					);
+				}
+			}
+		)
+		.build();
 	private NetworkResponseHandler networkResponseHandler;
 
 	private String receivedSetLocationHint;
@@ -1130,5 +1154,45 @@ public class NetworkResponseHandlerFunctionalTests {
 		// verify saved location hint
 		assertNull(receivedSetLocationHint);
 		assertNull(receivedSetTtlSeconds);
+	}
+
+	// ---------------------------------------------------------------------------------------------
+	// processResponseOnComplete
+	// ---------------------------------------------------------------------------------------------
+
+	@Test
+	public void testProcessResponseOnComplete_whenNoEventRequestsCompletion_thenNoEventDispatched()
+		throws InterruptedException {
+		networkResponseHandler.addWaitingEvents(
+			"123",
+			new ArrayList<Event>() {
+				{
+					add(event1);
+				}
+			}
+		);
+		networkResponseHandler.processResponseOnComplete("123");
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "com.adobe.eventSource.contentComplete");
+		assertEquals(0, dispatchEvents.size());
+	}
+
+	@Test
+	public void testProcessResponseOnComplete_whenEventRequestsCompletion_thenDispatchCompleteEvent()
+		throws InterruptedException {
+		networkResponseHandler.addWaitingEvents(
+			"123",
+			new ArrayList<Event>() {
+				{
+					add(eventSendComplete);
+				}
+			}
+		);
+		networkResponseHandler.processResponseOnComplete("123");
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "com.adobe.eventSource.contentComplete");
+		assertEquals(1, dispatchEvents.size());
+
+		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		assertEquals(1, flattenReceivedData.size());
+		assertEquals("123", flattenReceivedData.get("requestId"));
 	}
 }
