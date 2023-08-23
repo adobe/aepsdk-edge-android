@@ -60,10 +60,10 @@ public class NetworkResponseHandlerTest {
 	private static final String EVENT_SOURCE_EXTENSION_RESPONSE_CONTENT = "com.adobe.eventSource.responseContent";
 	private static final String EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT =
 		"com.adobe.eventSource.errorResponseContent";
-	private static final String EVENT_SOURCE_RESPONSE_COMPLETE = "com.adobe.eventSource.contentComplete";
+	private static final String EVENT_SOURCE_CONTENT_COMPLETE = "com.adobe.eventSource.contentComplete";
 	private static final String EVENT_NAME_RESPONSE = "AEP Response Event Handle";
 	private static final String EVENT_NAME_ERROR_RESPONSE = "AEP Error Response";
-	private static final String EVENT_NAME_RESPONSE_COMPLETE = "AEP Response Complete";
+	private static final String EVENT_NAME_CONTENT_COMPLETE = "AEP Response Complete";
 	private static final String REQUEST_ID = "requestId";
 	private static final String REQUEST_EVENT_ID = "requestEventId";
 	private NetworkResponseHandler networkResponseHandler;
@@ -2057,9 +2057,9 @@ public class NetworkResponseHandlerTest {
 		for (int i = 0; i < parentEventIds.length; i++) {
 			Event returnedEvent = returnedEvents.get(i);
 			assertNotNull(returnedEvent);
-			assertEquals(EVENT_NAME_RESPONSE_COMPLETE, returnedEvent.getName());
+			assertEquals(EVENT_NAME_CONTENT_COMPLETE, returnedEvent.getName());
 			assertEquals(EVENT_TYPE_EDGE, returnedEvent.getType());
-			assertEquals(EVENT_SOURCE_RESPONSE_COMPLETE, returnedEvent.getSource());
+			assertEquals(EVENT_SOURCE_CONTENT_COMPLETE, returnedEvent.getSource());
 			assertEquals(expectedEventDatas[i], returnedEvent.getEventData());
 			assertEquals(parentEventIds[i], returnedEvent.getParentID());
 			assertEquals(parentEventIds[i], returnedEvent.getResponseID());

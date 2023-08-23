@@ -297,7 +297,7 @@ class NetworkResponseHandler {
 					addEventAndRequestIdToData(eventData, requestId, null);
 
 					Event responseEvent = new Event.Builder(
-						EdgeConstants.EventName.RESPONSE_COMPLETE,
+						EdgeConstants.EventName.CONTENT_COMPLETE,
 						EventType.EDGE,
 						"com.adobe.eventSource.contentComplete" // TODO replace with EventSource constant
 					)
