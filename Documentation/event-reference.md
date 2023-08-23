@@ -218,6 +218,22 @@ This event does not have standard keys.
 
 -----
 
+### Edge content complete
+
+This event is a response to an [Edge request content](#edge-request-content) event and is sent when the Edge Network request is complete. This event is only dispatched when requested by the request content event.
+
+#### Event details<!-- omit in toc -->
+
+| Event type | Event source |
+| ---------- | ------------ |
+| com.adobe.eventType.edge | com.adobe.eventSource.contentComplete |
+
+#### Event data payload definition<!-- omit in toc -->
+
+| Key | Value type | Required | Description |
+| --- | ---------- | -------- | ----------- |
+| requestId | `String` | Yes | The ID (`UUID`) of the batched Edge Network request tied to the event that requested the completion response. |
+
 ### Edge state store
 
 This event tells the Edge Network extension to persist the event payload to the data store. This event is constructed using the response fragment from the Edge Network service for a sent XDM Experience Event; Edge Network extension does not modify any values received and constructs a response event with the event source and data payload as-is.
