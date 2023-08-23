@@ -19,10 +19,15 @@ import java.util.regex.PatternSyntaxException
 
 object JSONAsserts {
     /**
-     * Performs exact equality testing assertions between two `JSONObject`/`JSONArray` instances.
-     * Provides a trace of the key path, including dictionary keys and array indices, on assertion failure to facilitate easier debugging.
+     * Asserts exact equality between two [JSONObject] or [JSONArray] instances.
      *
-     * This is the main entry point for exact equality JSON testing assertions.
+     * In the event of an assertion failure, this function provides a trace of the key path,
+     * which includes dictionary keys and array indexes, to aid debugging.
+     *
+     * @param expected The expected [JSONObject] or [JSONArray] to compare.
+     * @param actual The actual [JSONObject] or [JSONArray] to compare.
+     *
+     * @throws AssertionError If the [expected] and [actual] JSON structures are not exactly equal.
      */
     @JvmStatic
     fun assertEqual(expected: Any?, actual: Any?) {
@@ -30,29 +35,44 @@ object JSONAsserts {
     }
 
     /**
-     * Performs a flexible JSON comparison where only the key-value pairs on the expected side are required.
-     * Uses value type match as the default validation mode, ensuring values are of the same type
-     * (and are non-null if the expected value is not null).
+     * Performs a flexible JSON comparison where only the key-value pairs from the expected JSON are required.
+     * By default, the function validates that both values are of the same type.
+     *
+     * Alternate mode paths enable switching from the default type matching mode to exact value matching
+     * mode for specified paths onward.
      *
      * For example, given an expected JSON like:
      * ```
      * {
      *   "key1": "value1",
-     *   "key2": [{ "nest1": 1}, {"nest2": 2}]
+     *   "key2": [{ "nest1": 1}, {"nest2": 2}],
+     *   "key3": { "key4": 1 },
+     *   "key.name": 1,
+     *   "key[123]": 1
      * }
      * ```
-     * An alternate mode path for the example JSON could be: `"key2[1].nest2"`.
+     * An example alternate mode path for this JSON would be: `"key2[1].nest2"`.
      *
-     * Alternate mode paths must begin from the top level of the expected JSON. From the specified key by the path onward, the alternate match mode is applied.
+     * Alternate mode paths must begin from the top level of the expected JSON.
+     * Multiple paths can be defined. If two paths collide, the shorter one takes priority.
      *
-     * There are three ways to specify alternate mode paths for arrays:
-     * 1. Specific index: `[<INT>]` (e.g., `[0]`, `[28]`). The element at the specified index will use the alternate mode.
-     * 2. Wildcard index: `[*<INT>]` (e.g., `[*1]`, `[*12]`). The element at the specified index will use the alternate mode and apply wildcard matching logic.
-     * 3. General wildcard: `[*]`. Every element not explicitly specified by methods 1 or 2 will use the alternate mode and apply wildcard matching logic. This option is mutually exclusive with the default behavior.
-     *    - By default, elements from the expected JSON are compared in order, up to the last element of the expected array.
+     * Formats for keys:
+     * - Nested keys: Use dot notation, e.g., "key3.key4".
+     * - Keys with dots: Escape the dot, e.g., "key\.name".
      *
-     * @param expected The expected JSON in `JSONObject`/`JSONArray` format used to perform the assertions.
-     * @param actual The actual JSON in `JSONObject`/`JSONArray` format that is validated against `expected`.
+     * Formats for arrays:
+     * - Index specification: `[<INT>]` (e.g., `[0]`, `[28]`).
+     * - Keys with array brackets: Escape the brackets, e.g., `key\[123\]`.
+     *
+     * For flexible array matching:
+     * 1. Specific index with wildcard: `[*<INT>]` (e.g., `[*1]`, `[*12]`). The element at the specified index will use wildcard matching.
+     * 2. Universal wildcard: `[*]`. All elements will use wildcard matching.
+     *
+     * In array comparisons, elements are compared in order, up to the last element of the expected array.
+     * When combining wildcard and standard indexes, regular indexes are validated first.
+     *
+     * @param expected The expected JSON in [JSONObject] or [JSONArray] format to compare.
+     * @param actual The actual JSON in [JSONObject] or [JSONArray] format to compare.
      * @param exactMatchPaths The key paths in the expected JSON that should use exact matching mode, where values require both the same type and literal value.
      */
     @JvmStatic
@@ -62,28 +82,45 @@ object JSONAsserts {
     }
 
     /**
-     * Performs a flexible JSON comparison where only the key-value pairs on the expected side are required.
-     * Uses exact match as the default validation mode, ensuring values are of the same type and literal value.
+     * Performs a flexible JSON comparison where only the key-value pairs from the expected JSON are required.
+     * By default, the function uses exact match mode, validating that both values are of the same type
+     * and have the same literal value.
+     *
+     * Alternate mode paths enable switching from the default exact matching mode to type matching
+     * mode for specified paths onward.
      *
      * For example, given an expected JSON like:
      * ```
      * {
      *   "key1": "value1",
-     *   "key2": [{ "nest1": 1}, {"nest2": 2}]
+     *   "key2": [{ "nest1": 1}, {"nest2": 2}],
+     *   "key3": { "key4": 1 },
+     *   "key.name": 1,
+     *   "key[123]": 1
      * }
      * ```
-     * An alternate mode path for the example JSON could be: `"key2[1].nest2"`.
+     * An example alternate mode path for this JSON would be: `"key2[1].nest2"`.
      *
-     * Alternate mode paths must begin from the top level of the expected JSON. From the specified key by the path onward, the alternate match mode is applied.
+     * Alternate mode paths must begin from the top level of the expected JSON.
+     * Multiple paths can be defined. If two paths collide, the shorter one takes priority.
      *
-     * There are three ways to specify alternate mode paths for arrays:
-     * 1. Specific index: `[<INT>]` (e.g., `[0]`, `[28]`). The element at the specified index will use the alternate mode.
-     * 2. Wildcard index: `[*<INT>]` (e.g., `[*1]`, `[*12]`). The element at the specified index will use the alternate mode and apply wildcard matching logic.
-     * 3. General wildcard: `[*]`. Every element not explicitly specified by methods 1 or 2 will use the alternate mode and apply wildcard matching logic. This option is mutually exclusive with the default behavior.
-     *    - By default, elements from the expected JSON are compared in order, up to the last element of the expected array.
+     * Formats for keys:
+     * - Nested keys: Use dot notation, e.g., "key3.key4".
+     * - Keys with dots: Escape the dot, e.g., "key\.name".
      *
-     * @param expected The expected JSON in `JSONObject`/`JSONArray` format used to perform the assertions.
-     * @param actual The actual JSON in `JSONObject`/`JSONArray` format that is validated against `expected`.
+     * Formats for arrays:
+     * - Index specification: `[<INT>]` (e.g., `[0]`, `[28]`).
+     * - Keys with array brackets: Escape the brackets, e.g., `key\[123\]`.
+     *
+     * For flexible array matching:
+     * 1. Specific index with wildcard: `[*<INT>]` (e.g., `[*1]`, `[*12]`). The element at the specified index will use wildcard matching.
+     * 2. Universal wildcard: `[*]`. All elements will use wildcard matching.
+     *
+     * In array comparisons, elements are compared in order, up to the last element of the expected array.
+     * When combining wildcard and standard indexes, regular indexes are validated first.
+     *
+     * @param expected The expected JSON in [JSONObject] or [JSONArray] format to compare.
+     * @param actual The actual JSON in [JSONObject] or [JSONArray] format to compare.
      * @param typeMatchPaths The key paths in the expected JSON that should use type matching mode, where values require only the same type (and are non-null if the expected value is not null).
      */
     @JvmStatic
@@ -93,21 +130,20 @@ object JSONAsserts {
     }
 
     /**
-     * Compares the given [expected] and [actual] values for equality. If they are not equal and [shouldAssert] is true,
-     * an assertion error is thrown. This method is also capable of handling nested JSON objects and arrays.
+     * Compares the given [expected] and [actual] values for exact equality. If they are not equal and [shouldAssert] is `true`,
+     * an assertion error is thrown.
      *
      * @param expected The expected value to compare.
      * @param actual The actual value to compare.
      * @param keyPath A list of keys indicating the path to the current value being compared. This is particularly
      * useful for nested JSON objects and arrays. Defaults to an empty list.
-     * @param shouldAssert Indicates whether an assertion error should be thrown if [expected] and [actual] are not equal.
-     * Defaults to true.
+     * @param shouldAssert Indicates if an assertion error should be thrown if [expected] and [actual] are not equal.
      *
      * @return Returns true if [expected] and [actual] are equal, otherwise returns false.
      *
      * @throws AssertionError If [shouldAssert] is true and the [expected] and [actual] values are not equal.
      */
-    private fun assertEqual(expected: Any?, actual: Any?, keyPath: MutableList<Any> = mutableListOf(), shouldAssert: Boolean): Boolean {
+    private fun assertEqual(expected: Any?, actual: Any?, keyPath: List<Any> = listOf(), shouldAssert: Boolean): Boolean {
         if ((expected == null || expected == JSONObject.NULL) && (actual == null || actual == JSONObject.NULL)) {
             return true
         }
@@ -164,24 +200,19 @@ object JSONAsserts {
     }
 
     /**
-     * Compares two `JSONObject` instances for exact equality. If they are not equal and [shouldAssert] is true,
-     * an assertion error is thrown, providing detailed comparison results.
+     * Compares two [JSONObject] instances for exact equality. If they are not equal and [shouldAssert] is `true`,
+     * an assertion error is thrown.
      *
-     * This method recursively compares nested JSON objects and provides the key path in case of mismatches,
-     * aiding in easier debugging.
+     * @param expected The expected [JSONObject] to compare.
+     * @param actual The actual [JSONObject] to compare.
+     * @param keyPath A list of keys or array indexes representing the path to the current value being compared.
+     * @param shouldAssert Indicates if an assertion error should be thrown if [expected] and [actual] are not equal.
      *
-     * @param expected The expected JSON object to compare.
-     * @param actual The actual JSON object to compare.
-     * @param keyPath A list of keys indicating the path to the current value being compared. This is particularly
-     * useful for nested JSON objects. Defaults to an empty list.
-     * @param shouldAssert Indicates whether an assertion error should be thrown if [expected] and [actual] are not equal.
-     * Defaults to true.
-     *
-     * @return Returns true if [expected] and [actual] are exactly equal, otherwise returns false.
+     * @return Returns `true` if [expected] and [actual] are exactly equal, otherwise returns `false`.
      *
      * @throws AssertionError If [shouldAssert] is true and the [expected] and [actual] JSON objects are not equal.
      */
-    private fun assertEqual(expected: JSONObject?, actual: JSONObject?, keyPath: MutableList<Any> = mutableListOf(), shouldAssert: Boolean): Boolean {
+    private fun assertEqual(expected: JSONObject?, actual: JSONObject?, keyPath: List<Any>, shouldAssert: Boolean): Boolean {
         if (expected == null && actual == null) {
             return true
         }
@@ -216,12 +247,10 @@ object JSONAsserts {
         }
         var finalResult = true
         for (key in expected.keys()) {
-            val newKeyPath = keyPath.toMutableList()
-            newKeyPath.add(key)
             finalResult = assertEqual(
                 expected = expected.get(key),
                 actual = actual.opt(key),
-                keyPath = newKeyPath,
+                keyPath = keyPath.plus(key),
                 shouldAssert = shouldAssert
             ) && finalResult
         }
@@ -229,26 +258,22 @@ object JSONAsserts {
     }
 
     /**
-     * Compares two `JSONArray` instances for exact equality. If they are not equal and [shouldAssert] is true,
-     * an assertion error is thrown, providing detailed comparison results.
+     * Compares two [JSONArray] instances for exact equality. If they are not equal and [shouldAssert] is `true`,
+     * an assertion error is thrown.
      *
-     * This method recursively compares nested JSON arrays and provides the index path in case of mismatches,
-     * aiding in easier debugging.
+     * @param expected The expected [JSONArray] to compare.
+     * @param actual The actual [JSONArray] to compare.
+     * @param keyPath A list of keys or array indexes representing the path to the current value being compared.
+     * @param shouldAssert Indicates if an assertion error should be thrown if [expected] and [actual] are not equal.
      *
-     * @param expected The expected JSON array to compare.
-     * @param actual The actual JSON array to compare.
-     * @param keyPath A list representing the index path to the current value being compared. This is especially
-     * useful for nested JSON arrays.
-     * @param shouldAssert Indicates whether an assertion error should be thrown if [expected] and [actual] are not equal.
+     * @return Returns `true` if [expected] and [actual] are exactly equal, otherwise returns `false`.
      *
-     * @return Returns true if [expected] and [actual] are exactly equal, otherwise returns false.
-     *
-     * @throws AssertionError If [shouldAssert] is true and the [expected] and [actual] JSON arrays are not equal.
+     * @throws AssertionError If [shouldAssert] is `true` and the [expected] and [actual] JSON arrays are not equal.
      */
     private fun assertEqual(
         expected: JSONArray?,
         actual: JSONArray?,
-        keyPath: MutableList<Any>,
+        keyPath: List<Any>,
         shouldAssert: Boolean
     ): Boolean {
         if (expected == null && actual == null) {
@@ -280,12 +305,10 @@ object JSONAsserts {
         }
         var finalResult = true
         for (index in 0 until expected.length()) {
-            val newKeyPath = keyPath.toMutableList()
-            newKeyPath.add(index)
             finalResult = assertEqual(
                 expected = expected.get(index),
                 actual = actual.get(index),
-                keyPath = keyPath,
+                keyPath = keyPath.plus(index),
                 shouldAssert = shouldAssert
             ) && finalResult
         }
@@ -296,28 +319,26 @@ object JSONAsserts {
 
     /**
      * Performs a flexible comparison between the given [expected] and [actual] values, optionally using exact match
-     * or value type match modes. In case of a mismatch and if [shouldAssert] is true, an assertion error is thrown.
+     * or value type match modes. In case of a mismatch and if [shouldAssert] is `true`, an assertion error is thrown.
      *
-     * This method is capable of handling nested JSON objects and arrays and provides the key path on assertion failures for
-     * easier debugging. It also allows for more granular matching behavior through the [pathTree] and [exactMatchMode] parameters.
+     * It allows for customized matching behavior through the [pathTree] and [exactMatchMode] parameters.
      *
      * @param expected The expected value to compare.
      * @param actual The actual value to compare.
-     * @param keyPath A list of keys or indices indicating the path to the current value being compared. This is particularly
-     * useful for nested JSON objects and arrays. Defaults to an empty list.
+     * @param keyPath A list of keys or array indexes representing the path to the current value being compared. Defaults to an empty list.
      * @param pathTree A map representing specific paths within the JSON structure that should be compared using the alternate mode.
-     * @param exactMatchMode If true, performs an exact match comparison; otherwise, uses value type matching.
-     * @param shouldAssert Indicates whether an assertion error should be thrown if [expected] and [actual] are not equal.
+     * @param exactMatchMode If `true`, performs an exact match comparison; otherwise, uses value type matching.
+     * @param shouldAssert Indicates if an assertion error should be thrown if [expected] and [actual] are not equal.
      * Defaults to true.
      *
-     * @return Returns true if [expected] and [actual] are equal based on the matching mode, otherwise returns false.
+     * @return Returns `true` if [expected] and [actual] are equal based on the matching mode and the [pathTree], otherwise returns `false`.
      *
-     * @throws AssertionError If [shouldAssert] is true and the [expected] and [actual] values are not equal.
+     * @throws AssertionError If [shouldAssert] is `true` and the [expected] and [actual] values are not equal.
      */
     private fun assertFlexibleEqual(
         expected: Any?,
         actual: Any?,
-        keyPath: MutableList<Any> = mutableListOf(),
+        keyPath: List<Any> = listOf(),
         pathTree: Map<String, Any>?,
         exactMatchMode: Boolean,
         shouldAssert: Boolean = true): Boolean {
@@ -336,11 +357,25 @@ object JSONAsserts {
             return false
         }
 
+        /**
+         * Compares the [expected] and [actual] values for equality based on the [exactMatchMode].
+         */
+        fun compareValuesAssumingTypeMatch(): Boolean {
+            if (exactMatchMode) {
+                if (shouldAssert) {
+                    assertEqual(expected, actual, keyPath, shouldAssert = shouldAssert)
+                }
+                return expected == actual
+            }
+            // The value type matching has already succeeded due to meeting the conditions in the switch case
+            return true
+        }
+
         when {
-            expected is String && actual is String -> return compareValues(expected, actual, keyPath, exactMatchMode, shouldAssert)
-            expected is Boolean && actual is Boolean -> return compareValues(expected, actual, keyPath, exactMatchMode, shouldAssert)
-            expected is Int && actual is Int -> return compareValues(expected, actual, keyPath, exactMatchMode, shouldAssert)
-            expected is Double && actual is Double -> return compareValues(expected, actual, keyPath, exactMatchMode, shouldAssert)
+            expected is String && actual is String -> return compareValuesAssumingTypeMatch()
+            expected is Boolean && actual is Boolean -> return compareValuesAssumingTypeMatch()
+            expected is Int && actual is Int -> return compareValuesAssumingTypeMatch()
+            expected is Double && actual is Double -> return compareValuesAssumingTypeMatch()
             expected is JSONArray && actual is JSONArray -> return assertFlexibleEqual(
                 expected = expected,
                 actual = actual,
@@ -370,67 +405,29 @@ object JSONAsserts {
     }
 
     /**
-     * Compares two values for equality based on the [exactMatchMode]. If they are not equal and [shouldAssert] is true,
-     * an assertion error is thrown.
+     * Performs a flexible comparison between the given [expected] and [actual] [JSONArray]s, optionally using exact match
+     * or value type match modes. In case of a mismatch and if [shouldAssert] is `true`, an assertion error is thrown.
      *
-     * @param expected The expected value to compare.
-     * @param actual The actual value to compare.
-     * @param keyPath A list of keys or indices indicating the path to the current value being compared.
-     * @param exactMatchMode If true, performs an exact match comparison; otherwise, uses value type matching.
-     * @param shouldAssert Indicates whether an assertion error should be thrown if [expected] and [actual] are not equal.
+     * It allows for customized matching behavior through the [pathTree] and [exactMatchMode] parameters.
      *
-     * @return Returns true if [expected] and [actual] are equal based on the matching mode, otherwise returns false.
-     *
-     * @throws AssertionError If [shouldAssert] is true and the [expected] and [actual] values are not equal.
-     */
-    private fun compareValues(
-        expected: Any,
-        actual: Any,
-        keyPath: MutableList<Any>,
-        exactMatchMode: Boolean,
-        shouldAssert: Boolean
-    ): Boolean {
-        return when {
-            exactMatchMode -> {
-                if (shouldAssert) {
-                    assertEqual(expected, actual, keyPath, shouldAssert = shouldAssert)
-                }
-                expected == actual
-            }
-            else -> {
-                true // Value type matching already passed by virtue of passing the where condition in the switch case
-            }
-        }
-    }
-
-    /**
-     * Performs a flexible comparison between the given [expected] and [actual] JSON arrays, optionally using exact match
-     * or value type match modes based on the provided [pathTree]. In case of a mismatch and if [shouldAssert] is true,
-     * an assertion error is thrown.
-     *
-     * This method is capable of handling nested JSON arrays, and it provides the index path on assertion failures for
-     * easier debugging. The [pathTree] allows for more granular matching behavior.
-     *
-     * @param expected The expected JSON array to compare.
-     * @param actual The actual JSON array to compare.
-     * @param keyPath A list representing the index path to the current value being compared, especially
-     * useful for nested JSON arrays.
+     * @param expected The expected [JSONArray] to compare.
+     * @param actual The actual [JSONArray] to compare.
+     * @param keyPath A list of keys or array indexes representing the path to the current value being compared.
      * @param pathTree A map representing specific paths within the JSON structure that should be compared using the alternate mode.
-     * @param exactMatchMode If true, performs an exact match comparison; otherwise, uses value type matching.
-     * @param shouldAssert Indicates whether an assertion error should be thrown if [expected] and [actual] are not equal.
-     * Defaults to true.
+     * @param exactMatchMode If `true`, performs an exact match comparison; otherwise, uses value type matching.
+     * @param shouldAssert Indicates if an assertion error should be thrown if [expected] and [actual] are not equal.
      *
-     * @return Returns true if [expected] and [actual] are equal based on the matching mode and the [pathTree], otherwise returns false.
+     * @return Returns `true` if [expected] and [actual] are equal based on the matching mode and the [pathTree], otherwise returns `false`.
      *
-     * @throws AssertionError If [shouldAssert] is true and the [expected] and [actual] JSON arrays are not equal.
+     * @throws AssertionError If [shouldAssert] is `true` and the [expected] and [actual] JSON arrays are not equal.
      */
     private fun assertFlexibleEqual(
         expected: JSONArray?,
         actual: JSONArray?,
-        keyPath: MutableList<Any>,
+        keyPath: List<Any>,
         pathTree: Map<String, Any>?,
         exactMatchMode: Boolean,
-        shouldAssert: Boolean = true
+        shouldAssert: Boolean
     ): Boolean {
         if (expected == null) {
             return true
@@ -460,32 +457,28 @@ object JSONAsserts {
             }
             return false
         }
-        // Convert the array into a map
-        var actualMap = (0 until actual.length()).associateBy({ it }, { actual[it] }).toMutableMap()
+        // Convert the `actual` array into a mutable map, where the key is the array index and the
+        // value is the corresponding element. Used to prevent double matching.
+        val actualMap = (0 until actual.length()).associateBy({ it }, { actual[it] }).toMutableMap()
 
-        // collect sets of all:
-        // specific index [0]
-        // wildcard specific [*0] - means any position, the fact that it terminates at the wildcard means
-        // that the alternate match mode should be used there...
-
-        // subtract all of these indices from the full set of expected indices
         var expectedIndexes = (0 until expected.length()).toSet()
-        var wildcardIndexes: Set<Int>
+        val wildcardIndexes: Set<Int>
 
-        // check for general wildcards: [*] or [^], which override all other settings
-        // they are just special cases of the specific indexes
-
-        // this is collecting path end (regardless of index) and asterisk regardless of index
+        // Collect all the keys from `pathTree` that either:
+        // 1. Mark the path end (where the value is a `String`), or
+        // 2. Contain the asterisk (*) character.
         val pathEndKeys = pathTree?.filter{ (key, value) ->
             value is String || key.contains('*')
         }?.keys ?: setOf()
+
+        // If general wildcard is present, it supersedes other paths
         if (pathEndKeys.contains("[*]")) {
             wildcardIndexes = (0 until expected.length()).toSet()
             expectedIndexes = setOf()
         }
         else {
             // TODO: update this to be flat? since there's only 1 operation now instead of 3
-            // this strongly validates index notation
+            // Strongly validates index notation: "[123]"
             val arrayIndexValueRegex = """^\[(.*?)\]$"""
             val indexValues = pathEndKeys
                 .flatMap { key -> getCapturedRegexGroups(text = key, regexPattern = arrayIndexValueRegex) }
@@ -506,23 +499,22 @@ object JSONAsserts {
         }
 
         var finalResult = true
+        // Expected side indexes that do not have alternate paths specified are matched first
+        // to their corresponding actual side index
         for (index in expectedIndexes) {
-            var nextKeyPath = keyPath.toMutableList()
-            nextKeyPath.add(index)
             val isPathEnd = pathTree?.get("[$index]") is String
             finalResult = assertFlexibleEqual(
                 expected = expected.opt(index),
                 actual = actual.opt(index),
-                keyPath = nextKeyPath,
+                keyPath = keyPath.plus(index),
                 pathTree = pathTree?.get("[$index]") as? Map<String, Any>,
-                exactMatchMode = isPathEnd xor exactMatchMode,
+                exactMatchMode = isPathEnd != exactMatchMode,
                 shouldAssert = shouldAssert) && finalResult
             actualMap.remove(index)
         }
 
+        // Wildcard indexes are allowed to match the remaining actual side elements
         for (index in wildcardIndexes) {
-            var nextKeyPath = keyPath.toMutableList()
-            nextKeyPath.add(index)
             val pathTreeValue = pathTree?.get("[*]")
                 ?: pathTree?.get("[*$index]")
                 ?: pathTree?.get("[$index*]")
@@ -533,9 +525,9 @@ object JSONAsserts {
                 assertFlexibleEqual(
                     expected = expected.opt(index),
                     actual = it.second,
-                    keyPath = nextKeyPath,
+                    keyPath = keyPath.plus(index),
                     pathTree = pathTreeValue as? Map<String, Any>,
-                    exactMatchMode = isPathEnd xor exactMatchMode,
+                    exactMatchMode = isPathEnd != exactMatchMode,
                     shouldAssert = false)
             }
             if (result == -1) {
@@ -558,34 +550,29 @@ object JSONAsserts {
     }
 
     /**
-     * Performs a flexible comparison between the given [expected] and [actual] JSON objects, optionally using exact match
-     * or value type match modes based on the provided [pathTree]. In case of a mismatch and if [shouldAssert] is true,
-     * an assertion error is thrown.
+     * Performs a flexible comparison between the given [expected] and [actual] [JSONObject]s, optionally using exact match
+     * or value type match modes. In case of a mismatch and if [shouldAssert] is `true`, an assertion error is thrown.
      *
-     * This method is capable of handling nested JSON objects, and it provides the key path on assertion failures for
-     * easier debugging. The [pathTree] allows for more granular matching behavior.
+     * It allows for customized matching behavior through the [pathTree] and [exactMatchMode] parameters.
      *
-     * @param expected The expected JSON object to compare.
-     * @param actual The actual JSON object to compare.
-     * @param keyPath A list representing the key path to the current value being compared, especially
-     * useful for nested JSON objects.
-     * @param pathTree A map representing specific paths within the JSON structure that should be compared in certain ways.
-     * The path tree can include specific keys and their corresponding comparison modes or nested path trees.
-     * @param exactMatchMode If true, performs an exact match comparison; otherwise, uses value type matching.
-     * @param shouldAssert Indicates whether an assertion error should be thrown if [expected] and [actual] are not equal.
-     * Defaults to true.
+     * @param expected The expected [JSONObject] to compare.
+     * @param actual The actual [JSONObject] to compare.
+     * @param keyPath A list of keys or array indexes representing the path to the current value being compared.
+     * @param pathTree A map representing specific paths within the JSON structure that should be compared using the alternate mode.
+     * @param exactMatchMode If `true`, performs an exact match comparison; otherwise, uses value type matching.
+     * @param shouldAssert Indicates if an assertion error should be thrown if [expected] and [actual] are not equal.
      *
-     * @return Returns true if [expected] and [actual] are equal based on the matching mode and the [pathTree], otherwise returns false.
+     * @return Returns `true` if [expected] and [actual] are equal based on the matching mode and the [pathTree], otherwise returns `false`.
      *
-     * @throws AssertionError If [shouldAssert] is true and the [expected] and [actual] JSON objects are not equal.
+     * @throws AssertionError If [shouldAssert] is `true` and the [expected] and [actual] JSON objects are not equal.
      */
     private fun assertFlexibleEqual(
         expected: JSONObject?,
         actual: JSONObject?,
-        keyPath: MutableList<Any>,
+        keyPath: List<Any>,
         pathTree: Map<String, Any>?,
         exactMatchMode: Boolean,
-        shouldAssert: Boolean = true): Boolean {
+        shouldAssert: Boolean): Boolean {
         if (expected == null) {
             return true
         }
@@ -617,25 +604,18 @@ object JSONAsserts {
         val iterator: Iterator<String> = expected.keys()
         while (iterator.hasNext()) {
             val key = iterator.next()
-            keyPath.add(key)
+
             val pathTreeValue = pathTree?.get(key)
-            if (pathTreeValue is String) {
-                finalResult = assertFlexibleEqual(
-                    expected = expected.opt(key),
-                    actual = actual.opt(key),
-                    keyPath = keyPath,
-                    pathTree = null, // is String means path terminates here
-                    exactMatchMode = !exactMatchMode, // Invert default mode
-                    shouldAssert = shouldAssert) && finalResult
-            } else {
-                finalResult = assertFlexibleEqual(
-                    expected = expected.opt(key),
-                    actual = actual.opt(key),
-                    keyPath = keyPath,
-                    pathTree = pathTreeValue as? Map<String, Any>,
-                    exactMatchMode = exactMatchMode,
-                    shouldAssert = shouldAssert) && finalResult
-            }
+
+            val isPathEnd = pathTreeValue is String
+
+            finalResult = assertFlexibleEqual(
+                expected = expected.opt(key),
+                actual = actual.opt(key),
+                keyPath = keyPath.plus(key),
+                pathTree = pathTreeValue as? Map<String, Any>,
+                exactMatchMode = isPathEnd != exactMatchMode,
+                shouldAssert = shouldAssert) && finalResult
         }
         return finalResult
     }
@@ -644,21 +624,22 @@ object JSONAsserts {
     // region Private helpers
 
     /**
-     * Converts a key path represented by a list of JSON object keys and array indices into a human-readable string format.
+     * Converts a key path represented by a list of JSON object keys and array indexes into a human-readable string format.
      *
-     * The key path is used to trace the recursive traversal of a nested JSON structure. For instance, if we're accessing
-     * the value "Hello" in the JSON `{ "a": { "b": [ "World", "Hello" ] } }`, the key path would be ["a", "b", 1]. This method
-     * would convert it to the string "a.b[1]".
+     * The key path is used to trace the recursive traversal of a nested JSON structure.
+     * For instance, the key path for the value "Hello" in the JSON `{ "a": { "b": [ "World", "Hello" ] } }`
+     * would be ["a", "b", 1].
+     * This method would convert it to the string "a.b[1]".
      *
      * Special considerations:
      * 1. If a key in the JSON object contains a dot (.), it will be escaped with a backslash in the resulting string.
      * 2. Empty keys in the JSON object will be represented as "" in the resulting string.
      *
-     * @param keyPath An ordered list of keys and indices representing the path to a value in a nested JSON structure.
+     * @param keyPath A list of keys or array indexes representing the path to a value in a nested JSON structure.
      *
      * @return A human-readable string representation of the key path.
      */
-    private fun keyPathAsString(keyPath: MutableList<Any>): String {
+    private fun keyPathAsString(keyPath: List<Any>): String {
         var result = ""
         for (item in keyPath) {
             when (item) {
@@ -903,7 +884,7 @@ object JSONAsserts {
         var lastArrayAccessEnd = str.length // to track the end of the last valid array-style access
 
         fun isNextCharBackslash(i: Int): Boolean {
-            // Since we're iterating in reverse, the "previous" character is at i + 1
+            // Since we're iterating in reverse, the "next" character is at i - 1
             nextCharIsBackslash = if (i - 1 >= 0) str[i - 1] == '\\' else false
             return nextCharIsBackslash
         }
