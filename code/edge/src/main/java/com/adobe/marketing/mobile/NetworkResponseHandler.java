@@ -312,10 +312,11 @@ class NetworkResponseHandler {
 	}
 
 	/**
-	 * Extracts the boolean value of {@code request.sendCompletion} to determine if the given
-	 * {@code event} has requested a completion event.
-	 * @param event the {@code Event} to determine if a completion event is requested
-	 * @return true if a completion event is requested for the {@code event}, false if no completion event is requested.
+	 * Determines whether a completion event has been requested based on the boolean value of
+	 * {@code request.sendCompletion} in the provided {@code event}.
+	 *
+	 * @param event The {@code Event} whose data is checked for a completion event request.
+	 * @return true if the {@code event} is requesting a completion event; false otherwise.
 	 */
 	private boolean sendCompletionRequested(final Event event) {
 		Map<String, Object> eventData = event.getEventData();
