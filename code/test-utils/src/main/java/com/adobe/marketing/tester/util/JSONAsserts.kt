@@ -64,7 +64,7 @@ object JSONAsserts {
      * - Index specification: `[<INT>]` (e.g., `[0]`, `[28]`).
      * - Keys with array brackets: Escape the brackets, e.g., `key\[123\]`.
      *
-     * For flexible array matching:
+     * For wildcard array matching, where position doesn't matter:
      * 1. Specific index with wildcard: `[*<INT>]` (e.g., `[*1]`, `[*12]`). The element at the specified index will use wildcard matching.
      * 2. Universal wildcard: `[*]`. All elements will use wildcard matching.
      *
@@ -112,7 +112,7 @@ object JSONAsserts {
      * - Index specification: `[<INT>]` (e.g., `[0]`, `[28]`).
      * - Keys with array brackets: Escape the brackets, e.g., `key\[123\]`.
      *
-     * For flexible array matching:
+     * For wildcard array matching, where position doesn't matter:
      * 1. Specific index with wildcard: `[*<INT>]` (e.g., `[*1]`, `[*12]`). The element at the specified index will use wildcard matching.
      * 2. Universal wildcard: `[*]`. All elements will use wildcard matching.
      *
