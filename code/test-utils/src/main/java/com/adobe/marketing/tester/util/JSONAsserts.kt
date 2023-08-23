@@ -116,7 +116,7 @@ object JSONAsserts {
                 fail(
                     """
                     ${if (expected == null || expected == JSONObject.NULL) "Expected is null" else "Actual is null"} and 
-                    ${if (expected == null || actual == JSONObject.NULL) "Actual" else "Expected"} is non-null.
+                    ${if (actual == null || actual == JSONObject.NULL) "Actual" else "Expected"} is non-null.
                     Expected: $expected
                     Actual: $actual
                     Key path: ${keyPathAsString(keyPath)}
@@ -257,7 +257,7 @@ object JSONAsserts {
         if (expected == null || actual == null) {
             if (shouldAssert) {
                 fail("""
-                ${if (expected == null) "Expected is null" else "Actual is nil"} and ${if (expected == null) "Actual" else "Expected"} is non-nil.
+                ${if (expected == null) "Expected is null" else "Actual is null"} and ${if (expected == null) "Actual" else "Expected"} is non-null.
                 Expected: ${expected.toString()}
                 Actual: ${actual.toString()}
                 Key path: ${keyPathAsString(keyPath)}
@@ -327,7 +327,7 @@ object JSONAsserts {
         if (actual == null || actual == JSONObject.NULL) {
             if (shouldAssert) {
                 fail("""
-                    Expected JSON is non-nil but Actual JSON is nil.
+                    Expected JSON is non-null but Actual JSON is null.
                     Expected: $expected
                     Actual: $actual
                     Key path: ${keyPathAsString(keyPath)}
@@ -439,7 +439,7 @@ object JSONAsserts {
         if (actual == null) {
             if (shouldAssert) {
                 fail("""
-                Expected JSON is non-nil but Actual JSON is nil.
+                Expected JSON is non-null but Actual JSON is null.
                 Expected: $expected
                 Actual: $actual
                 Key path: ${keyPathAsString(keyPath)}
@@ -592,7 +592,7 @@ object JSONAsserts {
         if (actual == null) {
             if (shouldAssert) {
                 fail("""
-                    Expected JSON is non-nil but Actual JSON is nil.
+                    Expected JSON is non-null but Actual JSON is null.
                     Expected: $expected
                     Actual: $actual
                     Key path: ${keyPathAsString(keyPath)}
@@ -680,7 +680,7 @@ object JSONAsserts {
 
     /**
      * The method finds all matches of the [regexPattern] in the [text] and for each match, it returns the original matched string
-     * and its corresponding non-nil capture groups.
+     * and its corresponding non-null capture groups.
      *
      * @param text The input string on which the regex matching is to be performed.
      * @param regexPattern The regex pattern to be used for matching against the [text].
