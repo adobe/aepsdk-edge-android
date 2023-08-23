@@ -223,6 +223,24 @@ public class NetworkResponseHandlerFunctionalTests {
 	}
 
 	@Test
+	public void testProcessResponseOnError_WhenJsonErrorIncorrectType_doesNotHandleError() throws InterruptedException {
+		final String jsonError =
+			"{\n" +
+			"      \"requestId\": \"d81c93e5-7558-4996-a93c-489d550748b8\",\n" +
+			"      \"handle\": [],\n" +
+			"      \"errors\":\n" + // Json Array expected
+			"        {\n" +
+			"          \"status\": 500,\n" +
+			"          \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
+			"          \"title\": \"Failed due to unrecoverable system error: java.lang.IllegalStateException: Expected BEGIN_ARRAY but was BEGIN_OBJECT at path $.commerce.purchases\"\n" +
+			"        }\n" +
+			"    }";
+		networkResponseHandler.processResponseOnError(jsonError, "123");
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
+		assertEquals(0, dispatchEvents.size());
+	}
+
+	@Test
 	public void testProcessResponseOnError_WhenValidEventIndex_dispatchesPairedEvent() throws InterruptedException {
 		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
 		final String requestId = "123";
@@ -399,8 +417,17 @@ public class NetworkResponseHandlerFunctionalTests {
 	// ---------------------------------------------------------------------------------------------
 
 	@Test
-	public void testProcessResponseOnSuccess_WhenEmptyJsonResponse_doesNotDispatchEvent() throws InterruptedException {
+	public void testProcessResponseOnSuccess_WhenEmptyStringResponse_doesNotDispatchEvent()
+		throws InterruptedException {
 		final String jsonResponse = "";
+		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.RESPONSE_CONTENT);
+		assertEquals(0, dispatchEvents.size());
+	}
+
+	@Test
+	public void testProcessResponseOnSuccess_WhenEmptyJsonResponse_doesNotDispatchEvent() throws InterruptedException {
+		final String jsonResponse = "{}";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.RESPONSE_CONTENT);
 		assertEquals(0, dispatchEvents.size());

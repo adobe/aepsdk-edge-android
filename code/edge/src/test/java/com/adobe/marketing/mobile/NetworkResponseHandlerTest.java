@@ -526,8 +526,16 @@ public class NetworkResponseHandlerTest {
 	}
 
 	@Test
-	public void testProcessResponseOnSuccess_WhenEmptyJsonResponse_doesNotDispatchEvent() {
+	public void testProcessResponseOnSuccess_WhenEmptyStringResponse_doesNotDispatchEvent() {
 		final String jsonResponse = "";
+		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
+
+		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), never());
+	}
+
+	@Test
+	public void testProcessResponseOnSuccess_WhenEmptyJsonResponse_doesNotDispatchEvent() {
+		final String jsonResponse = "{}";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
 		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), never());
