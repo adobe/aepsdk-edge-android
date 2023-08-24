@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.tester.app
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
@@ -18,9 +19,14 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import com.adobe.marketing.mobile.AdobeCallbackWithError
+import com.adobe.marketing.mobile.AdobeError
 import com.adobe.marketing.mobile.Assurance
 import com.adobe.marketing.mobile.Edge
 import com.adobe.marketing.mobile.EdgeEventHandle
+import com.adobe.marketing.mobile.Event
+import com.adobe.marketing.mobile.EventSource
+import com.adobe.marketing.mobile.EventType
 import com.adobe.marketing.mobile.ExperienceEvent
 import com.adobe.marketing.mobile.MobileCore
 import com.adobe.marketing.mobile.edge.consent.Consent
@@ -224,6 +230,35 @@ class MainActivity : AppCompatActivity() {
                 val textViewGetData: TextView = findViewById(R.id.tvGetData)
                 runOnUiThread{ textViewGetData.text = json }
             }
+        }
+
+        findViewById<Button>(R.id.btnSubmitCompleteEvent).setOnClickListener {
+            val eventData = mapOf<String, Any>(
+                    "xdm" to createCommerceXDM().serializeToXdm(),
+                    "request" to mapOf<String, Any>("sendCompletion" to true)
+            )
+
+            val event = Event.Builder("Edge Event Send Completion Request", EventType.EDGE, EventSource.REQUEST_CONTENT)
+                    .setEventData(eventData)
+                    .build()
+
+            MobileCore.dispatchEventWithResponseCallback(event, 2000L, object : AdobeCallbackWithError<Event?> {
+                @SuppressLint("SetTextI18n")
+                override fun call(completeEvent: Event?) {
+                    val textViewGetData: TextView = findViewById(R.id.tvGetData)
+                    runOnUiThread{
+                            textViewGetData.text = "Completion Event received: ${completeEvent?.eventData}"
+                    }
+                }
+
+                @SuppressLint("SetTextI18n")
+                override fun fail(error: AdobeError?) {
+                    val textViewGetData: TextView = findViewById(R.id.tvGetData)
+                    runOnUiThread {
+                        textViewGetData.text= "Dispatch Event Failed '${error?.errorName}"
+                    }
+                }
+            })
         }
     }
 
