@@ -14,6 +14,7 @@
   - [Edge response content](#edge-response-content)
   - [Edge state store](#edge-state-store)
   - [Edge location hint result](#edge-location-hint-result)
+  - [Edge content complete](#edge-content-complete)
 
 ## Events handled by Edge
 
@@ -205,37 +206,19 @@ This event is an error response to an originating event. If there are multiple e
 
 ### Edge response content
 
-This event is a response to an [Edge request content](#edge-request-content) event. The data payload of this event contains a response handle from the Edge Network. If there are multiple response handles, separate response event instances are dispatched for each.
+This event is a response to an [Edge request content](#edge-request-content) event. This event is constructed using the response fragment from the Edge Network service for a sent XDM Experience Event; Edge Network extension does not modify any values received and constructs a response event with the event source and data payload as-is. This event is only dispatched if the response fragment doesn't define a type, otherwise an event using the response type is dispatched such as a [state:store](#edge-state-store) or [locationHint:result](#edge-location-hint-result).
 
 #### Event details<!-- omit in toc -->
 
-The Edge Network response handle type is used as the event source for this event. If the handle does not define a type, then `com.adobe.eventSource.responseContent` is used as a fallback.
-
 | Event type | Event source |
 | ---------- | ------------ |
-| com.adobe.eventType.edge | Defined by response handle type, or com.adobe.eventSource.responseContent |
+| com.adobe.eventType.edge | com.adobe.eventSource.responseContent |
 
 #### Event data payload definition<!-- omit in toc -->
 
 This event does not have standard keys.
 
 -----
-
-### Edge content complete
-
-This event is a response to an [Edge request content](#edge-request-content) event and is sent when the Edge Network request is complete. This event is only dispatched when requested by the request content event when the `request` payload object contains the property `sendCompletion` with boolean value `true`.
-
-#### Event details<!-- omit in toc -->
-
-| Event type | Event source |
-| ---------- | ------------ |
-| com.adobe.eventType.edge | com.adobe.eventSource.contentComplete |
-
-#### Event data payload definition<!-- omit in toc -->
-
-| Key | Value type | Required | Description |
-| --- | ---------- | -------- | ----------- |
-| requestId | `String` | Yes | The ID (`UUID`) of the batched Edge Network request tied to the event that requested the completion response. |
 
 ### Edge state store
 
@@ -270,3 +253,21 @@ This event tells the Edge Network extension to persist the location hint to the 
 | scope | `String` | No | The scope that the location hint applies to, for example `EdgeNetwork`. |
 | hint | `String` | No | The location hint string. |
 | ttlSeconds | `int` | No | The time period the location hint should be valid for. |
+
+-----
+
+### Edge content complete
+
+This event is a response to an [Edge request content](#edge-request-content) event and is sent when the Edge Network request is complete. This event is only dispatched when requested by the request content event when the `request` payload object contains the property `sendCompletion` with boolean value `true`.
+
+#### Event details<!-- omit in toc -->
+
+| Event type | Event source |
+| ---------- | ------------ |
+| com.adobe.eventType.edge | com.adobe.eventSource.contentComplete |
+
+#### Event data payload definition<!-- omit in toc -->
+
+| Key | Value type | Required | Description |
+| --- | ---------- | -------- | ----------- |
+| requestId | `String` | Yes | The ID (`UUID`) of the batched Edge Network request tied to the event that requested the completion response. |
