@@ -213,7 +213,7 @@ The Edge Network response handle type is used as the event source for this event
 
 | Event type | Event source |
 | ---------- | ------------ |
-| com.adobe.eventType.edge | defined by response handle type, or com.adobe.eventSource.responseContent |
+| com.adobe.eventType.edge | Defined by response handle type, or com.adobe.eventSource.responseContent |
 
 #### Event data payload definition<!-- omit in toc -->
 
