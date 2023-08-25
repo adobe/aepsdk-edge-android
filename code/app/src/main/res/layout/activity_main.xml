@@ -94,6 +94,21 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/layout_request_environment" />
 
+    <Button
+        android:id="@+id/btnSubmitCompleteEvent"
+        android:layout_width="match_parent"
+        android:layout_height="45dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginHorizontal="10dp"
+        android:background="@color/colorPrimary"
+        android:onClick="onDispatchCompleteEvent"
+        android:text="@string/btn_dispatch_event"
+        android:textColor="@android:color/background_light"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnSubmitSingleEvent" />
+
+
     <LinearLayout
         android:id="@+id/layout_location_hint"
         android:layout_width="match_parent"
@@ -103,7 +118,7 @@
         android:layout_marginHorizontal="10dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btnSubmitSingleEvent"
+        app:layout_constraintTop_toBottomOf="@+id/btnSubmitCompleteEvent"
         >
 
         <Button

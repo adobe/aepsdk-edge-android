@@ -29,6 +29,9 @@ import com.adobe.marketing.mobile.AdobeCallbackWithError;
 import com.adobe.marketing.mobile.AdobeError;
 import com.adobe.marketing.mobile.Assurance;
 import com.adobe.marketing.mobile.Edge;
+import com.adobe.marketing.mobile.Event;
+import com.adobe.marketing.mobile.EventSource;
+import com.adobe.marketing.mobile.EventType;
 import com.adobe.marketing.mobile.ExperienceEvent;
 import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.edge.consent.Consent;
@@ -225,6 +228,63 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 						updateTextView(json, view);
 					}
 				});
+			}
+		);
+	}
+
+	public void onDispatchCompleteEvent(final View view) {
+		// Create XDM data with Commerce data for purchases action
+		MobileSDKCommerceSchema xdmData = new MobileSDKCommerceSchema();
+		Order order = new Order();
+		order.setCurrencyCode("RON");
+		order.setPriceTotal(20);
+		Purchases purchases = new Purchases();
+		purchases.setValue(1);
+		ProductListAdds products = new ProductListAdds();
+		products.setValue(21);
+		Commerce commerce = new Commerce();
+		commerce.setOrder(order);
+		commerce.setProductListAdds(products);
+		commerce.setPurchases(purchases);
+		xdmData.setEventType("commerce.purchases");
+		xdmData.setCommerce(commerce);
+
+		Map<String, Object> eventData = new HashMap<>();
+		eventData.put("xdm", xdmData.serializeToXdm());
+		eventData.put(
+			"request",
+			new HashMap<String, Object>() {
+				{
+					put("sendCompletion", true);
+				}
+			}
+		);
+
+		Event event = new Event.Builder(
+			"Edge Event Send Completion Request",
+			EventType.EDGE,
+			EventSource.REQUEST_CONTENT
+		)
+			.setEventData(eventData)
+			.build();
+
+		MobileCore.dispatchEventWithResponseCallback(
+			event,
+			2000L,
+			new AdobeCallbackWithError<Event>() {
+				@Override
+				public void fail(AdobeError adobeError) {
+					updateTextView("Dispatch Event Failed '" + adobeError.getErrorName() + "'", view);
+				}
+
+				@Override
+				public void call(Event event) {
+					if (event != null) {
+						updateTextView("Completion Event received: " + event.getEventData(), view);
+					} else {
+						updateTextView("Completion Event received was null", view);
+					}
+				}
 			}
 		);
 	}
