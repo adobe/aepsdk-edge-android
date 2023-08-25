@@ -148,7 +148,7 @@ publishing {
                     url = 'https://github.com/adobe/aepsdk-edge-android'
                 }
                 withXml {
-                    def dependenciesNode = asNode(null).appendNode('dependencies')
+                    def dependenciesNode = asNode().appendNode('dependencies')
 
                     def coreDependencyNode = dependenciesNode.appendNode('dependency')
                     coreDependencyNode.appendNode('groupId', 'com.adobe.marketing.mobile')
