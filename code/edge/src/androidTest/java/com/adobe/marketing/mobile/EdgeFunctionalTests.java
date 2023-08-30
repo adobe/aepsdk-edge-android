@@ -308,7 +308,7 @@ public class EdgeFunctionalTests {
 				public void call(Event event) {
 					assertEquals("AEP Response Complete", event.getName());
 					assertEquals(EventType.EDGE, event.getType());
-					assertEquals("com.adobe.eventSource.contentComplete", event.getSource()); // TODO use EventSource
+					assertEquals(EventSource.CONTENT_COMPLETE, event.getSource());
 					assertEquals(edgeEvent.getUniqueIdentifier(), event.getParentID());
 					assertEquals(edgeEvent.getUniqueIdentifier(), event.getResponseID());
 					assertNotNull(event.getEventData());
