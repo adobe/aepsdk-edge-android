@@ -51,7 +51,7 @@ object JSONAsserts {
      *   "key[123]": 1
      * }
      * ```
-     * An example alternate mode path for this JSON would be: `"key2[1].nest2"`.
+     * An example [exactMatchPaths] path for this JSON would be: `"key2[1].nest2"`.
      *
      * Alternate mode paths must begin from the top level of the expected JSON.
      * Multiple paths can be defined. If two paths collide, the shorter one takes priority.
@@ -65,8 +65,9 @@ object JSONAsserts {
      * - Keys with array brackets: Escape the brackets, e.g., `key\[123\]`.
      *
      * For wildcard array matching, where position doesn't matter:
-     * 1. Specific index with wildcard: `[*<INT>]` (e.g., `[*1]`, `[*12]`). The element at the specified index will use wildcard matching.
-     * 2. Universal wildcard: `[*]`. All elements will use wildcard matching.
+     * 1. Specific index with wildcard: `[*<INT>]` or `[<INT>*]` (ex: `[*1]`, `[28*]`). The element
+     * at the given index in [expected] will use wildcard matching in [actual].
+     * 2. Universal wildcard: `[*]`. All elements in [expected] will use wildcard matching in [actual].
      *
      * In array comparisons, elements are compared in order, up to the last element of the expected array.
      * When combining wildcard and standard indexes, regular indexes are validated first.
@@ -99,7 +100,7 @@ object JSONAsserts {
      *   "key[123]": 1
      * }
      * ```
-     * An example alternate mode path for this JSON would be: `"key2[1].nest2"`.
+     * An example [typeMatchPaths] path for this JSON would be: `"key2[1].nest2"`.
      *
      * Alternate mode paths must begin from the top level of the expected JSON.
      * Multiple paths can be defined. If two paths collide, the shorter one takes priority.
@@ -113,8 +114,9 @@ object JSONAsserts {
      * - Keys with array brackets: Escape the brackets, e.g., `key\[123\]`.
      *
      * For wildcard array matching, where position doesn't matter:
-     * 1. Specific index with wildcard: `[*<INT>]` (e.g., `[*1]`, `[*12]`). The element at the specified index will use wildcard matching.
-     * 2. Universal wildcard: `[*]`. All elements will use wildcard matching.
+     * 1. Specific index with wildcard: `[*<INT>]` or `[<INT>*]` (ex: `[*1]`, `[28*]`). The element
+     * at the given index in [expected] will use wildcard matching in [actual].
+     * 2. Universal wildcard: `[*]`. All elements in [expected] will use wildcard matching in [actual].
      *
      * In array comparisons, elements are compared in order, up to the last element of the expected array.
      * When combining wildcard and standard indexes, regular indexes are validated first.
