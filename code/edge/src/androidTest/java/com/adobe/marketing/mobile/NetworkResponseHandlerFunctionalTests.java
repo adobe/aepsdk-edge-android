@@ -1199,7 +1199,7 @@ public class NetworkResponseHandlerFunctionalTests {
 			}
 		);
 		networkResponseHandler.processResponseOnComplete("123");
-		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "com.adobe.eventSource.contentComplete");
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.CONTENT_COMPLETE);
 		assertEquals(0, dispatchEvents.size());
 	}
 
@@ -1215,7 +1215,7 @@ public class NetworkResponseHandlerFunctionalTests {
 			}
 		);
 		networkResponseHandler.processResponseOnComplete("123");
-		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "com.adobe.eventSource.contentComplete");
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.CONTENT_COMPLETE);
 		assertEquals(1, dispatchEvents.size());
 
 		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
