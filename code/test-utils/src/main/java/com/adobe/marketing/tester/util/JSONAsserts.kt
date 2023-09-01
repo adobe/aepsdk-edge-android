@@ -146,15 +146,17 @@ object JSONAsserts {
      * @throws AssertionError If [shouldAssert] is true and the [expected] and [actual] values are not equal.
      */
     private fun assertEqual(expected: Any?, actual: Any?, keyPath: List<Any> = listOf(), shouldAssert: Boolean): Boolean {
-        if ((expected == null || expected == JSONObject.NULL) && (actual == null || actual == JSONObject.NULL)) {
+        val expectedIsNull = expected == null || expected == JSONObject.NULL
+        val actualIsNull = actual == null || actual == JSONObject.NULL
+        if (expectedIsNull && actualIsNull) {
             return true
         }
-        if (expected == null || expected == JSONObject.NULL || actual == null || actual == JSONObject.NULL) {
+        if (expectedIsNull || actualIsNull) {
             if (shouldAssert) {
                 fail(
                     """
-                    ${if (expected == null || expected == JSONObject.NULL) "Expected is null" else "Actual is null"} and 
-                    ${if (actual == null || actual == JSONObject.NULL) "Actual" else "Expected"} is non-null.
+                    ${if (expectedIsNull) "Expected is null" else "Actual is null"} and 
+                    ${if (expectedIsNull) "Actual" else "Expected"} is non-null.
                     Expected: $expected
                     Actual: $actual
                     Key path: ${keyPathAsString(keyPath)}
@@ -344,10 +346,12 @@ object JSONAsserts {
         pathTree: Map<String, Any>?,
         exactMatchMode: Boolean,
         shouldAssert: Boolean = true): Boolean {
-        if (expected == null || expected == JSONObject.NULL) {
+        val expectedIsNull = expected == null || expected == JSONObject.NULL
+        val actualIsNull = actual == null || actual == JSONObject.NULL
+        if (expectedIsNull) {
             return true
         }
-        if (actual == null || actual == JSONObject.NULL) {
+        if (actualIsNull) {
             if (shouldAssert) {
                 fail("""
                     Expected JSON is non-null but Actual JSON is null.
@@ -696,7 +700,7 @@ object JSONAsserts {
 
             matchResult
         } catch (e: PatternSyntaxException) {
-            println("TEST ERROR: Invalid regex: ${e.message}")
+            fail("TEST ERROR: Invalid regex: ${e.message}")
             null
         }
     }
