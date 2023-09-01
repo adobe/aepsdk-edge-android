@@ -221,6 +221,7 @@ class JSONAssertsParameterizedTests {
                 return listOf(
                     *values.map { value -> createParameterCase("key1", value) { """{ "key1": $it }""" } }.toTypedArray(),
                     *values.map { value -> createParameterCase("[0]", value) { """[$it]""" } }.toTypedArray(),
+                    *values.map { value -> createParameterCase("[*]", value) { """[$it]""" } }.toTypedArray(),
                 )
             }
         }
@@ -263,6 +264,7 @@ class JSONAssertsParameterizedTests {
                 return listOf(
                     *values.map { pair -> createParameterCase("key1", pair) { """{ "key1": $it }""" } }.toTypedArray(),
                     *values.map { pair -> createParameterCase("[0]", pair) { """[$it]""" } }.toTypedArray(),
+                    *values.map { pair -> createParameterCase("[*]", pair) { """[$it]""" } }.toTypedArray(),
                 )
             }
         }
