@@ -60,7 +60,7 @@ class JSONAssertsTests {
 
 
     /**
-     *  Validates the behavior of general and specific index wildcards:
+     * Validates the behavior of general and specific index wildcards:
      * 1. Both are compatible and can mark an index for wildcard matching.
      * 2. The general wildcard acts as a superset of any specific index wildcard.
      *
@@ -88,9 +88,9 @@ class JSONAssertsTests {
 
 
     /**
-     * Validates that wildcard character can be placed in front or behind the index
+     * Validates that wildcard character can be placed in front or behind the index.
      *
-     * Consequence: all other tests can use a standard format for asterisk placement, without
+     * Consequence: Tests can use a standard format for asterisk placement, without
      * having to test all variations.
      */
     @Test
@@ -115,8 +115,8 @@ class JSONAssertsTests {
     // Array tests
     /**
      * Validates:
-     * 1. Specific index alternate path checks only against its paired index, as expected
-     * 2. Wildcard index allows for matching other positions
+     * 1. Specific index alternate path checks only against its paired index, as expected.
+     * 2. Wildcard index allows for matching other positions.
      */
     @Test
     fun `should match specific index to paired index and wildcard to any position`() {
@@ -191,7 +191,7 @@ class JSONAssertsTests {
     }
 
     /**
-     * Validates that specific index wildcards only apply to the index specified
+     * Validates that specific index wildcards only apply to the index specified.
      */
     @Test
     fun `should match specific index wildcard to its designated index only`() {
