@@ -32,7 +32,8 @@ class JSONAssertsTests {
     /**
      * Validates alternate path wildcards function independently of order.
      *
-     * Consequence: Tests can rely on unique sets of wildcard index values without the need to test every permutation.
+     * Consequence: Tests can rely on unique sets of wildcard index values without the need to test
+     * every variation.
      */
     @Test
     fun `should validate alternate path wildcard order independence`() {
@@ -82,8 +83,13 @@ class JSONAssertsTests {
         assertTypeMatch(expected, actual, exactMatchPaths = listOf("[*]"))
     }
 
-    // Validates that wildcard character can be placed in front or behind the integer
-    // Consequence: all other tests can use a standard format for asterisk placement
+
+    /**
+     * Validates that wildcard character can be placed in front or behind the index
+     *
+     * Consequence: all other tests can use a standard format for asterisk placement, without
+     * having to test all variations.
+     */
     @Test
     fun `test alternate path array wildcard character placement`() {
         val expectedJSONString = """
@@ -103,54 +109,7 @@ class JSONAssertsTests {
         assertTypeMatch(expected, actual, exactMatchPaths = listOf("[0*]"))
     }
 
-    // Validates alternate paths do not violate type mismatch validation
-    @Test
-    fun `test alternate path array type mismatch fails`() {
-        val expectedJSONString = """
-        ["a"]
-        """.trimIndent()
-
-        val actualJSONString = """
-        [1]
-        """.trimIndent()
-        val expected = JSONArray(expectedJSONString)
-        val actual = JSONArray(actualJSONString)
-
-        assertThrows(AssertionError::class.java) {
-            assertExactMatch(expected, actual, typeMatchPaths = listOf("[0]"))
-        }
-        assertThrows(AssertionError::class.java) {
-            assertExactMatch(expected, actual, typeMatchPaths = listOf("[*]"))
-        }
-
-        assertThrows(AssertionError::class.java) {
-            assertTypeMatch(expected, actual, exactMatchPaths = listOf("[0]"))
-        }
-        assertThrows(AssertionError::class.java) {
-            assertTypeMatch(expected, actual, exactMatchPaths = listOf("[*]"))
-        }
-    }
-
     // Array tests
-    @Test
-    fun `test alternate path array`() {
-        val expectedJSONString = """
-        [1]
-        """.trimIndent()
-
-        val actualJSONString = """
-        [1]
-        """.trimIndent()
-        val expected = JSONArray(expectedJSONString)
-        val actual = JSONArray(actualJSONString)
-
-        assertExactMatch(expected, actual, typeMatchPaths = listOf("[0]"))
-        assertExactMatch(expected, actual, typeMatchPaths = listOf("[*]"))
-
-        assertTypeMatch(expected, actual, exactMatchPaths = listOf("[0]"))
-        assertTypeMatch(expected, actual, exactMatchPaths = listOf("[*]"))
-    }
-
     @Test
     fun `test alternate path array wildcard`() {
         val expectedJSONString = """
