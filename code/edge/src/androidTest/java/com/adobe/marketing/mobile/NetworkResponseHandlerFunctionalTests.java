@@ -46,6 +46,30 @@ public class NetworkResponseHandlerFunctionalTests {
 
 	private static final Event event1 = new Event.Builder("e1", "eventType", "eventSource").build();
 	private static final Event event2 = new Event.Builder("e2", "eventType", "eventSource").build();
+	private static final Event eventSendComplete = new Event.Builder("ec", "eventType", "eventSource")
+		.setEventData(
+			new HashMap<String, Object>() {
+				{
+					put(
+						"xdm",
+						new HashMap<String, Object>() {
+							{
+								put("test", "data");
+							}
+						}
+					);
+					put(
+						"request",
+						new HashMap<String, Object>() {
+							{
+								put("sendCompletion", true);
+							}
+						}
+					);
+				}
+			}
+		)
+		.build();
 	private NetworkResponseHandler networkResponseHandler;
 
 	private String receivedSetLocationHint;
@@ -196,6 +220,24 @@ public class NetworkResponseHandlerFunctionalTests {
 		);
 		assertEquals("123", flattenReceivedData.get("requestId"));
 		assertNull(dispatchEvents.get(0).getParentID());
+	}
+
+	@Test
+	public void testProcessResponseOnError_WhenJsonErrorIncorrectType_doesNotHandleError() throws InterruptedException {
+		final String jsonError =
+			"{\n" +
+			"      \"requestId\": \"d81c93e5-7558-4996-a93c-489d550748b8\",\n" +
+			"      \"handle\": [],\n" +
+			"      \"errors\":\n" + // Json Array expected
+			"        {\n" +
+			"          \"status\": 500,\n" +
+			"          \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
+			"          \"title\": \"Failed due to unrecoverable system error: java.lang.IllegalStateException: Expected BEGIN_ARRAY but was BEGIN_OBJECT at path $.commerce.purchases\"\n" +
+			"        }\n" +
+			"    }";
+		networkResponseHandler.processResponseOnError(jsonError, "123");
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
+		assertEquals(0, dispatchEvents.size());
 	}
 
 	@Test
@@ -375,8 +417,17 @@ public class NetworkResponseHandlerFunctionalTests {
 	// ---------------------------------------------------------------------------------------------
 
 	@Test
-	public void testProcessResponseOnSuccess_WhenEmptyJsonResponse_doesNotDispatchEvent() throws InterruptedException {
+	public void testProcessResponseOnSuccess_WhenEmptyStringResponse_doesNotDispatchEvent()
+		throws InterruptedException {
 		final String jsonResponse = "";
+		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.RESPONSE_CONTENT);
+		assertEquals(0, dispatchEvents.size());
+	}
+
+	@Test
+	public void testProcessResponseOnSuccess_WhenEmptyJsonResponse_doesNotDispatchEvent() throws InterruptedException {
+		final String jsonResponse = "{}";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.RESPONSE_CONTENT);
 		assertEquals(0, dispatchEvents.size());
@@ -1130,5 +1181,45 @@ public class NetworkResponseHandlerFunctionalTests {
 		// verify saved location hint
 		assertNull(receivedSetLocationHint);
 		assertNull(receivedSetTtlSeconds);
+	}
+
+	// ---------------------------------------------------------------------------------------------
+	// processResponseOnComplete
+	// ---------------------------------------------------------------------------------------------
+
+	@Test
+	public void testProcessResponseOnComplete_whenNoEventRequestsCompletion_thenNoEventDispatched()
+		throws InterruptedException {
+		networkResponseHandler.addWaitingEvents(
+			"123",
+			new ArrayList<Event>() {
+				{
+					add(event1);
+				}
+			}
+		);
+		networkResponseHandler.processResponseOnComplete("123");
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.CONTENT_COMPLETE);
+		assertEquals(0, dispatchEvents.size());
+	}
+
+	@Test
+	public void testProcessResponseOnComplete_whenEventRequestsCompletion_thenDispatchCompleteEvent()
+		throws InterruptedException {
+		networkResponseHandler.addWaitingEvents(
+			"123",
+			new ArrayList<Event>() {
+				{
+					add(eventSendComplete);
+				}
+			}
+		);
+		networkResponseHandler.processResponseOnComplete("123");
+		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.CONTENT_COMPLETE);
+		assertEquals(1, dispatchEvents.size());
+
+		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		assertEquals(1, flattenReceivedData.size());
+		assertEquals("123", flattenReceivedData.get("requestId"));
 	}
 }
