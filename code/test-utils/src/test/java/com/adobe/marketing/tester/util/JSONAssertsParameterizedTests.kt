@@ -355,9 +355,13 @@ class JSONAssertsParameterizedTests {
         private val expected = JSONArray("""[1, 2]""")
         private val actual = JSONArray("""[1]""")
 
-        // Validates that a larger expected array compared to actual will throw errors
-        // even when using alternate match paths.
-        // Consequence: Guarantees that array size validation isn't affected by alternate paths.
+
+        /**
+         * Validates that a larger expected array compared to actual will throw errors
+         * even when using alternate match paths.
+         *
+         * Consequence: Guarantees that array size validation isn't affected by alternate paths.
+         */
         @Test
         fun `should error on larger expected arrays`() {
             Assert.assertThrows(AssertionError::class.java) {
@@ -390,9 +394,12 @@ class JSONAssertsParameterizedTests {
         private val expected = JSONObject("""{ "key1": 1, "key2": 2 }""")
         private val actual = JSONObject("""{ "key1": 1}""")
 
-        // Validates that a larger expected dictionary compared to actual will throw errors
-        // even when using alternate match paths.
-        // Consequence: Guarantees that dictionary size validation isn't affected by alternate paths.
+        /**
+         * Validates that a larger expected dictionary compared to actual will throw errors
+         * even when using alternate match paths.
+         *
+         * Consequence: Guarantees that dictionary size validation isn't affected by alternate paths.
+         */
         @Test
         fun `should error on larger expected maps`() {
             Assert.assertThrows(AssertionError::class.java) {

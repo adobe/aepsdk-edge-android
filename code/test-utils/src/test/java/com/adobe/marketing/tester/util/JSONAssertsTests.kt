@@ -19,6 +19,9 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 class JSONAssertsTests {
     // Value matching validation
+    /**
+     * Validates `null` equated to itself is true
+     */
     @Test
     fun `should match when both values are null`() {
         val expected = null
@@ -65,7 +68,7 @@ class JSONAssertsTests {
      * can use the general wildcard alone.
      */
     @Test
-    fun `test alternate path array wildcard specific and general`() {
+    fun `should verify general wildcard as superset of specific index wildcards`() {
         val expectedJSONString = """
         [1, 2]
         """.trimIndent()
@@ -91,7 +94,7 @@ class JSONAssertsTests {
      * having to test all variations.
      */
     @Test
-    fun `test alternate path array wildcard character placement`() {
+    fun `should validate wildcard placement before and after index`() {
         val expectedJSONString = """
         [1]
         """.trimIndent()
@@ -110,8 +113,13 @@ class JSONAssertsTests {
     }
 
     // Array tests
+    /**
+     * Validates:
+     * 1. Specific index alternate path checks only against its paired index, as expected
+     * 2. Wildcard index allows for matching other positions
+     */
     @Test
-    fun `test alternate path array wildcard`() {
+    fun `should match specific index to paired index and wildcard to any position`() {
         val expectedJSONString = """
         [1]
         """.trimIndent()
@@ -133,9 +141,14 @@ class JSONAssertsTests {
         assertTypeMatch(expected, actual, exactMatchPaths = listOf("[*]"))
     }
 
-    // This test validates wildcard paths do not take up standard index matches
+    /**
+     * Validates standard index matches take precedence over wildcard matches.
+     *
+     * Specifically, this checks the value at `actual[1]` is not first matched to the wildcard and
+     * fails to satisfy the unspecified index `expected[1]`.
+     */
     @Test
-    fun `test alternate path array wildcard order`() {
+    fun `should prioritize standard index matches over wildcard matches`() {
         val expectedJSONString = """
         [1, 1]
         """.trimIndent()
@@ -151,8 +164,13 @@ class JSONAssertsTests {
         assertTypeMatch(expected, actual, exactMatchPaths = listOf("[*0]"))
     }
 
+    /**
+     * Validates:
+     * 1. Specific index alternate paths should correctly match their corresponding indexes.
+     * 2. Wildcard matching should correctly match with any appropriate index.
+     */
     @Test
-    fun `test alternate path array multi wildcard`() {
+    fun `should match specific indexes and align wildcards with appropriate indexes`() {
         val expectedJSONString = """
         [1, 2]
         """.trimIndent()
@@ -172,8 +190,11 @@ class JSONAssertsTests {
         assertTypeMatch(expected, actual, exactMatchPaths = listOf("[*]"))
     }
 
+    /**
+     * Validates that specific index wildcards only apply to the index specified
+     */
     @Test
-    fun `test alternate path array index specific wildcard`() {
+    fun `should match specific index wildcard to its designated index only`() {
         val expectedJSONString = """
         [1, 2]
         """.trimIndent()
@@ -189,8 +210,12 @@ class JSONAssertsTests {
         assertTypeMatch(expected, actual, exactMatchPaths = listOf("[*1]"))
     }
 
+    /**
+     * Validates that array-style access chained with key-value style access functions correctly.
+     * This covers both specific index and wildcard index styles.
+     */
     @Test
-    fun `test alternate path array chained wildcard`() {
+    fun `should correctly chain array-style with key-value access`() {
         val expectedJSONString = """
         [
             {
@@ -216,8 +241,11 @@ class JSONAssertsTests {
         assertTypeMatch(expected, actual, exactMatchPaths = listOf("[*].key1"))
     }
 
+    /**
+     * Validates that chained array-style access functions correctly.
+     */
     @Test
-    fun `test alternate path 2D array chained wildcard`() {
+    fun `should correctly chain array-style access 2x`() {
         val expectedJSONString = """
         [
             [1]
@@ -239,8 +267,11 @@ class JSONAssertsTests {
         }
     }
 
+    /**
+     * Validates that longer chained array-style access functions correctly.
+     */
     @Test
-    fun `test alternate path 4D array chained wildcard`() {
+    fun `should correctly chain array-style access 4x`() {
         val expectedJSONString = """
         [[[[1]]]]
         """.trimIndent()
@@ -258,8 +289,12 @@ class JSONAssertsTests {
         }
     }
 
+    /**
+     * Validates that key-value style access chained with array-style access functions correctly.
+     * This covers both specific index and wildcard index styles.
+     */
     @Test
-    fun `test alternate path dictionary chained wildcard`() {
+    fun `should correctly chain key-value with array-style access`() {
         val expectedJSONString = """
         {
             "key1": [1]
