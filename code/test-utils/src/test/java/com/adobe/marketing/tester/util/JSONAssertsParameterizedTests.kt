@@ -127,24 +127,39 @@ class JSONAssertsParameterizedTests {
     @RunWith(Parameterized::class)
     class FailureTests(private val expected: Any, private val actual: Any) {
         companion object {
-            private fun combinationsOfTwo(input: List<Any>): Array<Array<Any>> {
-                val result = mutableListOf<Array<Any>>()
-                for (i in input.indices) {
-                    for (j in i + 1 until input.size) {
-                        result.add(arrayOf(input[i], input[j]))
-                    }
-                }
-                return result.toTypedArray()
+            private fun testCase(path: String, expected: Any, actual: Any, format: (Any) -> String): Array<Any> {
+                return arrayOf(path, format(expected), format(actual))
             }
 
             @JvmStatic
             @Parameterized.Parameters(name = "{index}: test with expected={0}, actual={1}")
             fun data(): Collection<Array<Any>> {
                 return listOf(
-                    // Creates all unique 2 element combinations
-                    *combinationsOfTwo(listOf(1, 2.0, "a", true, JSONObject(), JSONArray(), JSONObject.NULL)),
+                    // All unique 2 element combinations
+                    arrayOf(1, 2.0), // [0]
+                    arrayOf(1, "a"),
+                    arrayOf(1, true),
+                    arrayOf(1, JSONObject()),
+                    arrayOf(1, JSONArray()),
+                    arrayOf(1, JSONObject.NULL), // [5]
+                    arrayOf(2.0, "a"),
+                    arrayOf(2.0, true),
+                    arrayOf(2.0, JSONObject()),
+                    arrayOf(2.0, JSONArray()),
+                    arrayOf(2.0, JSONObject.NULL), // [10]
+                    arrayOf("a", true),
+                    arrayOf("a", JSONObject()),
+                    arrayOf("a", JSONArray()),
+                    arrayOf("a", JSONObject.NULL),
+                    arrayOf(true, JSONObject()), // [15]
+                    arrayOf(true, JSONArray()),
+                    arrayOf(true, JSONObject.NULL),
+                    arrayOf(JSONObject(), JSONArray()),
+                    arrayOf(JSONObject(), JSONObject.NULL),
+                    arrayOf(JSONArray(), JSONObject.NULL), // [20]
+                    // Key name mismatch
                     arrayOf(JSONObject("""{ "key1": 1 }"""),
-                            JSONObject("""{ "key2": 1 }""")), // Key name mismatch
+                            JSONObject("""{ "key2": 1 }""")),
                 )
             }
         }
@@ -212,19 +227,41 @@ class JSONAssertsParameterizedTests {
         private val actual: Any? = tryOrNull { JSONObject(actualJSONString) } ?: tryOrNull { JSONArray(actualJSONString) }
 
         companion object {
-            private fun createParameterCase(key: String, value: Any?, transform: (Any?) -> String): Array<String> {
-                return arrayOf(key, transform(value), transform(value))
+            private fun testCase(key: String, expected: Any?, actual: Any?, transform: (Any?) -> String): Array<String> {
+                return arrayOf(key, transform(expected), transform(actual))
             }
-
-            private val values = listOf(1, 2.0, "a", true, JSONObject(), JSONArray(), JSONObject.NULL, null)
 
             @JvmStatic
             @Parameterized.Parameters(name = "{index}: test with key={0}, expected={1}, actual={2}")
             fun data(): Collection<Array<String>> {
                 return listOf(
-                    *values.map { value -> createParameterCase("key1", value) { """{ "key1": $it }""" } }.toTypedArray(),
-                    *values.map { value -> createParameterCase("[0]", value) { """[$it]""" } }.toTypedArray(),
-                    *values.map { value -> createParameterCase("[*]", value) { """[$it]""" } }.toTypedArray(),
+                    // Validating key value pair format
+                    testCase("key1", 1, 1) { """{ "key1": $it }""" },
+                    testCase("key1", 2.0, 2.0) { """{ "key1": $it }""" },
+                    testCase("key1", "a", "a") { """{ "key1": $it }""" },
+                    testCase("key1", true, true) { """{ "key1": $it }""" },
+                    testCase("key1", JSONObject(), JSONObject()) { """{ "key1": $it }""" },
+                    testCase("key1", JSONArray(), JSONArray()) { """{ "key1": $it }""" },
+                    testCase("key1", JSONObject.NULL, JSONObject.NULL) { """{ "key1": $it }""" },
+                    testCase("key1", null, null) { """{ "key1": $it }""" },
+                    // Validating array format with specific index alternate mode path
+                    testCase("[0]", 1, 1) { """[$it]""" },
+                    testCase("[0]", 2.0, 2.0) { """[$it]""" },
+                    testCase("[0]", "a", "a") { """[$it]""" },
+                    testCase("[0]", true, true) { """[$it]""" },
+                    testCase("[0]", JSONObject(), JSONObject()) { """[$it]""" },
+                    testCase("[0]", JSONArray(), JSONArray()) { """[$it]""" },
+                    testCase("[0]", JSONObject.NULL, JSONObject.NULL) { """[$it]""" },
+                    testCase("[0]", null, null) { """[$it]""" },
+                    // Validating array format with wildcard alternate mode path
+                    testCase("[*]", 1, 1) { """[$it]""" },
+                    testCase("[*]", 2.0, 2.0) { """[$it]""" },
+                    testCase("[*]", "a", "a") { """[$it]""" },
+                    testCase("[*]", true, true) { """[$it]""" },
+                    testCase("[*]", JSONObject(), JSONObject()) { """[$it]""" },
+                    testCase("[*]", JSONArray(), JSONArray()) { """[$it]""" },
+                    testCase("[*]", JSONObject.NULL, JSONObject.NULL) { """[$it]""" },
+                    testCase("[*]", null, null) { """[$it]""" },
                 )
             }
         }
