@@ -106,7 +106,10 @@ class JSONAssertsParameterizedTests {
             fun data(): Collection<Array<Any>> {
                 return listOf(
                     arrayOf(JSONArray(), JSONArray(listOf(1))),
+                    arrayOf(JSONArray(listOf(1,2,3)), JSONArray(listOf(1,2,3,4))),
                     arrayOf(JSONObject(), JSONObject(mapOf("k" to "v"))),
+                    arrayOf(JSONObject(mapOf("key1" to 1, "key2" to "a", "key3" to 1.0, "key4" to true)),
+                            JSONObject(mapOf("key1" to 1, "key2" to "a", "key3" to 1.0, "key4" to true, "key5" to "extra"))),
                 )
             }
         }
@@ -247,26 +250,29 @@ class JSONAssertsParameterizedTests {
         private val actual: Any? = tryOrNull { JSONObject(actualJSONString) } ?: tryOrNull { JSONArray(actualJSONString) }
 
         companion object {
-            private fun testCase(path: String, expected: Any, actual: Any, transform: (Any) -> String): Array<String> {
-                return arrayOf(path, transform(expected), transform(actual))
+            private fun testCase(path: String, expected: Any, actual: Any, format: (Any) -> String): Array<String> {
+                return arrayOf(path, format(expected), format(actual))
             }
 
             @JvmStatic
             @Parameterized.Parameters(name = "{index}: test with key={0}, expected={1}, actual={2}")
             fun data(): Collection<Array<String>> {
-                val values = listOf(
-                    Pair(1, 2),
-                    Pair("a", "b"),
-                    Pair(1.0, 2.0),
-                    Pair(true, false),
-                )
                 return listOf(
                     // For each pair of same type different value cases, compare when set as the value in a key value pair
-                    *values.map { pair -> testCase("key1", pair.first, pair.second) { """{ "key1": $it }""" } }.toTypedArray(),
+                    testCase("key1", 1, 2) { """{ "key1": $it }""" },
+                    testCase("key1", "a", "b") { """{ "key1": $it }""" },
+                    testCase("key1", 1.0, 2.0) { """{ "key1": $it }""" },
+                    testCase("key1", true, false) { """{ "key1": $it }""" },
                     // Compare all pairs when set as the value in an array using a specific index alternate path
-                    *values.map { pair -> testCase("[0]", pair.first, pair.second) { """[$it]""" } }.toTypedArray(),
+                    testCase("[0]", 1, 2) { """[$it]""" },
+                    testCase("[0]", "a", "b") { """[$it]""" },
+                    testCase("[0]", 1.0, 2.0) { """[$it]""" },
+                    testCase("[0]", true, false) { """[$it]""" },
                     // Compare all pairs when set as the value in an array using a wildcard alternate path
-                    *values.map { pair -> testCase("[*]", pair.first, pair.second) { """[$it]""" } }.toTypedArray(),
+                    testCase("[*]", 1, 2) { """[$it]""" },
+                    testCase("[*]", "a", "b") { """[$it]""" },
+                    testCase("[*]", 1.0, 2.0) { """[$it]""" },
+                    testCase("[*]", true, false) { """[$it]""" }
                 )
             }
         }
@@ -286,13 +292,8 @@ class JSONAssertsParameterizedTests {
         private val actual: JSONObject = JSONObject(actualJSONString)
 
         companion object {
-            private fun testCase(
-                path: String,
-                expectedValue: Any,
-                actualValue: Any,
-                transform: (Any) -> String
-            ): Array<String> {
-                return arrayOf(path, transform(expectedValue), transform(actualValue))
+            private fun testCase(path: String, expected: Any, actual: Any, format: (Any) -> String): Array<String> {
+                return arrayOf(path, format(expected), format(actual))
             }
 
             @JvmStatic
