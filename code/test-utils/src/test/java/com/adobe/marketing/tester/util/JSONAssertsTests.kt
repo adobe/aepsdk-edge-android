@@ -219,7 +219,9 @@ class JSONAssertsTests {
         val expectedJSONString = """
         [
             {
-                "key1": 1
+                "key1": 1,
+                "key2": 2,
+                "key3": 3
             }
         ]
         """.trimIndent()
@@ -227,7 +229,9 @@ class JSONAssertsTests {
         val actualJSONString = """
         [
             {
-                "key1": 1
+                "key1": 1,
+                "key2": 2,
+                "key3": 3
             }
         ]
         """.trimIndent()
