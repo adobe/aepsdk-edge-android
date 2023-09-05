@@ -29,8 +29,10 @@ import org.junit.runners.Suite
     JSONAssertsParameterizedTests.FlexibleCollectionMatchingTest::class,
     JSONAssertsParameterizedTests.FailureTests::class,
     JSONAssertsParameterizedTests.SpecialKeyTest::class,
-    JSONAssertsParameterizedTests.AlternatePathValueTest::class,
-    JSONAssertsParameterizedTests.AlternatePathTypeTest::class,
+    JSONAssertsParameterizedTests.AlternatePathValueDictionaryTest::class,
+    JSONAssertsParameterizedTests.AlternatePathValueArrayTest::class,
+    JSONAssertsParameterizedTests.AlternatePathTypeDictionaryTest::class,
+    JSONAssertsParameterizedTests.AlternatePathTypeArrayTest::class,
     JSONAssertsParameterizedTests.SpecialKeyAlternatePathTest::class,
     JSONAssertsParameterizedTests.ExpectedArrayLargerTest::class,
     JSONAssertsParameterizedTests.ExpectedDictionaryLargerTest::class
@@ -127,10 +129,6 @@ class JSONAssertsParameterizedTests {
     @RunWith(Parameterized::class)
     class FailureTests(private val expected: Any, private val actual: Any) {
         companion object {
-            private fun testCase(path: String, expected: Any, actual: Any, format: (Any) -> String): Array<Any> {
-                return arrayOf(path, format(expected), format(actual))
-            }
-
             @JvmStatic
             @Parameterized.Parameters(name = "{index}: test with expected={0}, actual={1}")
             fun data(): Collection<Array<Any>> {
@@ -214,17 +212,9 @@ class JSONAssertsParameterizedTests {
     }
 
     @RunWith(Parameterized::class)
-    class AlternatePathValueTest(private val keypath: String, expectedJSONString: String, actualJSONString: String) {
-        private inline fun <T> tryOrNull(block: () -> T): T? {
-            return try {
-                block()
-            } catch (e: Throwable) {
-                null
-            }
-        }
-
-        private val expected: Any = (tryOrNull { JSONObject(expectedJSONString) } ?: tryOrNull { JSONArray(expectedJSONString) })!!
-        private val actual: Any? = tryOrNull { JSONObject(actualJSONString) } ?: tryOrNull { JSONArray(actualJSONString) }
+    class AlternatePathValueDictionaryTest(private val keypath: String, expectedJSONString: String, actualJSONString: String) {
+        private val expected: JSONObject = JSONObject(expectedJSONString)
+        private val actual: JSONObject = JSONObject(actualJSONString)
 
         companion object {
             private fun testCase(key: String, expected: Any?, actual: Any?, transform: (Any?) -> String): Array<String> {
@@ -244,6 +234,31 @@ class JSONAssertsParameterizedTests {
                     testCase("key1", JSONArray(), JSONArray()) { """{ "key1": $it }""" },
                     testCase("key1", JSONObject.NULL, JSONObject.NULL) { """{ "key1": $it }""" },
                     testCase("key1", null, null) { """{ "key1": $it }""" },
+                )
+            }
+        }
+
+        @Test
+        fun `should not fail because of alternate path`() {
+            assertExactMatch(expected, actual, typeMatchPaths = listOf(keypath))
+            assertTypeMatch(expected, actual, exactMatchPaths = listOf(keypath))
+        }
+    }
+
+    @RunWith(Parameterized::class)
+    class AlternatePathValueArrayTest(private val keypath: String, expectedJSONString: String, actualJSONString: String) {
+        private val expected: JSONArray = JSONArray(expectedJSONString)
+        private val actual: JSONArray = JSONArray(actualJSONString)
+
+        companion object {
+            private fun testCase(key: String, expected: Any?, actual: Any?, transform: (Any?) -> String): Array<String> {
+                return arrayOf(key, transform(expected), transform(actual))
+            }
+
+            @JvmStatic
+            @Parameterized.Parameters(name = "{index}: test with key={0}, expected={1}, actual={2}")
+            fun data(): Collection<Array<String>> {
+                return listOf(
                     // Validating array format with specific index alternate mode path
                     testCase("[0]", 1, 1) { """[$it]""" },
                     testCase("[0]", 2.0, 2.0) { """[$it]""" },
@@ -274,17 +289,9 @@ class JSONAssertsParameterizedTests {
     }
 
     @RunWith(Parameterized::class)
-    class AlternatePathTypeTest(private val keypath: String, expectedJSONString: String, actualJSONString: String) {
-        private inline fun <T> tryOrNull(block: () -> T): T? {
-            return try {
-                block()
-            } catch (e: Throwable) {
-                null
-            }
-        }
-
-        private val expected: Any = (tryOrNull { JSONObject(expectedJSONString) } ?: tryOrNull { JSONArray(expectedJSONString) })!!
-        private val actual: Any? = tryOrNull { JSONObject(actualJSONString) } ?: tryOrNull { JSONArray(actualJSONString) }
+    class AlternatePathTypeDictionaryTest(private val keypath: String, expectedJSONString: String, actualJSONString: String) {
+        private val expected: JSONObject = JSONObject(expectedJSONString)
+        private val actual: JSONObject = JSONObject(actualJSONString)
 
         companion object {
             private fun testCase(path: String, expected: Any, actual: Any, format: (Any) -> String): Array<String> {
@@ -300,6 +307,33 @@ class JSONAssertsParameterizedTests {
                     testCase("key1", "a", "b") { """{ "key1": $it }""" },
                     testCase("key1", 1.0, 2.0) { """{ "key1": $it }""" },
                     testCase("key1", true, false) { """{ "key1": $it }""" },
+                )
+            }
+        }
+
+        @Test
+        fun `should apply alternate path to matching logic`() {
+            assertExactMatch(expected, actual, typeMatchPaths = listOf(keypath))
+            Assert.assertThrows(AssertionError::class.java) {
+                assertTypeMatch(expected, actual, exactMatchPaths = listOf(keypath))
+            }
+        }
+    }
+
+    @RunWith(Parameterized::class)
+    class AlternatePathTypeArrayTest(private val keypath: String, expectedJSONString: String, actualJSONString: String) {
+        private val expected: JSONArray = JSONArray(expectedJSONString)
+        private val actual: JSONArray = JSONArray(actualJSONString)
+
+        companion object {
+            private fun testCase(path: String, expected: Any, actual: Any, format: (Any) -> String): Array<String> {
+                return arrayOf(path, format(expected), format(actual))
+            }
+
+            @JvmStatic
+            @Parameterized.Parameters(name = "{index}: test with key={0}, expected={1}, actual={2}")
+            fun data(): Collection<Array<String>> {
+                return listOf(
                     // Compare all pairs when set as the value in an array using a specific index alternate path
                     testCase("[0]", 1, 2) { """[$it]""" },
                     testCase("[0]", "a", "b") { """[$it]""" },
