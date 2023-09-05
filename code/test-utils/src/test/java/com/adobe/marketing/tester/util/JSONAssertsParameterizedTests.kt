@@ -26,7 +26,7 @@ import org.junit.runners.Suite
 @Suite.SuiteClasses(
     JSONAssertsParameterizedTests.ValueMatchingTest::class,
     JSONAssertsParameterizedTests.TypeMatchingTest::class,
-    JSONAssertsParameterizedTests.FlexibleTypeMatchingTest::class,
+    JSONAssertsParameterizedTests.FlexibleCollectionMatchingTest::class,
     JSONAssertsParameterizedTests.FailureTests::class,
     JSONAssertsParameterizedTests.SpecialKeyTest::class,
     JSONAssertsParameterizedTests.AlternatePathValueTest::class,
@@ -99,7 +99,7 @@ class JSONAssertsParameterizedTests {
     }
 
     @RunWith(Parameterized::class)
-    class FlexibleTypeMatchingTest(private val expected: Any, private val actual: Any) {
+    class FlexibleCollectionMatchingTest(private val expected: Any, private val actual: Any) {
         companion object {
             @JvmStatic
             @Parameterized.Parameters(name = "{index}: test with expected={0}, actual={1}")
@@ -247,24 +247,26 @@ class JSONAssertsParameterizedTests {
         private val actual: Any? = tryOrNull { JSONObject(actualJSONString) } ?: tryOrNull { JSONArray(actualJSONString) }
 
         companion object {
-            private fun createParameterCase(key: String, pair: Pair<Any, Any>, transform: (Any) -> String): Array<String> {
-                return arrayOf(key, transform(pair.first), transform(pair.second))
+            private fun testCase(path: String, expected: Any, actual: Any, transform: (Any) -> String): Array<String> {
+                return arrayOf(path, transform(expected), transform(actual))
             }
-
-            private val values = listOf(
-                Pair(1, 2),
-                Pair("a", "b"),
-                Pair(1.0, 2.0),
-                Pair(true, false),
-            )
 
             @JvmStatic
             @Parameterized.Parameters(name = "{index}: test with key={0}, expected={1}, actual={2}")
             fun data(): Collection<Array<String>> {
+                val values = listOf(
+                    Pair(1, 2),
+                    Pair("a", "b"),
+                    Pair(1.0, 2.0),
+                    Pair(true, false),
+                )
                 return listOf(
-                    *values.map { pair -> createParameterCase("key1", pair) { """{ "key1": $it }""" } }.toTypedArray(),
-                    *values.map { pair -> createParameterCase("[0]", pair) { """[$it]""" } }.toTypedArray(),
-                    *values.map { pair -> createParameterCase("[*]", pair) { """[$it]""" } }.toTypedArray(),
+                    // For each pair of same type different value cases, compare when set as the value in a key value pair
+                    *values.map { pair -> testCase("key1", pair.first, pair.second) { """{ "key1": $it }""" } }.toTypedArray(),
+                    // Compare all pairs when set as the value in an array using a specific index alternate path
+                    *values.map { pair -> testCase("[0]", pair.first, pair.second) { """[$it]""" } }.toTypedArray(),
+                    // Compare all pairs when set as the value in an array using a wildcard alternate path
+                    *values.map { pair -> testCase("[*]", pair.first, pair.second) { """[$it]""" } }.toTypedArray(),
                 )
             }
         }
@@ -284,43 +286,44 @@ class JSONAssertsParameterizedTests {
         private val actual: JSONObject = JSONObject(actualJSONString)
 
         companion object {
-            private inline fun <reified R> IntRange.mapToArray(transform: (Int) -> R): Array<R> {
-                return Array(this.last - this.first + 1) { index -> transform(this.first + index) }
-            }
-
-            private fun createParameterCase(key: String, transform: (Int) -> String): Array<String> {
-                return arrayOf(key, *(1..2).mapToArray(transform))
+            private fun testCase(
+                path: String,
+                expectedValue: Any,
+                actualValue: Any,
+                transform: (Any) -> String
+            ): Array<String> {
+                return arrayOf(path, transform(expectedValue), transform(actualValue))
             }
 
             @JvmStatic
             @Parameterized.Parameters(name = "{index}: test with key={0}, expected={1}, actual={2}")
             fun data(): Collection<Array<String>> {
                 return listOf(
-                    createParameterCase("key1.") { """{ "key1": { "": $it } }""" }, // Nested empty string
-                    createParameterCase("key1..key3") { """{ "key1": { "": { "key3": $it } } }""" }, // Non-empty strings surrounding empty string
-                    createParameterCase(".key2.") { """{ "": { "key2": { "": $it } } }""" }, // Empty strings surrounding non-empty string
-                    createParameterCase("\\\\.") { """{ "\\.": $it }""" }, // Backslash before dot
-                    createParameterCase("") { """{ "": $it }""" }, // Empty key
-                    createParameterCase(".") { """{ "": { "": $it } }""" }, // Nested empty keys
-                    createParameterCase("...") { """{ "": { "": { "": { "": $it } } } }""" }, // Multiple nested empty keys
-                    createParameterCase("\\") { """{ "\\": $it }""" }, // Single backslash
-                    createParameterCase("\\\\") { """{ "\\\\": $it }""" }, // Double backslashes
-                    createParameterCase("\\.") { """{ ".": $it }""" }, // Escaped dot
-                    createParameterCase("k\\.1\\.2\\.3") { """{ "k.1.2.3": $it }""" }, // Dots in key
-                    createParameterCase("k\\.") { """{ "k.": $it }""" }, // Dot at the end of the key
-                    createParameterCase("\"") { """{ "\"": $it }""" }, // Escaped double quote
-                    createParameterCase("\'") { """{ "\'": $it }""" }, // Escaped single quote
-                    createParameterCase("'") { """{ "'": $it }""" }, // Single quote
-                    createParameterCase("key with space") { """{ "key with space": $it }""" }, // Space in key
-                    createParameterCase("\n") { """{ "\n": $it }""" }, // Control character
-                    createParameterCase("key \t \n newline") { """{ "key \t \n newline": $it }""" },  // Control characters in key
-                    createParameterCase("안녕하세요") { """{ "안녕하세요": $it }""" }, // Non-Latin characters
-                    createParameterCase("a]") { """{ "a]": $it }""" }, // Closing square bracket in key
-                    createParameterCase("a[") { """{ "a[": $it }""" }, // Opening square bracket in key
-                    createParameterCase("a[1]b") { """{ "a[1]b": $it }""" }, // Array style access in key
-                    createParameterCase("key1\\[0\\]") { """{ "key1[0]": $it }""" }, // Array style access at the end of key
-                    createParameterCase("\\[1\\][0]") { """{ "[1]": [$it] }""" }, // Array style key then actual array style access
-                    createParameterCase("\\[1\\\\][0]") { """{ "[1\\]": [$it] }""" } // Incomplete array style access then actual array style access
+                    testCase("key1.",1,2) { """{ "key1": { "": $it } }""" }, // Nested empty string
+                    testCase("key1..key3",1,2) { """{ "key1": { "": { "key3": $it } } }""" }, // Non-empty strings surrounding empty string
+                    testCase(".key2.",1,2) { """{ "": { "key2": { "": $it } } }""" }, // Empty strings surrounding non-empty string
+                    testCase("\\\\.",1,2) { """{ "\\.": $it }""" }, // Backslash before dot
+                    testCase("",1,2) { """{ "": $it }""" }, // Empty key
+                    testCase(".",1,2) { """{ "": { "": $it } }""" }, // Nested empty keys
+                    testCase("...",1,2) { """{ "": { "": { "": { "": $it } } } }""" }, // Multiple nested empty keys
+                    testCase("\\",1,2) { """{ "\\": $it }""" }, // Single backslash
+                    testCase("\\\\",1,2) { """{ "\\\\": $it }""" }, // Double backslashes
+                    testCase("\\.",1,2) { """{ ".": $it }""" }, // Escaped dot
+                    testCase("k\\.1\\.2\\.3",1,2) { """{ "k.1.2.3": $it }""" }, // Dots in key
+                    testCase("k\\.",1,2) { """{ "k.": $it }""" }, // Dot at the end of the key
+                    testCase("\"",1,2) { """{ "\"": $it }""" }, // Escaped double quote
+                    testCase("\'",1,2) { """{ "\'": $it }""" }, // Escaped single quote
+                    testCase("'",1,2) { """{ "'": $it }""" }, // Single quote
+                    testCase("key with space",1,2) { """{ "key with space": $it }""" }, // Space in key
+                    testCase("\n",1,2) { """{ "\n": $it }""" }, // Control character
+                    testCase("key \t \n newline",1,2) { """{ "key \t \n newline": $it }""" },  // Control characters in key
+                    testCase("안녕하세요",1,2) { """{ "안녕하세요": $it }""" }, // Non-Latin characters
+                    testCase("a]",1,2) { """{ "a]": $it }""" }, // Closing square bracket in key
+                    testCase("a[",1,2) { """{ "a[": $it }""" }, // Opening square bracket in key
+                    testCase("a[1]b",1,2) { """{ "a[1]b": $it }""" }, // Array style access in key
+                    testCase("key1\\[0\\]",1,2) { """{ "key1[0]": $it }""" }, // Array style access at the end of key
+                    testCase("\\[1\\][0]",1,2) { """{ "[1]": [$it] }""" }, // Array style key then actual array style access
+                    testCase("\\[1\\\\][0]",1,2) { """{ "[1\\]": [$it] }""" } // Incomplete array style access then actual array style access
                 )
             }
         }
