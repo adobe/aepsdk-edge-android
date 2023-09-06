@@ -40,4 +40,8 @@ android {
 dependencies {
     implementation project(':edge')
     implementation "com.adobe.marketing.mobile:core:${rootProject.mavenCoreVersion}"
+    implementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
+
+    testImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
+    testImplementation 'org.json:json:20180813'
 }
