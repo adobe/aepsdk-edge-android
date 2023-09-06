@@ -144,22 +144,22 @@ class JSONAssertsParameterizedTests {
                     arrayOf(2.0, "a"),
                     arrayOf(2.0, true),
                     arrayOf(2.0, JSONObject()),
-                    arrayOf(2.0, JSONArray()),
-                    arrayOf(2.0, JSONObject.NULL), // [10]
+                    arrayOf(2.0, JSONArray()), // [10]
+                    arrayOf(2.0, JSONObject.NULL),
                     arrayOf(2.0, null),
                     arrayOf("a", true),
                     arrayOf("a", JSONObject()),
-                    arrayOf("a", JSONArray()),
+                    arrayOf("a", JSONArray()), // [15]
                     arrayOf("a", JSONObject.NULL),
                     arrayOf("a", null),
-                    arrayOf(true, JSONObject()), // [15]
+                    arrayOf(true, JSONObject()),
                     arrayOf(true, JSONArray()),
-                    arrayOf(true, JSONObject.NULL),
+                    arrayOf(true, JSONObject.NULL), // [20]
                     arrayOf(true, null),
                     arrayOf(JSONObject(), JSONArray()),
                     arrayOf(JSONObject(), JSONObject.NULL),
                     arrayOf(JSONObject(), null),
-                    arrayOf(JSONArray(), JSONObject.NULL), // [20]
+                    arrayOf(JSONArray(), JSONObject.NULL), // [25]
                     arrayOf(JSONArray(), null),
                     // Key name mismatch
                     arrayOf(JSONObject("""{ "key1": 1 }"""),
