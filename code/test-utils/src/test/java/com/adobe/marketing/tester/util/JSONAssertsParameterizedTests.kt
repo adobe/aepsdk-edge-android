@@ -127,11 +127,11 @@ class JSONAssertsParameterizedTests {
     }
 
     @RunWith(Parameterized::class)
-    class FailureTests(private val expected: Any, private val actual: Any) {
+    class FailureTests(private val expected: Any, private val actual: Any?) {
         companion object {
             @JvmStatic
             @Parameterized.Parameters(name = "{index}: test with expected={0}, actual={1}")
-            fun data(): Collection<Array<Any>> {
+            fun data(): Collection<Array<Any?>> {
                 return listOf(
                     // All unique 2 element combinations
                     arrayOf(1, 2.0), // [0]
@@ -140,21 +140,27 @@ class JSONAssertsParameterizedTests {
                     arrayOf(1, JSONObject()),
                     arrayOf(1, JSONArray()),
                     arrayOf(1, JSONObject.NULL), // [5]
+                    arrayOf(1, null),
                     arrayOf(2.0, "a"),
                     arrayOf(2.0, true),
                     arrayOf(2.0, JSONObject()),
                     arrayOf(2.0, JSONArray()),
                     arrayOf(2.0, JSONObject.NULL), // [10]
+                    arrayOf(2.0, null),
                     arrayOf("a", true),
                     arrayOf("a", JSONObject()),
                     arrayOf("a", JSONArray()),
                     arrayOf("a", JSONObject.NULL),
+                    arrayOf("a", null),
                     arrayOf(true, JSONObject()), // [15]
                     arrayOf(true, JSONArray()),
                     arrayOf(true, JSONObject.NULL),
+                    arrayOf(true, null),
                     arrayOf(JSONObject(), JSONArray()),
                     arrayOf(JSONObject(), JSONObject.NULL),
+                    arrayOf(JSONObject(), null),
                     arrayOf(JSONArray(), JSONObject.NULL), // [20]
+                    arrayOf(JSONArray(), null),
                     // Key name mismatch
                     arrayOf(JSONObject("""{ "key1": 1 }"""),
                             JSONObject("""{ "key2": 1 }""")),
