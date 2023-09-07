@@ -29,7 +29,7 @@ import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.MobileCoreHelper;
-import com.adobe.marketing.mobile.services.TestDataStoreService;
+import com.adobe.marketing.mobile.services.MockDataStoreService;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.ServiceProviderHelper;
@@ -91,7 +91,7 @@ public class TestHelper {
                     MobileCoreHelper.resetSDK();
                     MobileCore.setLogLevel(LoggingMode.VERBOSE);
                     MobileCore.setApplication(defaultApplication);
-                    TestDataStoreService.clearStores();
+                    MockDataStoreService.clearStores();
                     clearAllDatastores();
                     Log.debug(LOG_TAG, LOG_SOURCE, "Execute '%s'", description.getMethodName());
 
@@ -105,7 +105,7 @@ public class TestHelper {
                         Log.debug(LOG_TAG, LOG_SOURCE, "Finished '%s'", description.getMethodName());
                         waitForThreads(5000); // wait to allow thread to run after test execution
                         MobileCoreHelper.resetSDK();
-                        TestDataStoreService.clearStores();
+                        MockDataStoreService.clearStores();
                         clearAllDatastores();
                         resetTestExpectations();
                         resetServiceProvider();
@@ -249,9 +249,9 @@ public class TestHelper {
 
                 while (!done && !timedOut) {
                     if (
-                            t.getState().equals(Thread.State.TERMINATED) ||
-                                    t.getState().equals(Thread.State.TIMED_WAITING) ||
-                                    t.getState().equals(Thread.State.WAITING)
+                        t.getState().equals(Thread.State.TERMINATED) ||
+                        t.getState().equals(Thread.State.TIMED_WAITING) ||
+                        t.getState().equals(Thread.State.WAITING)
                     ) {
                         //Cannot use the join() API since we use a cached thread pool, which
                         //means that we keep idle threads around for 60secs (default timeout).
@@ -265,15 +265,15 @@ public class TestHelper {
 
                 if (timedOut) {
                     Log.debug(
-                            LOG_TAG,
-                            LOG_SOURCE,
-                            "waitForThreads - Timeout out waiting for thread " + t.getName() + " (" + t.getId() + ")"
+                        LOG_TAG,
+                        LOG_SOURCE,
+                        "waitForThreads - Timeout out waiting for thread " + t.getName() + " (" + t.getId() + ")"
                     );
                 } else {
                     Log.debug(
-                            LOG_TAG,
-                            LOG_SOURCE,
-                            "waitForThreads - Done waiting for thread " + t.getName() + " (" + t.getId() + ")"
+                        LOG_TAG,
+                        LOG_SOURCE,
+                        "waitForThreads - Done waiting for thread " + t.getName() + " (" + t.getId() + ")"
                     );
                 }
             }
@@ -294,10 +294,10 @@ public class TestHelper {
 
         for (Thread t : threadSet) {
             if (
-                    isAppThread(t) &&
-                            !t.getState().equals(Thread.State.WAITING) &&
-                            !t.getState().equals(Thread.State.TERMINATED) &&
-                            !t.getState().equals(Thread.State.TIMED_WAITING)
+                isAppThread(t) &&
+                !t.getState().equals(Thread.State.WAITING) &&
+                !t.getState().equals(Thread.State.TERMINATED) &&
+                !t.getState().equals(Thread.State.TIMED_WAITING)
             ) {
                 eligibleThreads.add(t);
             }
@@ -375,19 +375,16 @@ public class TestHelper {
                     .getValue()
                     .await(TestConstants.Defaults.WAIT_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
             assertTrue(
-                    "Timed out waiting for event type " +
-                            expected.getKey().type +
-                            " and source " +
-                            expected.getKey().source,
-                    awaitResult
+        "Timed out waiting for event type " + expected.getKey().type + " and source " + expected.getKey().source,
+                awaitResult
             );
             int expectedCount = expected.getValue().getInitialCount();
             int receivedCount = expected.getValue().getCurrentCount();
             String failMessage = String.format(
-                    "Expected %d events for '%s', but received %d",
-                    expectedCount,
-                    expected.getKey(),
-                    receivedCount
+                "Expected %d events for '%s', but received %d",
+                expectedCount,
+                expected.getKey(),
+                receivedCount
             );
             assertEquals(failMessage, expectedCount, receivedCount);
         }
@@ -434,40 +431,40 @@ public class TestHelper {
                 int expectedCount = expectedEventLatch.getInitialCount();
                 int receivedCount = receivedEvent.getValue().size();
                 String failMessage = String.format(
-                        "Expected %d events for '%s', but received %d",
-                        expectedCount,
-                        receivedEvent.getKey(),
-                        receivedCount
+                    "Expected %d events for '%s', but received %d",
+                    expectedCount,
+                    receivedEvent.getKey(),
+                    receivedCount
                 );
                 assertEquals(failMessage, expectedCount, receivedCount);
             } else {
                 unexpectedEventsReceivedCount += receivedEvent.getValue().size();
                 unexpectedEventsErrorString.append(
                         String.format(
-                                "(%s,%s,%d)",
-                                receivedEvent.getKey().type,
-                                receivedEvent.getKey().source,
-                                receivedEvent.getValue().size()
+                            "(%s,%s,%d)",
+                            receivedEvent.getKey().type,
+                            receivedEvent.getKey().source,
+                            receivedEvent.getValue().size()
                         )
                 );
                 Log.debug(
-                        LOG_TAG,
-                        LOG_SOURCE,
-                        "Received unexpected event with type: %s  source: %s",
-                        receivedEvent.getKey().type,
-                        receivedEvent.getKey().source
+                    LOG_TAG,
+                    LOG_SOURCE,
+                    "Received unexpected event with type: %s  source: %s",
+                    receivedEvent.getKey().type,
+                    receivedEvent.getKey().source
                 );
             }
         }
 
         assertEquals(
-                String.format(
-                        "Received %d unexpected event(s): %s",
-                        unexpectedEventsReceivedCount,
-                        unexpectedEventsErrorString
-                ),
-                0,
-                unexpectedEventsReceivedCount
+            String.format(
+                "Received %d unexpected event(s): %s",
+                unexpectedEventsReceivedCount,
+                unexpectedEventsErrorString
+            ),
+            0,
+            unexpectedEventsReceivedCount
         );
     }
 
@@ -508,8 +505,8 @@ public class TestHelper {
         if (expectedEventLatch != null) {
             boolean awaitResult = expectedEventLatch.await(timeout, TimeUnit.MILLISECONDS);
             assertTrue(
-                    "Timed out waiting for event type " + eventSpec.type + " and source " + eventSpec.source,
-                    awaitResult
+                "Timed out waiting for event type " + eventSpec.type + " and source " + eventSpec.source,
+                awaitResult
             );
         } else {
             sleep(TestConstants.Defaults.WAIT_TIMEOUT_MS);
@@ -529,45 +526,45 @@ public class TestHelper {
     public static Map<String, Object> getSharedStateFor(final String stateOwner, int timeout)
             throws InterruptedException {
         Event event = new Event.Builder(
-                "Get Shared State Request",
-                TestConstants.EventType.MONITOR,
-                TestConstants.EventSource.SHARED_STATE_REQUEST
+            "Get Shared State Request",
+            TestConstants.EventType.MONITOR,
+            TestConstants.EventSource.SHARED_STATE_REQUEST
         )
-                .setEventData(
-                        new HashMap<String, Object>() {
-                            {
-                                put(TestConstants.EventDataKey.STATE_OWNER, stateOwner);
-                            }
-                        }
-                )
-                .build();
+        .setEventData(
+            new HashMap<String, Object>() {
+                {
+                    put(TestConstants.EventDataKey.STATE_OWNER, stateOwner);
+                }
+            }
+        )
+        .build();
 
         final CountDownLatch latch = new CountDownLatch(1);
         final Map<String, Object> sharedState = new HashMap<>();
         MobileCore.dispatchEventWithResponseCallback(
-                event,
-                5000,
-                new AdobeCallbackWithError<Event>() {
-                    @Override
-                    public void call(final Event event) {
-                        if (event.getEventData() != null) {
-                            sharedState.putAll(event.getEventData());
-                        }
-
-                        latch.countDown();
+            event,
+            5000,
+            new AdobeCallbackWithError<Event>() {
+                @Override
+                public void call(final Event event) {
+                    if (event.getEventData() != null) {
+                        sharedState.putAll(event.getEventData());
                     }
 
-                    @Override
-                    public void fail(final AdobeError adobeError) {
-                        Log.debug(
-                                LOG_TAG,
-                                LOG_SOURCE,
-                                "Failed to get shared state for %s: %s",
-                                stateOwner,
-                                adobeError.getErrorName()
-                        );
-                    }
+                    latch.countDown();
                 }
+
+                @Override
+                public void fail(final AdobeError adobeError) {
+                    Log.debug(
+                        LOG_TAG,
+                        LOG_SOURCE,
+                        "Failed to get shared state for %s: %s",
+                        stateOwner,
+                        adobeError.getErrorName()
+                    );
+                }
+            }
         );
 
         assertTrue("Timeout waiting for shared state " + stateOwner, latch.await(timeout, TimeUnit.MILLISECONDS));
@@ -620,7 +617,7 @@ public class TestHelper {
 
             if (sharedPreferences == null) {
                 fail(
-                        "TestHelper - Unable to clear datastores. sharedPreferences is null, fast failing the test case."
+                    "TestHelper - Unable to clear datastores. sharedPreferences is null, fast failing the test case."
                 );
             }
 
