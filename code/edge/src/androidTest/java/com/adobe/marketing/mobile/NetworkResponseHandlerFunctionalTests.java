@@ -21,8 +21,8 @@ import static org.junit.Assert.assertNull;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.edge.identity.Identity;
-import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.services.MockDataStoreService;
+import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
 import com.adobe.marketing.mobile.util.TestUtils;
