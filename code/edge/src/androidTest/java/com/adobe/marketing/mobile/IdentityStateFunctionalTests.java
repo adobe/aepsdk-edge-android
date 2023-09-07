@@ -16,23 +16,19 @@ import static com.adobe.marketing.mobile.util.TestHelper.LogOnErrorRule;
 import static com.adobe.marketing.mobile.util.TestHelper.RegisterMonitorExtensionRule;
 import static com.adobe.marketing.mobile.util.TestHelper.SetupCoreRule;
 import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
-import static com.adobe.marketing.mobile.util.TestHelper.assertNetworkRequestCount;
-import static com.adobe.marketing.mobile.util.TestHelper.createNetworkResponse;
-import static com.adobe.marketing.mobile.util.TestHelper.getFlattenedNetworkRequestBody;
-import static com.adobe.marketing.mobile.util.TestHelper.getNetworkRequestsWith;
 import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
 import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
-import static com.adobe.marketing.mobile.util.TestHelper.setExpectationNetworkRequest;
-import static com.adobe.marketing.mobile.util.TestHelper.setNetworkResponseFor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.services.HttpConnecting;
+import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.FakeIdentity;
 import com.adobe.marketing.mobile.util.JSONUtils;
+import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.TestConstants;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -49,6 +45,7 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class IdentityStateFunctionalTests {
 
+	private static final MockNetworkService mockNetworkService = new MockNetworkService();
 	private static final String EXEDGE_INTERACT_URL_STRING = TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
 	private static final String CONFIG_ID = "1234abcd-abcd-1234-5678-123456abcdef";
 
@@ -60,6 +57,9 @@ public class IdentityStateFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
+		mockNetworkService.reset();
+		ServiceProvider.getInstance().setNetworkService(mockNetworkService);
+
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1);
 		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 3);
@@ -77,7 +77,7 @@ public class IdentityStateFunctionalTests {
 		latch.await();
 
 		assertExpectedEvents(false);
-		resetTestExpectations();
+		resetTestExpectations(mockNetworkService);
 	}
 
 	@Test
@@ -93,7 +93,10 @@ public class IdentityStateFunctionalTests {
 			.build();
 		Edge.sendEvent(experienceEvent, null);
 
-		List<TestableNetworkRequest> requests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST);
+		List<TestableNetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
+			EXEDGE_INTERACT_URL_STRING,
+			POST
+		);
 		assertTrue(requests.isEmpty());
 	}
 
@@ -111,12 +114,16 @@ public class IdentityStateFunctionalTests {
 			.build();
 		Edge.sendEvent(experienceEvent, null);
 
-		List<TestableNetworkRequest> requests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, 2000);
+		List<TestableNetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
+			EXEDGE_INTERACT_URL_STRING,
+			POST,
+			2000
+		);
 		assertTrue(requests.isEmpty()); // no network requests sent yet
 
-		HttpConnecting responseConnection = createNetworkResponse("\u0000{\"test\": \"json\"}", 200);
-		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
-		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
+		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse("\u0000{\"test\": \"json\"}", 200);
+		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 
 		final String jsonStr =
 			"{\n" +
@@ -139,11 +146,11 @@ public class IdentityStateFunctionalTests {
 		// Send Event request once the Hub Shared State event is received.
 		FakeIdentity.setXDMSharedState(identityMap, FakeIdentity.EVENT_TYPE);
 
-		assertNetworkRequestCount();
+		mockNetworkService.assertAllNetworkRequestExpectations();
 
-		requests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST);
+		requests = mockNetworkService.getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST);
 		assertEquals(1, requests.size());
-		Map<String, String> flattenedRequestBody = getFlattenedNetworkRequestBody(requests.get(0));
+		Map<String, String> flattenedRequestBody = mockNetworkService.getFlattenedNetworkRequestBody(requests.get(0));
 		assertEquals("1234", flattenedRequestBody.get("xdm.identityMap.ECID[0].id"));
 	}
 
@@ -168,9 +175,9 @@ public class IdentityStateFunctionalTests {
 		final Map<String, Object> identityState = JSONUtils.toMap(jsonObject);
 		FakeIdentity.setXDMSharedState(identityState, FakeIdentity.EVENT_TYPE); // set state without ECID
 
-		HttpConnecting responseConnection = createNetworkResponse("\u0000{\"test\": \"json\"}", 200);
-		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
-		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
+		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse("\u0000{\"test\": \"json\"}", 200);
+		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
 			.setXdmSchema(
@@ -183,12 +190,15 @@ public class IdentityStateFunctionalTests {
 			.build();
 		Edge.sendEvent(experienceEvent, null);
 
-		assertNetworkRequestCount();
+		mockNetworkService.assertAllNetworkRequestExpectations();
 
 		// Assert network request does not contain an ECID
-		List<TestableNetworkRequest> requests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST);
+		List<TestableNetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
+			EXEDGE_INTERACT_URL_STRING,
+			POST
+		);
 		assertEquals(1, requests.size());
-		Map<String, String> flattenedRequestBody = getFlattenedNetworkRequestBody(requests.get(0));
+		Map<String, String> flattenedRequestBody = mockNetworkService.getFlattenedNetworkRequestBody(requests.get(0));
 		assertNull(flattenedRequestBody.get("xdm.identityMap.ECID[0].id"));
 	}
 }
