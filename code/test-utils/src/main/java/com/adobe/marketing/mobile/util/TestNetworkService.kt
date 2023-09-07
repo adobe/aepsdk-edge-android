@@ -36,9 +36,9 @@ class TestNetworkService {
 
 	fun reset() {
 		Log.trace(
-				TestConstants.LOG_TAG,
-				LOG_SOURCE,
-				"Reset received and expected network requests."
+			TestConstants.LOG_TAG,
+			LOG_SOURCE,
+			"Reset received and expected network requests."
 		)
 		sentTestableNetworkRequests.clear()
 		networkResponses.clear()
@@ -82,19 +82,19 @@ class TestNetworkService {
 	 */
 	@Throws(InterruptedException::class)
 	fun getNetworkRequestsWith(
-			url: String?,
-			method: HttpMethod?,
-			timeoutMillis: Int
+		url: String?,
+		method: HttpMethod?,
+		timeoutMillis: Int
 	): List<TestableNetworkRequest?> {
 		val networkRequest = TestableNetworkRequest(url, method)
 		if (isNetworkRequestExpected(networkRequest)) {
 			Assert.assertTrue(
-					"Time out waiting for network request(s) with URL '" +
-							networkRequest.url +
-							"' and method '" +
-							networkRequest.method.name +
-							"'",
-					awaitFor(networkRequest, timeoutMillis)
+		"Time out waiting for network request(s) with URL '" +
+				networkRequest.url +
+				"' and method '" +
+				networkRequest.method.name +
+				"'",
+				awaitFor(networkRequest, timeoutMillis)
 			)
 		} else {
 			TestHelper.sleep(timeoutMillis)
@@ -128,40 +128,41 @@ class TestNetworkService {
 		getExpectedNetworkRequests()
 		if (expectedNetworkRequests.isEmpty()) {
 			Assert.fail(
-					"There are no network request expectations set, use this API after calling setExpectationNetworkRequest"
+				"There are no network request expectations set, use this API after calling setExpectationNetworkRequest"
 			)
 			return
 		}
 		for ((key, value) in expectedNetworkRequests) {
 			val awaitResult = value.await(5, TimeUnit.SECONDS)
 			Assert.assertTrue(
-					"Time out waiting for network request with URL '" +
-							key.url +
-							"' and method '" +
-							key.method.name +
-							"'",
-					awaitResult
+		"Time out waiting for network request with URL '" +
+				key.url +
+				"' and method '" +
+				key.method.name +
+				"'",
+				awaitResult
 			)
 			val expectedCount = value.initialCount
 			val receivedCount = value.currentCount
 			val message = String.format(
-					"Expected %d network requests for URL %s (%s), but received %d",
-					expectedCount,
-					key.url,
-					key.method,
-					receivedCount
+				"Expected %d network requests for URL %s (%s), but received %d",
+				expectedCount,
+				key.url,
+				key.method,
+				receivedCount
 			)
 			Assert.assertEquals(message, expectedCount.toLong(), receivedCount.toLong())
 		}
 	}
 
 	fun recordSentNetworkRequest(networkRequest: TestableNetworkRequest) {
-		Log.trace(TestConstants.LOG_TAG,
-				LOG_SOURCE,
-				"Received connectAsync to URL ${networkRequest.url} and HTTPMethod ${networkRequest.method}")
+		Log.trace(
+			TestConstants.LOG_TAG,
+			LOG_SOURCE,
+			"Received connectAsync to URL ${networkRequest.url} and HTTPMethod ${networkRequest.method}")
 
 		val equalNetworkRequest = sentTestableNetworkRequests.entries.firstOrNull { (key, _) ->
-				key == networkRequest
+			key == networkRequest
 		}
 
 		if (equalNetworkRequest != null) {
