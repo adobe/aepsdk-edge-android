@@ -9,8 +9,14 @@
   governing permissions and limitations under the License.
 */
 
-package com.adobe.marketing.mobile.services;
+package com.adobe.marketing.mobile.util;
 
+import com.adobe.marketing.mobile.services.HttpConnecting;
+import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.services.NetworkCallback;
+import com.adobe.marketing.mobile.services.NetworkRequest;
+import com.adobe.marketing.mobile.services.Networking;
+import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.ADBCountDownLatch;
 import com.adobe.marketing.mobile.util.TestConstants;
 
