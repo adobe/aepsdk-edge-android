@@ -22,6 +22,7 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.content.SharedPreferences;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.platform.app.InstrumentationRegistry;
 import com.adobe.marketing.mobile.AdobeCallbackWithError;
 import com.adobe.marketing.mobile.AdobeError;
@@ -107,7 +108,7 @@ public class TestHelper {
 						MobileCoreHelper.resetSDK();
 						MockDataStoreService.clearStores();
 						clearAllDatastores();
-						resetTestExpectations();
+						resetTestExpectations(null);
 						resetServiceProvider();
 					}
 				}
@@ -330,9 +331,11 @@ public class TestHelper {
 	/**
 	 * Resets the network and event test expectations.
 	 */
-	public static void resetTestExpectations(TestResettable resettableTestNetworkService) {
+	public static void resetTestExpectations(@Nullable TestResettable resettableTestNetworkService) {
 		Log.debug(LOG_TAG, LOG_SOURCE, "Resetting functional test expectations for events and network requests");
-		resettableTestNetworkService.reset();
+		if (resettableTestNetworkService != null) {
+			resettableTestNetworkService.reset();
+		}
 		MonitorExtension.reset();
 	}
 
