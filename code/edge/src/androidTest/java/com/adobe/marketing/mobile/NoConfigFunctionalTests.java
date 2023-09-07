@@ -21,9 +21,9 @@ import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.FakeIdentity;
+import com.adobe.marketing.mobile.util.JSONUtils;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestUtils;
-import com.adobe.marketing.mobile.util.JSONUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -41,8 +41,7 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class NoConfigFunctionalTests {
 
-	private static final String EXEDGE_INTERACT_URL_STRING =
-		TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
+	private static final String EXEDGE_INTERACT_URL_STRING = TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
 
 	@Rule
 	public RuleChain rule = RuleChain

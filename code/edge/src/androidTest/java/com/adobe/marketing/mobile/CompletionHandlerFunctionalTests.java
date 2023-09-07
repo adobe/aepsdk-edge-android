@@ -38,8 +38,7 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class CompletionHandlerFunctionalTests {
 
-	private static final String EXEDGE_INTERACT_URL_STRING =
-		TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
+	private static final String EXEDGE_INTERACT_URL_STRING = TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
 	private static final String CONFIG_ID = "1234abcd-abcd-1234-5678-123456abcdef";
 
 	private static final String RESPONSE_BODY_WITH_HANDLE =

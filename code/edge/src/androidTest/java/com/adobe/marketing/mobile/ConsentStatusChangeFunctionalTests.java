@@ -39,8 +39,7 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class ConsentStatusChangeFunctionalTests {
 
-	private static final String EXEDGE_INTERACT_URL_STRING =
-		TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
+	private static final String EXEDGE_INTERACT_URL_STRING = TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
 	private static final String EXEDGE_CONSENT_URL_STRING = TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING;
 	private static final String CONFIG_ID = "1234abcd-abcd-1234-5678-123456abcdef";
 	private static final int EVENTS_COUNT = 5;
@@ -280,9 +279,7 @@ public class ConsentStatusChangeFunctionalTests {
 			1000
 		);
 		assertEquals(POST, consentRequests.get(0).getMethod());
-		assertTrue(
-			consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING)
-		);
+		assertTrue(consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING));
 	}
 
 	@Test
@@ -309,9 +306,7 @@ public class ConsentStatusChangeFunctionalTests {
 			1000
 		);
 		assertEquals(POST, consentRequests.get(0).getMethod());
-		assertTrue(
-			consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING)
-		);
+		assertTrue(consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING));
 	}
 
 	@Test
@@ -338,9 +333,7 @@ public class ConsentStatusChangeFunctionalTests {
 			1000
 		);
 		assertEquals(POST, consentRequests.get(0).getMethod());
-		assertTrue(
-			consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING)
-		);
+		assertTrue(consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING));
 	}
 
 	@Test
@@ -368,10 +361,7 @@ public class ConsentStatusChangeFunctionalTests {
 		);
 		assertEquals(POST, consentRequests.get(0).getMethod());
 		assertTrue(
-			consentRequests
-				.get(0)
-				.getUrl()
-				.startsWith(TestConstants.Defaults.EXEDGE_CONSENT_PRE_PROD_URL_STRING)
+			consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_PRE_PROD_URL_STRING)
 		);
 	}
 
@@ -399,9 +389,7 @@ public class ConsentStatusChangeFunctionalTests {
 			1000
 		);
 		assertEquals(POST, consentRequests.get(0).getMethod());
-		assertTrue(
-			consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_INT_URL_STRING)
-		);
+		assertTrue(consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_INT_URL_STRING));
 	}
 
 	private void fireManyEvents() {

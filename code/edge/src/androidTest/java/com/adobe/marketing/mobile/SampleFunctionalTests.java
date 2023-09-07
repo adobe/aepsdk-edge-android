@@ -191,10 +191,7 @@ public class SampleFunctionalTests {
 			.build();
 		Edge.sendEvent(experienceEvent, null);
 
-		List<TestableNetworkRequest> requests = TestHelper.getNetworkRequestsWith(
-			exEdgeInteractUrlString,
-			POST
-		);
+		List<TestableNetworkRequest> requests = TestHelper.getNetworkRequestsWith(exEdgeInteractUrlString, POST);
 		assertEquals(1, requests.size());
 
 		Map<String, String> flattendRequestBody = TestHelper.getFlattenedNetworkRequestBody(requests.get(0));

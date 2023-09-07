@@ -21,8 +21,8 @@ import static org.junit.Assert.assertNull;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.edge.identity.Identity;
-import com.adobe.marketing.mobile.services.TestDataStoreService;
 import com.adobe.marketing.mobile.services.NamedCollection;
+import com.adobe.marketing.mobile.services.TestDataStoreService;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
 import com.adobe.marketing.mobile.util.TestUtils;
@@ -747,9 +747,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchErrorEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, dispatchErrorEvents.size());
 
-		Map<String, String> flattenReceivedData2 = TestUtils.flattenMap(
-			dispatchErrorEvents.get(0).getEventData()
-		);
+		Map<String, String> flattenReceivedData2 = TestUtils.flattenMap(dispatchErrorEvents.get(0).getEventData());
 		assertEquals(5, flattenReceivedData2.size());
 		assertEquals("personalization", flattenReceivedData2.get("type"));
 		assertEquals("2003", flattenReceivedData2.get("status"));

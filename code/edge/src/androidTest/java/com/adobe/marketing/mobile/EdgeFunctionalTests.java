@@ -45,8 +45,7 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class EdgeFunctionalTests {
 
-	private static final String EXEDGE_INTERACT_URL_STRING =
-		TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
+	private static final String EXEDGE_INTERACT_URL_STRING = TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
 	private static final String EXEDGE_INTERACT_OR2_LOC_URL_STRING =
 		TestConstants.Defaults.EXEDGE_INTERACT_OR2_LOC_URL_STRING;
 	private static final String CONFIG_ID = "1234abcd-abcd-1234-5678-123456abcdef";
@@ -549,9 +548,7 @@ public class EdgeFunctionalTests {
 		);
 		assertEquals(1, resultRequests.size());
 
-		assertTrue(
-			resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING)
-		);
+		assertTrue(resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING));
 		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
 		assertNotNull(resultRequests.get(0).queryParam("requestId"));
 	}
@@ -579,9 +576,7 @@ public class EdgeFunctionalTests {
 		);
 		assertEquals(1, resultRequests.size());
 
-		assertTrue(
-			resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING)
-		);
+		assertTrue(resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING));
 		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
 		assertNotNull(resultRequests.get(0).queryParam("requestId"));
 	}
@@ -610,9 +605,7 @@ public class EdgeFunctionalTests {
 		);
 		assertEquals(1, resultRequests.size());
 
-		assertTrue(
-			resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING)
-		);
+		assertTrue(resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING));
 		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
 		assertNotNull(resultRequests.get(0).queryParam("requestId"));
 	}
@@ -642,10 +635,7 @@ public class EdgeFunctionalTests {
 		assertEquals(1, resultRequests.size());
 
 		assertTrue(
-			resultRequests
-				.get(0)
-				.getUrl()
-				.startsWith(TestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING)
+			resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING)
 		);
 		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
 		assertNotNull(resultRequests.get(0).queryParam("requestId"));
@@ -675,9 +665,7 @@ public class EdgeFunctionalTests {
 		);
 		assertEquals(1, resultRequests.size());
 
-		assertTrue(
-			resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_INT_URL_STRING)
-		);
+		assertTrue(resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_INT_URL_STRING));
 		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
 		assertNotNull(resultRequests.get(0).queryParam("requestId"));
 	}
