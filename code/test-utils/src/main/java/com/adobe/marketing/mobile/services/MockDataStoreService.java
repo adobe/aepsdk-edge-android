@@ -30,16 +30,16 @@ public class MockDataStoreService implements DataStoring {
 			return stores.get(s);
 		}
 
-		NamedCollection newStore = new FunctionalTestDataStore();
+		NamedCollection newStore = new MockTestDataStore();
 		stores.put(s, newStore);
 		return newStore;
 	}
 
-	public static class FunctionalTestDataStore implements NamedCollection {
+	public static class MockTestDataStore implements NamedCollection {
 
 		private final ConcurrentMap<String, Object> store;
 
-		public FunctionalTestDataStore() {
+		public MockTestDataStore() {
 			this.store = new ConcurrentHashMap<>();
 		}
 
