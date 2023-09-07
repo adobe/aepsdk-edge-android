@@ -330,9 +330,9 @@ public class TestHelper {
 	/**
 	 * Resets the network and event test expectations.
 	 */
-	public static void resetTestExpectations() {
+	public static void resetTestExpectations(TestResettable resettableTestNetworkService) {
 		Log.debug(LOG_TAG, LOG_SOURCE, "Resetting functional test expectations for events and network requests");
-
+		resettableTestNetworkService.reset();
 		MonitorExtension.reset();
 	}
 
