@@ -17,7 +17,7 @@ import com.adobe.marketing.mobile.services.NetworkRequest
 import com.adobe.marketing.mobile.services.NetworkServiceHelper
 import com.adobe.marketing.mobile.services.TestableNetworkRequest
 
-internal class RealNetworkService: NetworkServiceHelper() {
+internal class RealNetworkService: NetworkServiceHelper(), TestResettable {
     private val helper = TestNetworkService()
     companion object {
         private const val LOG_SOURCE = "RealNetworkService"
@@ -60,7 +60,7 @@ internal class RealNetworkService: NetworkServiceHelper() {
         return helper.getNetworkRequestsWith(url, method, timeoutMillis)
     }
 
-    fun reset() {
+    override fun reset() {
         helper.reset()
     }
 

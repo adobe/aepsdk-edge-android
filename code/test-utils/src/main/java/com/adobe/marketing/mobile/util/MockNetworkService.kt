@@ -24,7 +24,7 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-class MockNetworkService: Networking {
+class MockNetworkService: Networking, TestResettable {
     private val helper = TestNetworkService()
     // Simulating the async network service
     private val executorService: ExecutorService = Executors.newCachedThreadPool()
@@ -90,7 +90,7 @@ class MockNetworkService: Networking {
         }
     }
 
-    fun reset() {
+    override fun reset() {
         delayedResponse = 0
         helper.reset()
     }

@@ -18,6 +18,9 @@ import com.adobe.marketing.mobile.services.TestableNetworkRequest
 import org.junit.Assert
 import java.util.concurrent.TimeUnit
 
+interface TestResettable {
+	fun reset()
+}
 
 class TestNetworkService {
 	private val sentTestableNetworkRequests: MutableMap<TestableNetworkRequest, MutableList<TestableNetworkRequest>>
