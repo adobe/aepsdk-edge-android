@@ -60,7 +60,7 @@ import org.junit.runners.model.Statement;
 
 public class TestHelper {
 
-	private static final String LOG_SOURCE = "FunctionalTestHelper";
+	private static final String LOG_SOURCE = "TestHelper";
 
 	private static final TestNetworkService testNetworkService = new TestNetworkService();
 	private static Application defaultApplication;

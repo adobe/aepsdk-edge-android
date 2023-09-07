@@ -28,7 +28,7 @@ import org.json.JSONObject;
 
 public class TestUtils {
 
-	private static final String LOG_SOURCE = "FunctionalTestUtils";
+	private static final String LOG_SOURCE = "TestUtils";
 
 	private TestUtils() {}
 

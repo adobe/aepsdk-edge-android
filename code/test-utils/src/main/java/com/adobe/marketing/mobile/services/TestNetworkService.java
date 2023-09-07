@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 public class TestNetworkService implements Networking {
 
-	private static final String LOG_SOURCE = "FunctionalTestNetworkService";
+	private static final String LOG_SOURCE = "TestNetworkService";
 	private final Map<TestableNetworkRequest, List<TestableNetworkRequest>> receivedTestableNetworkRequests;
 	private final Map<TestableNetworkRequest, HttpConnecting> responseMatchers;
 	private final Map<TestableNetworkRequest, ADBCountDownLatch> expectedTestableNetworkRequests;
