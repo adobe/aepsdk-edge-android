@@ -17,21 +17,21 @@ import com.adobe.marketing.mobile.services.NetworkRequest
 import com.adobe.marketing.mobile.services.NetworkServiceHelper
 import com.adobe.marketing.mobile.services.TestableNetworkRequest
 
-internal class RealNetworkService: NetworkServiceHelper(), TestResettable {
+class RealNetworkService: NetworkServiceHelper(), TestResettable {
     private val helper = TestNetworkService()
     companion object {
         private const val LOG_SOURCE = "RealNetworkService"
     }
 
-    override fun connectAsync(networkRequest: NetworkRequest, resultCallback: NetworkCallback?) {
-        val request = TestableNetworkRequest(networkRequest)
-        helper.recordSentNetworkRequest(request)
-        super.connectAsync(networkRequest) {
-            helper.setResponseConnectionFor(request, it)
-            helper.countDownExpected(request)
+    override fun connectAsync(request: NetworkRequest, callback: NetworkCallback) {
+        val testableNetworkRequest = TestableNetworkRequest(request)
+        helper.recordSentNetworkRequest(testableNetworkRequest)
+        super.connectAsync(testableNetworkRequest) {
+            helper.setResponseConnectionFor(testableNetworkRequest, it)
+            helper.countDownExpected(testableNetworkRequest)
 
             // Call the original callback
-            resultCallback?.call(it)
+            callback?.call(it)
         }
     }
 
