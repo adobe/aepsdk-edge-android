@@ -13,14 +13,8 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
 import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
-import static com.adobe.marketing.mobile.util.TestHelper.assertNetworkRequestCount;
-import static com.adobe.marketing.mobile.util.TestHelper.createNetworkResponse;
-import static com.adobe.marketing.mobile.util.TestHelper.getFlattenedNetworkRequestBody;
-import static com.adobe.marketing.mobile.util.TestHelper.getNetworkRequestsWith;
 import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
 import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
-import static com.adobe.marketing.mobile.util.TestHelper.setExpectationNetworkRequest;
-import static com.adobe.marketing.mobile.util.TestHelper.setNetworkResponseFor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -28,7 +22,9 @@ import static org.junit.Assert.assertTrue;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
+import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
+import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
 import java.util.ArrayList;
@@ -46,6 +42,7 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class EdgePathOverwriteTests {
 
+	private static final MockNetworkService mockNetworkService = new MockNetworkService();
 	private static final String EXEDGE_MEDIA_URL_STRING = TestConstants.Defaults.EXEDGE_MEDIA_PROD_URL_STRING;
 	private static final String EXEDGE_MEDIA_OR2_LOC_URL_STRING =
 		TestConstants.Defaults.EXEDGE_MEDIA_OR2_LOC_URL_STRING;
@@ -61,6 +58,9 @@ public class EdgePathOverwriteTests {
 
 	@Before
 	public void setup() throws Exception {
+		mockNetworkService.reset();
+		ServiceProvider.getInstance().setNetworkService(mockNetworkService);
+
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1);
 		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 4);
@@ -77,15 +77,15 @@ public class EdgePathOverwriteTests {
 		latch.await();
 
 		assertExpectedEvents(false);
-		resetTestExpectations();
+		resetTestExpectations(mockNetworkService);
 	}
 
 	@Test
 	public void testSendEvent_withXDMData_withOverwritePath_overwritesRequestPathAndSendsExEdgeNetworkRequest()
 		throws Exception {
-		HttpConnecting responseConnection = createNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
-		setNetworkResponseFor(EXEDGE_MEDIA_URL_STRING, POST, responseConnection);
-		setExpectationNetworkRequest(EXEDGE_MEDIA_URL_STRING, POST, 1);
+		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
+		mockNetworkService.setMockResponseFor(EXEDGE_MEDIA_URL_STRING, POST, responseConnection);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_MEDIA_URL_STRING, POST, 1);
 
 		Event experienceEvent = new Event.Builder("test-experience-event", EventType.EDGE, EventSource.REQUEST_CONTENT)
 			.setEventData(
@@ -135,15 +135,15 @@ public class EdgePathOverwriteTests {
 		MobileCore.dispatchEvent(experienceEvent);
 
 		// verify
-		assertNetworkRequestCount();
-		List<TestableNetworkRequest> resultRequests = getNetworkRequestsWith(
+		mockNetworkService.assertAllNetworkRequestExpectations();
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_MEDIA_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
 
-		Map<String, String> resultPayload = getFlattenedNetworkRequestBody(resultRequests.get(0));
+		Map<String, String> resultPayload = mockNetworkService.getFlattenedNetworkRequestBody(resultRequests.get(0));
 		assertEquals(18, resultPayload.size());
 		assertEquals("true", resultPayload.get("meta.konductorConfig.streaming.enabled"));
 		assertEquals("\u0000", resultPayload.get("meta.konductorConfig.streaming.recordSeparator"));
@@ -180,9 +180,9 @@ public class EdgePathOverwriteTests {
 	public void testSendEvent_withXDMData_withOverwritePath_withLocationHintSet_overwritesRequestPathAndSendsExEdgeNetworkRequestWithSetLocationHint()
 		throws Exception {
 		Edge.setLocationHint("or2");
-		HttpConnecting responseConnection = createNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
-		setNetworkResponseFor(EXEDGE_MEDIA_OR2_LOC_URL_STRING, POST, responseConnection);
-		setExpectationNetworkRequest(EXEDGE_MEDIA_OR2_LOC_URL_STRING, POST, 1);
+		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
+		mockNetworkService.setMockResponseFor(EXEDGE_MEDIA_OR2_LOC_URL_STRING, POST, responseConnection);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_MEDIA_OR2_LOC_URL_STRING, POST, 1);
 
 		Event experienceEvent = new Event.Builder("test-experience-event", EventType.EDGE, EventSource.REQUEST_CONTENT)
 			.setEventData(
@@ -232,15 +232,15 @@ public class EdgePathOverwriteTests {
 		MobileCore.dispatchEvent(experienceEvent);
 
 		// verify
-		assertNetworkRequestCount();
-		List<TestableNetworkRequest> resultRequests = getNetworkRequestsWith(
+		mockNetworkService.assertAllNetworkRequestExpectations();
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_MEDIA_OR2_LOC_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
 
-		Map<String, String> resultPayload = getFlattenedNetworkRequestBody(resultRequests.get(0));
+		Map<String, String> resultPayload = mockNetworkService.getFlattenedNetworkRequestBody(resultRequests.get(0));
 		assertEquals(18, resultPayload.size());
 		assertEquals("true", resultPayload.get("meta.konductorConfig.streaming.enabled"));
 		assertEquals("\u0000", resultPayload.get("meta.konductorConfig.streaming.recordSeparator"));
