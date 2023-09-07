@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class FunctionalTestDataStoreService implements DataStoring {
+public class TestDataStoreService implements DataStoring {
 
 	private static final ConcurrentMap<String, NamedCollection> stores = new ConcurrentHashMap<>();
 
