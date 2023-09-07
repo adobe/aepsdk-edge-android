@@ -29,7 +29,7 @@ import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.MobileCoreHelper;
-import com.adobe.marketing.mobile.services.TestDataStoreService;
+import com.adobe.marketing.mobile.services.MockDataStoreService;
 import com.adobe.marketing.mobile.services.TestNetworkService;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.HttpMethod;
@@ -101,7 +101,7 @@ public class TestHelper {
 					setTestableNetworkService();
 					MobileCore.setLogLevel(LoggingMode.VERBOSE);
 					MobileCore.setApplication(defaultApplication);
-					TestDataStoreService.clearStores();
+					MockDataStoreService.clearStores();
 					clearAllDatastores();
 					Log.debug(LOG_TAG, LOG_SOURCE, "Execute '%s'", description.getMethodName());
 
@@ -115,7 +115,7 @@ public class TestHelper {
 						Log.debug(LOG_TAG, LOG_SOURCE, "Finished '%s'", description.getMethodName());
 						waitForThreads(5000); // wait to allow thread to run after test execution
 						MobileCoreHelper.resetSDK();
-						TestDataStoreService.clearStores();
+						MockDataStoreService.clearStores();
 						clearAllDatastores();
 						resetTestExpectations();
 						resetServiceProvider();
