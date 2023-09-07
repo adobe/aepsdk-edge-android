@@ -18,7 +18,9 @@ import static org.junit.Assert.assertNotNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
+import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
+import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
 import com.adobe.marketing.mobile.util.TestUtils;
@@ -36,6 +38,7 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class SampleFunctionalTests {
 
+	private static final MockNetworkService mockNetworkService = new MockNetworkService();
 	private static final Event event1 = new Event.Builder("e1", "eventType", "eventSource").build();
 	private static final Event event2 = new Event.Builder("e2", "eventType", "eventSource")
 		.setEventData(
@@ -66,6 +69,8 @@ public class SampleFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
+		mockNetworkService.reset();
+		ServiceProvider.getInstance().setNetworkService(mockNetworkService);
 		// expectations for update config request&response events
 		TestHelper.setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
 		TestHelper.setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1);
@@ -85,7 +90,7 @@ public class SampleFunctionalTests {
 
 		// Wait for and verify all expected events are received
 		TestHelper.assertExpectedEvents(false);
-		TestHelper.resetTestExpectations();
+		TestHelper.resetTestExpectations(mockNetworkService);
 	}
 
 	@Test
@@ -139,9 +144,9 @@ public class SampleFunctionalTests {
 
 	@Test
 	public void testSample_AssertNetworkRequestsCount() throws InterruptedException {
-		HttpConnecting responseConnection = TestHelper.createNetworkResponse(responseBody, 200);
-		TestHelper.setNetworkResponseFor(exEdgeInteractUrlString, POST, responseConnection);
-		TestHelper.setExpectationNetworkRequest(exEdgeInteractUrlString, POST, 2);
+		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(responseBody, 200);
+		mockNetworkService.setMockResponseFor(exEdgeInteractUrlString, POST, responseConnection);
+		mockNetworkService.setExpectationForNetworkRequest(exEdgeInteractUrlString, POST, 2);
 
 		ExperienceEvent experienceEvent1 = new ExperienceEvent.Builder()
 			.setXdmSchema(
@@ -165,7 +170,7 @@ public class SampleFunctionalTests {
 			.build();
 		Edge.sendEvent(experienceEvent2, null);
 
-		TestHelper.assertNetworkRequestCount();
+		mockNetworkService.assertAllNetworkRequestExpectations();
 	}
 
 	@Test
@@ -175,9 +180,9 @@ public class SampleFunctionalTests {
 
 		final String responseBody =
 			"\u0000{\"requestId\":\"ded17427-c993-4182-8d94-2a169c1a23e2\",\"handle\":[{\"type\":\"identity:exchange\",\"payload\":[{\"type\":\"url\",\"id\":411,\"spec\":{\"url\":\"//cm.everesttech.net/cm/dd?d_uuid=42985602780892980519057012517360930936\",\"hideReferrer\":false,\"ttlMinutes\":10080}}]}]}\n";
-		HttpConnecting responseConnection = TestHelper.createNetworkResponse(responseBody, 200);
-		TestHelper.setNetworkResponseFor(exEdgeInteractUrlString, POST, responseConnection);
-		TestHelper.setExpectationNetworkRequest(exEdgeInteractUrlString, POST, 1);
+		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(responseBody, 200);
+		mockNetworkService.setMockResponseFor(exEdgeInteractUrlString, POST, responseConnection);
+		mockNetworkService.setExpectationForNetworkRequest(exEdgeInteractUrlString, POST, 1);
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
 			.setXdmSchema(
@@ -191,10 +196,13 @@ public class SampleFunctionalTests {
 			.build();
 		Edge.sendEvent(experienceEvent, null);
 
-		List<TestableNetworkRequest> requests = TestHelper.getNetworkRequestsWith(exEdgeInteractUrlString, POST);
+		List<TestableNetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
+			exEdgeInteractUrlString,
+			POST
+		);
 		assertEquals(1, requests.size());
 
-		Map<String, String> flattendRequestBody = TestHelper.getFlattenedNetworkRequestBody(requests.get(0));
+		Map<String, String> flattendRequestBody = mockNetworkService.getFlattenedNetworkRequestBody(requests.get(0));
 		assertEquals("testType", flattendRequestBody.get("events[0].xdm.eventType"));
 
 		TestHelper.assertExpectedEvents(true);
