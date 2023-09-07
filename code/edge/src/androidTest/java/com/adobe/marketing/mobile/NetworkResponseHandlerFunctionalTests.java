@@ -11,10 +11,10 @@
 
 package com.adobe.marketing.mobile;
 
-import static com.adobe.marketing.mobile.util.FunctionalTestHelper.assertExpectedEvents;
-import static com.adobe.marketing.mobile.util.FunctionalTestHelper.getDispatchedEventsWith;
-import static com.adobe.marketing.mobile.util.FunctionalTestHelper.resetTestExpectations;
-import static com.adobe.marketing.mobile.util.FunctionalTestHelper.setExpectationEvent;
+import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
+import static com.adobe.marketing.mobile.util.TestHelper.getDispatchedEventsWith;
+import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
+import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -24,7 +24,7 @@ import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.TestDataStoreService;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.TestConstants;
-import com.adobe.marketing.mobile.util.FunctionalTestHelper;
+import com.adobe.marketing.mobile.util.TestHelper;
 import com.adobe.marketing.mobile.util.FunctionalTestUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -73,9 +73,9 @@ public class NetworkResponseHandlerFunctionalTests {
 
 	@Rule
 	public RuleChain rule = RuleChain
-		.outerRule(new FunctionalTestHelper.LogOnErrorRule())
-		.around(new FunctionalTestHelper.SetupCoreRule())
-		.around(new FunctionalTestHelper.RegisterMonitorExtensionRule());
+		.outerRule(new TestHelper.LogOnErrorRule())
+		.around(new TestHelper.SetupCoreRule())
+		.around(new TestHelper.RegisterMonitorExtensionRule());
 
 	@Before
 	public void setup() throws Exception {

@@ -20,7 +20,7 @@ import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.TestConstants;
-import com.adobe.marketing.mobile.util.FunctionalTestHelper;
+import com.adobe.marketing.mobile.util.TestHelper;
 import com.adobe.marketing.mobile.util.FunctionalTestUtils;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -60,17 +60,17 @@ public class SampleFunctionalTests {
 
 	@Rule
 	public RuleChain rule = RuleChain
-		.outerRule(new FunctionalTestHelper.LogOnErrorRule())
-		.around(new FunctionalTestHelper.SetupCoreRule())
-		.around(new FunctionalTestHelper.RegisterMonitorExtensionRule());
+		.outerRule(new TestHelper.LogOnErrorRule())
+		.around(new TestHelper.SetupCoreRule())
+		.around(new TestHelper.RegisterMonitorExtensionRule());
 
 	@Before
 	public void setup() throws Exception {
 		// expectations for update config request&response events
-		FunctionalTestHelper.setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
-		FunctionalTestHelper.setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1);
+		TestHelper.setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
+		TestHelper.setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1);
 		// hub shared state update Edge, EventHub, Configuration, and Identity
-		FunctionalTestHelper.setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 4);
+		TestHelper.setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 4);
 
 		HashMap<String, Object> config = new HashMap<String, Object>() {
 			{
@@ -84,24 +84,24 @@ public class SampleFunctionalTests {
 		latch.await();
 
 		// Wait for and verify all expected events are received
-		FunctionalTestHelper.assertExpectedEvents(false);
-		FunctionalTestHelper.resetTestExpectations();
+		TestHelper.assertExpectedEvents(false);
+		TestHelper.resetTestExpectations();
 	}
 
 	@Test
 	public void testSample_AssertUnexpectedEvents() throws InterruptedException {
 		// set event expectations specifying the event type, source and the count (count should be > 0)
-		FunctionalTestHelper.setExpectationEvent("eventType", "eventSource", 2);
+		TestHelper.setExpectationEvent("eventType", "eventSource", 2);
 		MobileCore.dispatchEvent(event1);
 		MobileCore.dispatchEvent(event1);
 
 		// assert that no unexpected event was received
-		FunctionalTestHelper.assertUnexpectedEvents();
+		TestHelper.assertUnexpectedEvents();
 	}
 
 	@Test
 	public void testSample_AssertExpectedEvents() throws InterruptedException {
-		FunctionalTestHelper.setExpectationEvent("eventType", "eventSource", 2);
+		TestHelper.setExpectationEvent("eventType", "eventSource", 2);
 		Event unexpectedEvent = new Event.Builder("e3", "unexpectedType", "unexpectedSource")
 			.setEventData(
 				new HashMap<String, Object>() {
@@ -117,7 +117,7 @@ public class SampleFunctionalTests {
 
 		// assert all expected events were received and ignore any unexpected events
 		// when ignoreUnexpectedEvents is set on false, an extra assertUnexpectedEvents step is performed
-		FunctionalTestHelper.assertExpectedEvents(true);
+		TestHelper.assertExpectedEvents(true);
 	}
 
 	@Test
@@ -127,7 +127,7 @@ public class SampleFunctionalTests {
 		MobileCore.dispatchEvent(event3); // unexpectedType and unexpectedSource
 
 		// assert on count and data for events of a certain type, source
-		List<Event> dispatchedEvents = FunctionalTestHelper.getDispatchedEventsWith("eventType", "eventSource");
+		List<Event> dispatchedEvents = TestHelper.getDispatchedEventsWith("eventType", "eventSource");
 
 		assertEquals(2, dispatchedEvents.size());
 
@@ -139,9 +139,9 @@ public class SampleFunctionalTests {
 
 	@Test
 	public void testSample_AssertNetworkRequestsCount() throws InterruptedException {
-		HttpConnecting responseConnection = FunctionalTestHelper.createNetworkResponse(responseBody, 200);
-		FunctionalTestHelper.setNetworkResponseFor(exEdgeInteractUrlString, POST, responseConnection);
-		FunctionalTestHelper.setExpectationNetworkRequest(exEdgeInteractUrlString, POST, 2);
+		HttpConnecting responseConnection = TestHelper.createNetworkResponse(responseBody, 200);
+		TestHelper.setNetworkResponseFor(exEdgeInteractUrlString, POST, responseConnection);
+		TestHelper.setExpectationNetworkRequest(exEdgeInteractUrlString, POST, 2);
 
 		ExperienceEvent experienceEvent1 = new ExperienceEvent.Builder()
 			.setXdmSchema(
@@ -165,19 +165,19 @@ public class SampleFunctionalTests {
 			.build();
 		Edge.sendEvent(experienceEvent2, null);
 
-		FunctionalTestHelper.assertNetworkRequestCount();
+		TestHelper.assertNetworkRequestCount();
 	}
 
 	@Test
 	public void testSample_AssertNetworkRequestAndResponseEvent() throws InterruptedException {
-		FunctionalTestHelper.setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 1);
-		FunctionalTestHelper.setExpectationEvent(EventType.EDGE, "identity:exchange", 1);
+		TestHelper.setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 1);
+		TestHelper.setExpectationEvent(EventType.EDGE, "identity:exchange", 1);
 
 		final String responseBody =
 			"\u0000{\"requestId\":\"ded17427-c993-4182-8d94-2a169c1a23e2\",\"handle\":[{\"type\":\"identity:exchange\",\"payload\":[{\"type\":\"url\",\"id\":411,\"spec\":{\"url\":\"//cm.everesttech.net/cm/dd?d_uuid=42985602780892980519057012517360930936\",\"hideReferrer\":false,\"ttlMinutes\":10080}}]}]}\n";
-		HttpConnecting responseConnection = FunctionalTestHelper.createNetworkResponse(responseBody, 200);
-		FunctionalTestHelper.setNetworkResponseFor(exEdgeInteractUrlString, POST, responseConnection);
-		FunctionalTestHelper.setExpectationNetworkRequest(exEdgeInteractUrlString, POST, 1);
+		HttpConnecting responseConnection = TestHelper.createNetworkResponse(responseBody, 200);
+		TestHelper.setNetworkResponseFor(exEdgeInteractUrlString, POST, responseConnection);
+		TestHelper.setExpectationNetworkRequest(exEdgeInteractUrlString, POST, 1);
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
 			.setXdmSchema(
@@ -191,15 +191,15 @@ public class SampleFunctionalTests {
 			.build();
 		Edge.sendEvent(experienceEvent, null);
 
-		List<TestableNetworkRequest> requests = FunctionalTestHelper.getNetworkRequestsWith(
+		List<TestableNetworkRequest> requests = TestHelper.getNetworkRequestsWith(
 			exEdgeInteractUrlString,
 			POST
 		);
 		assertEquals(1, requests.size());
 
-		Map<String, String> flattendRequestBody = FunctionalTestHelper.getFlattenedNetworkRequestBody(requests.get(0));
+		Map<String, String> flattendRequestBody = TestHelper.getFlattenedNetworkRequestBody(requests.get(0));
 		assertEquals("testType", flattendRequestBody.get("events[0].xdm.eventType"));
 
-		FunctionalTestHelper.assertExpectedEvents(true);
+		TestHelper.assertExpectedEvents(true);
 	}
 }

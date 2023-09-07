@@ -12,7 +12,7 @@
 package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
-import static com.adobe.marketing.mobile.util.FunctionalTestHelper.*;
+import static com.adobe.marketing.mobile.util.TestHelper.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -22,7 +22,7 @@ import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.TestConstants;
-import com.adobe.marketing.mobile.util.FunctionalTestHelper;
+import com.adobe.marketing.mobile.util.TestHelper;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -47,9 +47,9 @@ public class EdgePathOverwriteTests {
 
 	@Rule
 	public RuleChain rule = RuleChain
-		.outerRule(new FunctionalTestHelper.LogOnErrorRule())
-		.around(new FunctionalTestHelper.SetupCoreRule())
-		.around(new FunctionalTestHelper.RegisterMonitorExtensionRule());
+		.outerRule(new TestHelper.LogOnErrorRule())
+		.around(new TestHelper.SetupCoreRule())
+		.around(new TestHelper.RegisterMonitorExtensionRule());
 
 	@Before
 	public void setup() throws Exception {

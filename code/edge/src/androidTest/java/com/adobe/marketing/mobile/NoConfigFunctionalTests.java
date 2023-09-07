@@ -11,7 +11,7 @@
 
 package com.adobe.marketing.mobile;
 
-import static com.adobe.marketing.mobile.util.FunctionalTestHelper.*;
+import static com.adobe.marketing.mobile.util.TestHelper.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;

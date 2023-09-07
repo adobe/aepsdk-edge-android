@@ -58,7 +58,7 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-public class FunctionalTestHelper {
+public class TestHelper {
 
 	private static final String LOG_SOURCE = "FunctionalTestHelper";
 
@@ -827,7 +827,7 @@ public class FunctionalTestHelper {
 				add("AdobeMobile_ConfigState");
 			}
 		};
-		final Application application = FunctionalTestHelper.defaultApplication;
+		final Application application = TestHelper.defaultApplication;
 
 		if (application == null) {
 			fail("FunctionalTestHelper - Unable to clear datastores. Application is null, fast failing the test case.");
