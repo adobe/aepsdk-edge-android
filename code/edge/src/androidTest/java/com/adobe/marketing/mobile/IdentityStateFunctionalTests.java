@@ -12,7 +12,18 @@
 package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
-import static com.adobe.marketing.mobile.util.FunctionalTestHelper.*;
+import static com.adobe.marketing.mobile.util.TestHelper.LogOnErrorRule;
+import static com.adobe.marketing.mobile.util.TestHelper.RegisterMonitorExtensionRule;
+import static com.adobe.marketing.mobile.util.TestHelper.SetupCoreRule;
+import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
+import static com.adobe.marketing.mobile.util.TestHelper.assertNetworkRequestCount;
+import static com.adobe.marketing.mobile.util.TestHelper.createNetworkResponse;
+import static com.adobe.marketing.mobile.util.TestHelper.getFlattenedNetworkRequestBody;
+import static com.adobe.marketing.mobile.util.TestHelper.getNetworkRequestsWith;
+import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
+import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
+import static com.adobe.marketing.mobile.util.TestHelper.setExpectationNetworkRequest;
+import static com.adobe.marketing.mobile.util.TestHelper.setNetworkResponseFor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -21,8 +32,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.FakeIdentity;
-import com.adobe.marketing.mobile.util.FunctionalTestConstants;
 import com.adobe.marketing.mobile.util.JSONUtils;
+import com.adobe.marketing.mobile.util.TestConstants;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -38,8 +49,7 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class IdentityStateFunctionalTests {
 
-	private static final String EXEDGE_INTERACT_URL_STRING =
-		FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
+	private static final String EXEDGE_INTERACT_URL_STRING = TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
 	private static final String CONFIG_ID = "1234abcd-abcd-1234-5678-123456abcdef";
 
 	@Rule

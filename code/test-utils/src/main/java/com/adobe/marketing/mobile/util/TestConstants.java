@@ -11,7 +11,7 @@
 
 package com.adobe.marketing.mobile.util;
 
-public class FunctionalTestConstants {
+public class TestConstants {
 
 	public static final String EVENT_NAME_REQUEST_CONTENT = "AEP Request Event";
 	public static final String EVENT_NAME_RESPONSE_CONTENT = "AEP Response Event Handle";
@@ -135,5 +135,5 @@ public class FunctionalTestConstants {
 		private NetworkKeys() {}
 	}
 
-	private FunctionalTestConstants() {}
+	private TestConstants() {}
 }

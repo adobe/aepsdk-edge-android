@@ -11,7 +11,18 @@
 
 package com.adobe.marketing.mobile;
 
-import static com.adobe.marketing.mobile.util.FunctionalTestHelper.*;
+import static com.adobe.marketing.mobile.util.TestHelper.LogOnErrorRule;
+import static com.adobe.marketing.mobile.util.TestHelper.RegisterMonitorExtensionRule;
+import static com.adobe.marketing.mobile.util.TestHelper.SetupCoreRule;
+import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
+import static com.adobe.marketing.mobile.util.TestHelper.assertNetworkRequestCount;
+import static com.adobe.marketing.mobile.util.TestHelper.createNetworkResponse;
+import static com.adobe.marketing.mobile.util.TestHelper.getNetworkRequestsWith;
+import static com.adobe.marketing.mobile.util.TestHelper.getSharedStateFor;
+import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
+import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
+import static com.adobe.marketing.mobile.util.TestHelper.setExpectationNetworkRequest;
+import static com.adobe.marketing.mobile.util.TestHelper.setNetworkResponseFor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -21,9 +32,9 @@ import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.FakeIdentity;
-import com.adobe.marketing.mobile.util.FunctionalTestConstants;
-import com.adobe.marketing.mobile.util.FunctionalTestUtils;
 import com.adobe.marketing.mobile.util.JSONUtils;
+import com.adobe.marketing.mobile.util.TestConstants;
+import com.adobe.marketing.mobile.util.TestUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -41,8 +52,7 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class NoConfigFunctionalTests {
 
-	private static final String EXEDGE_INTERACT_URL_STRING =
-		FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
+	private static final String EXEDGE_INTERACT_URL_STRING = TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
 
 	@Rule
 	public RuleChain rule = RuleChain
@@ -67,8 +77,8 @@ public class NoConfigFunctionalTests {
 	public void testHandleExperienceEventRequest_withPendingConfigurationState_expectEventsQueueIsBlocked()
 		throws Exception {
 		Map<String, Object> configState = getSharedStateFor(
-			FunctionalTestConstants.SharedState.CONFIGURATION,
-			FunctionalTestConstants.Defaults.WAIT_SHARED_STATE_TIMEOUT_MS
+			TestConstants.SharedState.CONFIGURATION,
+			TestConstants.Defaults.WAIT_SHARED_STATE_TIMEOUT_MS
 		);
 		assertNull(configState); // verify Configuration state is pending
 
@@ -187,7 +197,7 @@ public class NoConfigFunctionalTests {
 		assertEquals("personalization:decisions", receivedHandles.get(0).getType());
 		assertEquals(1, receivedHandles.get(0).getPayload().size());
 
-		Map<String, String> handle1 = FunctionalTestUtils.flattenMap(receivedHandles.get(0).getPayload().get(0));
+		Map<String, String> handle1 = TestUtils.flattenMap(receivedHandles.get(0).getPayload().get(0));
 
 		assertEquals(4, handle1.size());
 		assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9", handle1.get("id"));
@@ -199,7 +209,7 @@ public class NoConfigFunctionalTests {
 		assertEquals("identity:exchange", receivedHandles.get(1).getType());
 		assertEquals(1, receivedHandles.get(1).getPayload().size());
 
-		Map<String, String> handle2 = FunctionalTestUtils.flattenMap(receivedHandles.get(1).getPayload().get(0));
+		Map<String, String> handle2 = TestUtils.flattenMap(receivedHandles.get(1).getPayload().get(0));
 
 		assertEquals(5, handle2.size());
 		assertEquals("411", handle2.get("id"));

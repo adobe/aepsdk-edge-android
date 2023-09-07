@@ -11,7 +11,7 @@
 
 package com.adobe.marketing.mobile.services;
 
-import static com.adobe.marketing.mobile.util.FunctionalTestConstants.LOG_TAG;
+import static com.adobe.marketing.mobile.util.TestConstants.LOG_TAG;
 
 import java.net.MalformedURLException;
 import java.net.URL;

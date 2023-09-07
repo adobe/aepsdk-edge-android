@@ -9,11 +9,17 @@
   governing permissions and limitations under the License.
 */
 
-package com.adobe.marketing.mobile.services;
+package com.adobe.marketing.mobile.util;
 
-import static com.adobe.marketing.mobile.util.FunctionalTestConstants.LOG_TAG;
-
+import com.adobe.marketing.mobile.services.HttpConnecting;
+import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.services.NetworkCallback;
+import com.adobe.marketing.mobile.services.NetworkRequest;
+import com.adobe.marketing.mobile.services.Networking;
+import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.ADBCountDownLatch;
+import com.adobe.marketing.mobile.util.TestConstants;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -25,9 +31,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class FunctionalTestNetworkService implements Networking {
+public class TestNetworkService implements Networking {
 
-	private static final String LOG_SOURCE = "FunctionalTestNetworkService";
+	private static final String LOG_SOURCE = "TestNetworkService";
 	private final Map<TestableNetworkRequest, List<TestableNetworkRequest>> receivedTestableNetworkRequests;
 	private final Map<TestableNetworkRequest, HttpConnecting> responseMatchers;
 	private final Map<TestableNetworkRequest, ADBCountDownLatch> expectedTestableNetworkRequests;
@@ -64,7 +70,7 @@ public class FunctionalTestNetworkService implements Networking {
 		public void close() {}
 	};
 
-	public FunctionalTestNetworkService() {
+	public TestNetworkService() {
 		receivedTestableNetworkRequests = new HashMap<>();
 		responseMatchers = new HashMap<>();
 		expectedTestableNetworkRequests = new HashMap<>();
@@ -72,7 +78,7 @@ public class FunctionalTestNetworkService implements Networking {
 	}
 
 	public void reset() {
-		Log.trace(LOG_TAG, LOG_SOURCE, "Reset received and expected network requests.");
+		Log.trace(TestConstants.LOG_TAG, LOG_SOURCE, "Reset received and expected network requests.");
 		receivedTestableNetworkRequests.clear();
 		responseMatchers.clear();
 		expectedTestableNetworkRequests.clear();
@@ -129,7 +135,7 @@ public class FunctionalTestNetworkService implements Networking {
 	@Override
 	public void connectAsync(NetworkRequest networkRequest, NetworkCallback resultCallback) {
 		Log.trace(
-			LOG_TAG,
+			TestConstants.LOG_TAG,
 			LOG_SOURCE,
 			"Received connectUrlAsync to URL '%s' and HttpMethod '%s'.",
 			networkRequest.getUrl(),

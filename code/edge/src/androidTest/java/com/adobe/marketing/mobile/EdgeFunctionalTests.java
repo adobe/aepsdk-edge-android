@@ -12,7 +12,22 @@
 package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
-import static com.adobe.marketing.mobile.util.FunctionalTestHelper.*;
+import static com.adobe.marketing.mobile.util.TestHelper.LogOnErrorRule;
+import static com.adobe.marketing.mobile.util.TestHelper.RegisterMonitorExtensionRule;
+import static com.adobe.marketing.mobile.util.TestHelper.SetupCoreRule;
+import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
+import static com.adobe.marketing.mobile.util.TestHelper.assertNetworkRequestCount;
+import static com.adobe.marketing.mobile.util.TestHelper.assertUnexpectedEvents;
+import static com.adobe.marketing.mobile.util.TestHelper.createNetworkResponse;
+import static com.adobe.marketing.mobile.util.TestHelper.getDispatchedEventsWith;
+import static com.adobe.marketing.mobile.util.TestHelper.getFlattenedNetworkRequestBody;
+import static com.adobe.marketing.mobile.util.TestHelper.getNetworkRequestsWith;
+import static com.adobe.marketing.mobile.util.TestHelper.getSharedStateFor;
+import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
+import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
+import static com.adobe.marketing.mobile.util.TestHelper.setExpectationNetworkRequest;
+import static com.adobe.marketing.mobile.util.TestHelper.setNetworkResponseFor;
+import static com.adobe.marketing.mobile.util.TestHelper.sleep;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -24,8 +39,8 @@ import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
-import com.adobe.marketing.mobile.util.FunctionalTestConstants;
-import com.adobe.marketing.mobile.util.FunctionalTestUtils;
+import com.adobe.marketing.mobile.util.TestConstants;
+import com.adobe.marketing.mobile.util.TestUtils;
 import com.adobe.marketing.mobile.util.TestXDMSchema;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,10 +60,9 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class EdgeFunctionalTests {
 
-	private static final String EXEDGE_INTERACT_URL_STRING =
-		FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
+	private static final String EXEDGE_INTERACT_URL_STRING = TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
 	private static final String EXEDGE_INTERACT_OR2_LOC_URL_STRING =
-		FunctionalTestConstants.Defaults.EXEDGE_INTERACT_OR2_LOC_URL_STRING;
+		TestConstants.Defaults.EXEDGE_INTERACT_OR2_LOC_URL_STRING;
 	private static final String CONFIG_ID = "1234abcd-abcd-1234-5678-123456abcdef";
 	private static final String DEFAULT_RESPONSE_STRING = "\u0000{\"test\": \"json\"}";
 	private static final int TIMEOUT_MILLIS = 5000;
@@ -136,7 +150,7 @@ public class EdgeFunctionalTests {
 		Map<String, Object> eventData = resultEvents.get(0).getEventData();
 		assertNotNull(eventData);
 
-		Map<String, String> flattenedData = FunctionalTestUtils.flattenMap(eventData);
+		Map<String, String> flattenedData = TestUtils.flattenMap(eventData);
 		assertEquals(7, flattenedData.size());
 		assertEquals("xdm", flattenedData.get("xdm.testString"));
 		assertEquals("10", flattenedData.get("xdm.testInt"));
@@ -196,7 +210,7 @@ public class EdgeFunctionalTests {
 		Map<String, Object> eventData = resultEvents.get(0).getEventData();
 		assertNotNull(eventData);
 
-		Map<String, String> flattenedData = FunctionalTestUtils.flattenMap(eventData);
+		Map<String, String> flattenedData = TestUtils.flattenMap(eventData);
 		assertEquals(8, flattenedData.size());
 		assertEquals("xdm", flattenedData.get("xdm.testString"));
 		assertEquals("stringValue", flattenedData.get("data.testString"));
@@ -231,7 +245,7 @@ public class EdgeFunctionalTests {
 		Map<String, Object> eventData = resultEvents.get(0).getEventData();
 		assertNotNull(eventData);
 
-		Map<String, String> flattenedData = FunctionalTestUtils.flattenMap(eventData);
+		Map<String, String> flattenedData = TestUtils.flattenMap(eventData);
 		assertEquals(1, flattenedData.size());
 		assertEquals("xdm", flattenedData.get("xdm.testString"));
 	}
@@ -536,22 +550,20 @@ public class EdgeFunctionalTests {
 
 	@Test
 	public void testSendEvent_withConfigurableEndpoint_withEmptyConfig_usesProductionEndpoint() throws Exception {
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING, POST, 1);
+		setExpectationNetworkRequest(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING, POST, 1);
 
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		// verify
 		assertNetworkRequestCount();
 		List<TestableNetworkRequest> resultRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING,
+			TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
 
-		assertTrue(
-			resultRequests.get(0).getUrl().startsWith(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING)
-		);
+		assertTrue(resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING));
 		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
 		assertNotNull(resultRequests.get(0).queryParam("requestId"));
 	}
@@ -566,22 +578,20 @@ public class EdgeFunctionalTests {
 			}
 		);
 
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING, POST, 1);
+		setExpectationNetworkRequest(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING, POST, 1);
 
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		// verify
 		assertNetworkRequestCount();
 		List<TestableNetworkRequest> resultRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING,
+			TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
 
-		assertTrue(
-			resultRequests.get(0).getUrl().startsWith(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING)
-		);
+		assertTrue(resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING));
 		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
 		assertNotNull(resultRequests.get(0).queryParam("requestId"));
 	}
@@ -597,22 +607,20 @@ public class EdgeFunctionalTests {
 			}
 		);
 
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING, POST, 1);
+		setExpectationNetworkRequest(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING, POST, 1);
 
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		// verify
 		assertNetworkRequestCount();
 		List<TestableNetworkRequest> resultRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING,
+			TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
 
-		assertTrue(
-			resultRequests.get(0).getUrl().startsWith(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING)
-		);
+		assertTrue(resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING));
 		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
 		assertNotNull(resultRequests.get(0).queryParam("requestId"));
 	}
@@ -628,24 +636,21 @@ public class EdgeFunctionalTests {
 			}
 		);
 
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING, POST, 1);
+		setExpectationNetworkRequest(TestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING, POST, 1);
 
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		// verify
 		assertNetworkRequestCount();
 		List<TestableNetworkRequest> resultRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING,
+			TestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
 
 		assertTrue(
-			resultRequests
-				.get(0)
-				.getUrl()
-				.startsWith(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING)
+			resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING)
 		);
 		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
 		assertNotNull(resultRequests.get(0).queryParam("requestId"));
@@ -662,22 +667,20 @@ public class EdgeFunctionalTests {
 			}
 		);
 
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_INT_URL_STRING, POST, 1);
+		setExpectationNetworkRequest(TestConstants.Defaults.EXEDGE_INTERACT_INT_URL_STRING, POST, 1);
 
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		// verify
 		assertNetworkRequestCount();
 		List<TestableNetworkRequest> resultRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_INTERACT_INT_URL_STRING,
+			TestConstants.Defaults.EXEDGE_INTERACT_INT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
 
-		assertTrue(
-			resultRequests.get(0).getUrl().startsWith(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_INT_URL_STRING)
-		);
+		assertTrue(resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_INT_URL_STRING));
 		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
 		assertNotNull(resultRequests.get(0).queryParam("requestId"));
 	}
@@ -899,7 +902,7 @@ public class EdgeFunctionalTests {
 		Map<String, Object> responseEventData = responseEvents.get(0).getEventData();
 		assertNotNull(responseEventData);
 
-		Map<String, String> flattenedEventData = FunctionalTestUtils.flattenMap(responseEventData);
+		Map<String, String> flattenedEventData = TestUtils.flattenMap(responseEventData);
 		assertEquals(7, flattenedEventData.size());
 		assertEquals("personalization:decisions", flattenedEventData.get("type"));
 		assertEquals(
@@ -961,7 +964,7 @@ public class EdgeFunctionalTests {
 		Map<String, Object> responseEventData = errorResponseEvents.get(0).getEventData();
 		assertNotNull(responseEventData);
 
-		Map<String, String> flattenedEventData = FunctionalTestUtils.flattenMap(responseEventData);
+		Map<String, String> flattenedEventData = TestUtils.flattenMap(responseEventData);
 		assertEquals(4, flattenedEventData.size());
 		assertEquals("personalization:0", flattenedEventData.get("code"));
 		assertEquals("Failed due to unrecoverable system error", flattenedEventData.get("message"));
@@ -1089,7 +1092,7 @@ public class EdgeFunctionalTests {
 	public void testSetLocationHint_withValueHint_createsSharedState() throws InterruptedException {
 		Edge.setLocationHint("or2");
 		sleep(500); // wait for state creation
-		Map<String, Object> sharedState = getSharedStateFor(FunctionalTestConstants.SharedState.EDGE, 1000);
+		Map<String, Object> sharedState = getSharedStateFor(TestConstants.SharedState.EDGE, 1000);
 		assertNotNull(sharedState);
 		assertEquals("or2", sharedState.get("locationHint"));
 	}
@@ -1415,7 +1418,7 @@ public class EdgeFunctionalTests {
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(2, resultEvents.size());
 
-		Map<String, String> eventData1 = FunctionalTestUtils.flattenMap(resultEvents.get(0).getEventData());
+		Map<String, String> eventData1 = TestUtils.flattenMap(resultEvents.get(0).getEventData());
 		assertEquals(5, eventData1.size());
 		assertEquals("504", eventData1.get("status"));
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0201-504", eventData1.get("type"));
@@ -1426,7 +1429,7 @@ public class EdgeFunctionalTests {
 		assertEquals(requestEvents.get(0).getUniqueIdentifier(), eventData1.get("requestEventId"));
 		assertEquals(requestEvents.get(0).getUniqueIdentifier(), resultEvents.get(0).getParentID());
 
-		Map<String, String> eventData2 = FunctionalTestUtils.flattenMap(resultEvents.get(1).getEventData());
+		Map<String, String> eventData2 = TestUtils.flattenMap(resultEvents.get(1).getEventData());
 		assertEquals(7, eventData2.size());
 		assertEquals("200", eventData2.get("status"));
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0204-200", eventData2.get("type"));
@@ -1478,7 +1481,7 @@ public class EdgeFunctionalTests {
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, resultEvents.size());
 
-		Map<String, String> eventData = FunctionalTestUtils.flattenMap(resultEvents.get(0).getEventData());
+		Map<String, String> eventData = TestUtils.flattenMap(resultEvents.get(0).getEventData());
 
 		assertEquals(11, eventData.size());
 		assertEquals("422", eventData.get("status"));

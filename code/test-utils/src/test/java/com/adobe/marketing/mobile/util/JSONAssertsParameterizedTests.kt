@@ -8,11 +8,11 @@
   OF ANY KIND, either express or implied. See the License for the specific language
   governing permissions and limitations under the License.
 */
-package com.adobe.marketing.tester.util
+package com.adobe.marketing.mobile.util
 
-import com.adobe.marketing.tester.util.JSONAsserts.assertEqual
-import com.adobe.marketing.tester.util.JSONAsserts.assertExactMatch
-import com.adobe.marketing.tester.util.JSONAsserts.assertTypeMatch
+import com.adobe.marketing.mobile.util.JSONAsserts.assertEqual
+import com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch
+import com.adobe.marketing.mobile.util.JSONAsserts.assertTypeMatch
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert

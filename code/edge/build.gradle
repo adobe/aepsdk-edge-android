@@ -253,6 +253,5 @@ dependencies {
 
     androidTestImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
-    androidTestImplementation 'com.fasterxml.jackson.core:jackson-databind:2.12.7'
     androidTestImplementation project(":test-utils")
 }

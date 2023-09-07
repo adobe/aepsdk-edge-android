@@ -12,7 +12,15 @@
 package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
-import static com.adobe.marketing.mobile.util.FunctionalTestHelper.*;
+import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
+import static com.adobe.marketing.mobile.util.TestHelper.assertNetworkRequestCount;
+import static com.adobe.marketing.mobile.util.TestHelper.createNetworkResponse;
+import static com.adobe.marketing.mobile.util.TestHelper.getFlattenedNetworkRequestBody;
+import static com.adobe.marketing.mobile.util.TestHelper.getNetworkRequestsWith;
+import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
+import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
+import static com.adobe.marketing.mobile.util.TestHelper.setExpectationNetworkRequest;
+import static com.adobe.marketing.mobile.util.TestHelper.setNetworkResponseFor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -21,8 +29,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
-import com.adobe.marketing.mobile.util.FunctionalTestConstants;
-import com.adobe.marketing.mobile.util.FunctionalTestHelper;
+import com.adobe.marketing.mobile.util.TestConstants;
+import com.adobe.marketing.mobile.util.TestHelper;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -38,18 +46,18 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class EdgePathOverwriteTests {
 
-	private static final String EXEDGE_MEDIA_URL_STRING = FunctionalTestConstants.Defaults.EXEDGE_MEDIA_PROD_URL_STRING;
+	private static final String EXEDGE_MEDIA_URL_STRING = TestConstants.Defaults.EXEDGE_MEDIA_PROD_URL_STRING;
 	private static final String EXEDGE_MEDIA_OR2_LOC_URL_STRING =
-		FunctionalTestConstants.Defaults.EXEDGE_MEDIA_OR2_LOC_URL_STRING;
+		TestConstants.Defaults.EXEDGE_MEDIA_OR2_LOC_URL_STRING;
 	private static final String CONFIG_ID = "1234abcd-abcd-1234-5678-123456abcdef";
 	private static final String DEFAULT_RESPONSE_STRING = "\u0000{\"test\": \"json\"}";
 	private static final int TIMEOUT_MILLIS = 5000;
 
 	@Rule
 	public RuleChain rule = RuleChain
-		.outerRule(new FunctionalTestHelper.LogOnErrorRule())
-		.around(new FunctionalTestHelper.SetupCoreRule())
-		.around(new FunctionalTestHelper.RegisterMonitorExtensionRule());
+		.outerRule(new TestHelper.LogOnErrorRule())
+		.around(new TestHelper.SetupCoreRule())
+		.around(new TestHelper.RegisterMonitorExtensionRule());
 
 	@Before
 	public void setup() throws Exception {

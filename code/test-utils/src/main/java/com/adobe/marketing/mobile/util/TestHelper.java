@@ -11,7 +11,7 @@
 
 package com.adobe.marketing.mobile.util;
 
-import static com.adobe.marketing.mobile.util.FunctionalTestConstants.LOG_TAG;
+import static com.adobe.marketing.mobile.util.TestConstants.LOG_TAG;
 import static com.adobe.marketing.mobile.util.MonitorExtension.EventSpec;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -29,8 +29,7 @@ import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.MobileCoreHelper;
-import com.adobe.marketing.mobile.services.FunctionalTestDataStoreService;
-import com.adobe.marketing.mobile.services.FunctionalTestNetworkService;
+import com.adobe.marketing.mobile.services.MockDataStoreService;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.services.Log;
@@ -58,11 +57,11 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-public class FunctionalTestHelper {
+public class TestHelper {
 
-	private static final String LOG_SOURCE = "FunctionalTestHelper";
+	private static final String LOG_SOURCE = "TestHelper";
 
-	private static final FunctionalTestNetworkService testNetworkService = new FunctionalTestNetworkService();
+	private static final TestNetworkService testNetworkService = new TestNetworkService();
 	private static Application defaultApplication;
 
 	// List of threads to wait for after test execution
@@ -101,7 +100,7 @@ public class FunctionalTestHelper {
 					setTestableNetworkService();
 					MobileCore.setLogLevel(LoggingMode.VERBOSE);
 					MobileCore.setApplication(defaultApplication);
-					FunctionalTestDataStoreService.clearStores();
+					MockDataStoreService.clearStores();
 					clearAllDatastores();
 					Log.debug(LOG_TAG, LOG_SOURCE, "Execute '%s'", description.getMethodName());
 
@@ -115,7 +114,7 @@ public class FunctionalTestHelper {
 						Log.debug(LOG_TAG, LOG_SOURCE, "Finished '%s'", description.getMethodName());
 						waitForThreads(5000); // wait to allow thread to run after test execution
 						MobileCoreHelper.resetSDK();
-						FunctionalTestDataStoreService.clearStores();
+						MockDataStoreService.clearStores();
 						clearAllDatastores();
 						resetTestExpectations();
 						resetServiceProvider();
@@ -128,7 +127,7 @@ public class FunctionalTestHelper {
 	/**
 	 * Reset the {@link MobileCore} and {@link ServiceProvider} without clearing persistence or database.
 	 * Initializes {@code MobileCore} and {@code ServiceProvider} for testing after resetting by,
-	 * setting the {@link FunctionalTestNetworkService} to the {@code ServiceProvider}, and setting
+	 * setting the {@link TestNetworkService} to the {@code ServiceProvider}, and setting
 	 * the instrumented test application to {@code MobileCore}.
 	 * This method does not clear the shared preferences, application cache directory, or database directory.
 	 */
@@ -383,7 +382,7 @@ public class FunctionalTestHelper {
 		for (Map.Entry<EventSpec, ADBCountDownLatch> expected : expectedEvents.entrySet()) {
 			boolean awaitResult = expected
 				.getValue()
-				.await(FunctionalTestConstants.Defaults.WAIT_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+				.await(TestConstants.Defaults.WAIT_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 			assertTrue(
 				"Timed out waiting for event type " +
 				expected.getKey().type +
@@ -427,7 +426,7 @@ public class FunctionalTestHelper {
 	public static void assertUnexpectedEvents(final boolean shouldWait) throws InterruptedException {
 		// Short wait to allow events to come in
 		if (shouldWait) {
-			sleep(FunctionalTestConstants.Defaults.WAIT_TIMEOUT_MS);
+			sleep(TestConstants.Defaults.WAIT_TIMEOUT_MS);
 		}
 
 		int unexpectedEventsReceivedCount = 0;
@@ -440,7 +439,7 @@ public class FunctionalTestHelper {
 			ADBCountDownLatch expectedEventLatch = expectedEvents.get(receivedEvent.getKey());
 
 			if (expectedEventLatch != null) {
-				expectedEventLatch.await(FunctionalTestConstants.Defaults.WAIT_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+				expectedEventLatch.await(TestConstants.Defaults.WAIT_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 				int expectedCount = expectedEventLatch.getInitialCount();
 				int receivedCount = receivedEvent.getValue().size();
 				String failMessage = String.format(
@@ -484,7 +483,7 @@ public class FunctionalTestHelper {
 	/**
 	 * Returns the {@code Event}(s) dispatched through the Event Hub, or empty if none was found.
 	 * Use this API after calling {@link #setExpectationEvent(String, String, int)} to wait for
-	 * the expected events. The wait time for each event is {@link FunctionalTestConstants.Defaults#WAIT_EVENT_TIMEOUT_MS}ms.
+	 * the expected events. The wait time for each event is {@link TestConstants.Defaults#WAIT_EVENT_TIMEOUT_MS}ms.
 	 * @param type the event type as in the expectation
 	 * @param source the event source as in the expectation
 	 * @return list of events with the provided {@code type} and {@code source}, or empty if none was dispatched
@@ -493,7 +492,7 @@ public class FunctionalTestHelper {
 	 */
 	public static List<Event> getDispatchedEventsWith(final String type, final String source)
 		throws InterruptedException {
-		return getDispatchedEventsWith(type, source, FunctionalTestConstants.Defaults.WAIT_EVENT_TIMEOUT_MS);
+		return getDispatchedEventsWith(type, source, TestConstants.Defaults.WAIT_EVENT_TIMEOUT_MS);
 	}
 
 	/**
@@ -522,7 +521,7 @@ public class FunctionalTestHelper {
 				awaitResult
 			);
 		} else {
-			sleep(FunctionalTestConstants.Defaults.WAIT_TIMEOUT_MS);
+			sleep(TestConstants.Defaults.WAIT_TIMEOUT_MS);
 		}
 
 		return receivedEvents.containsKey(eventSpec) ? receivedEvents.get(eventSpec) : Collections.emptyList();
@@ -540,13 +539,13 @@ public class FunctionalTestHelper {
 		throws InterruptedException {
 		Event event = new Event.Builder(
 			"Get Shared State Request",
-			FunctionalTestConstants.EventType.MONITOR,
-			FunctionalTestConstants.EventSource.SHARED_STATE_REQUEST
+			TestConstants.EventType.MONITOR,
+			TestConstants.EventSource.SHARED_STATE_REQUEST
 		)
 			.setEventData(
 				new HashMap<String, Object>() {
 					{
-						put(FunctionalTestConstants.EventDataKey.STATE_OWNER, stateOwner);
+						put(TestConstants.EventDataKey.STATE_OWNER, stateOwner);
 					}
 				}
 			)
@@ -669,7 +668,7 @@ public class FunctionalTestHelper {
 	 */
 	public static List<TestableNetworkRequest> getNetworkRequestsWith(final String url, final HttpMethod method)
 		throws InterruptedException {
-		return getNetworkRequestsWith(url, method, FunctionalTestConstants.Defaults.WAIT_NETWORK_REQUEST_TIMEOUT_MS);
+		return getNetworkRequestsWith(url, method, TestConstants.Defaults.WAIT_NETWORK_REQUEST_TIMEOUT_MS);
 	}
 
 	/**
@@ -807,7 +806,7 @@ public class FunctionalTestHelper {
 	 * @return The JSON request body represented as a flatten map
 	 */
 	public static Map<String, String> getFlattenedNetworkRequestBody(final NetworkRequest networkRequest) {
-		return FunctionalTestUtils.flattenBytes(networkRequest.getBody());
+		return TestUtils.flattenBytes(networkRequest.getBody());
 	}
 
 	/**
@@ -821,13 +820,13 @@ public class FunctionalTestHelper {
 	private static void clearAllDatastores() {
 		final List<String> knownDatastores = new ArrayList<String>() {
 			{
-				add(FunctionalTestConstants.SharedState.IDENTITY);
-				add(FunctionalTestConstants.SharedState.CONSENT);
-				add(FunctionalTestConstants.EDGE_DATA_STORAGE);
+				add(TestConstants.SharedState.IDENTITY);
+				add(TestConstants.SharedState.CONSENT);
+				add(TestConstants.EDGE_DATA_STORAGE);
 				add("AdobeMobile_ConfigState");
 			}
 		};
-		final Application application = FunctionalTestHelper.defaultApplication;
+		final Application application = TestHelper.defaultApplication;
 
 		if (application == null) {
 			fail("FunctionalTestHelper - Unable to clear datastores. Application is null, fast failing the test case.");
