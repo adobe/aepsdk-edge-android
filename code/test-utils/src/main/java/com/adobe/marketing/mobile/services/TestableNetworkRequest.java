@@ -11,6 +11,8 @@
 
 package com.adobe.marketing.mobile.services;
 
+import com.adobe.marketing.mobile.util.TestConstants;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
@@ -113,7 +115,7 @@ public class TestableNetworkRequest extends NetworkRequest {
 				queryParamMap.put(pair.substring(0, index), pair.substring(index + 1));
 			}
 		} catch (MalformedURLException e) {
-			Log.warning(FunctionalTestConstants.LOG_TAG, LOG_SOURCE, "Failed to decode Network Request URL '%s'", url);
+			Log.warning(TestConstants.LOG_TAG, LOG_SOURCE, "Failed to decode Network Request URL '%s'", url);
 		}
 
 		return queryParamMap;
