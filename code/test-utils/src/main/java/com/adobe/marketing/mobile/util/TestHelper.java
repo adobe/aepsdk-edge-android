@@ -807,7 +807,7 @@ public class TestHelper {
 	 * @return The JSON request body represented as a flatten map
 	 */
 	public static Map<String, String> getFlattenedNetworkRequestBody(final NetworkRequest networkRequest) {
-		return FunctionalTestUtils.flattenBytes(networkRequest.getBody());
+		return TestUtils.flattenBytes(networkRequest.getBody());
 	}
 
 	/**

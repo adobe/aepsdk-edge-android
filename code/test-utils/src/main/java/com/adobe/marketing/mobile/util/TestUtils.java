@@ -26,11 +26,11 @@ import java.util.Iterator;
 import java.util.Map;
 import org.json.JSONObject;
 
-public class FunctionalTestUtils {
+public class TestUtils {
 
 	private static final String LOG_SOURCE = "FunctionalTestUtils";
 
-	private FunctionalTestUtils() {}
+	private TestUtils() {}
 
 	/**
 	 * Serialize the given {@code map} to a JSON Object, then flattens to {@code Map<String, String>}.
@@ -71,7 +71,7 @@ public class FunctionalTestUtils {
 
 		try {
 			Map<String, String> payloadMap = new HashMap<>();
-			FunctionalTestUtils.addKeys("", new ObjectMapper().readTree(bytes), payloadMap);
+			TestUtils.addKeys("", new ObjectMapper().readTree(bytes), payloadMap);
 			return payloadMap;
 		} catch (IOException e) {
 			Log.error(LOG_TAG, LOG_SOURCE, "Failed to parse JSON payload to tree structure.");

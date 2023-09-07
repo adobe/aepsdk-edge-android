@@ -21,7 +21,7 @@ import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
-import com.adobe.marketing.mobile.util.FunctionalTestUtils;
+import com.adobe.marketing.mobile.util.TestUtils;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -134,7 +134,7 @@ public class SampleFunctionalTests {
 		Map<String, Object> eventData = dispatchedEvents.get(1).getEventData();
 		assertNotNull(eventData);
 
-		assertEquals(1, FunctionalTestUtils.flattenMap(eventData).size());
+		assertEquals(1, TestUtils.flattenMap(eventData).size());
 	}
 
 	@Test

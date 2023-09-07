@@ -25,7 +25,7 @@ import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.TestConstants;
-import com.adobe.marketing.mobile.util.FunctionalTestUtils;
+import com.adobe.marketing.mobile.util.TestUtils;
 import com.adobe.marketing.mobile.util.TestXDMSchema;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -136,7 +136,7 @@ public class EdgeFunctionalTests {
 		Map<String, Object> eventData = resultEvents.get(0).getEventData();
 		assertNotNull(eventData);
 
-		Map<String, String> flattenedData = FunctionalTestUtils.flattenMap(eventData);
+		Map<String, String> flattenedData = TestUtils.flattenMap(eventData);
 		assertEquals(7, flattenedData.size());
 		assertEquals("xdm", flattenedData.get("xdm.testString"));
 		assertEquals("10", flattenedData.get("xdm.testInt"));
@@ -196,7 +196,7 @@ public class EdgeFunctionalTests {
 		Map<String, Object> eventData = resultEvents.get(0).getEventData();
 		assertNotNull(eventData);
 
-		Map<String, String> flattenedData = FunctionalTestUtils.flattenMap(eventData);
+		Map<String, String> flattenedData = TestUtils.flattenMap(eventData);
 		assertEquals(8, flattenedData.size());
 		assertEquals("xdm", flattenedData.get("xdm.testString"));
 		assertEquals("stringValue", flattenedData.get("data.testString"));
@@ -231,7 +231,7 @@ public class EdgeFunctionalTests {
 		Map<String, Object> eventData = resultEvents.get(0).getEventData();
 		assertNotNull(eventData);
 
-		Map<String, String> flattenedData = FunctionalTestUtils.flattenMap(eventData);
+		Map<String, String> flattenedData = TestUtils.flattenMap(eventData);
 		assertEquals(1, flattenedData.size());
 		assertEquals("xdm", flattenedData.get("xdm.testString"));
 	}
@@ -899,7 +899,7 @@ public class EdgeFunctionalTests {
 		Map<String, Object> responseEventData = responseEvents.get(0).getEventData();
 		assertNotNull(responseEventData);
 
-		Map<String, String> flattenedEventData = FunctionalTestUtils.flattenMap(responseEventData);
+		Map<String, String> flattenedEventData = TestUtils.flattenMap(responseEventData);
 		assertEquals(7, flattenedEventData.size());
 		assertEquals("personalization:decisions", flattenedEventData.get("type"));
 		assertEquals(
@@ -961,7 +961,7 @@ public class EdgeFunctionalTests {
 		Map<String, Object> responseEventData = errorResponseEvents.get(0).getEventData();
 		assertNotNull(responseEventData);
 
-		Map<String, String> flattenedEventData = FunctionalTestUtils.flattenMap(responseEventData);
+		Map<String, String> flattenedEventData = TestUtils.flattenMap(responseEventData);
 		assertEquals(4, flattenedEventData.size());
 		assertEquals("personalization:0", flattenedEventData.get("code"));
 		assertEquals("Failed due to unrecoverable system error", flattenedEventData.get("message"));
@@ -1415,7 +1415,7 @@ public class EdgeFunctionalTests {
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(2, resultEvents.size());
 
-		Map<String, String> eventData1 = FunctionalTestUtils.flattenMap(resultEvents.get(0).getEventData());
+		Map<String, String> eventData1 = TestUtils.flattenMap(resultEvents.get(0).getEventData());
 		assertEquals(5, eventData1.size());
 		assertEquals("504", eventData1.get("status"));
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0201-504", eventData1.get("type"));
@@ -1426,7 +1426,7 @@ public class EdgeFunctionalTests {
 		assertEquals(requestEvents.get(0).getUniqueIdentifier(), eventData1.get("requestEventId"));
 		assertEquals(requestEvents.get(0).getUniqueIdentifier(), resultEvents.get(0).getParentID());
 
-		Map<String, String> eventData2 = FunctionalTestUtils.flattenMap(resultEvents.get(1).getEventData());
+		Map<String, String> eventData2 = TestUtils.flattenMap(resultEvents.get(1).getEventData());
 		assertEquals(7, eventData2.size());
 		assertEquals("200", eventData2.get("status"));
 		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0204-200", eventData2.get("type"));
@@ -1478,7 +1478,7 @@ public class EdgeFunctionalTests {
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, resultEvents.size());
 
-		Map<String, String> eventData = FunctionalTestUtils.flattenMap(resultEvents.get(0).getEventData());
+		Map<String, String> eventData = TestUtils.flattenMap(resultEvents.get(0).getEventData());
 
 		assertEquals(11, eventData.size());
 		assertEquals("422", eventData.get("status"));

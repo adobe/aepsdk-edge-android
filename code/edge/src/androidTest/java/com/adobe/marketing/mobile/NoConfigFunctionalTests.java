@@ -22,7 +22,7 @@ import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.FakeIdentity;
 import com.adobe.marketing.mobile.util.TestConstants;
-import com.adobe.marketing.mobile.util.FunctionalTestUtils;
+import com.adobe.marketing.mobile.util.TestUtils;
 import com.adobe.marketing.mobile.util.JSONUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -187,7 +187,7 @@ public class NoConfigFunctionalTests {
 		assertEquals("personalization:decisions", receivedHandles.get(0).getType());
 		assertEquals(1, receivedHandles.get(0).getPayload().size());
 
-		Map<String, String> handle1 = FunctionalTestUtils.flattenMap(receivedHandles.get(0).getPayload().get(0));
+		Map<String, String> handle1 = TestUtils.flattenMap(receivedHandles.get(0).getPayload().get(0));
 
 		assertEquals(4, handle1.size());
 		assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9", handle1.get("id"));
@@ -199,7 +199,7 @@ public class NoConfigFunctionalTests {
 		assertEquals("identity:exchange", receivedHandles.get(1).getType());
 		assertEquals(1, receivedHandles.get(1).getPayload().size());
 
-		Map<String, String> handle2 = FunctionalTestUtils.flattenMap(receivedHandles.get(1).getPayload().get(0));
+		Map<String, String> handle2 = TestUtils.flattenMap(receivedHandles.get(1).getPayload().get(0));
 
 		assertEquals(5, handle2.size());
 		assertEquals("411", handle2.get("id"));
