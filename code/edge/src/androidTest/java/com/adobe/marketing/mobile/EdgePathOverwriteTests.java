@@ -21,7 +21,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
-import com.adobe.marketing.mobile.util.FunctionalTestConstants;
+import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.FunctionalTestHelper;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,9 +38,9 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class EdgePathOverwriteTests {
 
-	private static final String EXEDGE_MEDIA_URL_STRING = FunctionalTestConstants.Defaults.EXEDGE_MEDIA_PROD_URL_STRING;
+	private static final String EXEDGE_MEDIA_URL_STRING = TestConstants.Defaults.EXEDGE_MEDIA_PROD_URL_STRING;
 	private static final String EXEDGE_MEDIA_OR2_LOC_URL_STRING =
-		FunctionalTestConstants.Defaults.EXEDGE_MEDIA_OR2_LOC_URL_STRING;
+		TestConstants.Defaults.EXEDGE_MEDIA_OR2_LOC_URL_STRING;
 	private static final String CONFIG_ID = "1234abcd-abcd-1234-5678-123456abcdef";
 	private static final String DEFAULT_RESPONSE_STRING = "\u0000{\"test\": \"json\"}";
 	private static final int TIMEOUT_MILLIS = 5000;

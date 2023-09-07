@@ -19,7 +19,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
-import com.adobe.marketing.mobile.util.FunctionalTestConstants;
+import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.FunctionalTestHelper;
 import com.adobe.marketing.mobile.util.FunctionalTestUtils;
 import java.util.Arrays;
@@ -55,7 +55,7 @@ public class SampleFunctionalTests {
 			}
 		)
 		.build();
-	private static final String exEdgeInteractUrlString = FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
+	private static final String exEdgeInteractUrlString = TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
 	private static final String responseBody = "{\"test\": \"json\"}";
 
 	@Rule

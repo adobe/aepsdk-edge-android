@@ -11,7 +11,7 @@
 
 package com.adobe.marketing.mobile.util;
 
-import static com.adobe.marketing.mobile.util.FunctionalTestConstants.LOG_TAG;
+import static com.adobe.marketing.mobile.util.TestConstants.LOG_TAG;
 
 import com.adobe.marketing.mobile.services.Log;
 import com.fasterxml.jackson.databind.JsonNode;

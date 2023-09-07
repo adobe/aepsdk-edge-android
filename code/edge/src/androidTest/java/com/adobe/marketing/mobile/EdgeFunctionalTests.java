@@ -24,7 +24,7 @@ import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
-import com.adobe.marketing.mobile.util.FunctionalTestConstants;
+import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.FunctionalTestUtils;
 import com.adobe.marketing.mobile.util.TestXDMSchema;
 import java.util.ArrayList;
@@ -46,9 +46,9 @@ import org.junit.runner.RunWith;
 public class EdgeFunctionalTests {
 
 	private static final String EXEDGE_INTERACT_URL_STRING =
-		FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
+		TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
 	private static final String EXEDGE_INTERACT_OR2_LOC_URL_STRING =
-		FunctionalTestConstants.Defaults.EXEDGE_INTERACT_OR2_LOC_URL_STRING;
+		TestConstants.Defaults.EXEDGE_INTERACT_OR2_LOC_URL_STRING;
 	private static final String CONFIG_ID = "1234abcd-abcd-1234-5678-123456abcdef";
 	private static final String DEFAULT_RESPONSE_STRING = "\u0000{\"test\": \"json\"}";
 	private static final int TIMEOUT_MILLIS = 5000;
@@ -536,21 +536,21 @@ public class EdgeFunctionalTests {
 
 	@Test
 	public void testSendEvent_withConfigurableEndpoint_withEmptyConfig_usesProductionEndpoint() throws Exception {
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING, POST, 1);
+		setExpectationNetworkRequest(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING, POST, 1);
 
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		// verify
 		assertNetworkRequestCount();
 		List<TestableNetworkRequest> resultRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING,
+			TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
 
 		assertTrue(
-			resultRequests.get(0).getUrl().startsWith(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING)
+			resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING)
 		);
 		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
 		assertNotNull(resultRequests.get(0).queryParam("requestId"));
@@ -566,21 +566,21 @@ public class EdgeFunctionalTests {
 			}
 		);
 
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING, POST, 1);
+		setExpectationNetworkRequest(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING, POST, 1);
 
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		// verify
 		assertNetworkRequestCount();
 		List<TestableNetworkRequest> resultRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING,
+			TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
 
 		assertTrue(
-			resultRequests.get(0).getUrl().startsWith(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING)
+			resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING)
 		);
 		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
 		assertNotNull(resultRequests.get(0).queryParam("requestId"));
@@ -597,21 +597,21 @@ public class EdgeFunctionalTests {
 			}
 		);
 
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING, POST, 1);
+		setExpectationNetworkRequest(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING, POST, 1);
 
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		// verify
 		assertNetworkRequestCount();
 		List<TestableNetworkRequest> resultRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING,
+			TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
 
 		assertTrue(
-			resultRequests.get(0).getUrl().startsWith(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING)
+			resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING)
 		);
 		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
 		assertNotNull(resultRequests.get(0).queryParam("requestId"));
@@ -628,14 +628,14 @@ public class EdgeFunctionalTests {
 			}
 		);
 
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING, POST, 1);
+		setExpectationNetworkRequest(TestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING, POST, 1);
 
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		// verify
 		assertNetworkRequestCount();
 		List<TestableNetworkRequest> resultRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING,
+			TestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
@@ -645,7 +645,7 @@ public class EdgeFunctionalTests {
 			resultRequests
 				.get(0)
 				.getUrl()
-				.startsWith(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING)
+				.startsWith(TestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING)
 		);
 		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
 		assertNotNull(resultRequests.get(0).queryParam("requestId"));
@@ -662,21 +662,21 @@ public class EdgeFunctionalTests {
 			}
 		);
 
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_INT_URL_STRING, POST, 1);
+		setExpectationNetworkRequest(TestConstants.Defaults.EXEDGE_INTERACT_INT_URL_STRING, POST, 1);
 
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		// verify
 		assertNetworkRequestCount();
 		List<TestableNetworkRequest> resultRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_INTERACT_INT_URL_STRING,
+			TestConstants.Defaults.EXEDGE_INTERACT_INT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
 
 		assertTrue(
-			resultRequests.get(0).getUrl().startsWith(FunctionalTestConstants.Defaults.EXEDGE_INTERACT_INT_URL_STRING)
+			resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_INT_URL_STRING)
 		);
 		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
 		assertNotNull(resultRequests.get(0).queryParam("requestId"));
@@ -1089,7 +1089,7 @@ public class EdgeFunctionalTests {
 	public void testSetLocationHint_withValueHint_createsSharedState() throws InterruptedException {
 		Edge.setLocationHint("or2");
 		sleep(500); // wait for state creation
-		Map<String, Object> sharedState = getSharedStateFor(FunctionalTestConstants.SharedState.EDGE, 1000);
+		Map<String, Object> sharedState = getSharedStateFor(TestConstants.SharedState.EDGE, 1000);
 		assertNotNull(sharedState);
 		assertEquals("or2", sharedState.get("locationHint"));
 	}

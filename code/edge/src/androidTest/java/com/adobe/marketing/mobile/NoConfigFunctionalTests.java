@@ -21,7 +21,7 @@ import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.FakeIdentity;
-import com.adobe.marketing.mobile.util.FunctionalTestConstants;
+import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.FunctionalTestUtils;
 import com.adobe.marketing.mobile.util.JSONUtils;
 import java.util.ArrayList;
@@ -42,7 +42,7 @@ import org.junit.runner.RunWith;
 public class NoConfigFunctionalTests {
 
 	private static final String EXEDGE_INTERACT_URL_STRING =
-		FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
+		TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
 
 	@Rule
 	public RuleChain rule = RuleChain
@@ -67,8 +67,8 @@ public class NoConfigFunctionalTests {
 	public void testHandleExperienceEventRequest_withPendingConfigurationState_expectEventsQueueIsBlocked()
 		throws Exception {
 		Map<String, Object> configState = getSharedStateFor(
-			FunctionalTestConstants.SharedState.CONFIGURATION,
-			FunctionalTestConstants.Defaults.WAIT_SHARED_STATE_TIMEOUT_MS
+			TestConstants.SharedState.CONFIGURATION,
+			TestConstants.Defaults.WAIT_SHARED_STATE_TIMEOUT_MS
 		);
 		assertNull(configState); // verify Configuration state is pending
 

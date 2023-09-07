@@ -22,7 +22,7 @@ import com.adobe.marketing.mobile.edge.consent.Consent;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.ADBCountDownLatch;
-import com.adobe.marketing.mobile.util.FunctionalTestConstants;
+import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.FunctionalTestHelper;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -40,8 +40,8 @@ import org.junit.runner.RunWith;
 public class ConsentStatusChangeFunctionalTests {
 
 	private static final String EXEDGE_INTERACT_URL_STRING =
-		FunctionalTestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
-	private static final String EXEDGE_CONSENT_URL_STRING = FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING;
+		TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
+	private static final String EXEDGE_CONSENT_URL_STRING = TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING;
 	private static final String CONFIG_ID = "1234abcd-abcd-1234-5678-123456abcdef";
 	private static final int EVENTS_COUNT = 5;
 
@@ -267,7 +267,7 @@ public class ConsentStatusChangeFunctionalTests {
 
 	@Test
 	public void testCollectConsent_withConfigurableEndpoint_withEmptyConfigEndpoint_UsesProduction() throws Exception {
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING, POST, 1);
+		setExpectationNetworkRequest(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING, POST, 1);
 
 		// test
 		updateCollectConsent(ConsentStatus.YES);
@@ -275,13 +275,13 @@ public class ConsentStatusChangeFunctionalTests {
 		// verify
 		assertNetworkRequestCount();
 		List<TestableNetworkRequest> consentRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING,
+			TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING,
 			POST,
 			1000
 		);
 		assertEquals(POST, consentRequests.get(0).getMethod());
 		assertTrue(
-			consentRequests.get(0).getUrl().startsWith(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING)
+			consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING)
 		);
 	}
 
@@ -296,7 +296,7 @@ public class ConsentStatusChangeFunctionalTests {
 			}
 		);
 
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING, POST, 1);
+		setExpectationNetworkRequest(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING, POST, 1);
 
 		// test
 		updateCollectConsent(ConsentStatus.YES);
@@ -304,13 +304,13 @@ public class ConsentStatusChangeFunctionalTests {
 		// verify
 		assertNetworkRequestCount();
 		List<TestableNetworkRequest> consentRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING,
+			TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING,
 			POST,
 			1000
 		);
 		assertEquals(POST, consentRequests.get(0).getMethod());
 		assertTrue(
-			consentRequests.get(0).getUrl().startsWith(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING)
+			consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING)
 		);
 	}
 
@@ -325,7 +325,7 @@ public class ConsentStatusChangeFunctionalTests {
 			}
 		);
 
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING, POST, 1);
+		setExpectationNetworkRequest(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING, POST, 1);
 
 		// test
 		updateCollectConsent(ConsentStatus.YES);
@@ -333,13 +333,13 @@ public class ConsentStatusChangeFunctionalTests {
 		// verify
 		assertNetworkRequestCount();
 		List<TestableNetworkRequest> consentRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING,
+			TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING,
 			POST,
 			1000
 		);
 		assertEquals(POST, consentRequests.get(0).getMethod());
 		assertTrue(
-			consentRequests.get(0).getUrl().startsWith(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_URL_STRING)
+			consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING)
 		);
 	}
 
@@ -354,7 +354,7 @@ public class ConsentStatusChangeFunctionalTests {
 			}
 		);
 
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_PRE_PROD_URL_STRING, POST, 1);
+		setExpectationNetworkRequest(TestConstants.Defaults.EXEDGE_CONSENT_PRE_PROD_URL_STRING, POST, 1);
 
 		// test
 		updateCollectConsent(ConsentStatus.YES);
@@ -362,7 +362,7 @@ public class ConsentStatusChangeFunctionalTests {
 		// verify
 		assertNetworkRequestCount();
 		List<TestableNetworkRequest> consentRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_CONSENT_PRE_PROD_URL_STRING,
+			TestConstants.Defaults.EXEDGE_CONSENT_PRE_PROD_URL_STRING,
 			POST,
 			1000
 		);
@@ -371,7 +371,7 @@ public class ConsentStatusChangeFunctionalTests {
 			consentRequests
 				.get(0)
 				.getUrl()
-				.startsWith(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_PRE_PROD_URL_STRING)
+				.startsWith(TestConstants.Defaults.EXEDGE_CONSENT_PRE_PROD_URL_STRING)
 		);
 	}
 
@@ -386,7 +386,7 @@ public class ConsentStatusChangeFunctionalTests {
 			}
 		);
 
-		setExpectationNetworkRequest(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_INT_URL_STRING, POST, 1);
+		setExpectationNetworkRequest(TestConstants.Defaults.EXEDGE_CONSENT_INT_URL_STRING, POST, 1);
 
 		// test
 		updateCollectConsent(ConsentStatus.YES);
@@ -394,13 +394,13 @@ public class ConsentStatusChangeFunctionalTests {
 		// verify
 		assertNetworkRequestCount();
 		List<TestableNetworkRequest> consentRequests = getNetworkRequestsWith(
-			FunctionalTestConstants.Defaults.EXEDGE_CONSENT_INT_URL_STRING,
+			TestConstants.Defaults.EXEDGE_CONSENT_INT_URL_STRING,
 			POST,
 			1000
 		);
 		assertEquals(POST, consentRequests.get(0).getMethod());
 		assertTrue(
-			consentRequests.get(0).getUrl().startsWith(FunctionalTestConstants.Defaults.EXEDGE_CONSENT_INT_URL_STRING)
+			consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_INT_URL_STRING)
 		);
 	}
 
