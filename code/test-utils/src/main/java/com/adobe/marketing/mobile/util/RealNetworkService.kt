@@ -23,14 +23,13 @@ class RealNetworkService: NetworkServiceHelper(), TestResettable {
         private const val LOG_SOURCE = "RealNetworkService"
     }
 
-    override fun connectAsync(request: NetworkRequest, callback: NetworkCallback) {
+    override fun connectAsync(request: NetworkRequest?, callback: NetworkCallback?) {
         val testableNetworkRequest = TestableNetworkRequest(request)
         helper.recordSentNetworkRequest(testableNetworkRequest)
         super.connectAsync(testableNetworkRequest) {
             helper.setResponseConnectionFor(testableNetworkRequest, it)
             helper.countDownExpected(testableNetworkRequest)
 
-            // Call the original callback
             callback?.call(it)
         }
     }
