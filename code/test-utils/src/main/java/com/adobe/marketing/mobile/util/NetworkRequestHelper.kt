@@ -189,25 +189,6 @@ class NetworkRequestHelper {
 		}
 	}
 
-	/**
-	 * Records a mock network request and retrieves a matched response.
-	 *
-	 * This function adds the provided [networkRequest] to the list of sent testable network requests.
-	 *
-	 * @param networkRequest The mock network request to be recorded.
-	 * @param defaultResponse The default response to be returned if no matched response is found.
-	 * @return The matched response for the provided [networkRequest] or the [defaultResponse] if none is found.
-	 */
-	fun setMockNetworkRequest(networkRequest: TestableNetworkRequest, defaultResponse: HttpConnecting): HttpConnecting {
-		if (!sentTestableNetworkRequests.containsKey(networkRequest)) {
-			sentTestableNetworkRequests[networkRequest] = ArrayList()
-		}
-		sentTestableNetworkRequests[networkRequest]!!.add(networkRequest)
-		val response = getResponsesFor(networkRequest)
-		countDownExpected(networkRequest)
-		return response ?: defaultResponse
-	}
-
 	fun countDownExpected(request: TestableNetworkRequest) {
 		for ((key, value) in expectedTestableNetworkRequests) {
 			if (key == request) {
