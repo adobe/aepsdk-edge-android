@@ -22,7 +22,13 @@ interface TestResettable {
 	fun reset()
 }
 
-class TestNetworkService {
+/**
+ * Provides shared utilities and logic for implementations of `Networking` classes used for testing.
+ *
+ * @see [MockNetworkService]
+ * @see [RealNetworkService]
+ */
+class NetworkRequestHelper {
 	private val sentTestableNetworkRequests: MutableMap<TestableNetworkRequest, MutableList<TestableNetworkRequest>>
 	private val networkResponses: MutableMap<TestableNetworkRequest, HttpConnecting>
 	private val expectedTestableNetworkRequests: MutableMap<TestableNetworkRequest, ADBCountDownLatch>
@@ -197,7 +203,7 @@ class TestNetworkService {
 			sentTestableNetworkRequests[networkRequest] = ArrayList()
 		}
 		sentTestableNetworkRequests[networkRequest]!!.add(networkRequest)
-		val response = getMatchedResponse(networkRequest)
+		val response = getResponsesFor(networkRequest)
 		countDownExpected(networkRequest)
 		return response ?: defaultResponse
 	}
@@ -210,7 +216,13 @@ class TestNetworkService {
 		}
 	}
 
-	private fun getMatchedResponse(request: TestableNetworkRequest): HttpConnecting? {
+	/**
+	 * Returns the associated [HttpConnecting] response for a given [TestableNetworkRequest].
+	 *
+	 * @param request The [TestableNetworkRequest] whose [HttpConnecting] response should be returned.
+	 * @return The [HttpConnecting] response for the given request or `null` if not found.
+	 */
+	fun getResponsesFor(request: TestableNetworkRequest): HttpConnecting? {
 		for ((key, value) in networkResponses) {
 			if (key == request) {
 				return value

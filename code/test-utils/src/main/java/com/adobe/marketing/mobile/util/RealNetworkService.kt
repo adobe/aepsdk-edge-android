@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile.util
 
+import com.adobe.marketing.mobile.services.HttpConnecting
 import com.adobe.marketing.mobile.services.HttpMethod
 import com.adobe.marketing.mobile.services.NetworkCallback
 import com.adobe.marketing.mobile.services.NetworkRequest
@@ -22,7 +23,7 @@ import com.adobe.marketing.mobile.services.TestableNetworkRequest
  * methods to set expectations on network requests and perform assertions against those expectations.
  */
 class RealNetworkService: NetworkServiceHelper(), TestResettable {
-    private val helper = TestNetworkService()
+    private val helper = NetworkRequestHelper()
     companion object {
         private const val LOG_SOURCE = "RealNetworkService"
     }
@@ -72,6 +73,21 @@ class RealNetworkService: NetworkServiceHelper(), TestResettable {
 
     override fun reset() {
         helper.reset()
+    }
+
+
+    /**
+     * Returns the associated [HttpConnecting] response for a given [NetworkRequest], and only if an
+     * expectation is set for the [NetworkRequest], waiting up to the specified timeout.
+     *
+     * @param networkRequest The [NetworkRequest] for which the response should be returned.
+     * @param timeoutMillis The maximum time, in milliseconds, to wait for the [NetworkRequest] to complete. Defaults to [TestConstants.Defaults.WAIT_NETWORK_REQUEST_TIMEOUT_MS].
+     * @return The associated [HttpConnecting] response for the given request or `null` if not found.
+     * @throws InterruptedException if the current thread is interrupted while waiting.
+     */
+    fun getResponsesFor(networkRequest: NetworkRequest, timeoutMillis: Int = TestConstants.Defaults.WAIT_NETWORK_REQUEST_TIMEOUT_MS): HttpConnecting? {
+        helper.awaitFor(TestableNetworkRequest(networkRequest), timeoutMillis)
+        return helper.getResponsesFor(TestableNetworkRequest(networkRequest))
     }
 
     /**

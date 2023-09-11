@@ -28,7 +28,7 @@ import java.util.concurrent.Executors
  * [Networking] conforming network service utility used for tests that require mocked network requests and mocked responses.
  */
 class MockNetworkService: Networking, TestResettable {
-    private val helper = TestNetworkService()
+    private val helper = NetworkRequestHelper()
     // Simulating the async network service
     private val executorService: ExecutorService = Executors.newCachedThreadPool()
 
