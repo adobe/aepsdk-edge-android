@@ -17,6 +17,10 @@ import com.adobe.marketing.mobile.services.NetworkRequest
 import com.adobe.marketing.mobile.services.NetworkServiceHelper
 import com.adobe.marketing.mobile.services.TestableNetworkRequest
 
+/**
+ * An override of `NetworkService` used for tests that require real outgoing network requests. Provides
+ * methods to set expectations on network requests and perform assertions against those expectations.
+ */
 class RealNetworkService: NetworkServiceHelper(), TestResettable {
     private val helper = TestNetworkService()
     companion object {
@@ -35,6 +39,13 @@ class RealNetworkService: NetworkServiceHelper(), TestResettable {
     }
 
     // Passthrough for shared helper APIs
+    /**
+     * Asserts that the correct number of network requests were sent based on the expectations set
+     * using [setExpectationForNetworkRequest].
+     *
+     * @throws InterruptedException
+     * @see [setExpectationForNetworkRequest]
+     */
     fun assertAllNetworkRequestExpectations() {
         helper.assertAllNetworkRequestExpectations()
     }
@@ -42,7 +53,7 @@ class RealNetworkService: NetworkServiceHelper(), TestResettable {
     /**
      * Returns the [TestableNetworkRequest](s) sent through the
      * Core NetworkService, or empty if none was found. Use this API after calling
-     * [.setExpectationNetworkRequest] to wait for each request.
+     * [setExpectationForNetworkRequest] to wait for each request.
      *
      * @param url The url string for which to retrieved the network requests sent
      * @param method the HTTP method for which to retrieve the network requests
@@ -64,7 +75,7 @@ class RealNetworkService: NetworkServiceHelper(), TestResettable {
     }
 
     /**
-     * Set a network request expectation.
+     * Sets an expectation for a network request's send count.
      * @param url the url string for which to set the expectation
      * @param method the HTTP method for which to set the expectation
      * @param expectedCount how many times a request with this `url` and `method` is expected to be sent

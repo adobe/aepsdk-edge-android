@@ -119,7 +119,7 @@ class MockNetworkService: Networking, TestResettable {
     }
 
     /**
-     * Set a network request expectation.
+     * Sets an expectation for a network request's send count.
      * @param url the url string for which to set the expectation
      * @param method the HTTP method for which to set the expectation
      * @param expectedCount how many times a request with this `url` and `method` is expected to be sent

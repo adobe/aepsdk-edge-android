@@ -55,6 +55,13 @@ class TestNetworkService {
 		networkResponses[request] = responseConnection
 	}
 
+	/**
+	 * Sets an expectation for a network request's send count.
+	 *
+	 * @param request The [TestableNetworkRequest] instance representing the network request for which the expectation is being set.
+	 * @param count The number of times the provided network request is expected to be sent.
+	 * @see [assertAllNetworkRequestExpectations]
+	 */
 	fun setExpectationForNetworkRequest(request: TestableNetworkRequest, count: Int) {
 		expectedTestableNetworkRequests[request] = ADBCountDownLatch(count)
 	}
@@ -120,9 +127,10 @@ class TestNetworkService {
 	}
 
 	/**
-	 * Asserts that the correct number of network requests were being sent, based on the previously set expectations.
+	 * Asserts that the correct number of network requests were sent based on previously set expectations.
+	 *
 	 * @throws InterruptedException
-	 * @see setExpectationForNetworkRequest
+	 * @see [setExpectationForNetworkRequest]
 	 */
 	@Throws(InterruptedException::class)
 	fun assertAllNetworkRequestExpectations() {
