@@ -214,7 +214,7 @@ class MockNetworkService: Networking, TestResettable {
     }
 
     /**
-     * Sets the provided delay for all network responses, until reset
+     * Sets the provided delay for all network responses, until reset.
      * @param delaySec delay in seconds
      */
     fun enableNetworkResponseDelay(delaySec: Int) {
@@ -225,7 +225,7 @@ class MockNetworkService: Networking, TestResettable {
     }
 
     /**
-     * Use this API for JSON formatted `NetworkRequest` body in order to retrieve a flattened map containing its data.
+     * Use this API for JSON formatted [NetworkRequest] body in order to retrieve a flattened map containing its data.
      * @param networkRequest the [NetworkRequest] to parse
      * @return The JSON request body represented as a flatten map
      */
