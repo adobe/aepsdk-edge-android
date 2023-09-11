@@ -43,6 +43,9 @@ class NetworkRequestHelper {
 		expectedTestableNetworkRequests = HashMap()
 	}
 
+	/**
+	 * Resets the helper state by clearing all test expectations and stored data.
+	 */
 	fun reset() {
 		Log.trace(
 			TestConstants.LOG_TAG,
@@ -76,7 +79,7 @@ class NetworkRequestHelper {
 		return expectedTestableNetworkRequests
 	}
 
-	fun getReceivedNetworkRequestsMatching(request: TestableNetworkRequest): List<TestableNetworkRequest> {
+	fun getSentNetworkRequestsMatching(request: TestableNetworkRequest): List<TestableNetworkRequest> {
 		for ((key, value) in sentTestableNetworkRequests) {
 			if (key == request) {
 				return value
@@ -86,9 +89,8 @@ class NetworkRequestHelper {
 	}
 
 	/**
-	 * Returns the [TestableNetworkRequest](s) sent through the
-	 * Core NetworkService, or empty if none was found. Use this API after calling
-	 * [setExpectationForNetworkRequest] to wait for each request.
+	 * Returns the [TestableNetworkRequest](s) sent through the Core NetworkService, or empty if
+	 * none was found. Use this API after calling [setExpectationForNetworkRequest] to wait for each request.
 	 *
 	 * @param url The url string for which to retrieved the network requests sent
 	 * @param method the HTTP method for which to retrieve the network requests
@@ -115,7 +117,7 @@ class NetworkRequestHelper {
 		} else {
 			TestHelper.sleep(timeoutMillis)
 		}
-		return getReceivedNetworkRequestsMatching(networkRequest)
+		return getSentNetworkRequestsMatching(networkRequest)
 	}
 
 	fun isNetworkRequestExpected(request: TestableNetworkRequest): Boolean {
@@ -203,7 +205,7 @@ class NetworkRequestHelper {
 	 * @param request The [TestableNetworkRequest] whose [HttpConnecting] response should be returned.
 	 * @return The [HttpConnecting] response for the given request or `null` if not found.
 	 */
-	fun getResponsesFor(request: TestableNetworkRequest): HttpConnecting? {
+	fun getResponseFor(request: TestableNetworkRequest): HttpConnecting? {
 		for ((key, value) in networkResponses) {
 			if (key == request) {
 				return value
