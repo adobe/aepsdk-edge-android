@@ -34,7 +34,7 @@ class NetworkRequestHelper {
 	private val expectedTestableNetworkRequests: MutableMap<TestableNetworkRequest, ADBCountDownLatch>
 
 	companion object {
-		private const val LOG_SOURCE = "TestNetworkService"
+		private const val LOG_SOURCE = "NetworkRequestHelper"
 	}
 
 	init {
