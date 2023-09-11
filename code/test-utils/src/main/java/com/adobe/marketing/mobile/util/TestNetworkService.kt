@@ -55,7 +55,7 @@ class TestNetworkService {
 		networkResponses[request] = responseConnection
 	}
 
-	fun setExpectedNetworkRequest(request: TestableNetworkRequest, count: Int) {
+	fun setExpectationForNetworkRequest(request: TestableNetworkRequest, count: Int) {
 		expectedTestableNetworkRequests[request] = ADBCountDownLatch(count)
 	}
 
@@ -75,7 +75,7 @@ class TestNetworkService {
 	/**
 	 * Returns the [TestableNetworkRequest](s) sent through the
 	 * Core NetworkService, or empty if none was found. Use this API after calling
-	 * [.setExpectationNetworkRequest] to wait for each request.
+	 * [setExpectationForNetworkRequest] to wait for each request.
 	 *
 	 * @param url The url string for which to retrieved the network requests sent
 	 * @param method the HTTP method for which to retrieve the network requests
@@ -122,7 +122,7 @@ class TestNetworkService {
 	/**
 	 * Asserts that the correct number of network requests were being sent, based on the previously set expectations.
 	 * @throws InterruptedException
-	 * @see .setExpectationNetworkRequest
+	 * @see setExpectationForNetworkRequest
 	 */
 	@Throws(InterruptedException::class)
 	fun assertAllNetworkRequestExpectations() {
@@ -131,7 +131,7 @@ class TestNetworkService {
 		getExpectedNetworkRequests()
 		if (expectedNetworkRequests.isEmpty()) {
 			Assert.fail(
-				"There are no network request expectations set, use this API after calling setExpectationNetworkRequest"
+				"There are no network request expectations set, use this API after calling setExpectationForNetworkRequest"
 			)
 			return
 		}

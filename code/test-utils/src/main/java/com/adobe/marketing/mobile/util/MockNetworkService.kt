@@ -24,6 +24,9 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
+/**
+ * [Networking] conforming network service utility used for tests that require mocked network requests and mocked responses.
+ */
 class MockNetworkService: Networking, TestResettable {
     private val helper = TestNetworkService()
     // Simulating the async network service
@@ -96,12 +99,11 @@ class MockNetworkService: Networking, TestResettable {
     }
 
     /**
-     * Set a custom network response to an Edge network request.
+     * Set a custom mock network response to an Edge network request.
      * @param url the url string for which to return the response
      * @param method the HTTP method for which to return the response
      * @param responseConnection the network response to be returned when a request matching the
-     * `url` and `method` is received. If null is provided,
-     * a default '200' response is used.
+     * `url` and `method` is received. If `null` is provided, a default '200' response is used.
      */
     fun setMockResponseFor(
         url: String?,
@@ -127,7 +129,7 @@ class MockNetworkService: Networking, TestResettable {
         method: HttpMethod?,
         expectedCount: Int
     ) {
-        helper.setExpectedNetworkRequest(
+        helper.setExpectationForNetworkRequest(
             TestableNetworkRequest(
                 url,
                 method
@@ -142,7 +144,7 @@ class MockNetworkService: Networking, TestResettable {
     /**
      * Returns the [TestableNetworkRequest](s) sent through the
      * Core NetworkService, or empty if none was found. Use this API after calling
-     * [.setExpectationNetworkRequest] to wait for each request.
+     * [setExpectationForNetworkRequest] to wait for each request.
      *
      * @param url The url string for which to retrieved the network requests sent
      * @param method the HTTP method for which to retrieve the network requests
@@ -160,27 +162,27 @@ class MockNetworkService: Networking, TestResettable {
     }
 
     /**
-     * Create a network response to be used when calling [.setNetworkResponseFor].
+     * Create a mock network response to be used when calling [setMockResponseFor].
      * @param responseString the network response string, returned by [HttpConnecting.getInputStream]
      * @param code the HTTP status code, returned by [HttpConnecting.getResponseCode]
      * @return an [HttpConnecting] object
-     * @see .setNetworkResponseFor
+     * @see setMockResponseFor
      */
-    fun createNetworkResponse(responseString: String?, code: Int): HttpConnecting? {
-        return createNetworkResponse(responseString, null, code, null, null)
+    fun createMockNetworkResponse(responseString: String?, code: Int): HttpConnecting? {
+        return createMockNetworkResponse(responseString, null, code, null, null)
     }
 
     /**
-     * Create a network response to be used when calling [.setNetworkResponseFor].
+     * Create a mock network response to be used when calling [setMockResponseFor].
      * @param responseString the network response string, returned by [HttpConnecting.getInputStream]
      * @param errorString the network error string, returned by [HttpConnecting.getErrorStream]
      * @param code the HTTP status code, returned by [HttpConnecting.getResponseCode]
      * @param responseMessage the network response message, returned by [HttpConnecting.getResponseMessage]
      * @param propertyMap the network response header map, returned by [HttpConnecting.getResponsePropertyValue]
      * @return an [HttpConnecting] object
-     * @see .setNetworkResponseFor
+     * @see setMockResponseFor
      */
-    fun createNetworkResponse(
+    fun createMockNetworkResponse(
         responseString: String?,
         errorString: String?,
         code: Int,

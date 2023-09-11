@@ -74,7 +74,7 @@ class RealNetworkService: NetworkServiceHelper(), TestResettable {
         method: HttpMethod?,
         expectedCount: Int
     ) {
-        helper.setExpectedNetworkRequest(
+        helper.setExpectationForNetworkRequest(
             TestableNetworkRequest(
                 url,
                 method
