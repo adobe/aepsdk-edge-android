@@ -69,17 +69,10 @@ class MockNetworkService: Networking, TestResettable {
             networkRequest.method.name
         )
         executorService.submit {
-            val response = helper.setMockNetworkRequest(
-                TestableNetworkRequest(
-                    networkRequest.url,
-                    networkRequest.method,
-                    networkRequest.body,
-                    networkRequest.headers,
-                    networkRequest.connectTimeout,
-                    networkRequest.readTimeout
-                ),
-                defaultResponse
-            )
+            val testableNetworkRequest = TestableNetworkRequest(networkRequest)
+            helper.recordSentNetworkRequest(testableNetworkRequest)
+            helper.countDownExpected(testableNetworkRequest)
+
             if (resultCallback != null) {
                 if (delayedResponse > 0) {
                     try {
@@ -88,7 +81,7 @@ class MockNetworkService: Networking, TestResettable {
                         e.printStackTrace()
                     }
                 }
-                resultCallback.call(response)
+                resultCallback.call(helper.getResponseFor(testableNetworkRequest) ?: defaultResponse)
             }
         }
     }
