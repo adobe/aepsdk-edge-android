@@ -22,7 +22,7 @@ import com.adobe.marketing.mobile.services.TestableNetworkRequest
  * An override of `NetworkService` used for tests that require real outgoing network requests. Provides
  * methods to set expectations on network requests and perform assertions against those expectations.
  */
-class RealNetworkService: NetworkServiceHelper(), TestResettable {
+class RealNetworkService: NetworkServiceHelper() {
     private val helper = NetworkRequestHelper()
     companion object {
         private const val LOG_SOURCE = "RealNetworkService"
@@ -71,7 +71,7 @@ class RealNetworkService: NetworkServiceHelper(), TestResettable {
         return helper.getNetworkRequestsWith(url, method, timeoutMillis)
     }
 
-    override fun reset() {
+    fun reset() {
         helper.reset()
     }
 

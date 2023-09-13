@@ -18,10 +18,6 @@ import com.adobe.marketing.mobile.services.TestableNetworkRequest
 import org.junit.Assert
 import java.util.concurrent.TimeUnit
 
-interface TestResettable {
-	fun reset()
-}
-
 /**
  * Provides shared utilities and logic for implementations of `Networking` classes used for testing.
  *

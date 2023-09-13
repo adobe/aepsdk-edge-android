@@ -108,7 +108,7 @@ public class TestHelper {
 						MobileCoreHelper.resetSDK();
 						MockDataStoreService.clearStores();
 						clearAllDatastores();
-						resetTestExpectations(null);
+						resetTestExpectations();
 						resetServiceProvider();
 					}
 				}
@@ -331,11 +331,8 @@ public class TestHelper {
 	/**
 	 * Resets the network and event test expectations.
 	 */
-	public static void resetTestExpectations(@Nullable TestResettable resettableTestNetworkService) {
+	public static void resetTestExpectations() {
 		Log.debug(LOG_TAG, LOG_SOURCE, "Resetting functional test expectations for events and network requests");
-		if (resettableTestNetworkService != null) {
-			resettableTestNetworkService.reset();
-		}
 		MonitorExtension.reset();
 	}
 
