@@ -77,16 +77,18 @@ class RealNetworkService: NetworkServiceHelper(), TestResettable {
 
 
     /**
-     * Returns the associated [HttpConnecting] response for a given [NetworkRequest], and only if a prior
-     * expectation is set for the [NetworkRequest], waits up to the specified timeout before getting the response.
+     * Immediately returns the associated [HttpConnecting] response (if any) for a given [NetworkRequest] without
+     * awaiting a response.
+     *
+     * Note: To properly await network responses for a given [networkRequest], make sure to set an expectation
+     * using [setExpectationForNetworkRequest] then await the expectation using [assertAllNetworkRequestExpectations].
      *
      * @param networkRequest The [NetworkRequest] for which the response should be returned.
-     * @param timeoutMillis The maximum time (in milliseconds) to wait for the [NetworkRequest] to complete. Defaults to [TestConstants.Defaults.WAIT_NETWORK_REQUEST_TIMEOUT_MS].
      * @return The associated [HttpConnecting] response for the given request or `null` if not found.
-     * @throws InterruptedException if the current thread is interrupted while waiting.
+     * @see [setExpectationForNetworkRequest]
+     * @see [assertAllNetworkRequestExpectations]
      */
-    fun getResponseFor(networkRequest: NetworkRequest, timeoutMillis: Int = TestConstants.Defaults.WAIT_NETWORK_REQUEST_TIMEOUT_MS): HttpConnecting? {
-        helper.awaitFor(TestableNetworkRequest(networkRequest), timeoutMillis)
+    fun getResponseFor(networkRequest: NetworkRequest): HttpConnecting? {
         return helper.getResponseFor(TestableNetworkRequest(networkRequest))
     }
 
