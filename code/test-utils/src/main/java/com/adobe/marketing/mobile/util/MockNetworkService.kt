@@ -68,11 +68,12 @@ class MockNetworkService: Networking, TestResettable {
             networkRequest.url,
             networkRequest.method.name
         )
-        executorService.submit {
-            val testableNetworkRequest = TestableNetworkRequest(networkRequest)
-            helper.recordSentNetworkRequest(testableNetworkRequest)
-            helper.countDownExpected(testableNetworkRequest)
 
+        val testableNetworkRequest = TestableNetworkRequest(networkRequest)
+        helper.recordSentNetworkRequest(testableNetworkRequest)
+        helper.countDownExpected(testableNetworkRequest)
+
+        executorService.submit {
             if (resultCallback != null) {
                 if (delayedResponse > 0) {
                     try {
