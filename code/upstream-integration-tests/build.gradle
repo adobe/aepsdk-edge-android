@@ -57,6 +57,8 @@ dependencies {
 
     implementation 'androidx.core:core-ktx:1.9.0'
 
+    androidTestImplementation "com.adobe.marketing.mobile:core:${rootProject.mavenCoreVersion}"
+    androidTestImplementation "com.adobe.marketing.mobile:edgeidentity:${rootProject.mavenIdentityVersion}"
     androidTestImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
 
