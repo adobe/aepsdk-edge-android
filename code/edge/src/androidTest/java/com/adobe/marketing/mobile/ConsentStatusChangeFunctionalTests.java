@@ -13,7 +13,6 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
 import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
-import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
 import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -81,7 +80,7 @@ public class ConsentStatusChangeFunctionalTests {
 		latch.await();
 
 		assertExpectedEvents(false);
-		resetTestExpectations(mockNetworkService);
+		resetTestExpectations();
 	}
 
 	// Test sendNetworkRequest(final EdgeHit edgeHit, final Map<String, String> requestHeaders, final int attemptCount)
@@ -90,7 +89,7 @@ public class ConsentStatusChangeFunctionalTests {
 		// setup
 		updateCollectConsent(ConsentStatus.NO);
 		getConsentsSync();
-		resetTestExpectations(mockNetworkService);
+		resetTestExpectations();
 
 		// test
 		fireManyEvents();
@@ -109,7 +108,7 @@ public class ConsentStatusChangeFunctionalTests {
 		// setup
 		updateCollectConsent(ConsentStatus.YES);
 		getConsentsSync();
-		resetTestExpectations(mockNetworkService);
+		resetTestExpectations();
 
 		// test
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, EVENTS_COUNT);
@@ -450,6 +449,14 @@ public class ConsentStatusChangeFunctionalTests {
 		);
 		assertEquals(POST, consentRequests.get(0).getMethod());
 		assertTrue(consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_INT_URL_STRING));
+	}
+
+	/**
+	 * Resets all test helper expectations and recorded data
+	 */
+	private void resetTestExpectations() {
+		mockNetworkService.reset();
+		TestHelper.resetTestExpectations();
 	}
 
 	private void fireManyEvents() {

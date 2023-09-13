@@ -95,7 +95,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		latch.await();
 
 		assertExpectedEvents(false);
-		resetTestExpectations(null);
+		resetTestExpectations();
 
 		this.testNamedCollection = mockDataStoreService.getNamedCollection(TestConstants.EDGE_DATA_STORAGE);
 		this.networkResponseHandler = new NetworkResponseHandler(testNamedCollection, edgeStateCallback);

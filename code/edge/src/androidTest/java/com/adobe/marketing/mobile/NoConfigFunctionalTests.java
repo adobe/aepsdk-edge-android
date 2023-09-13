@@ -16,7 +16,6 @@ import static com.adobe.marketing.mobile.util.TestHelper.RegisterMonitorExtensio
 import static com.adobe.marketing.mobile.util.TestHelper.SetupCoreRule;
 import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
 import static com.adobe.marketing.mobile.util.TestHelper.getSharedStateFor;
-import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
 import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -31,6 +30,7 @@ import com.adobe.marketing.mobile.util.FakeIdentity;
 import com.adobe.marketing.mobile.util.JSONUtils;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.TestConstants;
+import com.adobe.marketing.mobile.util.TestHelper;
 import com.adobe.marketing.mobile.util.TestUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,7 +71,7 @@ public class NoConfigFunctionalTests {
 		latch.await();
 
 		assertExpectedEvents(false);
-		resetTestExpectations(mockNetworkService);
+		resetTestExpectations();
 	}
 
 	@Test
@@ -102,7 +102,7 @@ public class NoConfigFunctionalTests {
 		final JSONObject jsonObject = new JSONObject(jsonStr);
 		final Map<String, Object> identityMap = JSONUtils.toMap(jsonObject);
 
-		resetTestExpectations(mockNetworkService); // reset received events
+		resetTestExpectations(); // reset received events
 		setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 1);
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
@@ -221,5 +221,13 @@ public class NoConfigFunctionalTests {
 		assertEquals("//example.url?d_uuid=9876", handle2.get("spec.url"));
 		assertEquals("false", handle2.get("spec.hideReferrer"));
 		assertEquals("10080", handle2.get("spec.ttlMinutes"));
+	}
+
+	/**
+	 * Resets all test helper expectations and recorded data
+	 */
+	private void resetTestExpectations() {
+		mockNetworkService.reset();
+		TestHelper.resetTestExpectations();
 	}
 }

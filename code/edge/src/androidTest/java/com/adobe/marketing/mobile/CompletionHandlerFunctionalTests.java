@@ -16,7 +16,6 @@ import static com.adobe.marketing.mobile.util.TestHelper.LogOnErrorRule;
 import static com.adobe.marketing.mobile.util.TestHelper.RegisterMonitorExtensionRule;
 import static com.adobe.marketing.mobile.util.TestHelper.SetupCoreRule;
 import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
-import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
 import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -28,6 +27,7 @@ import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.TestConstants;
+import com.adobe.marketing.mobile.util.TestHelper;
 import com.adobe.marketing.mobile.util.TestUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -80,7 +80,7 @@ public class CompletionHandlerFunctionalTests {
 		MobileCore.registerExtensions(Arrays.asList(Edge.EXTENSION, Identity.EXTENSION), o -> latch.countDown());
 		latch.await();
 		assertExpectedEvents(false);
-		resetTestExpectations(mockNetworkService);
+		resetTestExpectations();
 	}
 
 	@Test
@@ -212,7 +212,7 @@ public class CompletionHandlerFunctionalTests {
 		mockNetworkService.assertAllNetworkRequestExpectations();
 		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch1.await(1, TimeUnit.SECONDS));
 
-		resetTestExpectations(mockNetworkService);
+		resetTestExpectations();
 
 		// set expectations and send second event
 		HttpConnecting responseConnection2 = mockNetworkService.createMockNetworkResponse(
@@ -315,5 +315,13 @@ public class CompletionHandlerFunctionalTests {
 		mockNetworkService.assertAllNetworkRequestExpectations();
 		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch1.await(1, TimeUnit.SECONDS));
 		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch2.await(1, TimeUnit.SECONDS));
+	}
+
+	/**
+	 * Resets all test helper expectations and recorded data
+	 */
+	private void resetTestExpectations() {
+		mockNetworkService.reset();
+		TestHelper.resetTestExpectations();
 	}
 }

@@ -13,7 +13,6 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
 import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
-import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
 import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -77,7 +76,7 @@ public class EdgePathOverwriteTests {
 		latch.await();
 
 		assertExpectedEvents(false);
-		resetTestExpectations(mockNetworkService);
+		resetTestExpectations();
 	}
 
 	@Test
@@ -271,5 +270,13 @@ public class EdgePathOverwriteTests {
 			MobileCore.extensionVersion() + "+" + Edge.extensionVersion(),
 			resultPayload.get("xdm.implementationDetails.version")
 		);
+	}
+
+	/**
+	 * Resets all test helper expectations and recorded data
+	 */
+	private void resetTestExpectations() {
+		mockNetworkService.reset();
+		TestHelper.resetTestExpectations();
 	}
 }

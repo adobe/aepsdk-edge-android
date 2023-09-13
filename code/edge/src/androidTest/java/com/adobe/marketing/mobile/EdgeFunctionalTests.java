@@ -19,7 +19,6 @@ import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
 import static com.adobe.marketing.mobile.util.TestHelper.assertUnexpectedEvents;
 import static com.adobe.marketing.mobile.util.TestHelper.getDispatchedEventsWith;
 import static com.adobe.marketing.mobile.util.TestHelper.getSharedStateFor;
-import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
 import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
 import static com.adobe.marketing.mobile.util.TestHelper.sleep;
 import static org.junit.Assert.assertEquals;
@@ -35,6 +34,7 @@ import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.TestConstants;
+import com.adobe.marketing.mobile.util.TestHelper;
 import com.adobe.marketing.mobile.util.TestUtils;
 import com.adobe.marketing.mobile.util.TestXDMSchema;
 import java.util.ArrayList;
@@ -100,7 +100,7 @@ public class EdgeFunctionalTests {
 		latch.await();
 
 		assertExpectedEvents(false);
-		resetTestExpectations(mockNetworkService);
+		resetTestExpectations();
 	}
 
 	// --------------------------------------------------------------------------------------------
@@ -728,7 +728,7 @@ public class EdgeFunctionalTests {
 		assertEquals("Expected request body with 12 elements, but found: " + requestBody, 12, requestBody.size());
 
 		assertExpectedEvents(true);
-		resetTestExpectations(mockNetworkService);
+		resetTestExpectations();
 
 		// send a new event, should contain previously stored store data
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
@@ -796,7 +796,7 @@ public class EdgeFunctionalTests {
 		assertEquals("Expected request body with 12 elements, but found: " + requestBody, 12, requestBody.size());
 
 		assertExpectedEvents(true);
-		resetTestExpectations(mockNetworkService);
+		resetTestExpectations();
 
 		// send a new event, should contain previously stored store data
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
@@ -858,7 +858,7 @@ public class EdgeFunctionalTests {
 		assertEquals("Expected request body with 12 elements, but found: " + requestBody, 12, requestBody.size());
 
 		assertExpectedEvents(true);
-		resetTestExpectations(mockNetworkService);
+		resetTestExpectations();
 
 		// send the reset event in-between
 		final Event resetEvent = new Event.Builder("resetEvent", EventType.EDGE_IDENTITY, EventSource.RESET_COMPLETE)
@@ -1340,7 +1340,7 @@ public class EdgeFunctionalTests {
 			.build();
 		Edge.sendEvent(event, null);
 		mockNetworkService.assertAllNetworkRequestExpectations();
-		resetTestExpectations(mockNetworkService);
+		resetTestExpectations();
 
 		// good connection, hits sent
 		responseConnection = mockNetworkService.createMockNetworkResponse(edgeResponse, 200);
@@ -1423,7 +1423,7 @@ public class EdgeFunctionalTests {
 
 		assertExpectedEvents(false);
 		mockNetworkService.assertAllNetworkRequestExpectations();
-		resetTestExpectations(mockNetworkService);
+		resetTestExpectations();
 
 		// good connection, hits sent
 		responseConnection = mockNetworkService.createMockNetworkResponse(edgeResponse, 200);
@@ -1548,6 +1548,14 @@ public class EdgeFunctionalTests {
 		assertEquals("test@AdobeOrg", eventData.get("report.orgId"));
 		assertEquals(requestEvents.get(0).getUniqueIdentifier(), eventData.get("requestEventId"));
 		assertEquals(requestEvents.get(0).getUniqueIdentifier(), resultEvents.get(0).getParentID());
+	}
+
+	/**
+	 * Resets all test helper expectations and recorded data
+	 */
+	private void resetTestExpectations() {
+		mockNetworkService.reset();
+		TestHelper.resetTestExpectations();
 	}
 
 	private void updateConfiguration(final Map<String, Object> config) throws InterruptedException {

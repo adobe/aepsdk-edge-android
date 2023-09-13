@@ -13,7 +13,6 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
 import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
-import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
 import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -57,7 +56,7 @@ public class RestartFunctionalTests {
 	public void setup() throws Exception {
 		ServiceProvider.getInstance().setNetworkService(mockNetworkService);
 		setupCore(false);
-		resetTestExpectations(mockNetworkService);
+		resetTestExpectations();
 	}
 
 	@Test
@@ -77,7 +76,7 @@ public class RestartFunctionalTests {
 
 		// reset
 		resetCore();
-		resetTestExpectations(mockNetworkService);
+		resetTestExpectations();
 		setupCore(true);
 
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, EVENTS_COUNT);
@@ -109,7 +108,7 @@ public class RestartFunctionalTests {
 
 		// reset
 		resetCore();
-		resetTestExpectations(mockNetworkService);
+		resetTestExpectations();
 		setupCore(true);
 
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, EVENTS_COUNT * 2);
@@ -157,7 +156,7 @@ public class RestartFunctionalTests {
 
 		// reset
 		resetCore();
-		resetTestExpectations(mockNetworkService); // Clears "bad connection" network response
+		resetTestExpectations(); // Clears "bad connection" network response
 
 		// Expect all queued hits to be sent
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, EVENTS_COUNT);
@@ -213,6 +212,14 @@ public class RestartFunctionalTests {
 		assertExpectedEvents(false);
 		// Note: Should not call resetTestExpectations so this helper can be used for testing scenarios
 		// where events are queued prior to the restart and unblocked soon after restart
+	}
+
+	/**
+	 * Resets all test helper expectations and recorded data
+	 */
+	private void resetTestExpectations() {
+		mockNetworkService.reset();
+		TestHelper.resetTestExpectations();
 	}
 
 	private void fireManyEvents() {

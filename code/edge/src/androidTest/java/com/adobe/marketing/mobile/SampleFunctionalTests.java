@@ -90,7 +90,7 @@ public class SampleFunctionalTests {
 
 		// Wait for and verify all expected events are received
 		TestHelper.assertExpectedEvents(false);
-		TestHelper.resetTestExpectations(mockNetworkService);
+		TestHelper.resetTestExpectations();
 	}
 
 	@Test
@@ -206,5 +206,13 @@ public class SampleFunctionalTests {
 		assertEquals("testType", flattendRequestBody.get("events[0].xdm.eventType"));
 
 		TestHelper.assertExpectedEvents(true);
+	}
+
+	/**
+	 * Resets all test helper expectations and recorded data
+	 */
+	private void resetTestExpectations() {
+		mockNetworkService.reset();
+		TestHelper.resetTestExpectations();
 	}
 }
