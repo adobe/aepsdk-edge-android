@@ -83,7 +83,7 @@ public class EdgePathOverwriteTests {
 	@Test
 	public void testSendEvent_withXDMData_withOverwritePath_overwritesRequestPathAndSendsExEdgeNetworkRequest()
 		throws Exception {
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
 		mockNetworkService.setMockResponseFor(EXEDGE_MEDIA_URL_STRING, POST, responseConnection);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_MEDIA_URL_STRING, POST, 1);
 
@@ -180,7 +180,7 @@ public class EdgePathOverwriteTests {
 	public void testSendEvent_withXDMData_withOverwritePath_withLocationHintSet_overwritesRequestPathAndSendsExEdgeNetworkRequestWithSetLocationHint()
 		throws Exception {
 		Edge.setLocationHint("or2");
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
 		mockNetworkService.setMockResponseFor(EXEDGE_MEDIA_OR2_LOC_URL_STRING, POST, responseConnection);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_MEDIA_OR2_LOC_URL_STRING, POST, 1);
 

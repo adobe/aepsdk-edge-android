@@ -133,7 +133,7 @@ public class NoConfigFunctionalTests {
 		final String responseBody =
 			"\u0000{\"requestId\": \"0ee43289-4a4e-469a-bf5c-1d8186919a26\",\"handle\": [{\"payload\": [{\"id\": \"AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9\",\"scope\": \"buttonColor\",\"items\": [{                           \"schema\": \"https://ns.adobe.com/personalization/json-content-item\",\"data\": {\"content\": {\"value\": \"#D41DBA\"}}}]}],\"type\": \"personalization:decisions\"},{\"payload\": [{\"type\": \"url\",\"id\": 411,\"spec\": {\"url\": \"//example.url?d_uuid=9876\",\"hideReferrer\": false,\"ttlMinutes\": 10080}}],\"type\": \"identity:exchange\"}]}\n";
 
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(responseBody, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(responseBody, 200);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, HttpMethod.POST, responseConnection);
 
 		// Set "fake" ECID

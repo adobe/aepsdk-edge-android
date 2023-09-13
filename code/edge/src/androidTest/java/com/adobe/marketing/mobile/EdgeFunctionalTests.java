@@ -276,7 +276,7 @@ public class EdgeFunctionalTests {
 
 	@Test
 	public void testSendEvent_withXDMData_sendsExEdgeNetworkRequest() throws Exception {
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 
@@ -355,7 +355,7 @@ public class EdgeFunctionalTests {
 
 	@Test
 	public void testSendEvent_withXDMDataAndCustomData_sendsExEdgeNetworkRequest() throws Exception {
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 
@@ -441,7 +441,7 @@ public class EdgeFunctionalTests {
 
 	@Test
 	public void testSendEvent_withXDMSchema_sendsExEdgeNetworkRequest() throws Exception {
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 
@@ -501,7 +501,7 @@ public class EdgeFunctionalTests {
 
 	@Test
 	public void testSendEvent_withEmptyXDMSchema_doesNotSendExEdgeNetworkRequest() throws InterruptedException {
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder().setXdmSchema(new TestXDMSchema()).build();
@@ -517,7 +517,7 @@ public class EdgeFunctionalTests {
 	@Test
 	public void testSendEvent_withEmptyXDMSchemaAndEmptyData_doesNotSendExEdgeNetworkRequest()
 		throws InterruptedException {
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
@@ -536,7 +536,7 @@ public class EdgeFunctionalTests {
 	@Test
 	public void testSendEvent_withEmptyXDMSchemaAndNullData_doesNotSendExEdgeNetworkRequest()
 		throws InterruptedException {
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(DEFAULT_RESPONSE_STRING, 200);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
@@ -711,7 +711,7 @@ public class EdgeFunctionalTests {
 
 		final String storeResponseBody =
 			"\u0000{\"requestId\": \"0000-4a4e-1111-bf5c-abcd\",\"handle\": [{\"payload\": [{\"key\": \"kndctr_testOrg_AdobeOrg_identity\",\"value\": \"hashed_value\",\"maxAge\": 34128000},{\"key\": \"kndctr_testOrg_AdobeOrg_consent_check\",\"value\": \"1\",\"maxAge\": 7200},{\"key\": \"expired_key\",\"value\": \"1\",\"maxAge\": 0}],\"type\": \"state:store\"}]}\n";
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(storeResponseBody, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(storeResponseBody, 200);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		setExpectationEvent(EventType.EDGE, "state:store", 1);
 
@@ -779,7 +779,7 @@ public class EdgeFunctionalTests {
 
 		final String storeResponseBody =
 			"\u0000{\"requestId\": \"0000-4a4e-1111-bf5c-abcd\",\"handle\": [{\"payload\": [{\"key\": \"kndctr_testOrg_AdobeOrg_identity\",\"value\": \"hashed_value\",\"maxAge\": 34128000},{\"key\": \"kndctr_testOrg_AdobeOrg_consent_check\",\"value\": \"1\",\"maxAge\": 7200},{\"key\": \"expired_key\",\"value\": \"1\",\"maxAge\": 0}],\"type\": \"state:store\"}]}\n";
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(storeResponseBody, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(storeResponseBody, 200);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		setExpectationEvent(EventType.EDGE, "state:store", 1);
 
@@ -841,7 +841,7 @@ public class EdgeFunctionalTests {
 
 		final String storeResponseBody =
 			"\u0000{\"requestId\": \"0000-4a4e-1111-bf5c-abcd\",\"handle\": [{\"payload\": [{\"key\": \"kndctr_testOrg_AdobeOrg_identity\",\"value\": \"hashed_value\",\"maxAge\": 34128000},{\"key\": \"kndctr_testOrg_AdobeOrg_consent_check\",\"value\": \"1\",\"maxAge\": 7200},{\"key\": \"expired_key\",\"value\": \"1\",\"maxAge\": 0}],\"type\": \"state:store\"}]}\n";
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(storeResponseBody, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(storeResponseBody, 200);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		setExpectationEvent(EventType.EDGE, "state:store", 1);
 
@@ -892,7 +892,7 @@ public class EdgeFunctionalTests {
 
 		final String responseBody =
 			"\u0000{\"requestId\": \"0ee43289-4a4e-469a-bf5c-1d8186919a26\",\"handle\": [{\"payload\": [{\"id\": \"AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9\",\"scope\": \"buttonColor\",\"items\": [{                           \"schema\": \"https://ns.adobe.com/personalization/json-content-item\",\"data\": {\"content\": {\"value\": \"#D41DBA\"}}}]}],\"type\": \"personalization:decisions\",\"eventIndex\": 0}]}\n";
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(responseBody, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(responseBody, 200);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 
@@ -944,7 +944,7 @@ public class EdgeFunctionalTests {
 
 		final String responseBody =
 			"\u0000{\"requestId\": \"0ee43289-4a4e-469a-bf5c-1d8186919a26\",\"handle\": [],\"warnings\": [{\"code\": \"personalization:0\",\"message\": \"Failed due to unrecoverable system error\",\"report\":{\"eventIndex\":0}}]}\n";
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(responseBody, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(responseBody, 200);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 
@@ -999,7 +999,7 @@ public class EdgeFunctionalTests {
 		final String hintResponseBody =
 			"\u0000{\"requestId\": \"0000-4a4e-1111-bf5c-abcd\",\"handle\": [{\"payload\": [{\"scope\": \"EdgeNetwork\",\"hint\": \"or2\",\"ttlSeconds\": 1800}],\"type\": \"locationHint:result\"}]}\n";
 
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(hintResponseBody, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(hintResponseBody, 200);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_OR2_LOC_URL_STRING, POST, 1);
@@ -1032,7 +1032,7 @@ public class EdgeFunctionalTests {
 		final String hintResponseBody =
 			"\u0000{\"requestId\": \"0000-4a4e-1111-bf5c-abcd\",\"handle\": [{\"payload\": [{\"scope\": \"EdgeNetwork\",\"hint\": \"or2\",\"ttlSeconds\": 1}],\"type\": \"locationHint:result\"}]}\n";
 
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(hintResponseBody, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(hintResponseBody, 200);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 2);
 
@@ -1299,7 +1299,7 @@ public class EdgeFunctionalTests {
 			"\u0000{\"requestId\": \"test-req-id\",\"handle\": [],\"errors\": [],\"warnings\": [{\"type\": \"https://ns.adobe.com/aep/errors/EXEG-0204-502\",\"status\": 503,\"title\": \"A warning occurred.\",\"report\": {\"cause\": {\"message\": \"Unavailable\",\"code\": 503}}}]}";
 
 		// bad connection, hits will be retried
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(
 			null,
 			edgeResponse,
 			503,
@@ -1343,7 +1343,7 @@ public class EdgeFunctionalTests {
 		resetTestExpectations(mockNetworkService);
 
 		// good connection, hits sent
-		responseConnection = mockNetworkService.createNetworkResponse(edgeResponse, 200);
+		responseConnection = mockNetworkService.createMockNetworkResponse(edgeResponse, 200);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
@@ -1378,7 +1378,7 @@ public class EdgeFunctionalTests {
 			"}";
 
 		// bad connection, hits will be retried
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(
 			null,
 			edgeResponse,
 			503,
@@ -1426,7 +1426,7 @@ public class EdgeFunctionalTests {
 		resetTestExpectations(mockNetworkService);
 
 		// good connection, hits sent
-		responseConnection = mockNetworkService.createNetworkResponse(edgeResponse, 200);
+		responseConnection = mockNetworkService.createMockNetworkResponse(edgeResponse, 200);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 2);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 2);
@@ -1440,7 +1440,7 @@ public class EdgeFunctionalTests {
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 		final String response =
 			"\u0000{\"requestId\":\"72eaa048-207e-4dde-bf16-0cb2b21336d5\",\"handle\":[],\"errors\":[{\"type\":\"https://ns.adobe.com/aep/errors/EXEG-0201-504\",\"status\":504,\"title\":\"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\"report\":{\"eventIndex\":0}}],\"warnings\":[{\"type\":\"https://ns.adobe.com/aep/errors/EXEG-0204-200\",\"status\":200,\"title\":\"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request.\",\"report\":{\"eventIndex\":0,\"cause\":{\"message\":\"Cannot read related customer for device id: ...\",\"code\":202}}}]}\n";
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(response, 207);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(response, 207);
 
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
@@ -1504,7 +1504,13 @@ public class EdgeFunctionalTests {
 			" }" +
 			"}";
 
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(null, response, 422, null, null);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(
+			null,
+			response,
+			422,
+			null,
+			null
+		);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 

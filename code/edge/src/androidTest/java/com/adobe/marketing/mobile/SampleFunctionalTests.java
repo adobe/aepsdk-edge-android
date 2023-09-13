@@ -144,7 +144,7 @@ public class SampleFunctionalTests {
 
 	@Test
 	public void testSample_AssertNetworkRequestsCount() throws InterruptedException {
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(responseBody, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(responseBody, 200);
 		mockNetworkService.setMockResponseFor(exEdgeInteractUrlString, POST, responseConnection);
 		mockNetworkService.setExpectationForNetworkRequest(exEdgeInteractUrlString, POST, 2);
 
@@ -180,7 +180,7 @@ public class SampleFunctionalTests {
 
 		final String responseBody =
 			"\u0000{\"requestId\":\"ded17427-c993-4182-8d94-2a169c1a23e2\",\"handle\":[{\"type\":\"identity:exchange\",\"payload\":[{\"type\":\"url\",\"id\":411,\"spec\":{\"url\":\"//cm.everesttech.net/cm/dd?d_uuid=42985602780892980519057012517360930936\",\"hideReferrer\":false,\"ttlMinutes\":10080}}]}]}\n";
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(responseBody, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(responseBody, 200);
 		mockNetworkService.setMockResponseFor(exEdgeInteractUrlString, POST, responseConnection);
 		mockNetworkService.setExpectationForNetworkRequest(exEdgeInteractUrlString, POST, 1);
 

@@ -121,7 +121,10 @@ public class IdentityStateFunctionalTests {
 		);
 		assertTrue(requests.isEmpty()); // no network requests sent yet
 
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse("\u0000{\"test\": \"json\"}", 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(
+			"\u0000{\"test\": \"json\"}",
+			200
+		);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 
@@ -175,7 +178,10 @@ public class IdentityStateFunctionalTests {
 		final Map<String, Object> identityState = JSONUtils.toMap(jsonObject);
 		FakeIdentity.setXDMSharedState(identityState, FakeIdentity.EVENT_TYPE); // set state without ECID
 
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse("\u0000{\"test\": \"json\"}", 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(
+			"\u0000{\"test\": \"json\"}",
+			200
+		);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 

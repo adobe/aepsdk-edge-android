@@ -85,7 +85,10 @@ public class CompletionHandlerFunctionalTests {
 
 	@Test
 	public void testSendEvent_withCompletionHandler_callsCompletionCorrectly() throws InterruptedException {
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(RESPONSE_BODY_WITH_HANDLE, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(
+			RESPONSE_BODY_WITH_HANDLE,
+			200
+		);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 
@@ -135,7 +138,10 @@ public class CompletionHandlerFunctionalTests {
 	@Test
 	public void testSendEventx2_withCompletionHandler_whenResponseHandle_callsCompletionCorrectly()
 		throws InterruptedException {
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(RESPONSE_BODY_WITH_HANDLE, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(
+			RESPONSE_BODY_WITH_HANDLE,
+			200
+		);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 2);
 
@@ -187,7 +193,10 @@ public class CompletionHandlerFunctionalTests {
 			.build();
 
 		// set expectations and send first event
-		HttpConnecting responseConnection1 = mockNetworkService.createNetworkResponse(RESPONSE_BODY_WITH_HANDLE, 200);
+		HttpConnecting responseConnection1 = mockNetworkService.createMockNetworkResponse(
+			RESPONSE_BODY_WITH_HANDLE,
+			200
+		);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection1);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 
@@ -206,7 +215,7 @@ public class CompletionHandlerFunctionalTests {
 		resetTestExpectations(mockNetworkService);
 
 		// set expectations and send second event
-		HttpConnecting responseConnection2 = mockNetworkService.createNetworkResponse(
+		HttpConnecting responseConnection2 = mockNetworkService.createMockNetworkResponse(
 			RESPONSE_BODY_WITH_TWO_ERRORS,
 			200
 		);
@@ -232,7 +241,7 @@ public class CompletionHandlerFunctionalTests {
 		throws InterruptedException {
 		final String responseBodyWithHandleAndError =
 			"\u0000{\"requestId\": \"0ee43289-4a4e-469a-bf5c-1d8186919a26\",\"handle\": [{\"payload\": [{\"id\": \"AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9\",\"scope\": \"buttonColor\",\"items\": [{                           \"schema\": \"https://ns.adobe.com/personalization/json-content-item\",\"data\": {\"content\": {\"value\": \"#D41DBA\"}}}]}],\"type\": \"personalization:decisions\"}],\"errors\": [{\"message\": \"An error occurred while calling the 'X' service for this request. Please try again.\", \"code\": \"502\"}, {\"message\": \"An error occurred while calling the 'Y', service unavailable\", \"code\": \"503\"}]}\n";
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(
 			responseBodyWithHandleAndError,
 			200
 		);
@@ -265,7 +274,10 @@ public class CompletionHandlerFunctionalTests {
 	@Test
 	public void testSendEvent_withCompletionHandler_whenExceptionThrownFromCallback_callsCompletionCorrectly()
 		throws InterruptedException {
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(RESPONSE_BODY_WITH_HANDLE, 200);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(
+			RESPONSE_BODY_WITH_HANDLE,
+			200
+		);
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 2);
 

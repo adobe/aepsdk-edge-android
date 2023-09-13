@@ -138,7 +138,7 @@ public class RestartFunctionalTests {
 			"\u0000{\"requestId\": \"test-req-id\",\"handle\": [],\"errors\": [],\"warnings\": [{\"type\": \"https://ns.adobe.com/aep/errors/EXEG-0204-502\",\"status\": 503,\"title\": \"A warning occurred.\",\"report\": {\"cause\": {\"message\": \"Unavailable\",\"code\": 503}}}]}";
 
 		// bad connection, hits will be retried
-		HttpConnecting responseConnection = mockNetworkService.createNetworkResponse(
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(
 			null,
 			edgeResponse,
 			503,
