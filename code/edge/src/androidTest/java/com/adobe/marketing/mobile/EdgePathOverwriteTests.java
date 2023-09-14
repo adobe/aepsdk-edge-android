@@ -13,6 +13,7 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
 import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
+import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
 import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -32,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -57,7 +59,6 @@ public class EdgePathOverwriteTests {
 
 	@Before
 	public void setup() throws Exception {
-		mockNetworkService.reset();
 		ServiceProvider.getInstance().setNetworkService(mockNetworkService);
 
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
@@ -77,6 +78,11 @@ public class EdgePathOverwriteTests {
 
 		assertExpectedEvents(false);
 		resetTestExpectations();
+	}
+
+	@After
+	public void tearDown() {
+		mockNetworkService.reset();
 	}
 
 	@Test
@@ -270,13 +276,5 @@ public class EdgePathOverwriteTests {
 			MobileCore.extensionVersion() + "+" + Edge.extensionVersion(),
 			resultPayload.get("xdm.implementationDetails.version")
 		);
-	}
-
-	/**
-	 * Resets all test helper expectations and recorded data
-	 */
-	private void resetTestExpectations() {
-		mockNetworkService.reset();
-		TestHelper.resetTestExpectations();
 	}
 }

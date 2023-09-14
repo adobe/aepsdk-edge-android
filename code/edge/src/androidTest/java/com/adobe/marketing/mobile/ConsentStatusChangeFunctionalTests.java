@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -56,7 +57,6 @@ public class ConsentStatusChangeFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
-		mockNetworkService.reset();
 		ServiceProvider.getInstance().setNetworkService(mockNetworkService);
 
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
@@ -81,6 +81,11 @@ public class ConsentStatusChangeFunctionalTests {
 
 		assertExpectedEvents(false);
 		resetTestExpectations();
+	}
+
+	@After
+	public void tearDown() {
+		mockNetworkService.reset();
 	}
 
 	// Test sendNetworkRequest(final EdgeHit edgeHit, final Map<String, String> requestHeaders, final int attemptCount)

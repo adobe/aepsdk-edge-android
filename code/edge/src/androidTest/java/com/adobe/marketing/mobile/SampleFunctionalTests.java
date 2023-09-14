@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -69,7 +70,6 @@ public class SampleFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
-		mockNetworkService.reset();
 		ServiceProvider.getInstance().setNetworkService(mockNetworkService);
 		// expectations for update config request&response events
 		TestHelper.setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
@@ -90,7 +90,13 @@ public class SampleFunctionalTests {
 
 		// Wait for and verify all expected events are received
 		TestHelper.assertExpectedEvents(false);
+		mockNetworkService.reset();
 		TestHelper.resetTestExpectations();
+	}
+
+	@After
+	public void tearDown() {
+		mockNetworkService.reset();
 	}
 
 	@Test
@@ -206,13 +212,5 @@ public class SampleFunctionalTests {
 		assertEquals("testType", flattendRequestBody.get("events[0].xdm.eventType"));
 
 		TestHelper.assertExpectedEvents(true);
-	}
-
-	/**
-	 * Resets all test helper expectations and recorded data
-	 */
-	private void resetTestExpectations() {
-		mockNetworkService.reset();
-		TestHelper.resetTestExpectations();
 	}
 }

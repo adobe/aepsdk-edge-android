@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.json.JSONObject;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -60,7 +61,6 @@ public class NoConfigFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
-		mockNetworkService.reset();
 		ServiceProvider.getInstance().setNetworkService(mockNetworkService);
 
 		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 2);
@@ -72,6 +72,11 @@ public class NoConfigFunctionalTests {
 
 		assertExpectedEvents(false);
 		resetTestExpectations();
+	}
+
+	@After
+	public void tearDown() {
+		mockNetworkService.reset();
 	}
 
 	@Test

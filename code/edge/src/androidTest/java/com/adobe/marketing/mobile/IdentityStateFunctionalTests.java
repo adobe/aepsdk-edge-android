@@ -16,6 +16,7 @@ import static com.adobe.marketing.mobile.util.TestHelper.LogOnErrorRule;
 import static com.adobe.marketing.mobile.util.TestHelper.RegisterMonitorExtensionRule;
 import static com.adobe.marketing.mobile.util.TestHelper.SetupCoreRule;
 import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
+import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
 import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -29,13 +30,13 @@ import com.adobe.marketing.mobile.util.FakeIdentity;
 import com.adobe.marketing.mobile.util.JSONUtils;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.TestConstants;
-import com.adobe.marketing.mobile.util.TestHelper;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import org.json.JSONObject;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -57,7 +58,6 @@ public class IdentityStateFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
-		mockNetworkService.reset();
 		ServiceProvider.getInstance().setNetworkService(mockNetworkService);
 
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1);
@@ -78,6 +78,11 @@ public class IdentityStateFunctionalTests {
 
 		assertExpectedEvents(false);
 		resetTestExpectations();
+	}
+
+	@After
+	public void tearDown() {
+		mockNetworkService.reset();
 	}
 
 	@Test
@@ -206,13 +211,5 @@ public class IdentityStateFunctionalTests {
 		assertEquals(1, requests.size());
 		Map<String, String> flattenedRequestBody = mockNetworkService.getFlattenedNetworkRequestBody(requests.get(0));
 		assertNull(flattenedRequestBody.get("xdm.identityMap.ECID[0].id"));
-	}
-
-	/**
-	 * Resets all test helper expectations and recorded data
-	 */
-	private void resetTestExpectations() {
-		mockNetworkService.reset();
-		TestHelper.resetTestExpectations();
 	}
 }
