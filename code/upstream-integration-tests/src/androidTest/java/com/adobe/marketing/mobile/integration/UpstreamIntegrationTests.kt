@@ -11,16 +11,15 @@
 
 package com.adobe.marketing.mobile.integration
 
-import android.os.Environment
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import com.adobe.marketing.mobile.Edge
-import com.adobe.marketing.mobile.EventSource
-import com.adobe.marketing.mobile.EventType
+import com.adobe.marketing.mobile.ExperienceEvent
 import com.adobe.marketing.mobile.MobileCore
 import com.adobe.marketing.mobile.edge.identity.Identity
 import com.adobe.marketing.mobile.integration.util.EdgeLocationHint
+import com.adobe.marketing.mobile.services.HttpMethod
 import com.adobe.marketing.mobile.services.ServiceProvider
+import com.adobe.marketing.mobile.services.TestableNetworkRequest
 import com.adobe.marketing.mobile.util.RealNetworkService
 import com.adobe.marketing.mobile.util.TestHelper
 import com.adobe.marketing.mobile.util.TestHelper.LogOnErrorRule
@@ -28,7 +27,7 @@ import com.adobe.marketing.mobile.util.TestHelper.RegisterMonitorExtensionRule
 import com.adobe.marketing.mobile.util.TestHelper.SetupCoreRule
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.fail
+import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -57,7 +56,6 @@ class UpstreamIntegrationTests {
     fun setup() {
         println("Environment var - Edge Network environment: $edgeEnvironment")
         println("Environment var - Edge Network location hint: $edgeLocationHint")
-        realNetworkService.reset()
         ServiceProvider.getInstance().networkService = realNetworkService
 
         // Set environment file ID for specific Edge Network environment
@@ -78,7 +76,7 @@ class UpstreamIntegrationTests {
         }
 
         realNetworkService.reset()
-        TestHelper.resetTestExpectations(realNetworkService)
+        TestHelper.resetTestExpectations(null)
     }
 
     @After
@@ -86,11 +84,35 @@ class UpstreamIntegrationTests {
         realNetworkService.reset()
     }
 
+    /**
+     * Tests that a standard sendEvent receives a single network response with HTTP code 200.
+     */
     @Test
-    fun useAppContext() {
-        // Context of the app under test.
-        val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.adobe.marketing.mobile.integration", appContext.packageName)
+    fun testSendEvent_receivesExpectedNetworkResponse() {
+        // Setup
+        // Note: test constructs should always be valid
+        val interactNetworkRequest = TestableNetworkRequest(createURLWith(locationHint = edgeLocationHint), HttpMethod.POST)
+
+        // Setting expectation allows for both:
+        // 1. Validation that the network request was sent out
+        // 2. Waiting on a response for the specific network request (with timeout)
+        realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
+
+        val experienceEvent = ExperienceEvent.Builder()
+            .setXdmSchema(mapOf("xdmtest" to "data"))
+            .setData(mapOf("data" to mapOf("test" to "data")))
+            .build()
+
+        // Test
+        Edge.sendEvent(experienceEvent) {}
+
+        // Verify
+        // Network response assertions
+        realNetworkService.assertAllNetworkRequestExpectations()
+        val matchingResponses = realNetworkService.getResponseFor(interactNetworkRequest)
+
+        assertNotNull(matchingResponses)
+        assertEquals(200, matchingResponses?.responseCode)
     }
 
     private fun setMobileCoreEnvironmentFileID(edgeEnvironment: String) {
@@ -107,8 +129,36 @@ class UpstreamIntegrationTests {
             }
             else -> {
                 // Catchall for any other values
-                fail("Unsupported edgeEnvironment value: $edgeEnvironment")
+                println("Unsupported edgeEnvironment value: $edgeEnvironment. Using prod as default.")
+                MobileCore.configureWithAppID("94f571f308d5/6b1be84da76a/launch-023a1b64f561-development")
             }
+        }
+    }
+
+    /**
+     * Creates a valid interact URL using the provided location hint. If location hint is invalid, returns default URL with no location hint.
+     *
+     * @param locationHint The `EdgeLocationHint`'s raw value to use in the URL.
+     * @return The interact URL with location hint applied, default URL if location hint is invalid.
+     */
+    private fun createURLWith(locationHint: EdgeLocationHint?): String {
+        locationHint?.let {
+            return createURLWith(locationHint = it.rawValue)
+        }
+        return "https://obumobile5.data.adobedc.net/ee/v1/interact"
+    }
+
+    /**
+     * Creates a valid interact URL using the provided location hint.
+     *
+     * @param locationHint The location hint String to use in the URL.
+     * @return The interact URL with location hint applied.
+     */
+    private fun createURLWith(locationHint: String?): String {
+        return if (locationHint.isNullOrEmpty()) {
+            "https://obumobile5.data.adobedc.net/ee/v1/interact"
+        } else {
+            "https://obumobile5.data.adobedc.net/ee/$locationHint/v1/interact"
         }
     }
 }

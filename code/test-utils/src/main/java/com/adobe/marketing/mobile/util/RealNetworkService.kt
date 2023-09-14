@@ -110,4 +110,16 @@ class RealNetworkService: NetworkServiceHelper() {
             ), expectedCount
         )
     }
+
+    /**
+     * Sets an expectation for a network request's send count.
+     * @param networkRequest the network request for which to set the expectation
+     * @param expectedCount how many times a request with this `url` and `method` is expected to be sent
+     */
+    fun setExpectationForNetworkRequest(
+        networkRequest: TestableNetworkRequest,
+        expectedCount: Int
+    ) {
+        setExpectationForNetworkRequest(networkRequest.url, networkRequest.method, expectedCount)
+    }
 }
