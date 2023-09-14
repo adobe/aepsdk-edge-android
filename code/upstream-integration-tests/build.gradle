@@ -30,6 +30,10 @@ android {
         // "pm clear" command after each test invocation. This command ensures
         // that the app's state is completely cleared between tests.
         testInstrumentationRunnerArguments clearPackageData: 'true'
+
+        // buildConfigField assignment with default values
+        buildConfigField 'String', 'EDGE_LOCATION_HINT', project.hasProperty('EDGE_LOCATION_HINT') ? "\"${EDGE_LOCATION_HINT}\"" : "\"\""
+        buildConfigField 'String', 'EDGE_ENVIRONMENT', project.hasProperty('EDGE_ENVIRONMENT') ? "\"${EDGE_ENVIRONMENT}\"" : "\"\""
     }
 
     buildTypes {

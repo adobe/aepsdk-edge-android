@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile.integration
 
+import android.os.Environment
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.adobe.marketing.mobile.Edge
@@ -18,6 +19,7 @@ import com.adobe.marketing.mobile.EventSource
 import com.adobe.marketing.mobile.EventType
 import com.adobe.marketing.mobile.MobileCore
 import com.adobe.marketing.mobile.edge.identity.Identity
+import com.adobe.marketing.mobile.integration.util.EdgeLocationHint
 import com.adobe.marketing.mobile.services.ServiceProvider
 import com.adobe.marketing.mobile.util.RealNetworkService
 import com.adobe.marketing.mobile.util.TestHelper
@@ -26,6 +28,7 @@ import com.adobe.marketing.mobile.util.TestHelper.RegisterMonitorExtensionRule
 import com.adobe.marketing.mobile.util.TestHelper.SetupCoreRule
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -39,7 +42,8 @@ import java.util.concurrent.CountDownLatch
 @RunWith(AndroidJUnit4::class)
 class UpstreamIntegrationTests {
     private val realNetworkService = RealNetworkService()
-    private val configID = "1234abcd-abcd-1234-5678-123456abcdef"
+    private val edgeLocationHint: String = BuildConfig.EDGE_LOCATION_HINT
+    private val edgeEnvironment: String = BuildConfig.EDGE_ENVIRONMENT
 
     @JvmField
     @Rule
@@ -51,19 +55,28 @@ class UpstreamIntegrationTests {
     @Before
     @Throws(Exception::class)
     fun setup() {
+        println("Environment var - Edge Network environment: $edgeEnvironment")
+        println("Environment var - Edge Network location hint: $edgeLocationHint")
         realNetworkService.reset()
         ServiceProvider.getInstance().networkService = realNetworkService
-        TestHelper.setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1)
-        TestHelper.setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1)
-        TestHelper.setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 4)
 
-        MobileCore.updateConfiguration(mapOf<String, Any>("edge.configId" to configID))
+        // Set environment file ID for specific Edge Network environment
+        setMobileCoreEnvironmentFileID(edgeEnvironment)
         val latch = CountDownLatch(1)
         MobileCore.registerExtensions(listOf(Edge.EXTENSION, Identity.EXTENSION)) {
             latch.countDown()
         }
         latch.await()
-        TestHelper.assertExpectedEvents(false)
+
+        // Set Edge location hint if one is set for the test suite
+        if (edgeLocationHint.isNotEmpty()) {
+            print("Setting Edge location hint to: $edgeLocationHint")
+            Edge.setLocationHint(edgeLocationHint)
+        }
+        else {
+            print("No preset Edge location hint is being used for this test.")
+        }
+
         realNetworkService.reset()
         TestHelper.resetTestExpectations(realNetworkService)
     }
@@ -77,6 +90,25 @@ class UpstreamIntegrationTests {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.adobe.marketing.mobile.integration.test", appContext.packageName)
+        assertEquals("com.adobe.marketing.mobile.integration", appContext.packageName)
+    }
+
+    private fun setMobileCoreEnvironmentFileID(edgeEnvironment: String) {
+        when (edgeEnvironment) {
+            "prod" -> {
+                MobileCore.configureWithAppID("94f571f308d5/6b1be84da76a/launch-023a1b64f561-development")
+            }
+            "preProd" -> {
+                MobileCore.configureWithAppID("94f571f308d5/6b1be84da76a/launch-023a1b64f561-development")
+            }
+            "int" -> {
+                // TODO: create integration environment environment file ID
+                MobileCore.configureWithAppID("94f571f308d5/6b1be84da76a/launch-023a1b64f561-development")
+            }
+            else -> {
+                // Catchall for any other values
+                fail("Unsupported edgeEnvironment value: $edgeEnvironment")
+            }
+        }
     }
 }
