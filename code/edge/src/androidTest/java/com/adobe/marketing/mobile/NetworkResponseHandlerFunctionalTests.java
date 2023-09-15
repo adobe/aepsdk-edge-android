@@ -1216,7 +1216,7 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.CONTENT_COMPLETE);
 		assertEquals(1, dispatchEvents.size());
 
-		Map<String, String> flattenReceivedData = FunctionalTestUtils.flattenMap(dispatchEvents.get(0).getEventData());
+		Map<String, String> flattenReceivedData = TestUtils.flattenMap(dispatchEvents.get(0).getEventData());
 		assertEquals(1, flattenReceivedData.size());
 		assertEquals("123", flattenReceivedData.get("requestId"));
 	}

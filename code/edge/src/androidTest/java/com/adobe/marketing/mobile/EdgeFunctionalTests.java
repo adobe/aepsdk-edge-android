@@ -331,7 +331,7 @@ public class EdgeFunctionalTests {
 					assertEquals(edgeEvent.getUniqueIdentifier(), event.getResponseID());
 					assertNotNull(event.getEventData());
 
-					Map<String, String> flattenedData = FunctionalTestUtils.flattenMap(event.getEventData());
+					Map<String, String> flattenedData = TestUtils.flattenMap(event.getEventData());
 					assertEquals(1, flattenedData.size());
 					assertNotNull(flattenedData.get("requestId"));
 					latch.countDown();
