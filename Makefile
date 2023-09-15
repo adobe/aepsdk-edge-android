@@ -71,8 +71,8 @@ ci-functional-test: create-ci
 	(cp -r ./code/$(EXTENSION-LIBRARY-FOLDER-NAME)/build ./ci/functional-test)
 
 ci-upstream-integration-test:
-	(./code/gradlew -p code/upstream-integration-tests uninstallDebugAndroidTest -PEDGE_ENVIRONMENT=value1 -PEDGE_LOCATION_HINT=value2)
-	(./code/gradlew -p code/upstream-integration-tests connectedDebugAndroidTest -PEDGE_ENVIRONMENT=value1 -PEDGE_LOCATION_HINT=value2)
+	(./code/gradlew -p code/upstream-integration-tests uninstallDebugAndroidTest)
+	(./code/gradlew -p code/upstream-integration-tests connectedDebugAndroidTest)
 
 ci-javadoc: create-ci
 	(mkdir -p ci/javadoc)
