@@ -60,8 +60,10 @@ public class NetworkResponseHandlerTest {
 	private static final String EVENT_SOURCE_EXTENSION_RESPONSE_CONTENT = "com.adobe.eventSource.responseContent";
 	private static final String EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT =
 		"com.adobe.eventSource.errorResponseContent";
+	private static final String EVENT_SOURCE_CONTENT_COMPLETE = "com.adobe.eventSource.contentComplete";
 	private static final String EVENT_NAME_RESPONSE = "AEP Response Event Handle";
 	private static final String EVENT_NAME_ERROR_RESPONSE = "AEP Error Response";
+	private static final String EVENT_NAME_CONTENT_COMPLETE = "AEP Response Complete";
 	private static final String REQUEST_ID = "requestId";
 	private static final String REQUEST_EVENT_ID = "requestEventId";
 	private NetworkResponseHandler networkResponseHandler;
@@ -83,6 +85,48 @@ public class NetworkResponseHandlerTest {
 		public void setLocationHint(String hint, int ttlSeconds) {
 			receivedSetLocationHint = hint;
 			receivedSetTtlSeconds = ttlSeconds;
+		}
+	};
+
+	private static final Map<String, Object> requestSendCompletionTrueEventData = new HashMap<String, Object>() {
+		{
+			put(
+				"xdm",
+				new HashMap<String, Object>() {
+					{
+						put("test", "data");
+					}
+				}
+			);
+			put(
+				"request",
+				new HashMap<String, Object>() {
+					{
+						put("sendCompletion", true);
+					}
+				}
+			);
+		}
+	};
+
+	private static final Map<String, Object> requestSendCompletionFalseEventData = new HashMap<String, Object>() {
+		{
+			put(
+				"xdm",
+				new HashMap<String, Object>() {
+					{
+						put("test", "data");
+					}
+				}
+			);
+			put(
+				"request",
+				new HashMap<String, Object>() {
+					{
+						put("sendCompletion", false);
+					}
+				}
+			);
 		}
 	};
 
@@ -482,8 +526,16 @@ public class NetworkResponseHandlerTest {
 	}
 
 	@Test
-	public void testProcessResponseOnSuccess_WhenEmptyJsonResponse_doesNotDispatchEvent() {
+	public void testProcessResponseOnSuccess_WhenEmptyStringResponse_doesNotDispatchEvent() {
 		final String jsonResponse = "";
+		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
+
+		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), never());
+	}
+
+	@Test
+	public void testProcessResponseOnSuccess_WhenEmptyJsonResponse_doesNotDispatchEvent() {
+		final String jsonResponse = "{}";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
 		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), never());
@@ -1601,6 +1653,131 @@ public class NetworkResponseHandlerTest {
 	}
 
 	@Test
+	public void testProcessResponseOnComplete_ifCompletionEventNotRequested_doesNotDispatchEvent() {
+		final String requestId = "123";
+		final Event requestEvent1 = new Event.Builder("test1", "testType", "testSource").build();
+		final Event requestEvent2 = new Event.Builder("test2", "testType", "testSource").build();
+
+		// test
+		networkResponseHandler.addWaitingEvents(
+			requestId,
+			new ArrayList<Event>() {
+				{
+					add(requestEvent1);
+					add(requestEvent2);
+				}
+			}
+		);
+
+		networkResponseHandler.processResponseOnComplete(requestId);
+		mockCore.verify(() -> MobileCore.dispatchEvent(any(Event.class)), never());
+	}
+
+	@Test
+	public void testProcessResponseOnComplete_ifCompletionEventRequested_dispatchesEvent() {
+		final String requestId = "123";
+		final Event requestEvent1 = new Event.Builder("test1", "testType", "testSource")
+			.setEventData(requestSendCompletionTrueEventData)
+			.build();
+		final Event requestEvent2 = new Event.Builder("test2", "testType", "testSource").build();
+
+		// test
+		networkResponseHandler.addWaitingEvents(
+			requestId,
+			new ArrayList<Event>() {
+				{
+					add(requestEvent1);
+					add(requestEvent2);
+				}
+			}
+		);
+
+		networkResponseHandler.processResponseOnComplete(requestId);
+
+		final Map<String, Object> expectedEventData = new HashMap<String, Object>() {
+			{
+				put("requestId", requestId);
+			}
+		};
+
+		assertResponseCompleteEventWithData(
+			new Map[] { expectedEventData },
+			new String[] { requestEvent1.getUniqueIdentifier() }
+		);
+	}
+
+	@Test
+	public void testProcessResponseOnComplete_ifMultipleCompletionEventRequested_dispatchesMultipleEvents() {
+		final String requestId = "123";
+		final Event requestEvent1 = new Event.Builder("test1", "testType", "testSource")
+			.setEventData(requestSendCompletionTrueEventData)
+			.build();
+		final Event requestEvent2 = new Event.Builder("test2", "testType", "testSource")
+			.setEventData(requestSendCompletionTrueEventData)
+			.build();
+
+		// test
+		networkResponseHandler.addWaitingEvents(
+			requestId,
+			new ArrayList<Event>() {
+				{
+					add(requestEvent1);
+					add(requestEvent2);
+				}
+			}
+		);
+
+		networkResponseHandler.processResponseOnComplete(requestId);
+
+		final Map<String, Object> expectedEventData = new HashMap<String, Object>() {
+			{
+				put("requestId", requestId);
+			}
+		};
+
+		assertResponseCompleteEventWithData(
+			new Map[] { expectedEventData, expectedEventData },
+			new String[] { requestEvent1.getUniqueIdentifier(), requestEvent2.getUniqueIdentifier() }
+		);
+	}
+
+	@Test
+	public void testProcessResponseOnComplete_ifCompletionEventRequestFalse_doesNotDispatchEvent() {
+		final String requestId = "123";
+		final Event requestEvent1 = new Event.Builder("test1", "testType", "testSource")
+			.setEventData(requestSendCompletionFalseEventData)
+			.build();
+		final Event requestEvent2 = new Event.Builder("test2", "testType", "testSource")
+			.setEventData(requestSendCompletionTrueEventData)
+			.build();
+
+		// test
+		networkResponseHandler.addWaitingEvents(
+			requestId,
+			new ArrayList<Event>() {
+				{
+					add(requestEvent1);
+					add(requestEvent2);
+				}
+			}
+		);
+
+		networkResponseHandler.processResponseOnComplete(requestId);
+
+		final Map<String, Object> expectedEventData = new HashMap<String, Object>() {
+			{
+				put("requestId", requestId);
+			}
+		};
+
+		// Assert complete event only dispatched for requestEvent2
+		assertResponseCompleteEventWithData(
+			new Map[] { expectedEventData },
+			new String[] { requestEvent2.getUniqueIdentifier() }
+		);
+	}
+
+	@Test
 	public void testAddWaitingEvents_addsNewList_happy() {
 		final String requestId = "test";
 		List<Event> eventsList = new ArrayList<>();
@@ -1874,5 +2051,26 @@ public class NetworkResponseHandlerTest {
 			: eventSource;
 		assertEquals(expectedEventSource, returnedEvent.getSource());
 		assertEquals(expectedEventData, returnedEvent.getEventData());
+	}
+
+	private void assertResponseCompleteEventWithData(
+		final Map<String, Object>[] expectedEventDatas,
+		final String[] parentEventIds
+	) {
+		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
+		mockCore.verify(() -> MobileCore.dispatchEvent(eventArgCaptor.capture()), times(parentEventIds.length));
+
+		List<Event> returnedEvents = eventArgCaptor.getAllValues();
+		assertEquals(parentEventIds.length, returnedEvents.size());
+		for (int i = 0; i < parentEventIds.length; i++) {
+			Event returnedEvent = returnedEvents.get(i);
+			assertNotNull(returnedEvent);
+			assertEquals(EVENT_NAME_CONTENT_COMPLETE, returnedEvent.getName());
+			assertEquals(EVENT_TYPE_EDGE, returnedEvent.getType());
+			assertEquals(EVENT_SOURCE_CONTENT_COMPLETE, returnedEvent.getSource());
+			assertEquals(expectedEventDatas[i], returnedEvent.getEventData());
+			assertEquals(parentEventIds[i], returnedEvent.getParentID());
+			assertEquals(parentEventIds[i], returnedEvent.getResponseID());
+		}
 	}
 }

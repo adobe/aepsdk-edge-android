@@ -33,7 +33,7 @@ android {
         testInstrumentationRunner rootProject.ext.testInstrumentationRunner
     }
 
-    flavorDimensions "target"
+    flavorDimensions = ["target"]
     productFlavors {
         phone {
             dimension "target"
@@ -77,30 +77,32 @@ spotless {
 }
 
 afterEvaluate {
-    tasks.withType(Javadoc) {
-        source = android.sourceSets.main.java.srcDirs
-        classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-        classpath += files(android.libraryVariants.collect { variant ->
-            variant.javaCompileProvider.get().classpath.files
-        })
-        options {
-            source = "8"
-            links "https://developer.android.com/reference"
+    tasks.withType(Javadoc).tap {
+        configureEach {
+            source = android.sourceSets.main.java.srcDirs
+            classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+            classpath += files(android.libraryVariants.collect { variant ->
+                variant.javaCompileProvider.get().classpath.files
+            })
+            options {
+                source = "8"
+                links "https://developer.android.com/reference"
+            }
         }
     }
 }
 
-task javadocInternal(type: Javadoc) {
+tasks.register('javadocInternal', Javadoc) {
     destinationDir = reporting.file("javadocInternal")
     options.memberLevel = JavadocMemberLevel.PRIVATE
 }
 
-task javadocPublic(type: Javadoc) {
+tasks.register('javadocPublic', Javadoc) {
     destinationDir = reporting.file("javadocPublic")
     options.memberLevel = JavadocMemberLevel.PUBLIC
 }
 
-task javadocPublish(type: Jar) {
+tasks.register('javadocPublish', Jar) {
     from javadocPublic
     archiveClassifier.set('javadoc')
 }
@@ -187,13 +189,14 @@ signing {
     sign publishing.publications
 }
 
-tasks.withType(Test) {
+tasks.withType(Test).configureEach {
     testLogging {
         showStandardStreams = true
     }
 }
 
-task platformUnitTestJacocoReport(type: JacocoReport, dependsOn: "testPhoneDebugUnitTest") {
+tasks.register('platformUnitTestJacocoReport', JacocoReport) {
+    dependsOn "testPhoneDebugUnitTest"
     def excludeRegex = ['**/BuildConfig.class']
     def debugTree = fileTree(dir: "${project.buildDir}/intermediates/javac/phoneDebug/classes/com/adobe/marketing/mobile", excludes: excludeRegex)
 
@@ -212,7 +215,8 @@ task platformUnitTestJacocoReport(type: JacocoReport, dependsOn: "testPhoneDebug
     }
 }
 
-task platformFunctionalTestJacocoReport(type: JacocoReport, dependsOn: "createPhoneDebugCoverageReport") {
+tasks.register('platformFunctionalTestJacocoReport', JacocoReport) {
+    dependsOn "createPhoneDebugCoverageReport"
     def excludeRegex = ['**/BuildConfig.class']
     def debugTree = fileTree(dir: "${project.buildDir}/intermediates/javac/phoneDebug/classes/com/adobe/marketing/mobile", excludes: excludeRegex)
 

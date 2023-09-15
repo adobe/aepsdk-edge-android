@@ -143,7 +143,7 @@ public class UtilsTests {
 	}
 
 	@Test
-	public void testDeepCopy_whenInvalidMapWithCustomObjects_returnsNullAndNoThrow() {
+	public void testDeepCopy_whenInvalidMapWithCustomObjects_returnsOnlyValidObjects() {
 		class CustomObj {
 
 			private final int value;
@@ -157,7 +157,10 @@ public class UtilsTests {
 		map.put("key2", new CustomObj(1000));
 
 		Map<String, Object> deepCopy = Utils.deepCopy(map);
-		assertNull(deepCopy);
+
+		Map<String, Object> expected = new HashMap<>();
+		expected.put("key1", "value1");
+		assertEquals(expected, deepCopy);
 	}
 
 	@Test
