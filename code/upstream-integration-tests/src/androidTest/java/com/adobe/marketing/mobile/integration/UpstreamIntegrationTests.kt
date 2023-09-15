@@ -699,7 +699,7 @@ class UpstreamIntegrationTests {
         // Error event assertions
         assertExpectedEvents(true)
     }
-    
+
     private fun setMobileCoreEnvironmentFileID(edgeEnvironment: String) {
         when (edgeEnvironment) {
             "prod" -> {
