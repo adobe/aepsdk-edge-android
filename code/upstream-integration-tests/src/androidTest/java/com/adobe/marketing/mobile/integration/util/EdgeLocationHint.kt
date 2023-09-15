@@ -11,8 +11,6 @@
 
 package com.adobe.marketing.mobile.integration.util
 
-import com.adobe.marketing.mobile.integration.BuildConfig
-
 /**
  * All location hint values available for the Edge Network extension
  */
@@ -37,19 +35,4 @@ enum class EdgeLocationHint(val rawValue: String) {
 
     /** Australia */
     AUS3("aus3");
-
-    companion object {
-        /**
-         * Returns the corresponding `EdgeLocationHint` enum for a given string value.
-         */
-        fun fromString(value: String): EdgeLocationHint? {
-            return values().find { it.rawValue == value }
-        }
-    }
-}
-
-fun extractEnvironmentVariable(keyName: String, enumClass: Class<EdgeLocationHint>): EdgeLocationHint? {
-    // Mocked function as the actual implementation is not provided.
-    // You would replace this with the actual implementation.
-    return null
 }
