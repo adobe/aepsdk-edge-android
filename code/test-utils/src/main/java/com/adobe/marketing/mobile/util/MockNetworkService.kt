@@ -27,7 +27,7 @@ import java.util.concurrent.Executors
 /**
  * [Networking] conforming network service utility used for tests that require mocked network requests and mocked responses.
  */
-class MockNetworkService: Networking, TestResettable {
+class MockNetworkService: Networking {
     private val helper = NetworkRequestHelper()
     // Simulating the async network service
     private val executorService: ExecutorService = Executors.newCachedThreadPool()
@@ -87,7 +87,7 @@ class MockNetworkService: Networking, TestResettable {
         }
     }
 
-    override fun reset() {
+    fun reset() {
         delayedResponse = 0
         helper.reset()
     }

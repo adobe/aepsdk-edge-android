@@ -13,21 +13,17 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
 import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
-import static com.adobe.marketing.mobile.util.TestHelper.assertNetworkRequestCount;
-import static com.adobe.marketing.mobile.util.TestHelper.createNetworkResponse;
-import static com.adobe.marketing.mobile.util.TestHelper.getNetworkRequestsWith;
-import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
 import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
-import static com.adobe.marketing.mobile.util.TestHelper.setExpectationNetworkRequest;
-import static com.adobe.marketing.mobile.util.TestHelper.setNetworkResponseFor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.adobe.marketing.mobile.edge.consent.Consent;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
+import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.ADBCountDownLatch;
+import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.MonitorExtension;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
@@ -44,6 +40,7 @@ import org.junit.rules.RuleChain;
 
 public class RestartFunctionalTests {
 
+	private static final MockNetworkService mockNetworkService = new MockNetworkService();
 	private static final String EXEDGE_INTERACT_URL_STRING = TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
 	private static final String CONFIG_ID = "1234abcd-abcd-1234-5678-123456abcdef";
 	private static final int EVENTS_COUNT = 5;
@@ -57,6 +54,7 @@ public class RestartFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
+		ServiceProvider.getInstance().setNetworkService(mockNetworkService);
 		setupCore(false);
 		resetTestExpectations();
 	}
@@ -69,7 +67,11 @@ public class RestartFunctionalTests {
 		fireManyEvents();
 
 		//verify
-		List<TestableNetworkRequest> resultRequests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, 2000);
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+			EXEDGE_INTERACT_URL_STRING,
+			POST,
+			2000
+		);
 		assertEquals(0, resultRequests.size());
 
 		// reset
@@ -77,14 +79,14 @@ public class RestartFunctionalTests {
 		resetTestExpectations();
 		setupCore(true);
 
-		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, EVENTS_COUNT);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, EVENTS_COUNT);
 
 		// test - change to yes
 		updateCollectConsent(ConsentStatus.YES);
 		getConsentsSync();
 
 		// verify
-		resultRequests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, TIMEOUT_MILLIS);
+		resultRequests = mockNetworkService.getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, TIMEOUT_MILLIS);
 		assertEquals(EVENTS_COUNT, resultRequests.size());
 	}
 
@@ -97,7 +99,11 @@ public class RestartFunctionalTests {
 		fireManyEvents();
 
 		//verify
-		List<TestableNetworkRequest> resultRequests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, 2000);
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+			EXEDGE_INTERACT_URL_STRING,
+			POST,
+			2000
+		);
 		assertEquals(0, resultRequests.size());
 
 		// reset
@@ -105,7 +111,7 @@ public class RestartFunctionalTests {
 		resetTestExpectations();
 		setupCore(true);
 
-		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, EVENTS_COUNT * 2);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, EVENTS_COUNT * 2);
 
 		// more pending events
 		fireManyEvents();
@@ -115,7 +121,7 @@ public class RestartFunctionalTests {
 		getConsentsSync();
 
 		// verify
-		resultRequests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, 10000);
+		resultRequests = mockNetworkService.getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, 10000);
 		assertEquals(EVENTS_COUNT * 2, resultRequests.size());
 	}
 
@@ -131,31 +137,38 @@ public class RestartFunctionalTests {
 			"\u0000{\"requestId\": \"test-req-id\",\"handle\": [],\"errors\": [],\"warnings\": [{\"type\": \"https://ns.adobe.com/aep/errors/EXEG-0204-502\",\"status\": 503,\"title\": \"A warning occurred.\",\"report\": {\"cause\": {\"message\": \"Unavailable\",\"code\": 503}}}]}";
 
 		// bad connection, hits will be retried
-		HttpConnecting responseConnection = createNetworkResponse(null, edgeResponse, 503, null, null);
-		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(
+			null,
+			edgeResponse,
+			503,
+			null,
+			null
+		);
+		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 
 		// Expect the one initial request
-		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 
 		fireManyEvents();
 
 		// verify the one initial request sent
-		assertNetworkRequestCount();
+		mockNetworkService.assertAllNetworkRequestExpectations();
 
 		// reset
 		resetCore();
 		resetTestExpectations(); // Clears "bad connection" network response
 
 		// Expect all queued hits to be sent
-		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, EVENTS_COUNT);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, EVENTS_COUNT);
 		setupCore(true);
 
 		// verify all events sent
-		assertNetworkRequestCount();
+		mockNetworkService.assertAllNetworkRequestExpectations();
 	}
 
 	public void resetCore() throws Exception {
 		TestHelper.resetCoreHelper();
+		ServiceProvider.getInstance().setNetworkService(mockNetworkService);
 	}
 
 	/**
@@ -199,6 +212,14 @@ public class RestartFunctionalTests {
 		assertExpectedEvents(false);
 		// Note: Should not call resetTestExpectations so this helper can be used for testing scenarios
 		// where events are queued prior to the restart and unblocked soon after restart
+	}
+
+	/**
+	 * Resets all test helper expectations and recorded data
+	 */
+	private void resetTestExpectations() {
+		mockNetworkService.reset();
+		TestHelper.resetTestExpectations();
 	}
 
 	private void fireManyEvents() {

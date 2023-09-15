@@ -15,14 +15,8 @@ import static com.adobe.marketing.mobile.util.TestHelper.LogOnErrorRule;
 import static com.adobe.marketing.mobile.util.TestHelper.RegisterMonitorExtensionRule;
 import static com.adobe.marketing.mobile.util.TestHelper.SetupCoreRule;
 import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
-import static com.adobe.marketing.mobile.util.TestHelper.assertNetworkRequestCount;
-import static com.adobe.marketing.mobile.util.TestHelper.createNetworkResponse;
-import static com.adobe.marketing.mobile.util.TestHelper.getNetworkRequestsWith;
 import static com.adobe.marketing.mobile.util.TestHelper.getSharedStateFor;
-import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
 import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
-import static com.adobe.marketing.mobile.util.TestHelper.setExpectationNetworkRequest;
-import static com.adobe.marketing.mobile.util.TestHelper.setNetworkResponseFor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -30,10 +24,13 @@ import static org.junit.Assert.assertTrue;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.HttpMethod;
+import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.FakeIdentity;
 import com.adobe.marketing.mobile.util.JSONUtils;
+import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.TestConstants;
+import com.adobe.marketing.mobile.util.TestHelper;
 import com.adobe.marketing.mobile.util.TestUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,6 +40,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.json.JSONObject;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,6 +50,7 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class NoConfigFunctionalTests {
 
+	private static final MockNetworkService mockNetworkService = new MockNetworkService();
 	private static final String EXEDGE_INTERACT_URL_STRING = TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
 
 	@Rule
@@ -62,6 +61,8 @@ public class NoConfigFunctionalTests {
 
 	@Before
 	public void setup() throws Exception {
+		ServiceProvider.getInstance().setNetworkService(mockNetworkService);
+
 		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 2);
 
 		final CountDownLatch latch = new CountDownLatch(1);
@@ -71,6 +72,11 @@ public class NoConfigFunctionalTests {
 
 		assertExpectedEvents(false);
 		resetTestExpectations();
+	}
+
+	@After
+	public void tearDown() {
+		mockNetworkService.reset();
 	}
 
 	@Test
@@ -119,7 +125,10 @@ public class NoConfigFunctionalTests {
 		assertExpectedEvents(false);
 
 		// verify the network request was not sent
-		List<TestableNetworkRequest> requests = getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, HttpMethod.POST);
+		List<TestableNetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
+			EXEDGE_INTERACT_URL_STRING,
+			HttpMethod.POST
+		);
 		assertTrue(requests.isEmpty());
 	}
 
@@ -129,8 +138,8 @@ public class NoConfigFunctionalTests {
 		final String responseBody =
 			"\u0000{\"requestId\": \"0ee43289-4a4e-469a-bf5c-1d8186919a26\",\"handle\": [{\"payload\": [{\"id\": \"AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9\",\"scope\": \"buttonColor\",\"items\": [{                           \"schema\": \"https://ns.adobe.com/personalization/json-content-item\",\"data\": {\"content\": {\"value\": \"#D41DBA\"}}}]}],\"type\": \"personalization:decisions\"},{\"payload\": [{\"type\": \"url\",\"id\": 411,\"spec\": {\"url\": \"//example.url?d_uuid=9876\",\"hideReferrer\": false,\"ttlMinutes\": 10080}}],\"type\": \"identity:exchange\"}]}\n";
 
-		HttpConnecting responseConnection = createNetworkResponse(responseBody, 200);
-		setNetworkResponseFor(EXEDGE_INTERACT_URL_STRING, HttpMethod.POST, responseConnection);
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(responseBody, 200);
+		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, HttpMethod.POST, responseConnection);
 
 		// Set "fake" ECID
 		final String jsonStr =
@@ -173,13 +182,13 @@ public class NoConfigFunctionalTests {
 			}
 		);
 
-		List<TestableNetworkRequest> resultNetworkRequests = getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultNetworkRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			HttpMethod.POST
 		);
 		assertTrue(resultNetworkRequests.isEmpty());
 
-		setExpectationNetworkRequest(EXEDGE_INTERACT_URL_STRING, HttpMethod.POST, 1);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, HttpMethod.POST, 1);
 
 		HashMap<String, Object> config = new HashMap<String, Object>() {
 			{
@@ -188,7 +197,7 @@ public class NoConfigFunctionalTests {
 		};
 		MobileCore.updateConfiguration(config);
 
-		assertNetworkRequestCount();
+		mockNetworkService.assertAllNetworkRequestExpectations();
 		assertTrue(latch.await(1, TimeUnit.SECONDS));
 
 		assertEquals(2, receivedHandles.size());
@@ -217,5 +226,13 @@ public class NoConfigFunctionalTests {
 		assertEquals("//example.url?d_uuid=9876", handle2.get("spec.url"));
 		assertEquals("false", handle2.get("spec.hideReferrer"));
 		assertEquals("10080", handle2.get("spec.ttlMinutes"));
+	}
+
+	/**
+	 * Resets all test helper expectations and recorded data
+	 */
+	private void resetTestExpectations() {
+		mockNetworkService.reset();
+		TestHelper.resetTestExpectations();
 	}
 }
