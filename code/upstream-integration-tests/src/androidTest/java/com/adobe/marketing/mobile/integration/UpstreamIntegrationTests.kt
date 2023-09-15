@@ -32,11 +32,12 @@ import com.adobe.marketing.mobile.util.TestHelper.SetupCoreRule
 import com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents
 import com.adobe.marketing.mobile.util.TestHelper.getDispatchedEventsWith
 import com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent
-import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -371,7 +372,334 @@ class UpstreamIntegrationTests {
         )
     }
 
+    /**
+     * Tests that a standard sendEvent with prior state receives the expected state store event handle.
+     */
+    @Test
+    fun testSendEvent_withPriorState_receivesExpectedStateStoreEventHandle() {
+        // Setup
+        val experienceEvent = ExperienceEvent.Builder()
+            .setXdmSchema(mapOf("xdmtest" to "data"))
+            .setData(mapOf("data" to mapOf("test" to "data")))
+            .build()
 
+        Edge.sendEvent(experienceEvent) {}
+
+        TestHelper.resetTestExpectations(null)
+        realNetworkService.reset()
+
+        EdgeLocationHint.values().map { it.rawValue }.shuffled().forEach { locationHint ->
+            // Set location hint
+            Edge.setLocationHint(locationHint)
+
+            expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.STATE_STORE, expectedCount = 1)
+
+            // Test
+            Edge.sendEvent(experienceEvent) {}
+
+            // Verify
+            val expectedStateStoreJSON = """
+            {
+              "payload": [
+                {
+                  "maxAge": 123,
+                  "key": "kndctr_972C898555E9F7BC7F000101_AdobeOrg_cluster",
+                  "value": "$locationHint"
+                }
+              ]
+            }
+            """.trimIndent()
+
+            // Unsafe access used since testSendEvent_receivesExpectedEventHandles guarantees existence
+            val stateStoreEvent = getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.STATE_STORE).last()
+
+            // Exact match used here to strictly validate `payload` array element count == 2
+            assertExactMatch(
+                expected = JSONObject(expectedStateStoreJSON),
+                actual = JSONObject(stateStoreEvent.eventData),
+                typeMatchPaths = listOf("payload[0].maxAge")
+            )
+
+            TestHelper.resetTestExpectations(null)
+            realNetworkService.reset()
+        }
+    }
+
+    // 2nd event tests
+    /**
+     * Tests that sending two standard sendEvents receives the expected network response.
+     */
+    @Test
+    fun testSendEventx2_receivesExpectedNetworkResponse() {
+        // Setup
+        // These expectations are used as a barrier for the event processing to complete
+        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT)
+
+        val experienceEvent = ExperienceEvent.Builder()
+            .setXdmSchema(mapOf("xdmtest" to "data"))
+            .setData(mapOf("data" to mapOf("test" to "data")))
+            .build()
+
+        // Test
+        Edge.sendEvent(experienceEvent) {}
+
+        // Extract location hint from Edge Network location hint response event
+        val locationHintResult = getLastLocationHintResultValue()
+
+        if (locationHintResult.isNullOrEmpty()) {
+            fail("Unable to extract valid location hint from location hint result event handle.")
+        }
+
+        // If there is a location hint preset for the test suite, check consistency between it and the
+        // value from the Edge Network
+        if (edgeLocationHint.isNotEmpty()) {
+            assertEquals(edgeLocationHint, locationHintResult)
+        }
+
+        // Wait on all expectations to finish processing before clearing expectations
+        assertExpectedEvents(true)
+
+        // Reset all test expectations
+        realNetworkService.reset()
+        TestHelper.resetTestExpectations(null)
+
+        // Set actual testing expectations
+        // If test suite level location hint is not set, uses the value extracted from location hint result
+        val locationHintNetworkRequest = TestableNetworkRequest(createURLWith(locationHintResult), HttpMethod.POST)
+
+        realNetworkService.setExpectationForNetworkRequest(locationHintNetworkRequest, expectedCount = 1)
+
+        // Test
+        // 2nd event
+        Edge.sendEvent(experienceEvent) {}
+
+        // Verify
+        // Network response assertions
+        realNetworkService.assertAllNetworkRequestExpectations()
+        val matchingResponses = realNetworkService.getResponseFor(locationHintNetworkRequest)
+
+        assertNotNull(matchingResponses)
+        assertEquals(200, matchingResponses?.responseCode)
+    }
+
+    /**
+     * Tests that sending two standard sendEvents receives the expected event handles.
+     */
+    @Test
+    fun testSendEventx2_receivesExpectedEventHandles() {
+        // Setup
+        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT, expectedCount = 2)
+        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.STATE_STORE, expectedCount = 2)
+
+        val experienceEvent = ExperienceEvent.Builder()
+            .setXdmSchema(mapOf("xdmtest" to "data"))
+            .setData(mapOf("data" to mapOf("test" to "data")))
+            .build()
+
+        // Test
+        Edge.sendEvent(experienceEvent) {}
+        Edge.sendEvent(experienceEvent) {}
+
+        // Verify
+        assertExpectedEvents(true)
+    }
+
+    /**
+     * Tests that sending two standard sendEvents does not receive any error event.
+     */
+    @Test
+    fun testSendEventx2_doesNotReceivesErrorEvent() {
+        // Setup
+        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT, expectedCount = 2)
+        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.STATE_STORE, expectedCount = 2)
+
+        val experienceEvent = ExperienceEvent.Builder()
+            .setXdmSchema(mapOf("xdmtest" to "data"))
+            .setData(mapOf("data" to mapOf("test" to "data")))
+            .build()
+
+        // Test
+        Edge.sendEvent(experienceEvent) {}
+        Edge.sendEvent(experienceEvent) {}
+
+        // Verify
+        assertExpectedEvents(true)
+
+        val errorEvents = getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.ERROR_RESPONSE_CONTENT)
+        assertEquals(0, errorEvents.size)
+    }
+
+    /**
+     * Tests that sending two standard sendEvents receives the expected location hint event handle.
+     * It verifies the consistency of location hint between the first and second event handles.
+     */
+    @Test
+    fun testSendEventx2_receivesExpectedLocationHintEventHandle() {
+        // Setup
+        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT)
+
+        val experienceEvent = ExperienceEvent.Builder()
+            .setXdmSchema(mapOf("xdmtest" to "data"))
+            .setData(mapOf("data" to mapOf("test" to "data")))
+            .build()
+
+        Edge.sendEvent(experienceEvent) {}
+
+        // Extract location hint from Edge Network location hint response event
+        val locationHintResult = getLastLocationHintResultValue()
+        if (locationHintResult.isNullOrEmpty()) {
+            fail("Unable to extract valid location hint from location hint result event handle.")
+        }
+
+        // Reset all test expectations
+        realNetworkService.reset()
+        TestHelper.resetTestExpectations(null)
+
+        // Set actual testing expectations
+        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT, expectedCount = 1)
+
+        // Test
+        // 2nd event
+        Edge.sendEvent(experienceEvent) {}
+
+        // Verify
+        // If there is a location hint preset for the test suite, check consistency between it and the
+        // value from the Edge Network
+        if (edgeLocationHint.isNotEmpty()) {
+            assertEquals(edgeLocationHint, locationHintResult)
+        }
+
+        // Verify location hint consistency between 1st and 2nd event handles
+        val expectedLocationHintJSON = """
+        {
+          "payload": [
+            {
+              "ttlSeconds" : 123,
+              "scope" : "EdgeNetwork",
+              "hint" : "$locationHintResult"
+            }
+          ]
+        }
+        """.trimIndent()
+
+        // Unsafe access used since testSendEvent_receivesExpectedEventHandles guarantees existence
+        val locationHintResultEvent = getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT).first()
+        assertTypeMatch(
+            expected = JSONObject(expectedLocationHintJSON),
+            actual = JSONObject(locationHintResultEvent.eventData),
+            exactMatchPaths = listOf("payload[*].scope", "payload[*].hint")
+        )
+    }
+
+    /**
+     * Tests that an invalid datastream ID returns the expected error.
+     */
+    @Test
+    fun testSendEvent_withInvalidDatastreamID_receivesExpectedError() {
+        // Setup
+        // Waiting for configuration response content event solves the potential race condition of
+        // configuration's shared state not reaching Edge before it starts processing the sendEvent event
+        // 1st: from remote config download(?)
+        // 2nd: from updateConfiguration
+        setExpectationEvent(TestConstants.EventType.CONFIGURATION, TestConstants.EventSource.RESPONSE_CONTENT, 2)
+
+        MobileCore.updateConfiguration(mapOf("edge.configId" to "12345-example"))
+
+        assertExpectedEvents(true)
+
+        val interactNetworkRequest = TestableNetworkRequest(createURLWith(locationHint = edgeLocationHint), HttpMethod.POST)
+        realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
+        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.ERROR_RESPONSE_CONTENT, expectedCount = 1)
+
+        val experienceEvent = ExperienceEvent.Builder()
+            .setXdmSchema(mapOf("xdmtest" to "data"))
+            .setData(mapOf("data" to mapOf("test" to "data")))
+            .build()
+
+        // Test
+        Edge.sendEvent(experienceEvent) {}
+
+        // Verify
+        // Network response assertions
+        realNetworkService.assertAllNetworkRequestExpectations()
+        val matchingResponse = realNetworkService.getResponseFor(interactNetworkRequest)
+
+        assertNotNull(matchingResponse)
+        assertEquals(400, matchingResponse?.responseCode)
+
+        // Event assertions
+        val expectedErrorJSON = """
+        {
+            "status": 400,
+            "detail": "stringType",
+            "report": {
+                "requestId": "stringType"
+            },
+            "requestEventId": "stringType",
+            "title": "Invalid datastream ID",
+            "type": "https://ns.adobe.com/aep/errors/EXEG-0003-400",
+            "requestId": "stringType"
+        }
+        """.trimIndent()
+
+        val errorEvents = getEdgeResponseErrors()
+
+        assertEquals(1, errorEvents.size)
+
+        val errorEvent = errorEvents.first()
+        assertTypeMatch(
+            expected = JSONObject(expectedErrorJSON),
+            actual = JSONObject(errorEvent.eventData),
+            exactMatchPaths = listOf("status", "title", "type")
+        )
+    }
+
+    @Test
+    fun testSendEvent_withInvalidLocationHint_receivesExpectedError() {
+        // Tests that an invalid location hint returns the expected error with 0 byte data body
+
+        // Setup
+        val invalidNetworkRequest = TestableNetworkRequest(createURLWith(locationHint = "invalid"), HttpMethod.POST)
+
+        realNetworkService.setExpectationForNetworkRequest(networkRequest = invalidNetworkRequest, expectedCount = 1)
+        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.ERROR_RESPONSE_CONTENT, expectedCount = 1)
+
+        Edge.setLocationHint("invalid")
+
+        val experienceEvent = ExperienceEvent.Builder()
+            .setXdmSchema(mapOf("xdmtest" to "data"))
+            .setData(mapOf("data" to mapOf("test" to "data")))
+            .build()
+
+        // Test
+        Edge.sendEvent(experienceEvent) {}
+
+        // Verify
+        // Network response assertions
+        realNetworkService.assertAllNetworkRequestExpectations()
+        val matchingResponses = realNetworkService.getResponseFor(networkRequest = invalidNetworkRequest)
+
+        assertNotNull(matchingResponses)
+        assertEquals(404, matchingResponses?.responseCode)
+
+        val contentLengthHeader = matchingResponses?.getResponsePropertyValue("Content-Length")
+        val contentLength = contentLengthHeader?.toIntOrNull()
+
+        if (contentLength != null) {
+            println("Content-Length: $contentLength")
+            assertEquals(0, contentLength)
+        } else {
+            println("Content-Length header not found or not a valid integer")
+        }
+
+        // Should be null when there is no response body from the server
+        val responseBodySize = matchingResponses?.inputStream?.readBytes()?.size
+        assertNull(responseBodySize)
+
+        // Error event assertions
+        assertExpectedEvents(true)
+    }
+    
     private fun setMobileCoreEnvironmentFileID(edgeEnvironment: String) {
         when (edgeEnvironment) {
             "prod" -> {

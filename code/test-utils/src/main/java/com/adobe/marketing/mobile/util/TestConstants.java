@@ -23,7 +23,7 @@ public class TestConstants {
 
 	// Event type and sources used by Monitor Extension
 	public static class EventType {
-
+		public static final String CONFIGURATION = "com.adobe.eventType.configuration";
 		public static final String EDGE = "com.adobe.eventType.edge";
 		public static final String MONITOR = "com.adobe.functional.eventType.monitor";
 
@@ -34,6 +34,7 @@ public class TestConstants {
 
 		public static final String ERROR_RESPONSE_CONTENT = "com.adobe.eventSource.errorResponseContent";
 		public static final String LOCATION_HINT_RESULT = "locationHint:result";
+		public static final String RESPONSE_CONTENT = "com.adobe.eventSource.responseContent";
 		public static final String SHARED_STATE_REQUEST = "com.adobe.eventSource.sharedStateRequest";
 		public static final String SHARED_STATE_RESPONSE = "com.adobe.eventSource.sharedStateResponse";
 		public static final String STATE_STORE = "state:store";
