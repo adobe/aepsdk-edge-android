@@ -65,7 +65,7 @@ class NetworkRequestHelper {
 	 * @param responseConnection The response connection to be associated with the request.
 	 * @see [TestableNetworkRequest.equals]
 	 */
-	fun setResponseConnectionFor(
+	fun setResponseFor(
 		request: TestableNetworkRequest,
 		responseConnection: HttpConnecting
 	) {
