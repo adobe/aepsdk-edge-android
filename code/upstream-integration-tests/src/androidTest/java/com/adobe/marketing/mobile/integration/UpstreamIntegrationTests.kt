@@ -85,8 +85,7 @@ class UpstreamIntegrationTests {
             print("No preset Edge location hint is being used for this test.")
         }
 
-        realNetworkService.reset()
-        TestHelper.resetTestExpectations(null)
+        resetTestExpectations()
     }
 
     @After
@@ -322,8 +321,7 @@ class UpstreamIntegrationTests {
                 exactMatchPaths = listOf("payload[*].scope", "payload[*].hint")
             )
 
-            realNetworkService.reset()
-            TestHelper.resetTestExpectations(null)
+            resetTestExpectations()
         }
     }
 
@@ -385,8 +383,7 @@ class UpstreamIntegrationTests {
 
         Edge.sendEvent(experienceEvent) {}
 
-        TestHelper.resetTestExpectations(null)
-        realNetworkService.reset()
+        resetTestExpectations()
 
         EdgeLocationHint.values().map { it.rawValue }.shuffled().forEach { locationHint ->
             // Set location hint
@@ -420,8 +417,7 @@ class UpstreamIntegrationTests {
                 typeMatchPaths = listOf("payload[0].maxAge")
             )
 
-            TestHelper.resetTestExpectations(null)
-            realNetworkService.reset()
+            resetTestExpectations()
         }
     }
 
@@ -460,8 +456,7 @@ class UpstreamIntegrationTests {
         assertExpectedEvents(true)
 
         // Reset all test expectations
-        realNetworkService.reset()
-        TestHelper.resetTestExpectations(null)
+        resetTestExpectations()
 
         // Set actual testing expectations
         // If test suite level location hint is not set, uses the value extracted from location hint result
@@ -552,8 +547,7 @@ class UpstreamIntegrationTests {
         }
 
         // Reset all test expectations
-        realNetworkService.reset()
-        TestHelper.resetTestExpectations(null)
+        resetTestExpectations()
 
         // Set actual testing expectations
         expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT, expectedCount = 1)
@@ -790,4 +784,11 @@ class UpstreamIntegrationTests {
         return null
     }
 
+    /**
+     * Resets all test helper expectations and recorded data
+     */
+    private fun resetTestExpectations() {
+        realNetworkService.reset()
+        TestHelper.resetTestExpectations()
+    }
 }
