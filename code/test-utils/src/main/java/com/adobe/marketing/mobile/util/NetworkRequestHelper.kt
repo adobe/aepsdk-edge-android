@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit
  */
 class NetworkRequestHelper {
 	private val sentTestableNetworkRequests: MutableMap<TestableNetworkRequest, MutableList<TestableNetworkRequest>>
-	private val networkResponses: MutableMap<TestableNetworkRequest, HttpConnecting>
+	private val networkResponses: MutableMap<TestableNetworkRequest, MutableList<HttpConnecting>>
 	private val expectedTestableNetworkRequests: MutableMap<TestableNetworkRequest, ADBCountDownLatch>
 
 	companion object {
@@ -53,11 +53,28 @@ class NetworkRequestHelper {
 		expectedTestableNetworkRequests.clear()
 	}
 
+	/**
+	 * Associates the given response connection with the specified request.
+	 *
+	 * This method preserves all response connections that match the custom equality logic of
+	 * `TestableNetworkRequest` (which is more inclusive than exact equality). If the request is
+	 * already associated with a list of response connections, the new connection will be added
+	 * to this list, preserving response order (newest response is added to the end of the list).
+	 *
+	 * @param request The request for which the response connection is to be set.
+	 * @param responseConnection The response connection to be associated with the request.
+	 * @see [TestableNetworkRequest.equals]
+	 */
 	fun setResponseConnectionFor(
-			request: TestableNetworkRequest,
-			responseConnection: HttpConnecting
+		request: TestableNetworkRequest,
+		responseConnection: HttpConnecting
 	) {
-		networkResponses[request] = responseConnection
+		if (networkResponses[request] != null) {
+			networkResponses[request]?.add(responseConnection)
+		} else {
+			// If there's no response for this request yet, start a new list with the first response
+			networkResponses[request] = mutableListOf(responseConnection)
+		}
 	}
 
 	/**
@@ -196,12 +213,16 @@ class NetworkRequestHelper {
 	}
 
 	/**
-	 * Returns the associated [HttpConnecting] response for a given [TestableNetworkRequest].
+	 * Returns the associated [HttpConnecting] responses for a given [TestableNetworkRequest].
 	 *
-	 * @param request The [TestableNetworkRequest] whose [HttpConnecting] response should be returned.
-	 * @return The [HttpConnecting] response for the given request or `null` if not found.
+	 * There may be more than one response for a given request due to the custom equality logic used
+	 * by `TestableNetworkRequest`.
+	 *
+	 * @param request The [TestableNetworkRequest] for which the [HttpConnecting] responses should be returned.
+	 * @return The list of [HttpConnecting] responses for the given request or `null` if not found.
+	 * @see [TestableNetworkRequest.equals]
 	 */
-	fun getResponseFor(request: TestableNetworkRequest): HttpConnecting? {
+	fun getResponsesFor(request: TestableNetworkRequest): List<HttpConnecting>? {
 		for ((key, value) in networkResponses) {
 			if (key == request) {
 				return value
