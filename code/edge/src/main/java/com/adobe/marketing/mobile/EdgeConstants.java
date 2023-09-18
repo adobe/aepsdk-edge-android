@@ -14,7 +14,7 @@ package com.adobe.marketing.mobile;
 final class EdgeConstants {
 
 	static final String EDGE_DATA_STORAGE = "EdgeDataStorage";
-	static final String EXTENSION_VERSION = "2.2.0";
+	static final String EXTENSION_VERSION = "2.3.0";
 	static final String EXTENSION_NAME = "com.adobe.edge";
 	static final String FRIENDLY_NAME = "Edge";
 	static final String LOG_TAG = FRIENDLY_NAME;
@@ -23,6 +23,7 @@ final class EdgeConstants {
 
 		static final String REQUEST_CONTENT = "AEP Request Event";
 		static final String RESPONSE_CONTENT = "AEP Response Event Handle";
+		static final String CONTENT_COMPLETE = "AEP Response Complete";
 		static final String ERROR_RESPONSE_CONTENT = "AEP Error Response";
 		static final String REQUEST_LOCATION_HINT = "Edge Request Location Hint";
 		static final String RESPONSE_LOCATION_HINT = "Edge Location Hint Response";
@@ -58,6 +59,8 @@ final class EdgeConstants {
 
 			static final String KEY = "request";
 			static final String PATH = "path";
+			// sendCompletion - boolean flag to determine if a "complete" event is requested
+			static final String SEND_COMPLETION = "sendCompletion";
 
 			private Request() {}
 		}

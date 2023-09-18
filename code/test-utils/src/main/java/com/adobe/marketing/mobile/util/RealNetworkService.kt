@@ -32,7 +32,7 @@ class RealNetworkService: NetworkServiceHelper() {
         val testableNetworkRequest = TestableNetworkRequest(request)
         helper.recordSentNetworkRequest(testableNetworkRequest)
         super.connectAsync(testableNetworkRequest) {
-            helper.setResponseConnectionFor(testableNetworkRequest, it)
+            helper.setResponseFor(testableNetworkRequest, it)
             helper.countDownExpected(testableNetworkRequest)
 
             callback?.call(it)
@@ -77,19 +77,20 @@ class RealNetworkService: NetworkServiceHelper() {
 
 
     /**
-     * Immediately returns the associated [HttpConnecting] response (if any) for a given [NetworkRequest] without
-     * awaiting a response.
+     * Immediately returns the associated [HttpConnecting] responses (if any) for a given [NetworkRequest]
+     * **without awaiting** a response.
      *
-     * Note: To properly await network responses for a given [networkRequest], make sure to set an expectation
+     * Note: To properly await network responses for a given [NetworkRequest], make sure to set an expectation
      * using [setExpectationForNetworkRequest] then await the expectation using [assertAllNetworkRequestExpectations].
      *
-     * @param networkRequest The [NetworkRequest] for which the response should be returned.
-     * @return The associated [HttpConnecting] response for the given request or `null` if not found.
+     * @param networkRequest The [NetworkRequest] for which the [HttpConnecting] responses should be returned.
+     * @return The list of [HttpConnecting] responses for the given request or `null` if not found.
      * @see [setExpectationForNetworkRequest]
      * @see [assertAllNetworkRequestExpectations]
+     * @see [NetworkRequestHelper.getResponsesFor]
      */
-    fun getResponseFor(networkRequest: NetworkRequest): HttpConnecting? {
-        return helper.getResponseFor(TestableNetworkRequest(networkRequest))
+    fun getResponsesFor(networkRequest: NetworkRequest): List<HttpConnecting>? {
+        return helper.getResponsesFor(TestableNetworkRequest(networkRequest))
     }
 
     /**
@@ -109,5 +110,17 @@ class RealNetworkService: NetworkServiceHelper() {
                 method
             ), expectedCount
         )
+    }
+
+    /**
+     * Sets an expectation for a network request's send count.
+     * @param networkRequest the network request for which to set the expectation
+     * @param expectedCount how many times a request with this `url` and `method` is expected to be sent
+     */
+    fun setExpectationForNetworkRequest(
+        networkRequest: TestableNetworkRequest,
+        expectedCount: Int
+    ) {
+        setExpectationForNetworkRequest(networkRequest.url, networkRequest.method, expectedCount)
     }
 }

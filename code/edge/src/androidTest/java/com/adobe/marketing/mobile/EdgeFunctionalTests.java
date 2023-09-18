@@ -47,6 +47,7 @@ import java.util.TimeZone;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -273,6 +274,72 @@ public class EdgeFunctionalTests {
 
 		// verify
 		assertUnexpectedEvents();
+	}
+
+	// --------------------------------------------------------------------------------------------
+	// test complete event format
+	// --------------------------------------------------------------------------------------------
+
+	@Test
+	public void testDispatchEvent_sendCompleteEvent_sendsPairedCompleteEvent() throws InterruptedException {
+		Map<String, Object> eventData = new HashMap<String, Object>() {
+			{
+				put(
+					"xdm",
+					new HashMap<String, Object>() {
+						{
+							put("test", "data");
+						}
+					}
+				);
+				put(
+					"request",
+					new HashMap<String, Object>() {
+						{
+							put("sendCompletion", true);
+						}
+					}
+				);
+			}
+		};
+
+		Event edgeEvent = new Event.Builder(
+			"Edge Event Completion Request",
+			EventType.EDGE,
+			EventSource.REQUEST_CONTENT
+		)
+			.setEventData(eventData)
+			.build();
+
+		final CountDownLatch latch = new CountDownLatch(1);
+
+		MobileCore.dispatchEventWithResponseCallback(
+			edgeEvent,
+			2000,
+			new AdobeCallbackWithError<Event>() {
+				@Override
+				public void fail(AdobeError adobeError) {
+					Assert.fail("DispatchEventWithResponseCallback returned an error: " + adobeError.toString());
+				}
+
+				@Override
+				public void call(Event event) {
+					assertEquals("AEP Response Complete", event.getName());
+					assertEquals(EventType.EDGE, event.getType());
+					assertEquals(EventSource.CONTENT_COMPLETE, event.getSource());
+					assertEquals(edgeEvent.getUniqueIdentifier(), event.getParentID());
+					assertEquals(edgeEvent.getUniqueIdentifier(), event.getResponseID());
+					assertNotNull(event.getEventData());
+
+					Map<String, String> flattenedData = TestUtils.flattenMap(event.getEventData());
+					assertEquals(1, flattenedData.size());
+					assertNotNull(flattenedData.get("requestId"));
+					latch.countDown();
+				}
+			}
+		);
+
+		assertTrue(latch.await(3000, TimeUnit.MILLISECONDS));
 	}
 
 	// --------------------------------------------------------------------------------------------

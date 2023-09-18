@@ -14,6 +14,7 @@
   - [Edge response content](#edge-response-content)
   - [Edge state store](#edge-state-store)
   - [Edge location hint result](#edge-location-hint-result)
+  - [Edge content complete](#edge-content-complete)
 
 ## Events handled by Edge
 
@@ -41,6 +42,7 @@ If the required `xdm` key is not present in the event data payload, the event is
 | xdm | <code>Map<String,&nbsp;Object></code> | Yes | XDM formatted data; use an `XDMSchema` implementation for better XDM data ingestion and data format control. |
 | data | <code>Map<String,&nbsp;Object></code> | No | Optional free-form data associated with this event. |
 | datasetId | `String` | No | Optional custom dataset ID. If not set, the event uses the default Experience dataset ID set in the datastream configuration. |
+| request | <code>Map<String,&nbsp;Object></code> | No | Optional request parameters. |
 
 > **Note**  
 > Events of this type and source are only processed if the data collection consent status stored in the `collect` property is **not** `n` (no); that is, either `y` (yes) or `p` (pending).
@@ -204,7 +206,7 @@ This event is an error response to an originating event. If there are multiple e
 
 ### Edge response content
 
-This event is a response to an [Edge request content](#edge-request-content) event.
+This event is a response to an [Edge request content](#edge-request-content) event. This event is constructed using the response fragment from the Edge Network service for a sent XDM Experience Event; Edge Network extension does not modify any values received and constructs a response event with the event source and data payload as-is. This event is only dispatched if the response fragment doesn't define a type, otherwise an event using the response type is dispatched such as a [state:store](#edge-state-store) or [locationHint:result](#edge-location-hint-result).
 
 #### Event details<!-- omit in toc -->
 
@@ -251,3 +253,21 @@ This event tells the Edge Network extension to persist the location hint to the 
 | scope | `String` | No | The scope that the location hint applies to, for example `EdgeNetwork`. |
 | hint | `String` | No | The location hint string. |
 | ttlSeconds | `int` | No | The time period the location hint should be valid for. |
+
+-----
+
+### Edge content complete
+
+This event is a response to an [Edge request content](#edge-request-content) event and is sent when the Edge Network request is complete. This event is only dispatched when requested by the request content event when the `request` payload object contains the property `sendCompletion` with boolean value `true`.
+
+#### Event details<!-- omit in toc -->
+
+| Event type | Event source |
+| ---------- | ------------ |
+| com.adobe.eventType.edge | com.adobe.eventSource.contentComplete |
+
+#### Event data payload definition<!-- omit in toc -->
+
+| Key | Value type | Required | Description |
+| --- | ---------- | -------- | ----------- |
+| requestId | `String` | Yes | The ID (`UUID`) of the batched Edge Network request tied to the event that requested the completion response. |

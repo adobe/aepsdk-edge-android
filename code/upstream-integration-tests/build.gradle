@@ -30,6 +30,10 @@ android {
         // "pm clear" command after each test invocation. This command ensures
         // that the app's state is completely cleared between tests.
         testInstrumentationRunnerArguments clearPackageData: 'true'
+
+        // buildConfigField assignment with default values
+        buildConfigField 'String', 'EDGE_LOCATION_HINT', project.hasProperty('EDGE_LOCATION_HINT') ? "\"${EDGE_LOCATION_HINT}\"" : "\"\""
+        buildConfigField 'String', 'EDGE_ENVIRONMENT', project.hasProperty('EDGE_ENVIRONMENT') ? "\"${EDGE_ENVIRONMENT}\"" : "\"\""
     }
 
     buildTypes {
@@ -57,6 +61,8 @@ dependencies {
 
     implementation 'androidx.core:core-ktx:1.9.0'
 
+    androidTestImplementation "com.adobe.marketing.mobile:core:${rootProject.mavenCoreVersion}"
+    androidTestImplementation "com.adobe.marketing.mobile:edgeidentity:${rootProject.mavenIdentityVersion}"
     androidTestImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
 

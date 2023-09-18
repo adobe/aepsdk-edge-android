@@ -22,6 +22,7 @@ import com.adobe.marketing.mobile.util.MapUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,7 +41,7 @@ class NetworkResponseHandler {
 	private static final String LOG_SOURCE = "NetworkResponseHandler";
 
 	// the order of the request events matter for matching them with the response events
-	private final ConcurrentMap<String, List<WaitingEventContext>> sentEventsWaitingResponse;
+	private final ConcurrentMap<String, List<Event>> sentEventsWaitingResponse;
 	private final Object mutex = new Object();
 	private final NamedCollection namedCollection;
 	private final EdgeStateCallback edgeStateCallback;
@@ -83,13 +84,7 @@ class NetworkResponseHandler {
 			return;
 		}
 
-		final List<WaitingEventContext> eventContexts = new ArrayList<>();
-
-		for (Event e : batchedEvents) {
-			eventContexts.add(new WaitingEventContext(e.getUniqueIdentifier(), e.getTimestamp()));
-		}
-
-		if (sentEventsWaitingResponse.put(requestId, eventContexts) != null) {
+		if (sentEventsWaitingResponse.put(requestId, batchedEvents) != null) {
 			Log.warning(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -116,27 +111,16 @@ class NetworkResponseHandler {
 	 * Remove the requestId in the internal {@code sentEventsWaitingResponse} along with the associated list of events.
 	 *
 	 * @param requestId batch request id
-	 * @return the list of unique event ids associated with the requestId that were removed
+	 * @return the list of unique events associated with the requestId that were removed, or null
+	 * if no events are associated with the {@code requestId}
 	 */
-	List<String> removeWaitingEvents(final String requestId) {
+	List<Event> removeWaitingEvents(final String requestId) {
 		if (StringUtils.isNullOrEmpty(requestId)) {
 			return null;
 		}
 
 		synchronized (mutex) {
-			final List<WaitingEventContext> temp = sentEventsWaitingResponse.remove(requestId);
-
-			if (temp == null) {
-				return null;
-			}
-
-			final List<String> eventIds = new ArrayList<>();
-
-			for (WaitingEventContext context : temp) {
-				eventIds.add(context.getUuid());
-			}
-
-			return eventIds;
+			return sentEventsWaitingResponse.remove(requestId);
 		}
 	}
 
@@ -152,7 +136,7 @@ class NetworkResponseHandler {
 		}
 
 		synchronized (mutex) {
-			final List<WaitingEventContext> temp = sentEventsWaitingResponse.get(requestId);
+			final List<Event> temp = sentEventsWaitingResponse.get(requestId);
 
 			if (temp == null) {
 				return Collections.emptyList();
@@ -160,8 +144,8 @@ class NetworkResponseHandler {
 
 			final List<String> eventIds = new ArrayList<>();
 
-			for (WaitingEventContext context : temp) {
-				eventIds.add(context.getUuid());
+			for (Event event : temp) {
+				eventIds.add(event.getUniqueIdentifier());
 			}
 
 			if (!temp.isEmpty()) {
@@ -291,6 +275,58 @@ class NetworkResponseHandler {
 				e.getLocalizedMessage()
 			);
 		}
+	}
+
+	/**
+	 * Process the on complete response from the network layer by unregistering request callbacks for
+	 * each event and dispatching completion events for the paired events which requested one.
+	 *
+	 * @param requestId the request id used to identify the request events
+	 */
+	void processResponseOnComplete(final String requestId) {
+		List<Event> removedWaitingEvents = removeWaitingEvents(requestId);
+
+		// unregister currently known completion callbacks
+		if (removedWaitingEvents != null) {
+			for (Event event : removedWaitingEvents) {
+				CompletionCallbacksManager.getInstance().unregisterCallback(event.getUniqueIdentifier());
+
+				if (sendCompletionRequested(event)) {
+					// send completion event
+					Map<String, Object> eventData = new HashMap<>();
+					addEventAndRequestIdToData(eventData, requestId, null);
+
+					Event responseEvent = new Event.Builder(
+						EdgeConstants.EventName.CONTENT_COMPLETE,
+						EventType.EDGE,
+						EventSource.CONTENT_COMPLETE
+					)
+						.setEventData(eventData)
+						.inResponseToEvent(event)
+						.build();
+
+					MobileCore.dispatchEvent(responseEvent);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Determines whether a completion event has been requested based on the boolean value of
+	 * {@code request.sendCompletion} in the provided {@code event}.
+	 *
+	 * @param event The {@code Event} whose data is checked for a completion event request.
+	 * @return true if the {@code event} is requesting a completion event; false otherwise.
+	 */
+	private boolean sendCompletionRequested(final Event event) {
+		Map<String, Object> eventData = event.getEventData();
+		Map<String, Object> requestProperties = DataReader.optTypedMap(
+			Object.class,
+			eventData,
+			EdgeConstants.EventDataKeys.Request.KEY,
+			null
+		);
+		return DataReader.optBoolean(requestProperties, EdgeConstants.EventDataKeys.Request.SEND_COMPLETION, false);
 	}
 
 	/**
@@ -635,14 +671,14 @@ class NetworkResponseHandler {
 		}
 
 		synchronized (mutex) {
-			final List<WaitingEventContext> contexts = sentEventsWaitingResponse.get(requestId);
+			final List<Event> contexts = sentEventsWaitingResponse.get(requestId);
 
 			if (contexts == null || contexts.isEmpty()) {
 				return false;
 			}
 
-			final WaitingEventContext firstContext = contexts.get(0);
-			return firstContext.getTimestamp() < lastResetDate;
+			final Event firstEvent = contexts.get(0);
+			return firstEvent.getTimestamp() < lastResetDate;
 		}
 	}
 
@@ -656,39 +692,5 @@ class NetworkResponseHandler {
 		}
 
 		return namedCollection.getLong(EdgeConstants.DataStoreKeys.RESET_IDENTITIES_DATE, 0);
-	}
-
-	/**
-	 * Stores a subset of {@link Event} information
-	 * required for matching the request events with the response payloads. See the usages of {@code sentEventsWaitingResponse}
-	 */
-	private class WaitingEventContext {
-
-		private final String uuid;
-		private final long timestamp;
-
-		/**
-		 * Creates a new context with the {@link Event} id and timestamp
-		 * @param uuid unique identifier of the {@code Event}
-		 * @param timestamp timestamp of the {@code Event} represented as milliseconds since 1970
-		 */
-		private WaitingEventContext(final String uuid, final long timestamp) {
-			this.uuid = uuid;
-			this.timestamp = timestamp;
-		}
-
-		/**
-		 * @return current unique identifier for this context
-		 */
-		String getUuid() {
-			return uuid;
-		}
-
-		/**
-		 * @return current timestamp for this context represented as milliseconds since 1970
-		 */
-		long getTimestamp() {
-			return timestamp;
-		}
 	}
 }

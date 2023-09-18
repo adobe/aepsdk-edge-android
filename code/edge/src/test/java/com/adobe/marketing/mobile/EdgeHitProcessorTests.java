@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -484,6 +485,13 @@ public class EdgeHitProcessorTests {
 	// Test experience events handling based on collect consent value
 	@Test
 	public void testSendNetworkRequest_executesCleanup_whenOnCompleteCalled() {
+		final Event mockEvent1 = new Event.Builder("mock event 1", "testType", "testSource")
+			.setUniqueIdentifier("event1")
+			.build();
+		final Event mockEvent2 = new Event.Builder("mock event 2", "testType", "testSource")
+			.setUniqueIdentifier("event2")
+			.build();
+
 		// setup
 		final String configId = "456";
 		final JSONObject requestBody = getOneEventJson();
@@ -507,12 +515,13 @@ public class EdgeHitProcessorTests {
 			.thenReturn(new RetryResult(EdgeNetworkService.Retry.NO));
 
 		// test
+		doCallRealMethod().when(mockNetworkResponseHandler).processResponseOnComplete(anyString());
 		when(mockNetworkResponseHandler.removeWaitingEvents(hit.getRequestId()))
 			.thenReturn(
-				new ArrayList<String>() {
+				new ArrayList<Event>() {
 					{
-						add("event1");
-						add("event2");
+						add(mockEvent1);
+						add(mockEvent2);
 					}
 				}
 			);
@@ -533,9 +542,9 @@ public class EdgeHitProcessorTests {
 		verify(mockNetworkResponseHandler);
 		mockNetworkResponseHandler.removeWaitingEvents(hit.getRequestId());
 		verify(mockResponseCallbackHandler, times(1));
-		mockResponseCallbackHandler.unregisterCallback("event1");
+		mockResponseCallbackHandler.unregisterCallback(mockEvent1.getUniqueIdentifier());
 		verify(mockResponseCallbackHandler, times(1));
-		mockResponseCallbackHandler.unregisterCallback("event2");
+		mockResponseCallbackHandler.unregisterCallback(mockEvent2.getUniqueIdentifier());
 	}
 
 	@Test
@@ -563,6 +572,7 @@ public class EdgeHitProcessorTests {
 			.thenReturn(new RetryResult(EdgeNetworkService.Retry.NO));
 
 		// test
+		doCallRealMethod().when(mockNetworkResponseHandler).processResponseOnComplete(anyString());
 		when(mockNetworkResponseHandler.removeWaitingEvents(hit.getRequestId())).thenReturn(null);
 
 		hitProcessor.sendNetworkRequest(null, hit, new HashMap<String, String>());
@@ -587,6 +597,10 @@ public class EdgeHitProcessorTests {
 
 	@Test
 	public void testSendNetworkRequest_buildsConsentRequest_whenRequestTypeConsent() throws InterruptedException {
+		final Event mockEvent1 = new Event.Builder("mock event 1", "testType", "testSource")
+			.setUniqueIdentifier("event1")
+			.build();
+
 		// setup
 		final String configId = "456";
 		final JSONObject requestBody = getConsentPayloadJson();
@@ -599,11 +613,12 @@ public class EdgeHitProcessorTests {
 		);
 		final EdgeHit hit = new EdgeHit(configId, requestBody, endpoint);
 		when(mockEdgeNetworkService.buildUrl(endpoint, configId, hit.getRequestId())).thenReturn("https://test.com");
+		doCallRealMethod().when(mockNetworkResponseHandler).processResponseOnComplete(anyString());
 		when(mockNetworkResponseHandler.removeWaitingEvents(hit.getRequestId()))
 			.thenReturn(
-				new ArrayList<String>() {
+				new ArrayList<Event>() {
 					{
-						add("event1");
+						add(mockEvent1);
 					}
 				}
 			);
@@ -635,7 +650,7 @@ public class EdgeHitProcessorTests {
 		verify(mockNetworkResponseHandler);
 		mockNetworkResponseHandler.removeWaitingEvents(hit.getRequestId());
 		verify(mockResponseCallbackHandler, times(1));
-		mockResponseCallbackHandler.unregisterCallback("event1");
+		mockResponseCallbackHandler.unregisterCallback(mockEvent1.getUniqueIdentifier());
 	}
 
 	@Test

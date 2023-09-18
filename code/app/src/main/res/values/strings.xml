@@ -32,4 +32,5 @@
     <string name="tv_mobile_core">Mobile Core</string>
     <string name="et_hint_assurance_id">Paste your Assurance session ID here</string>
     <string name="btn_connect_to_assurance">Connect to Assurance</string>
+    <string name="btn_dispatch_event"><![CDATA[Dispatch Event & Send Complete]]></string>
 </resources>

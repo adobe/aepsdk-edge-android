@@ -37,4 +37,5 @@
     <string name="btn_assurance_connect">Connect</string>
     <string name="et_assurance_session_url_hint">Paste your Assurance session ID here</string>
     <string name="btn_assurance_settings_menu">Connect to Assurance</string>
+    <string name="btn_dispatch_event"><![CDATA[Dispach Event & Send Complete]]></string>
 </resources>
