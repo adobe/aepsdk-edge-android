@@ -72,7 +72,7 @@ ci-functional-test: create-ci
 
 ci-upstream-integration-test:
 	(./code/gradlew -p code/upstream-integration-tests uninstallDebugAndroidTest)
-	(./code/gradlew -p code/upstream-integration-tests connectedDebugAndroidTest)
+	(./code/gradlew -p code/upstream-integration-tests connectedDebugAndroidTest -PEDGE_ENVIRONMENT=$(EDGE_ENVIRONMENT) -PEDGE_LOCATION_HINT=$(EDGE_LOCATION_HINT))
 
 ci-javadoc: create-ci
 	(mkdir -p ci/javadoc)
