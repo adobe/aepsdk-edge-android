@@ -11,7 +11,7 @@
 
 package com.adobe.marketing.mobile.util;
 
-import static com.adobe.marketing.mobile.util.FunctionalTestConstants.LOG_TAG;
+import static com.adobe.marketing.mobile.util.TestConstants.LOG_TAG;
 
 import androidx.annotation.NonNull;
 import com.adobe.marketing.mobile.Event;
@@ -59,8 +59,8 @@ public class MonitorExtension extends Extension {
 	public static void unregisterExtension() {
 		Event event = new Event.Builder(
 			"Unregister Monitor Extension Request",
-			FunctionalTestConstants.EventType.MONITOR,
-			FunctionalTestConstants.EventSource.UNREGISTER
+			TestConstants.EventType.MONITOR,
+			TestConstants.EventSource.UNREGISTER
 		)
 			.build();
 		MobileCore.dispatchEvent(event);
@@ -104,10 +104,10 @@ public class MonitorExtension extends Extension {
 	 * @param event current event to be processed
 	 */
 	public void wildcardProcessor(final Event event) {
-		if (FunctionalTestConstants.EventType.MONITOR.equalsIgnoreCase(event.getType())) {
-			if (FunctionalTestConstants.EventSource.SHARED_STATE_REQUEST.equalsIgnoreCase(event.getSource())) {
+		if (TestConstants.EventType.MONITOR.equalsIgnoreCase(event.getType())) {
+			if (TestConstants.EventSource.SHARED_STATE_REQUEST.equalsIgnoreCase(event.getSource())) {
 				processSharedStateRequest(event);
-			} else if (FunctionalTestConstants.EventSource.UNREGISTER.equalsIgnoreCase(event.getSource())) {
+			} else if (TestConstants.EventSource.UNREGISTER.equalsIgnoreCase(event.getSource())) {
 				processUnregisterRequest(event);
 			}
 
@@ -141,7 +141,7 @@ public class MonitorExtension extends Extension {
 			return;
 		}
 
-		String stateOwner = DataReader.optString(eventData, FunctionalTestConstants.EventDataKey.STATE_OWNER, null);
+		String stateOwner = DataReader.optString(eventData, TestConstants.EventDataKey.STATE_OWNER, null);
 		if (stateOwner == null) {
 			return;
 		}
@@ -150,8 +150,8 @@ public class MonitorExtension extends Extension {
 			.getSharedState(stateOwner, event, false, SharedStateResolution.ANY);
 		Event responseEvent = new Event.Builder(
 			"Get Shared State Response",
-			FunctionalTestConstants.EventType.MONITOR,
-			FunctionalTestConstants.EventSource.SHARED_STATE_RESPONSE
+			TestConstants.EventType.MONITOR,
+			TestConstants.EventSource.SHARED_STATE_RESPONSE
 		)
 			.setEventData(sharedStateResult != null ? sharedStateResult.getValue() : new HashMap<>())
 			.inResponseToEvent(event)

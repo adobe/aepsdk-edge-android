@@ -70,3 +70,6 @@ fastlane/readme.md
 
 # .Idea file
 code/.idea*
+
+# VS Code
+.vscode
