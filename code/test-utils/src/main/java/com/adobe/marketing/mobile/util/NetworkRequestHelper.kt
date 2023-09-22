@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit
  */
 class NetworkRequestHelper {
 	private val sentTestableNetworkRequests: MutableMap<TestableNetworkRequest, MutableList<TestableNetworkRequest>>
-	private val networkResponses: MutableMap<TestableNetworkRequest, MutableList<HttpConnecting>>
+	private val networkResponses: MutableMap<TestableNetworkRequest, HttpConnecting>
 	private val expectedTestableNetworkRequests: MutableMap<TestableNetworkRequest, ADBCountDownLatch>
 
 	companion object {
@@ -54,34 +54,23 @@ class NetworkRequestHelper {
 	}
 
 	/**
-	 * Associates the given response connection with the specified request.
+	 * Sets a network response for the provided network request.
 	 *
-	 * This method preserves all response connections that match the custom equality logic of
-	 * `TestableNetworkRequest` (which is more inclusive than exact equality). If the request is
-	 * already associated with a list of response connections, the new connection will be added
-	 * to this list, preserving response order (newest response is added to the end of the list).
-	 *
-	 * @param request The request for which the response connection is to be set.
-	 * @param responseConnection The response connection to be associated with the request.
-	 * @see [TestableNetworkRequest.equals]
+	 * @param request The [TestableNetworkRequest] for which the response is being set.
+	 * @param responseConnection The [HttpConnecting] to set as a response.
 	 */
 	fun setResponseFor(
 		request: TestableNetworkRequest,
 		responseConnection: HttpConnecting
 	) {
-		if (networkResponses[request] != null) {
-			networkResponses[request]?.add(responseConnection)
-		} else {
-			// If there's no response for this request yet, start a new list with the first response
-			networkResponses[request] = mutableListOf(responseConnection)
-		}
+		networkResponses[request] = responseConnection
 	}
 
 	/**
-	 * Sets an expectation for a network request's send count.
+	 * Sets the expected number of times a network request should be sent.
 	 *
-	 * @param request The [TestableNetworkRequest] instance representing the network request for which the expectation is being set.
-	 * @param count The number of times the provided network request is expected to be sent.
+	 * @param request The [TestableNetworkRequest] representing the network request to set the expectation for.
+	 * @param count The number of times the request is expected to be sent.
 	 * @see [assertAllNetworkRequestExpectations]
 	 */
 	fun setExpectationForNetworkRequest(request: TestableNetworkRequest, count: Int) {
@@ -92,6 +81,15 @@ class NetworkRequestHelper {
 		return expectedTestableNetworkRequests
 	}
 
+	/**
+	 * Returns all sent network requests that match the provided network request.
+	 *
+	 * The matching relies on [TestableNetworkRequest.equals].
+	 *
+	 * @param request The [TestableNetworkRequest] for which to get matching requests.
+	 *
+	 * @return A list of [TestableNetworkRequest]s that match the provided [request]. If no matches are found, an empty list is returned.
+	 */
 	fun getSentNetworkRequestsMatching(request: TestableNetworkRequest): List<TestableNetworkRequest> {
 		for ((key, value) in sentTestableNetworkRequests) {
 			if (key == request) {
@@ -102,14 +100,18 @@ class NetworkRequestHelper {
 	}
 
 	/**
-	 * Returns the [TestableNetworkRequest](s) sent through the Core NetworkService, or empty if
-	 * none was found. Use this API after calling [setExpectationForNetworkRequest] to wait for each request.
+	 * Returns the network request(s) sent through the Core `NetworkService`, returning an empty list if none were found.
 	 *
-	 * @param url The url string for which to retrieved the network requests sent
-	 * @param method the HTTP method for which to retrieve the network requests
-	 * @param timeoutMillis how long should this method wait for the expected network requests, in milliseconds
-	 * @return list of network requests with the provided `url` and `command`, or empty if none was dispatched
-	 * @throws InterruptedException
+	 * Use this method after calling [setExpectationForNetworkRequest] to await expected requests.
+	 *
+	 * @param url The URL `String` of the [TestableNetworkRequest] to get.
+	 * @param method The HTTP method of the [TestableNetworkRequest] to get.
+	 * @param timeoutMillis The duration (in milliseconds) to wait for the expected network requests.
+	 *
+	 * @return A list of [TestableNetworkRequest]s that match the provided [url] and [method]. Returns an empty list if
+	 * no matching requests were dispatched.
+	 *
+	 * @throws InterruptedException If the current thread is interrupted while waiting.
 	 */
 	@Throws(InterruptedException::class)
 	fun getNetworkRequestsWith(
@@ -137,6 +139,17 @@ class NetworkRequestHelper {
 		return expectedTestableNetworkRequests.containsKey(request)
 	}
 
+	/**
+	 * Starts the expectation timer for the given network request, validating that all expected responses are received
+	 * within the provided timeout duration.
+	 *
+	 * @param request The [TestableNetworkRequest] for which the expectation timer should be started.
+	 * @param timeoutMillis The maximum duration (in milliseconds) to wait for the expected responses before timing out.
+	 *
+	 * @return `true` if the expected responses are received within the timeout, or if the [TestableNetworkRequest] does not match any expected request. `false` otherwise.
+	 *
+	 * @throws InterruptedException If the current thread is interrupted while waiting.
+	 */
 	@Throws(InterruptedException::class)
 	fun awaitFor(request: TestableNetworkRequest, timeoutMillis: Int): Boolean {
 		for ((key, value) in expectedTestableNetworkRequests) {
@@ -150,7 +163,7 @@ class NetworkRequestHelper {
 	/**
 	 * Asserts that the correct number of network requests were sent based on previously set expectations.
 	 *
-	 * @throws InterruptedException
+	 * @throws InterruptedException If the current thread is interrupted while waiting.
 	 * @see [setExpectationForNetworkRequest]
 	 */
 	@Throws(InterruptedException::class)
@@ -204,6 +217,11 @@ class NetworkRequestHelper {
 		}
 	}
 
+	/**
+	 * Decrements the expectation count for a given network request.
+	 *
+	 * @param request The [TestableNetworkRequest] for which the expectation count should be decremented.
+	 */
 	fun countDownExpected(request: TestableNetworkRequest) {
 		for ((key, value) in expectedTestableNetworkRequests) {
 			if (key == request) {
@@ -213,16 +231,13 @@ class NetworkRequestHelper {
 	}
 
 	/**
-	 * Returns the associated [HttpConnecting] responses for a given [TestableNetworkRequest].
+	 * Returns the network response associated with the given network request.
 	 *
-	 * There may be more than one response for a given request due to the custom equality logic used
-	 * by `TestableNetworkRequest`.
-	 *
-	 * @param request The [TestableNetworkRequest] for which the [HttpConnecting] responses should be returned.
-	 * @return The list of [HttpConnecting] responses for the given request or `null` if not found.
+	 * @param request The [TestableNetworkRequest] for which the associated response should be returned.
+	 * @return The [HttpConnecting] response for the given request or `null` if not found.
 	 * @see [TestableNetworkRequest.equals]
 	 */
-	fun getResponsesFor(request: TestableNetworkRequest): List<HttpConnecting>? {
+	fun getResponseFor(request: TestableNetworkRequest): HttpConnecting? {
 		for ((key, value) in networkResponses) {
 			if (key == request) {
 				return value

@@ -41,10 +41,9 @@ class RealNetworkService: NetworkServiceHelper() {
 
     // Passthrough for shared helper APIs
     /**
-     * Asserts that the correct number of network requests were sent based on the expectations set
-     * using [setExpectationForNetworkRequest].
+     * Asserts that the correct number of network requests were sent based on previously set expectations.
      *
-     * @throws InterruptedException
+     * @throws InterruptedException If the current thread is interrupted while waiting.
      * @see [setExpectationForNetworkRequest]
      */
     fun assertAllNetworkRequestExpectations() {
@@ -52,15 +51,21 @@ class RealNetworkService: NetworkServiceHelper() {
     }
 
     /**
-     * Returns the [TestableNetworkRequest](s) sent through the
-     * Core NetworkService, or empty if none was found. Use this API after calling
-     * [setExpectationForNetworkRequest] to wait for each request.
+     * Returns the network request(s) sent through the Core NetworkService , or an empty list if none was found.
      *
-     * @param url The url string for which to retrieved the network requests sent
-     * @param method the HTTP method for which to retrieve the network requests
-     * @param timeoutMillis how long should this method wait for the expected network requests, in milliseconds
-     * @return list of network requests with the provided `url` and `command`, or empty if none was dispatched
-     * @throws InterruptedException
+     * Use this method after calling [setExpectationForNetworkRequest] to wait for expected requests.
+     *
+     * @param url The URL `String` of the [TestableNetworkRequest] to get.
+     * @param method The [HttpMethod] of the [TestableNetworkRequest] to get.
+     * @param timeoutMillis The duration (in milliseconds) to wait for the expected network requests before
+     * timing out. Defaults to [TestConstants.Defaults.WAIT_NETWORK_REQUEST_TIMEOUT_MS].
+     *
+     * @return A list of [TestableNetworkRequest]s that match the provided [url] and [method]. Returns
+     * an empty list if no matching requests were dispatched.
+     *
+     * @throws InterruptedException If the current thread is interrupted while waiting.
+     *
+     * @see setExpectationForNetworkRequest
      */
     @Throws(InterruptedException::class)
     @JvmOverloads
@@ -77,27 +82,26 @@ class RealNetworkService: NetworkServiceHelper() {
 
 
     /**
-     * Immediately returns the associated [HttpConnecting] responses (if any) for a given [NetworkRequest]
-     * **without awaiting** a response.
+     * Immediately returns the associated response (if any) for the provided network request **without awaiting**.
      *
-     * Note: To properly await network responses for a given [NetworkRequest], make sure to set an expectation
+     * Note: To properly await network responses for a given request, make sure to set an expectation
      * using [setExpectationForNetworkRequest] then await the expectation using [assertAllNetworkRequestExpectations].
      *
-     * @param networkRequest The [NetworkRequest] for which the [HttpConnecting] responses should be returned.
-     * @return The list of [HttpConnecting] responses for the given request or `null` if not found.
+     * @param networkRequest The [NetworkRequest] for which the response should be returned.
+     * @return The [HttpConnecting] response for the given request or `null` if not found.
      * @see [setExpectationForNetworkRequest]
      * @see [assertAllNetworkRequestExpectations]
-     * @see [NetworkRequestHelper.getResponsesFor]
      */
-    fun getResponsesFor(networkRequest: NetworkRequest): List<HttpConnecting>? {
-        return helper.getResponsesFor(TestableNetworkRequest(networkRequest))
+    fun getResponseFor(networkRequest: NetworkRequest): HttpConnecting? {
+        return helper.getResponseFor(TestableNetworkRequest(networkRequest))
     }
 
     /**
-     * Sets an expectation for a network request's send count.
-     * @param url the url string for which to set the expectation
-     * @param method the HTTP method for which to set the expectation
-     * @param expectedCount how many times a request with this `url` and `method` is expected to be sent
+     * Sets the expected number of times a network request should be sent.
+     *
+     * @param url The URL `String` of the [TestableNetworkRequest] for which the expectation is set.
+     * @param method The [HttpMethod] of the [TestableNetworkRequest] for which the expectation is set.
+     * @param expectedCount The number of times the request is expected to be sent.
      */
     fun setExpectationForNetworkRequest(
         url: String?,
@@ -113,9 +117,10 @@ class RealNetworkService: NetworkServiceHelper() {
     }
 
     /**
-     * Sets an expectation for a network request's send count.
-     * @param networkRequest the network request for which to set the expectation
-     * @param expectedCount how many times a request with this `url` and `method` is expected to be sent
+     * Sets the expected number of times a network request should be sent.
+     *
+     * @param networkRequest The [TestableNetworkRequest] for which the expectation is set.
+     * @param expectedCount The number of times the request is expected to be sent.
      */
     fun setExpectationForNetworkRequest(
         networkRequest: TestableNetworkRequest,

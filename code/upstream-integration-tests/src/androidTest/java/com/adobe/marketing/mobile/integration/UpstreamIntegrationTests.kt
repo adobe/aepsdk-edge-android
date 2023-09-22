@@ -110,10 +110,10 @@ class UpstreamIntegrationTests {
         Edge.sendEvent(experienceEvent) {}
 
         realNetworkService.assertAllNetworkRequestExpectations()
-        val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
+        val matchingResponse = realNetworkService.getResponseFor(interactNetworkRequest)
 
-        assertEquals(1, matchingResponses?.size)
-        assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
+        assertNotNull(matchingResponse)
+        assertEquals(200, matchingResponse?.responseCode)
     }
 
     /**
@@ -150,10 +150,10 @@ class UpstreamIntegrationTests {
         // Verify
         // Network response assertions
         realNetworkService.assertAllNetworkRequestExpectations()
-        val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
+        val matchingResponse = realNetworkService.getResponseFor(interactNetworkRequest)
 
-        assertEquals(1, matchingResponses?.size)
-        assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
+        assertNotNull(matchingResponse)
+        assertEquals(200, matchingResponse?.responseCode)
     }
 
     /**
@@ -185,10 +185,10 @@ class UpstreamIntegrationTests {
         // Verify
         // Network response assertions
         realNetworkService.assertAllNetworkRequestExpectations()
-        val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
+        val matchingResponse = realNetworkService.getResponseFor(interactNetworkRequest)
 
-        assertEquals(1, matchingResponses?.size)
-        assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
+        assertNotNull(matchingResponse)
+        assertEquals(200, matchingResponse?.responseCode)
     }
 
     /**
@@ -471,10 +471,10 @@ class UpstreamIntegrationTests {
         // Verify
         // Network response assertions
         realNetworkService.assertAllNetworkRequestExpectations()
-        val matchingResponses = realNetworkService.getResponsesFor(locationHintNetworkRequest)
+        val matchingResponse = realNetworkService.getResponseFor(locationHintNetworkRequest)
 
-        assertEquals(1, matchingResponses?.size)
-        assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
+        assertNotNull(matchingResponse)
+        assertEquals(200, matchingResponse?.responseCode)
     }
 
     /**
@@ -616,10 +616,10 @@ class UpstreamIntegrationTests {
         // Verify
         // Network response assertions
         realNetworkService.assertAllNetworkRequestExpectations()
-        val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
+        val matchingResponse = realNetworkService.getResponseFor(interactNetworkRequest)
 
-        assertEquals(1, matchingResponses?.size)
-        assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
+        assertNotNull(matchingResponse)
+        assertEquals(400, matchingResponse?.responseCode)
 
         // Event assertions
         val expectedErrorJSON = """
@@ -671,11 +671,9 @@ class UpstreamIntegrationTests {
         // Verify
         // Network response assertions
         realNetworkService.assertAllNetworkRequestExpectations()
-        val matchingResponses = realNetworkService.getResponsesFor(networkRequest = invalidNetworkRequest)
+        val matchingResponse = realNetworkService.getResponseFor(networkRequest = invalidNetworkRequest)
 
-        assertEquals(1, matchingResponses?.size)
-        // Convenience to assert directly on the first element in the rest of the test case
-        val matchingResponse = matchingResponses?.firstOrNull()
+        assertNotNull(matchingResponse)
         assertEquals(404, matchingResponse?.responseCode)
 
         val contentLengthHeader = matchingResponse?.getResponsePropertyValue("Content-Length")
