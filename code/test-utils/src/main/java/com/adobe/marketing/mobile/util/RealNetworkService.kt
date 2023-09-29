@@ -32,7 +32,7 @@ class RealNetworkService: NetworkServiceHelper() {
         val testableNetworkRequest = TestableNetworkRequest(request)
         helper.recordSentNetworkRequest(testableNetworkRequest)
         super.connectAsync(testableNetworkRequest) {
-            helper.setResponseFor(testableNetworkRequest, it)
+            helper.addResponseFor(testableNetworkRequest, it)
             helper.countDownExpected(testableNetworkRequest)
 
             callback?.call(it)

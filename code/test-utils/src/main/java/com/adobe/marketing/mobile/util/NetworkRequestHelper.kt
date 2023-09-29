@@ -54,16 +54,21 @@ class NetworkRequestHelper {
 	}
 
 	/**
-	 * Sets a network response for the provided network request.
+	 * Adds a network response for the provided network request.
 	 *
 	 * @param request The [TestableNetworkRequest] for which the response is being set.
 	 * @param responseConnection The [HttpConnecting] to set as a response.
 	 */
-	fun setResponseFor(
+	fun addResponseFor(
 		request: TestableNetworkRequest,
 		responseConnection: HttpConnecting
 	) {
-		networkResponses[request] = responseConnection
+		if (networkResponses[request] != null) {
+			networkResponses[request]?.add(responseConnection)
+		} else {
+			// If there's no response for this request yet, start a new list with the first response
+			networkResponses[request] = mutableListOf(responseConnection)
+		}
 	}
 
 	/**

@@ -104,7 +104,7 @@ class MockNetworkService: Networking {
         method: HttpMethod?,
         responseConnection: HttpConnecting?
     ) {
-        helper.setResponseFor(
+        helper.addResponseFor(
             TestableNetworkRequest(
                 url,
                 method
