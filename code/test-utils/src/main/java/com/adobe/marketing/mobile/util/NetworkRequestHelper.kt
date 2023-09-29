@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit
  */
 class NetworkRequestHelper {
 	private val sentTestableNetworkRequests: MutableMap<TestableNetworkRequest, MutableList<TestableNetworkRequest>>
-	private val networkResponses: MutableMap<TestableNetworkRequest, HttpConnecting>
+	private val networkResponses: MutableMap<TestableNetworkRequest, MutableList<HttpConnecting>>
 	private val expectedTestableNetworkRequests: MutableMap<TestableNetworkRequest, ADBCountDownLatch>
 
 	companion object {
@@ -231,13 +231,13 @@ class NetworkRequestHelper {
 	}
 
 	/**
-	 * Returns the network response associated with the given network request.
+	 * Returns the network responses associated with the given network request.
 	 *
-	 * @param request The [TestableNetworkRequest] for which the associated response should be returned.
-	 * @return The [HttpConnecting] response for the given request or `null` if not found.
+	 * @param request The [TestableNetworkRequest] for which the associated responses should be returned.
+	 * @return The list of [HttpConnecting] responses for the given request or `null` if not found.
 	 * @see [TestableNetworkRequest.equals]
 	 */
-	fun getResponseFor(request: TestableNetworkRequest): HttpConnecting? {
+	fun getResponsesFor(request: TestableNetworkRequest): List<HttpConnecting>? {
 		for ((key, value) in networkResponses) {
 			if (key == request) {
 				return value
