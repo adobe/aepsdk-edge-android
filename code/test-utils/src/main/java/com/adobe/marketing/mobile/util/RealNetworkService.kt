@@ -82,17 +82,17 @@ class RealNetworkService: NetworkServiceHelper() {
 
 
     /**
-     * Immediately returns the associated response (if any) for the provided network request **without awaiting**.
+     * Immediately returns the associated responses (if any) for the provided network request **without awaiting**.
      *
      * Note: To properly await network responses for a given request, make sure to set an expectation
      * using [setExpectationForNetworkRequest] then await the expectation using [assertAllNetworkRequestExpectations].
      *
      * @param networkRequest The [NetworkRequest] for which the response should be returned.
-     * @return The [HttpConnecting] response for the given request or `null` if not found.
+     * @return The list of [HttpConnecting] responses for the given request or `null` if not found.
      * @see [setExpectationForNetworkRequest]
      * @see [assertAllNetworkRequestExpectations]
      */
-    fun getResponseFor(networkRequest: NetworkRequest): HttpConnecting? {
+    fun getResponsesFor(networkRequest: NetworkRequest): List<HttpConnecting>? {
         return helper.getResponsesFor(TestableNetworkRequest(networkRequest))
     }
 
