@@ -82,7 +82,7 @@ class MockNetworkService: Networking {
                         e.printStackTrace()
                     }
                 }
-                resultCallback.call(helper.getResponsesFor(testableNetworkRequest) ?: defaultResponse)
+                resultCallback.call(helper.getResponsesFor(testableNetworkRequest)?.firstOrNull() ?: defaultResponse)
             }
         }
     }
