@@ -26,9 +26,20 @@ public final class ExperienceEvent {
 
 	private static final String LOG_SOURCE = "ExperienceEvent";
 
+	/// Optional free-form data associated with this event
 	private Map<String, Object> data;
+
+	// XDM formatted data associated with this event
 	private Map<String, Object> xdmData;
+
+	// Adobe Experience Platform dataset identifier, if not set the default dataset identifier set in the Edge Configuration is used
 	private String datasetIdentifier;
+
+	// Datastream identifier used to override the default datastream identifier set in the Edge configuration for this event
+	private String datastreamIdOverride;
+
+	// Datastream configuration used to override individual settings from the default datastream configuration for this event
+	private Map<String, Object> datastreamConfigOverride;
 
 	private ExperienceEvent() {}
 
@@ -40,6 +51,33 @@ public final class ExperienceEvent {
 		public Builder() {
 			experienceEvent = new ExperienceEvent();
 			didBuild = false;
+		}
+
+		/**
+		 * Sets the Datastream identifier to override the default Datastream identifier set in the Edge configuration.
+		 *
+		 * @param datastreamIdOverride Datastream identifier to override the default Datastream identifier set in the Edge configuration
+		 * @return instance of current builder
+		 * @throws UnsupportedOperationException if this instance was already built
+		 */
+		public Builder setDatastreamIdOverride(final String datastreamIdOverride) {
+			throwIfAlreadyBuilt();
+			experienceEvent.datastreamIdOverride = datastreamIdOverride;
+			return this;
+		}
+
+		/**
+		 * Sets configuration to override default Datastream configurations.
+		 *
+		 * @param datastreamConfigOverride configuration map to override default Datastream configurations with
+		 * @return instance of current builder
+		 * @throws UnsupportedOperationException if this instance was already built
+		 */
+		public Builder setDatastreamConfigOverride(final Map<String, Object> datastreamConfigOverride) {
+			throwIfAlreadyBuilt();
+			experienceEvent.datastreamConfigOverride =
+				datastreamConfigOverride == null ? null : Utils.deepCopy(datastreamConfigOverride);
+			return this;
 		}
 
 		/**
@@ -156,6 +194,20 @@ public final class ExperienceEvent {
 	}
 
 	/**
+	 * @return the datastream id override
+	 */
+	public String getDatastreamIdOverride() {
+		return datastreamIdOverride;
+	}
+
+	/**
+	 * @return the datastream config override
+	 */
+	public Map<String, Object> getDatastreamConfigOverride() {
+		return datastreamConfigOverride;
+	}
+
+	/**
 	 * @return the free-form data associated with this {@link ExperienceEvent}
 	 */
 	public Map<String, Object> getData() {
@@ -191,6 +243,20 @@ public final class ExperienceEvent {
 
 		if (xdmData != null) {
 			MapUtils.putIfNotEmpty(serializedMap, EdgeJson.Event.XDM, xdmData);
+		}
+
+		Map<String, Object> configMap = new HashMap<>();
+
+		if (!StringUtils.isNullOrEmpty(datastreamIdOverride)) {
+			configMap.put(EdgeConstants.EventDataKeys.Config.DATASTREAM_ID_OVERRIDE, datastreamIdOverride);
+		}
+
+		if (datastreamConfigOverride != null) {
+			configMap.put(EdgeConstants.EventDataKeys.Config.DATASTREAM_CONFIG_OVERRIDE, datastreamConfigOverride);
+		}
+
+		if (!configMap.isEmpty()) {
+			serializedMap.put(EdgeConstants.EventDataKeys.Config.KEY, configMap);
 		}
 
 		if (!StringUtils.isNullOrEmpty(datasetIdentifier)) {

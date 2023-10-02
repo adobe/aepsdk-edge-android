@@ -55,6 +55,13 @@ final class EdgeConstants {
 		static final String IDENTITY_MAP = "identityMap";
 		static final String LOCATION_HINT = "locationHint";
 
+		static final class Config {
+
+			static final String KEY = "config";
+			static final String DATASTREAM_ID_OVERRIDE = "datastreamIdOverride";
+			static final String DATASTREAM_CONFIG_OVERRIDE = "datastreamConfigOverride";
+		}
+
 		static final class Request {
 
 			static final String KEY = "request";

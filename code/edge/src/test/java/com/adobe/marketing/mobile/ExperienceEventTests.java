@@ -29,6 +29,9 @@ public class ExperienceEventTests {
 	private final String xdmKey = "xdm";
 	private final String dataKey = "data";
 	private final String datasetKey = "datasetId";
+	private final String configKey = "config";
+	private final String datastreamIdOverrideKey = "datastreamIdOverride";
+	private final String datastreamConfigOverrideKey = "datastreamConfigOverride";
 
 	private Map<String, Object> generateXdmData() {
 		Map<String, Object> xdmData = new HashMap<>();
@@ -196,6 +199,128 @@ public class ExperienceEventTests {
 	}
 
 	@Test
+	public void testExperienceEvent_withXdmMapAndDataMapAndDatastreamIdOverride_toObjectMapIsCorrect() {
+		final Map<String, Object> expectedXdm = new HashMap<String, Object>() {
+			{
+				put("xdmKey", "xdmValue");
+			}
+		};
+		final Map<String, Object> expectedData = new HashMap<String, Object>() {
+			{
+				put("dataKey", "dataValue");
+			}
+		};
+		final String expectedDatastreamIdOverride = "testDatastreamId";
+
+		ExperienceEvent event = new ExperienceEvent.Builder()
+			.setXdmSchema(expectedXdm)
+			.setData(expectedData)
+			.setDatastreamIdOverride(expectedDatastreamIdOverride)
+			.build();
+
+		Map<String, Object> expectedConfigMap = new HashMap<String, Object>() {
+			{
+				put(datastreamIdOverrideKey, expectedDatastreamIdOverride);
+			}
+		};
+		Map<String, Object> expectedMap = new HashMap<String, Object>() {
+			{
+				put(xdmKey, expectedXdm);
+				put(dataKey, expectedData);
+				put(configKey, expectedConfigMap);
+			}
+		};
+
+		assertEquals(expectedMap, event.toObjectMap());
+	}
+
+	@Test
+	public void testExperienceEvent_withXdmMapAndDataMapAndDatastreamConfigOverride_toObjectMapIsCorrect() {
+		final Map<String, Object> expectedXdm = new HashMap<String, Object>() {
+			{
+				put("xdmKey", "xdmValue");
+			}
+		};
+		final Map<String, Object> expectedData = new HashMap<String, Object>() {
+			{
+				put("dataKey", "dataValue");
+			}
+		};
+
+		final Map<String, Object> expectedDatastreamConfigOverride = new HashMap<String, Object>() {
+			{
+				put("key", "value");
+			}
+		};
+
+		ExperienceEvent event = new ExperienceEvent.Builder()
+			.setXdmSchema(expectedXdm)
+			.setData(expectedData)
+			.setDatastreamConfigOverride(expectedDatastreamConfigOverride)
+			.build();
+
+		Map<String, Object> expectedConfigMap = new HashMap<String, Object>() {
+			{
+				put(datastreamConfigOverrideKey, expectedDatastreamConfigOverride);
+			}
+		};
+		Map<String, Object> expectedMap = new HashMap<String, Object>() {
+			{
+				put(xdmKey, expectedXdm);
+				put(dataKey, expectedData);
+				put(configKey, expectedConfigMap);
+			}
+		};
+
+		assertEquals(expectedMap, event.toObjectMap());
+	}
+
+	@Test
+	public void testExperienceEvent_withXdmMapAndDataMapAndDatastreamIdOverrideAndDatastreamConfigOverride_toObjectMapIsCorrect() {
+		final Map<String, Object> expectedXdm = new HashMap<String, Object>() {
+			{
+				put("xdmKey", "xdmValue");
+			}
+		};
+		final Map<String, Object> expectedData = new HashMap<String, Object>() {
+			{
+				put("dataKey", "dataValue");
+			}
+		};
+
+		final Map<String, Object> expectedDatastreamConfigOverride = new HashMap<String, Object>() {
+			{
+				put("key", "value");
+			}
+		};
+
+		final String expectedDatastreamIdOverride = "testDatastreamId";
+
+		ExperienceEvent event = new ExperienceEvent.Builder()
+			.setXdmSchema(expectedXdm)
+			.setData(expectedData)
+			.setDatastreamConfigOverride(expectedDatastreamConfigOverride)
+			.setDatastreamIdOverride(expectedDatastreamIdOverride)
+			.build();
+
+		Map<String, Object> expectedConfigMap = new HashMap<String, Object>() {
+			{
+				put(datastreamIdOverrideKey, expectedDatastreamIdOverride);
+				put(datastreamConfigOverrideKey, expectedDatastreamConfigOverride);
+			}
+		};
+		Map<String, Object> expectedMap = new HashMap<String, Object>() {
+			{
+				put(xdmKey, expectedXdm);
+				put(dataKey, expectedData);
+				put(configKey, expectedConfigMap);
+			}
+		};
+
+		assertEquals(expectedMap, event.toObjectMap());
+	}
+
+	@Test
 	public void testExperienceEvent_withXdmSchemaAndDataMap_toObjectMapIsCorrect() {
 		final MobileSDKSchema expectedSchema = new MobileSDKSchema();
 		final Map<String, Object> expectedData = new HashMap<String, Object>() {
@@ -264,6 +389,120 @@ public class ExperienceEventTests {
 			{
 				put(xdmKey, expectedSchema.data);
 				put(dataKey, expectedData);
+			}
+		};
+
+		assertEquals(expectedObj, event.toObjectMap());
+	}
+
+	@Test
+	public void testExperienceEvent_withXdmSchemaAndDataMapAndDatastreamIdOverride_toObjectMapIsCorrect() {
+		final MobileSDKSchema expectedSchema = new MobileSDKSchema();
+		final Map<String, Object> expectedData = new HashMap<String, Object>() {
+			{
+				put("dataKey", "dataValue");
+			}
+		};
+
+		final String expectedDatastreamIdOverride = "testDatastreamId";
+
+		ExperienceEvent event = new ExperienceEvent.Builder()
+			.setXdmSchema(expectedSchema)
+			.setData(expectedData)
+			.setDatastreamIdOverride(expectedDatastreamIdOverride)
+			.build();
+
+		Map<String, Object> expectedConfigMap = new HashMap<String, Object>() {
+			{
+				put(datastreamIdOverrideKey, expectedDatastreamIdOverride);
+			}
+		};
+		Map<String, Object> expectedObj = new HashMap<String, Object>() {
+			{
+				put(xdmKey, expectedSchema.data);
+				put(dataKey, expectedData);
+				put(configKey, expectedConfigMap);
+				put(datasetKey, expectedSchema.datasetId);
+			}
+		};
+
+		assertEquals(expectedObj, event.toObjectMap());
+	}
+
+	@Test
+	public void testExperienceEvent_withXdmSchemaAndDataMapAndDatastreamConfigOverride_toObjectMapIsCorrect() {
+		final MobileSDKSchema expectedSchema = new MobileSDKSchema();
+		final Map<String, Object> expectedData = new HashMap<String, Object>() {
+			{
+				put("dataKey", "dataValue");
+			}
+		};
+
+		final Map<String, Object> expectedDatastreamConfigOverride = new HashMap<String, Object>() {
+			{
+				put("key", "value");
+			}
+		};
+
+		ExperienceEvent event = new ExperienceEvent.Builder()
+			.setXdmSchema(expectedSchema)
+			.setData(expectedData)
+			.setDatastreamConfigOverride(expectedDatastreamConfigOverride)
+			.build();
+
+		Map<String, Object> expectedConfigMap = new HashMap<String, Object>() {
+			{
+				put(datastreamConfigOverrideKey, expectedDatastreamConfigOverride);
+			}
+		};
+		Map<String, Object> expectedObj = new HashMap<String, Object>() {
+			{
+				put(xdmKey, expectedSchema.data);
+				put(dataKey, expectedData);
+				put(configKey, expectedConfigMap);
+				put(datasetKey, expectedSchema.datasetId);
+			}
+		};
+
+		assertEquals(expectedObj, event.toObjectMap());
+	}
+
+	@Test
+	public void testExperienceEvent_withXdmSchemaAndDataMapAndDatastreamIdOverrideAndDatastreamConfigOverride_toObjectMapIsCorrect() {
+		final MobileSDKSchema expectedSchema = new MobileSDKSchema();
+		final Map<String, Object> expectedData = new HashMap<String, Object>() {
+			{
+				put("dataKey", "dataValue");
+			}
+		};
+
+		final String expectedDatastreamIdOverride = "testDatastreamId";
+
+		final Map<String, Object> expectedDatastreamConfigOverride = new HashMap<String, Object>() {
+			{
+				put("key", "value");
+			}
+		};
+
+		ExperienceEvent event = new ExperienceEvent.Builder()
+			.setXdmSchema(expectedSchema)
+			.setData(expectedData)
+			.setDatastreamIdOverride(expectedDatastreamIdOverride)
+			.setDatastreamConfigOverride(expectedDatastreamConfigOverride)
+			.build();
+
+		Map<String, Object> expectedConfigMap = new HashMap<String, Object>() {
+			{
+				put(datastreamIdOverrideKey, expectedDatastreamIdOverride);
+				put(datastreamConfigOverrideKey, expectedDatastreamConfigOverride);
+			}
+		};
+		Map<String, Object> expectedObj = new HashMap<String, Object>() {
+			{
+				put(xdmKey, expectedSchema.data);
+				put(dataKey, expectedData);
+				put(configKey, expectedConfigMap);
+				put(datasetKey, expectedSchema.datasetId);
 			}
 		};
 
