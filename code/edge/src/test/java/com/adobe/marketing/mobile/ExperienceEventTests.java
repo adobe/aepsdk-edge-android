@@ -536,6 +536,20 @@ public class ExperienceEventTests {
 	}
 
 	@Test
+	public void testExperienceEvent_setDatastreamConfigOverrideMutated() {
+		Map<String, Object> configOverrides = generateEventData();
+
+		ExperienceEvent event = new ExperienceEvent.Builder()
+			.setXdmSchema(generateXdmData())
+			.setDatastreamConfigOverride(configOverrides)
+			.build();
+
+		// This change should NOT be reflected in the event's copy of eventData
+		configOverrides.put("newKey", "newValue");
+		assertTrue(configOverrides.size() > event.getDatastreamConfigOverride().size());
+	}
+
+	@Test
 	public void testExperienceEvent_setXdmSchema() {
 		Map<String, Object> xdmSchema = generateXdmData();
 
@@ -558,6 +572,30 @@ public class ExperienceEventTests {
 
 		// This change should NOT be reflected in the event's copy of eventData
 		event.getData().put("newKey", "newValue");
+		assertFalse(event.getData().containsKey("newKey"));
+	}
+
+	@Test
+	public void testExperienceEvent_getDatastreamId() {
+		ExperienceEvent event = new ExperienceEvent.Builder()
+			.setXdmSchema(generateXdmData())
+			.setDatastreamIdOverride("testDatastreamId")
+			.build();
+
+		assertEquals("testDatastreamId", event.getDatastreamIdOverride());
+	}
+
+	@Test
+	public void testExperienceEvent_getDatastreamIdOverrideDeepCopies() {
+		Map<String, Object> configOverrides = generateEventData();
+
+		ExperienceEvent event = new ExperienceEvent.Builder()
+			.setXdmSchema(generateXdmData())
+			.setDatastreamConfigOverride(configOverrides)
+			.build();
+
+		// This change should NOT be reflected in the event's copy of datastreamConfigOverrides
+		event.getDatastreamConfigOverride().put("newKey", "newValue");
 		assertFalse(event.getData().containsKey("newKey"));
 	}
 

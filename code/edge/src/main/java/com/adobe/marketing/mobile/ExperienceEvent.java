@@ -54,9 +54,12 @@ public final class ExperienceEvent {
 		}
 
 		/**
-		 * Sets the Datastream identifier to override the default Datastream identifier set in the Edge configuration.
+		 * Override the default datastream identifier to send this event's data to a different datastream.
 		 *
-		 * @param datastreamIdOverride Datastream identifier to override the default Datastream identifier set in the Edge configuration
+		 * When using {@link Edge#sendEvent}, this event is sent to the Experience Platform using the datastream identifier {@code datastreamIdOverride}
+		 * instead of the default Experience Edge configuration ID set in the SDK Configuration key {@code edge.configId}.
+		 *
+		 * @param datastreamIdOverride Datastream identifier to override the default datastream identifier set in the Edge configuration
 		 * @return instance of current builder
 		 * @throws UnsupportedOperationException if this instance was already built
 		 */
@@ -67,9 +70,12 @@ public final class ExperienceEvent {
 		}
 
 		/**
-		 * Sets configuration to override default Datastream configurations.
+		 * Override the default datastream configuration to trigger different datastream behaviors than the default ones for this event.
 		 *
-		 * @param datastreamConfigOverride configuration map to override default Datastream configurations with
+		 * When using {@link Edge#sendEvent}, this event is sent to the Experience Platform along with the
+		 * datastream overrides defined in {@code datastreamConfigOverride}.
+		 *
+		 * @param datastreamConfigOverride Map defining datastream configuration overrides for this Experience Event
 		 * @return instance of current builder
 		 * @throws UnsupportedOperationException if this instance was already built
 		 */
