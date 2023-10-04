@@ -200,7 +200,7 @@ class EdgeNetworkService {
 				Log.debug(
 					LOG_TAG,
 					LOG_SOURCE,
-					"Connection to Experience Edge returned recoverable error code. Connection failure. Will retry request in %d seconds.",
+					"Connection to Experience Edge failed. Failed to read message/error code from NetworkService. Will retry request in %d seconds.",
 					retryResult.getRetryIntervalSeconds()
 				);
 			} else {
