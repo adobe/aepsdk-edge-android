@@ -156,8 +156,14 @@ class EdgeNetworkService {
 		HttpConnecting connection = doConnect(url, jsonRequest, requestHeaders);
 
 		if (connection == null) {
-			Log.debug(LOG_TAG, LOG_SOURCE, "Network request returned null connection.");
-			return new RetryResult(Retry.YES);
+			final RetryResult retryResult = new RetryResult(Retry.YES);
+			Log.debug(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Network request returned null connection. Will retry request in %d seconds.",
+				retryResult.getRetryIntervalSeconds()
+			);
+			return retryResult;
 		}
 
 		RetryResult retryResult = new RetryResult(Retry.NO);
@@ -188,14 +194,25 @@ class EdgeNetworkService {
 				connection.getResponseMessage()
 			);
 		} else if (recoverableNetworkErrorCodes.contains(connection.getResponseCode())) {
-			Log.debug(
-				LOG_TAG,
-				LOG_SOURCE,
-				"Connection to Experience Edge returned recoverable error code (%d). Response message: %s",
-				connection.getResponseCode(),
-				connection.getResponseMessage()
-			);
 			retryResult = new RetryResult(Retry.YES, computeRetryInterval(connection));
+
+			if (connection.getResponseCode() == -1) {
+				Log.debug(
+					LOG_TAG,
+					LOG_SOURCE,
+					"Connection to Experience Edge returned recoverable error code. Connection failure. Will retry request in %d seconds.",
+					retryResult.getRetryIntervalSeconds()
+				);
+			} else {
+				Log.debug(
+					LOG_TAG,
+					LOG_SOURCE,
+					"Connection to Experience Edge returned recoverable error code (%d). Response message: %s. Will retry request in %d seconds.",
+					connection.getResponseCode(),
+					connection.getResponseMessage(),
+					retryResult.getRetryIntervalSeconds()
+				);
+			}
 		} else if (connection.getResponseCode() == 207) {
 			Log.debug(
 				LOG_TAG,
