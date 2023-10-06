@@ -331,12 +331,40 @@ public class EdgeNetworkServiceTest {
 	}
 
 	@Test
-	public void testDoRequest_whenConnection_RecoverableResponseCode_ReturnsRetryYes_AndNoResponseCallback_AndNoErrorCallback() {
+	public void testDoRequest_whenConnection_RecoverableResponseCode_negative1_ReturnsRetryYes_AndNoResponseCallback_AndNoErrorCallback() {
+		testRecoverableNetworkResponse(-1, null);
+	}
+
+	@Test
+	public void testDoRequest_whenConnection_RecoverableResponseCode_408_ReturnsRetryYes_AndNoResponseCallback_AndNoErrorCallback() {
+		testRecoverableNetworkResponse(408, "Request Timeout");
+	}
+
+	@Test
+	public void testDoRequest_whenConnection_RecoverableResponseCode_429_ReturnsRetryYes_AndNoResponseCallback_AndNoErrorCallback() {
+		testRecoverableNetworkResponse(429, "Too Many Requests");
+	}
+
+	@Test
+	public void testDoRequest_whenConnection_RecoverableResponseCode_502_ReturnsRetryYes_AndNoResponseCallback_AndNoErrorCallback() {
+		testRecoverableNetworkResponse(502, "Bad Gateway");
+	}
+
+	@Test
+	public void testDoRequest_whenConnection_RecoverableResponseCode_503_ReturnsRetryYes_AndNoResponseCallback_AndNoErrorCallback() {
+		testRecoverableNetworkResponse(503, "Service Unavailable");
+	}
+
+	@Test
+	public void testDoRequest_whenConnection_RecoverableResponseCode_504_ReturnsRetryYes_AndNoResponseCallback_AndNoErrorCallback() {
+		testRecoverableNetworkResponse(504, "Gateway Timeout");
+	}
+
+	private void testRecoverableNetworkResponse(final int responseCode, final String errorString) {
 		// setup
 		final String url = "https://test.com";
 		final String jsonRequest = "{}";
-		final String errorStr = "Service Unavailable";
-		MockConnection mockConnection = new MockConnection(503, null, errorStr, null);
+		MockConnection mockConnection = new MockConnection(responseCode, null, errorString, null);
 		mockNetworkService.mockConnectAsyncConnection = mockConnection;
 		networkService = new EdgeNetworkService(mockNetworkService);
 
