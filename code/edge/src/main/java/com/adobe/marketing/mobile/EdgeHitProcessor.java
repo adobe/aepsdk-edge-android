@@ -142,7 +142,11 @@ class EdgeHitProcessor implements HitProcessing {
 			}
 		};
 
-		String url = networkService.buildUrl(edgeHit.getEdgeEndpoint(), edgeHit.getConfigId(), edgeHit.getRequestId());
+		String url = networkService.buildUrl(
+			edgeHit.getEdgeEndpoint(),
+			edgeHit.getDatastreamId(),
+			edgeHit.getRequestId()
+		);
 
 		try {
 			Log.debug(
@@ -225,12 +229,12 @@ class EdgeHitProcessor implements HitProcessing {
 
 		Map<String, Object> edgeConfig = entity.getConfiguration();
 
-		String edgeConfigId = DataReader.optString(
+		String datastreamId = DataReader.optString(
 			edgeConfig,
 			EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID,
 			null
 		);
-		if (StringUtils.isNullOrEmpty(edgeConfigId)) {
+		if (StringUtils.isNullOrEmpty(datastreamId)) {
 			// The Edge configuration ID value should get validated when creating the Hit,
 			// so we shouldn't get here in production.
 			Log.debug(
@@ -249,7 +253,7 @@ class EdgeHitProcessor implements HitProcessing {
 			requestProperties
 		);
 
-		final EdgeHit edgeHit = new EdgeHit(edgeConfigId, requestPayload, edgeEndpoint);
+		final EdgeHit edgeHit = new EdgeHit(datastreamId, requestPayload, edgeEndpoint);
 
 		// NOTE: the order of these events need to be maintained as they were sent in the network request
 		// otherwise the response callback cannot be matched
@@ -288,12 +292,12 @@ class EdgeHitProcessor implements HitProcessing {
 		}
 
 		Map<String, Object> edgeConfig = entity.getConfiguration();
-		String edgeConfigId = DataReader.optString(
+		String datastreamId = DataReader.optString(
 			edgeConfig,
 			EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID,
 			null
 		);
-		if (StringUtils.isNullOrEmpty(edgeConfigId)) {
+		if (StringUtils.isNullOrEmpty(datastreamId)) {
 			// The Edge configuration ID value should get validated when creating the Hit,
 			// so we shouldn't get here in production.
 			Log.debug(
@@ -307,7 +311,7 @@ class EdgeHitProcessor implements HitProcessing {
 
 		final EdgeEndpoint edgeEndpoint = getEdgeEndpoint(EdgeNetworkService.RequestType.CONSENT, edgeConfig, null);
 
-		final EdgeHit edgeHit = new EdgeHit(edgeConfigId, consentPayload, edgeEndpoint);
+		final EdgeHit edgeHit = new EdgeHit(datastreamId, consentPayload, edgeEndpoint);
 
 		networkResponseHandler.addWaitingEvent(edgeHit.getRequestId(), entity.getEvent());
 		final Map<String, String> requestHeaders = getRequestHeaders();
