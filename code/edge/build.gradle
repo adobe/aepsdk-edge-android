@@ -15,6 +15,7 @@ plugins {
     id 'signing'
     id 'jacoco'
     id 'com.diffplug.spotless'
+    id 'kotlin-android'
 }
 
 jacoco {
@@ -60,6 +61,12 @@ android {
         sourceCompatibility rootProject.ext.sourceCompatibility
         targetCompatibility rootProject.ext.targetCompatibility
     }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+        languageVersion = "1.4"
+        apiVersion = "1.4"
+    }
 }
 
 preBuild.dependsOn spotlessApply
@@ -72,6 +79,11 @@ spotless {
         prettier(['prettier': '2.7.1', 'prettier-plugin-java': '1.6.2'])
                 .config(['parser': 'java', 'tabWidth': 4, 'useTabs': true, 'printWidth': 120])
         endWithNewline()
+        licenseHeaderFile "../../config/formatter/adobe.header.txt"
+    }
+    kotlin {
+        target "src/*/java/**/*.kt"
+        ktlint('0.41.0')
         licenseHeaderFile "../../config/formatter/adobe.header.txt"
     }
 }
