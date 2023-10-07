@@ -20,6 +20,7 @@ import com.adobe.marketing.mobile.services.HitProcessingResult;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.MapUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -212,6 +213,43 @@ class EdgeHitProcessor implements HitProcessing {
 			request.addXdmPayload(stateCallback.getImplementationDetails());
 		}
 
+		Map<String, Object> edgeConfig = entity.getConfiguration();
+
+		String datastreamId = DataReader.optString(
+			edgeConfig,
+			EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID,
+			null
+		);
+
+		// Check if datastream ID override is present
+		String datastreamIdOverride = getDatastreamIdOverrideFromEvent(entity.getEvent());
+		if (!StringUtils.isNullOrEmpty(datastreamIdOverride)) {
+			// Attach original datastream ID to the outgoing request
+			request.addSdkConfig(new SDKConfig(new Datastream(datastreamId)));
+
+			// Update datastream ID for request since valid override ID is present
+			datastreamId = datastreamIdOverride;
+		}
+
+		// Check if datastream config override is present
+		Map<String, Object> datastreamConfigOverride = getDatastreamConfigOverrideFromEvent(entity.getEvent());
+		if (!MapUtils.isNullOrEmpty(datastreamConfigOverride)) {
+			// Attach datastream config override to the outgoing request metadata
+			request.addConfigOverrides(datastreamConfigOverride);
+		}
+
+		if (StringUtils.isNullOrEmpty(datastreamId)) {
+			// The Edge configuration ID value should get validated when creating the Hit,
+			// so we shouldn't get here in production.
+			Log.debug(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Cannot process Experience Event hit as the Edge Network configuration ID is null or empty, dropping current event (%s).",
+				entity.getEvent().getUniqueIdentifier()
+			);
+			return true; // Request complete, don't retry hit
+		}
+
 		final List<Event> listOfEvents = new ArrayList<>();
 		listOfEvents.add(entity.getEvent());
 		final JSONObject requestPayload = request.getPayloadWithExperienceEvents(listOfEvents);
@@ -224,25 +262,6 @@ class EdgeHitProcessor implements HitProcessing {
 				entity.getEvent().getUniqueIdentifier()
 			);
 
-			return true; // Request complete, don't retry hit
-		}
-
-		Map<String, Object> edgeConfig = entity.getConfiguration();
-
-		String datastreamId = DataReader.optString(
-			edgeConfig,
-			EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID,
-			null
-		);
-		if (StringUtils.isNullOrEmpty(datastreamId)) {
-			// The Edge configuration ID value should get validated when creating the Hit,
-			// so we shouldn't get here in production.
-			Log.debug(
-				LOG_TAG,
-				LOG_SOURCE,
-				"Cannot process Experience Event hit as the Edge Network configuration ID is null or empty, dropping current event (%s).",
-				entity.getEvent().getUniqueIdentifier()
-			);
 			return true; // Request complete, don't retry hit
 		}
 
@@ -261,6 +280,32 @@ class EdgeHitProcessor implements HitProcessing {
 
 		final Map<String, String> requestHeaders = getRequestHeaders();
 		return sendNetworkRequest(entityId, edgeHit, requestHeaders);
+	}
+
+	String getDatastreamIdOverrideFromEvent(final Event event) {
+		Map<String, Object> configMap = DataReader.optTypedMap(
+			Object.class,
+			event.getEventData(),
+			EdgeConstants.EventDataKeys.Config.KEY,
+			null
+		);
+		return DataReader.optString(configMap, EdgeConstants.EventDataKeys.Config.DATASTREAM_ID_OVERRIDE, null);
+	}
+
+	Map<String, Object> getDatastreamConfigOverrideFromEvent(final Event event) {
+		Map<String, Object> configMap = DataReader.optTypedMap(
+			Object.class,
+			event.getEventData(),
+			EdgeConstants.EventDataKeys.Config.KEY,
+			null
+		);
+
+		return DataReader.optTypedMap(
+			Object.class,
+			configMap,
+			EdgeConstants.EventDataKeys.Config.DATASTREAM_CONFIG_OVERRIDE,
+			null
+		);
 	}
 
 	/**
