@@ -122,10 +122,11 @@ class RequestBuilder {
 
 		// set gateway metadata to request if exists
 		KonductorConfig konductorConfig = buildKonductorConfig();
+
 		request.setRequestMetadata(
 			new RequestMetadata.Builder()
 				.setKonductorConfig(konductorConfig.toObjectMap())
-				.setSdkConfig(sdkConfig.toMap())
+				.setSdkConfig(sdkConfig != null ? sdkConfig.toMap() : null)
 				.setConfigOverrides(configOverrides)
 				.setStateMetadata(new StateMetadata(storeResponsePayloadManager.getActiveStores()).toObjectMap())
 				.build()
