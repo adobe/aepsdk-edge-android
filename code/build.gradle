@@ -19,6 +19,7 @@ plugins {
     id 'com.diffplug.gradle.spotless' version '6.11.0' apply false
     id 'com.github.hierynomus.license' version '0.16.1' apply true
     id 'org.jetbrains.kotlin.android' version '1.7.20' apply false
+    id 'org.jetbrains.dokka' version '1.7.10' apply false
 }
 
 moduleProjectName = rootProject.moduleProjectName
@@ -32,6 +33,10 @@ ext {
     targetSdkVersion = 33
     compileSdkVersion = 33
     versionCode = 1
+
+    kotlinLanguageVersion = '1.4.0'
+    kotlinApiVersion = '1.4.0'
+    kotlinJvmTarget = JavaVersion.VERSION_1_8
 
     // java config
     sourceCompatibility = JavaVersion.VERSION_1_8

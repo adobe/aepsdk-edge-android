@@ -16,6 +16,7 @@ plugins {
     id 'jacoco'
     id 'com.diffplug.spotless'
     id 'kotlin-android'
+    id 'org.jetbrains.dokka'
 }
 
 jacoco {
@@ -63,9 +64,9 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
-        languageVersion = "1.4"
-        apiVersion = "1.4"
+        jvmTarget = rootProject.ext.kotlinJvmTarget
+        languageVersion = rootProject.ext.kotlinLanguageVersion
+        apiVersion = rootProject.ext.kotlinApiVersion
     }
 }
 
@@ -83,40 +84,38 @@ spotless {
     }
     kotlin {
         target "src/*/java/**/*.kt"
-        ktlint('0.41.0')
+        ktlint('0.47.0')
         licenseHeaderFile "../../config/formatter/adobe.header.txt"
     }
 }
 
-afterEvaluate {
-    tasks.withType(Javadoc).tap {
-        configureEach {
-            source = android.sourceSets.main.java.srcDirs
-            classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-            classpath += files(android.libraryVariants.collect { variant ->
-                variant.javaCompileProvider.get().classpath.files
-            })
-            options {
-                source = "8"
-                links "https://developer.android.com/reference"
+tasks.register('javadocJar', Jar) {
+    dependsOn dokkaJavadoc
+    archiveClassifier.set('javadoc')
+    from dokkaJavadoc.outputDirectory
+}
+
+
+dokkaJavadoc.configure {
+    dokkaSourceSets {
+        named("main") {
+            noAndroidSdkLink.set(false)
+            perPackageOption {
+                matchingRegex.set(".*\\.internal.*") // proper setting
+                suppress.set(true)
+            }
+        }
+
+        if (!disableVariants) {
+            named("phone") {
+                noAndroidSdkLink.set(false)
+                perPackageOption {
+                    matchingRegex.set(".*\\.internal.*") // proper setting
+                    suppress.set(true)
+                }
             }
         }
     }
-}
-
-tasks.register('javadocInternal', Javadoc) {
-    destinationDir = reporting.file("javadocInternal")
-    options.memberLevel = JavadocMemberLevel.PRIVATE
-}
-
-tasks.register('javadocPublic', Javadoc) {
-    destinationDir = reporting.file("javadocPublic")
-    options.memberLevel = JavadocMemberLevel.PUBLIC
-}
-
-tasks.register('javadocPublish', Jar) {
-    from javadocPublic
-    archiveClassifier.set('javadoc')
 }
 
 def isReleaseBuild() {
@@ -134,7 +133,7 @@ publishing {
             artifactId = rootProject.moduleName
             version = version
             artifact("$buildDir/outputs/aar/${moduleAARName}")
-            artifact javadocPublish
+            artifact javadocJar
 
             pom {
                 name = mavenRepoName
@@ -210,9 +209,11 @@ tasks.withType(Test).configureEach {
 tasks.register('platformUnitTestJacocoReport', JacocoReport) {
     dependsOn "testPhoneDebugUnitTest"
     def excludeRegex = ['**/BuildConfig.class']
-    def debugTree = fileTree(dir: "${project.buildDir}/intermediates/javac/phoneDebug/classes/com/adobe/marketing/mobile", excludes: excludeRegex)
+    def javaClasses = fileTree(dir: "${project.buildDir}/intermediates/javac/phoneDebug/classes/com/adobe/marketing/mobile", excludes: excludeRegex)
+    def kotlinClasses = fileTree(dir: "${project.buildDir}/tmp/kotlin-classes/phoneDebug/classes/com/adobe/marketing/mobile", excludes: excludeRegex)
 
-    additionalClassDirs.setFrom files([debugTree])
+    classDirectories.setFrom(files([javaClasses, kotlinClasses]))
+
     additionalSourceDirs.setFrom files(android.sourceSets.main.java.sourceFiles)
     sourceDirectories.setFrom files(android.sourceSets.phone.java.sourceFiles)
     executionData fileTree(dir: "$buildDir", includes: [
@@ -230,9 +231,10 @@ tasks.register('platformUnitTestJacocoReport', JacocoReport) {
 tasks.register('platformFunctionalTestJacocoReport', JacocoReport) {
     dependsOn "createPhoneDebugCoverageReport"
     def excludeRegex = ['**/BuildConfig.class']
-    def debugTree = fileTree(dir: "${project.buildDir}/intermediates/javac/phoneDebug/classes/com/adobe/marketing/mobile", excludes: excludeRegex)
+    def javaClasses = fileTree(dir: "${project.buildDir}/intermediates/javac/phoneDebug/classes/com/adobe/marketing/mobile", excludes: excludeRegex)
+    def kotlinClasses = fileTree(dir: "${project.buildDir}/tmp/kotlin-classes/phoneDebug/classes/com/adobe/marketing/mobile", excludes: excludeRegex)
 
-    additionalClassDirs.setFrom files([debugTree])
+    classDirectories.setFrom(files([javaClasses, kotlinClasses]))
     additionalSourceDirs.setFrom files(android.sourceSets.main.java.sourceFiles)
     sourceDirectories.setFrom files(android.sourceSets.phone.java.sourceFiles)
     executionData fileTree(dir: "$buildDir", includes: [
