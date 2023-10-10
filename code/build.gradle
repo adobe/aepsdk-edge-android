@@ -34,8 +34,8 @@ ext {
     compileSdkVersion = 33
     versionCode = 1
 
-    kotlinLanguageVersion = '1.4.0'
-    kotlinApiVersion = '1.4.0'
+    kotlinLanguageVersion = '1.4'
+    kotlinApiVersion = '1.4'
     kotlinJvmTarget = JavaVersion.VERSION_1_8
 
     // java config
