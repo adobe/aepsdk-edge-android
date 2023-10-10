@@ -221,8 +221,16 @@ class EdgeHitProcessor implements HitProcessing {
 			null
 		);
 
+		// Get config map containing overrides from the event
+		Map<String, Object> eventConfigMap = EventUtils.getConfig(entity.getEvent());
+
 		// Check if datastream ID override is present
-		String datastreamIdOverride = getDatastreamIdOverrideFromEvent(entity.getEvent());
+		String datastreamIdOverride = DataReader.optString(
+			eventConfigMap,
+			EdgeConstants.EventDataKeys.Config.DATASTREAM_ID_OVERRIDE,
+			null
+		);
+
 		if (!StringUtils.isNullOrEmpty(datastreamIdOverride)) {
 			// Attach original datastream ID to the outgoing request
 			request.addSdkConfig(new SDKConfig(new Datastream(datastreamId)));
@@ -232,7 +240,13 @@ class EdgeHitProcessor implements HitProcessing {
 		}
 
 		// Check if datastream config override is present
-		Map<String, Object> datastreamConfigOverride = getDatastreamConfigOverrideFromEvent(entity.getEvent());
+		Map<String, Object> datastreamConfigOverride = DataReader.optTypedMap(
+			Object.class,
+			eventConfigMap,
+			EdgeConstants.EventDataKeys.Config.DATASTREAM_CONFIG_OVERRIDE,
+			null
+		);
+
 		if (!MapUtils.isNullOrEmpty(datastreamConfigOverride)) {
 			// Attach datastream config override to the outgoing request metadata
 			request.addConfigOverrides(datastreamConfigOverride);
@@ -280,32 +294,6 @@ class EdgeHitProcessor implements HitProcessing {
 
 		final Map<String, String> requestHeaders = getRequestHeaders();
 		return sendNetworkRequest(entityId, edgeHit, requestHeaders);
-	}
-
-	String getDatastreamIdOverrideFromEvent(final Event event) {
-		Map<String, Object> configMap = DataReader.optTypedMap(
-			Object.class,
-			event.getEventData(),
-			EdgeConstants.EventDataKeys.Config.KEY,
-			null
-		);
-		return DataReader.optString(configMap, EdgeConstants.EventDataKeys.Config.DATASTREAM_ID_OVERRIDE, null);
-	}
-
-	Map<String, Object> getDatastreamConfigOverrideFromEvent(final Event event) {
-		Map<String, Object> configMap = DataReader.optTypedMap(
-			Object.class,
-			event.getEventData(),
-			EdgeConstants.EventDataKeys.Config.KEY,
-			null
-		);
-
-		return DataReader.optTypedMap(
-			Object.class,
-			configMap,
-			EdgeConstants.EventDataKeys.Config.DATASTREAM_CONFIG_OVERRIDE,
-			null
-		);
 	}
 
 	/**
