@@ -49,8 +49,8 @@ config
 
 | Key | Value type | Required | Description |
 | --- | ---------- | -------- | ----------- |
-| datastreamIdOverride | `String` | No | Optional Datastream identifier used to override the default datastream identifier set in the Edge configuration. |
-| datastreamConfigOverride | <code>Map<String,&nbsp;Object></code> | No | Optional Datastream configuration used to override individual settings from the default datastream configuration. |
+| datastreamIdOverride | `String` | No | Optional datastream identifier used to override the default datastream identifier set in the Edge configuration. |
+| datastreamConfigOverride | <code>Map<String,&nbsp;Object></code> | No | Optional datastream configuration used to override individual settings from the default datastream configuration. |
 
 request
 
