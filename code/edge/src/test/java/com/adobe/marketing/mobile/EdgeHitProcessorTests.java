@@ -32,6 +32,8 @@ import static org.mockito.Mockito.when;
 
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.NamedCollection;
+import com.adobe.marketing.mobile.util.MapUtils;
+import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,7 +50,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.stubbing.Answer;
 
 @RunWith(MockitoJUnitRunner.class)
 public class EdgeHitProcessorTests {
@@ -268,91 +272,6 @@ public class EdgeHitProcessorTests {
 
 	// Location hint value returned by EdgeStateCallback
 	private String locationHitResult = null;
-
-	private final Event experienceEvent = new Event.Builder(
-		"test-experience-event",
-		EventType.EDGE,
-		EventSource.REQUEST_CONTENT
-	)
-		.setEventData(
-			new HashMap<String, Object>() {
-				{
-					put(
-						"xdm",
-						new HashMap<String, Object>() {
-							{
-								put("test", "data");
-							}
-						}
-					);
-				}
-			}
-		)
-		.build();
-
-	private final Event consentEvent = new Event.Builder(
-		"test-consent-event",
-		EventType.EDGE,
-		EventSource.UPDATE_CONSENT
-	)
-		.setEventData(
-			new HashMap<String, Object>() {
-				{
-					put(
-						"consents",
-						new HashMap<String, Object>() {
-							{
-								put(
-									"collect",
-									new HashMap<String, Object>() {
-										{
-											put("val", "y");
-										}
-									}
-								);
-								put(
-									"request",
-									new HashMap<String, Object>() {
-										{
-											put("path", "/va/v1/sessionstart");
-										}
-									}
-								);
-							}
-						}
-					);
-				}
-			}
-		)
-		.build();
-
-	private final Event consentEventWithOverwritePath = new Event.Builder(
-		"test-consent-event",
-		EventType.EDGE,
-		EventSource.UPDATE_CONSENT
-	)
-		.setEventData(
-			new HashMap<String, Object>() {
-				{
-					put(
-						"consents",
-						new HashMap<String, Object>() {
-							{
-								put(
-									"collect",
-									new HashMap<String, Object>() {
-										{
-											put("val", "y");
-										}
-									}
-								);
-							}
-						}
-					);
-				}
-			}
-		)
-		.build();
 
 	private final Map<String, Object> identityMap = new HashMap<String, Object>() {
 		{
@@ -701,7 +620,7 @@ public class EdgeHitProcessorTests {
 		// Tests that when a good hit is processed that a network request is made and the request returns 200
 
 		// setup
-		EdgeDataEntity entity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap);
+		EdgeDataEntity entity = new EdgeDataEntity(getExperienceEvent(), edgeConfig, identityMap);
 
 		// test
 		assertProcessHit(entity, true, true);
@@ -710,7 +629,7 @@ public class EdgeHitProcessorTests {
 	@Test
 	public void testProcessHit_consentUpdateEvent_happy_sendsNetworkRequest_returnsTrue() {
 		// setup
-		EdgeDataEntity entity = new EdgeDataEntity(consentEvent, edgeConfig, identityMap);
+		EdgeDataEntity entity = new EdgeDataEntity(getConsentEvent(), edgeConfig, identityMap);
 
 		// test
 		assertProcessHit(entity, true, true);
@@ -719,7 +638,7 @@ public class EdgeHitProcessorTests {
 	@Test
 	public void testProcessHit_experienceEvent_sendsNetworkRequest_retryResponse_returnsFalse() {
 		// setup
-		EdgeDataEntity entity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap);
+		EdgeDataEntity entity = new EdgeDataEntity(getExperienceEvent(), edgeConfig, identityMap);
 
 		// test
 		assertProcessHit(entity, new RetryResult(EdgeNetworkService.Retry.YES), false);
@@ -728,7 +647,7 @@ public class EdgeHitProcessorTests {
 	@Test
 	public void testProcessHit_consentUpdateEvent_sendsNetworkRequest__retryResponse_returnsFalse() {
 		// setup
-		EdgeDataEntity entity = new EdgeDataEntity(consentEvent, edgeConfig, identityMap);
+		EdgeDataEntity entity = new EdgeDataEntity(getConsentEvent(), edgeConfig, identityMap);
 
 		// test
 		assertProcessHit(entity, new RetryResult(EdgeNetworkService.Retry.YES), false);
@@ -768,7 +687,7 @@ public class EdgeHitProcessorTests {
 		// Tests that when a good hit is processed that a network request is made and the request returns 200
 
 		// setup
-		EdgeDataEntity entity = new EdgeDataEntity(experienceEvent, null, identityMap);
+		EdgeDataEntity entity = new EdgeDataEntity(getExperienceEvent(), null, identityMap);
 
 		// test
 		assertProcessHit(entity, false, true);
@@ -777,7 +696,7 @@ public class EdgeHitProcessorTests {
 	@Test
 	public void testProcessHit_consentUpdateEvent_noEdgeConfigId_doesNotSendNetworkRequest_returnsTrue() {
 		// setup
-		EdgeDataEntity entity = new EdgeDataEntity(consentEvent, null, identityMap);
+		EdgeDataEntity entity = new EdgeDataEntity(getConsentEvent(), null, identityMap);
 
 		// test
 		assertProcessHit(entity, false, true);
@@ -795,7 +714,7 @@ public class EdgeHitProcessorTests {
 		Map<String, String> expectedHeaders = new HashMap<>();
 		expectedHeaders.put(EdgeConstants.NetworkKeys.HEADER_KEY_AEP_VALIDATION_TOKEN, "abc|123");
 
-		EdgeDataEntity entity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap);
+		EdgeDataEntity entity = new EdgeDataEntity(getExperienceEvent(), edgeConfig, identityMap);
 
 		// test
 		assertProcessHit(entity, true, expectedHeaders, true);
@@ -810,7 +729,7 @@ public class EdgeHitProcessorTests {
 					put(EdgeConstants.SharedState.Assurance.INTEGRATION_ID, "abc|123");
 				}
 			};
-		EdgeDataEntity entity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap);
+		EdgeDataEntity entity = new EdgeDataEntity(getExperienceEvent(), edgeConfig, identityMap);
 		hitProcessor =
 			new EdgeHitProcessor(mockNetworkResponseHandler, mockEdgeNetworkService, mockNamedCollection, null, null);
 
@@ -822,7 +741,7 @@ public class EdgeHitProcessorTests {
 	public void testProcessHit_assuranceDisabled_doesNotSendAssuranceHeader() {
 		// setup
 		assuranceSharedState = null;
-		EdgeDataEntity entity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap);
+		EdgeDataEntity entity = new EdgeDataEntity(getExperienceEvent(), edgeConfig, identityMap);
 
 		// test
 		assertProcessHit(entity, true, null, true);
@@ -830,13 +749,13 @@ public class EdgeHitProcessorTests {
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentProd_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(experienceEvent, "prod", null, ENDPOINT_PROD_INTERACT);
+		assertProcessHitEndpoint(getExperienceEvent(), "prod", null, ENDPOINT_PROD_INTERACT);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentProd_withLocationHint_buildUrlWithProdEndpoint() {
 		locationHitResult = LOC_HINT;
-		assertProcessHitEndpoint(experienceEvent, "prod", null, ENDPOINT_PROD_LOC_HINT_INTERACT);
+		assertProcessHitEndpoint(getExperienceEvent(), "prod", null, ENDPOINT_PROD_LOC_HINT_INTERACT);
 	}
 
 	@Test
@@ -908,13 +827,13 @@ public class EdgeHitProcessorTests {
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentProdAndCustomDomain_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(experienceEvent, "prod", CUSTOM_DOMAIN, ENDPOINT_PROD_CUSTOM_INTERACT);
+		assertProcessHitEndpoint(getExperienceEvent(), "prod", CUSTOM_DOMAIN, ENDPOINT_PROD_CUSTOM_INTERACT);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentProdAndCustomDomain_withLocationHint_buildUrlWithProdEndpoint() {
 		locationHitResult = LOC_HINT;
-		assertProcessHitEndpoint(experienceEvent, "prod", CUSTOM_DOMAIN, ENDPOINT_PROD_CUSTOM_LOC_HINT_INTERACT);
+		assertProcessHitEndpoint(getExperienceEvent(), "prod", CUSTOM_DOMAIN, ENDPOINT_PROD_CUSTOM_LOC_HINT_INTERACT);
 	}
 
 	@Test
@@ -930,13 +849,13 @@ public class EdgeHitProcessorTests {
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentPreProd_buildUrlWithPreProdEndpoint() {
-		assertProcessHitEndpoint(experienceEvent, "pre-prod", null, ENDPOINT_PRE_PROD_INTERACT);
+		assertProcessHitEndpoint(getExperienceEvent(), "pre-prod", null, ENDPOINT_PRE_PROD_INTERACT);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentPreProd_withLocationHint_buildUrlWithPreProdEndpoint() {
 		locationHitResult = LOC_HINT;
-		assertProcessHitEndpoint(experienceEvent, "pre-prod", null, ENDPOINT_PRE_PROD_LOC_HINT_INTERACT);
+		assertProcessHitEndpoint(getExperienceEvent(), "pre-prod", null, ENDPOINT_PRE_PROD_LOC_HINT_INTERACT);
 	}
 
 	@Test
@@ -952,14 +871,14 @@ public class EdgeHitProcessorTests {
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentPreProdAndCustomDomain_buildUrlWithPreProdEndpoint() {
-		assertProcessHitEndpoint(experienceEvent, "pre-prod", CUSTOM_DOMAIN, ENDPOINT_PRE_PROD_CUSTOM_INTERACT);
+		assertProcessHitEndpoint(getExperienceEvent(), "pre-prod", CUSTOM_DOMAIN, ENDPOINT_PRE_PROD_CUSTOM_INTERACT);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentPreProdAndCustomDomain_withLocationHint_buildUrlWithPreProdEndpoint() {
 		locationHitResult = LOC_HINT;
 		assertProcessHitEndpoint(
-			experienceEvent,
+			getExperienceEvent(),
 			"pre-prod",
 			CUSTOM_DOMAIN,
 			ENDPOINT_PRE_PROD_CUSTOM_LOC_HINT_INTERACT
@@ -979,13 +898,13 @@ public class EdgeHitProcessorTests {
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentInt_buildUrlWithIntEndpoint() {
-		assertProcessHitEndpoint(experienceEvent, "int", null, ENDPOINT_INT_INTERACT);
+		assertProcessHitEndpoint(getExperienceEvent(), "int", null, ENDPOINT_INT_INTERACT);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentInt_withLocationHint_buildUrlWithIntEndpoint() {
 		locationHitResult = LOC_HINT;
-		assertProcessHitEndpoint(experienceEvent, "int", null, ENDPOINT_INT_LOC_HINT_INTERACT);
+		assertProcessHitEndpoint(getExperienceEvent(), "int", null, ENDPOINT_INT_LOC_HINT_INTERACT);
 	}
 
 	@Test
@@ -1002,14 +921,14 @@ public class EdgeHitProcessorTests {
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentIntAndCustomDomain_buildUrlWithIntEndpoint() {
 		// Integration endpoint does not support custom domains
-		assertProcessHitEndpoint(experienceEvent, "int", CUSTOM_DOMAIN, ENDPOINT_INT_INTERACT);
+		assertProcessHitEndpoint(getExperienceEvent(), "int", CUSTOM_DOMAIN, ENDPOINT_INT_INTERACT);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentIntAndCustomDomain_withLocationHint_buildUrlWithIntEndpoint() {
 		locationHitResult = LOC_HINT;
 		// Integration endpoint does not support custom domains
-		assertProcessHitEndpoint(experienceEvent, "int", CUSTOM_DOMAIN, ENDPOINT_INT_LOC_HINT_INTERACT);
+		assertProcessHitEndpoint(getExperienceEvent(), "int", CUSTOM_DOMAIN, ENDPOINT_INT_LOC_HINT_INTERACT);
 	}
 
 	@Test
@@ -1026,106 +945,116 @@ public class EdgeHitProcessorTests {
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentEmpty_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(experienceEvent, "", null, ENDPOINT_PROD_INTERACT);
+		assertProcessHitEndpoint(getExperienceEvent(), "", null, ENDPOINT_PROD_INTERACT);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentNull_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(experienceEvent, null, null, ENDPOINT_PROD_INTERACT);
+		assertProcessHitEndpoint(getExperienceEvent(), null, null, ENDPOINT_PROD_INTERACT);
 	}
 
 	@Test
 	public void testProcessHit_experienceEvent_edgeEnvironmentInvalid_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(experienceEvent, "somevalue", null, ENDPOINT_PROD_INTERACT);
+		assertProcessHitEndpoint(getExperienceEvent(), "somevalue", null, ENDPOINT_PROD_INTERACT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentProd_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(consentEvent, "prod", null, ENDPOINT_PROD_CONSENT);
+		assertProcessHitEndpoint(getConsentEvent(), "prod", null, ENDPOINT_PROD_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentProd_withLocationHint_buildUrlWithProdEndpoint() {
 		locationHitResult = LOC_HINT;
-		assertProcessHitEndpoint(consentEvent, "prod", null, ENDPOINT_PROD_LOC_HINT_CONSENT);
+		assertProcessHitEndpoint(getConsentEvent(), "prod", null, ENDPOINT_PROD_LOC_HINT_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentProd_withOverwritePath_doesNotOverwriteThePath() {
 		locationHitResult = LOC_HINT;
-		assertProcessHitEndpoint(consentEventWithOverwritePath, "prod", null, ENDPOINT_PROD_LOC_HINT_CONSENT);
+		assertProcessHitEndpoint(
+			getConsentEventWithOverwritePath(OVERWRITE_PATH),
+			"prod",
+			null,
+			ENDPOINT_PROD_LOC_HINT_CONSENT
+		);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentProdAndCustomDomain_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(consentEvent, "prod", CUSTOM_DOMAIN, ENDPOINT_PROD_CUSTOM_CONSENT);
+		assertProcessHitEndpoint(getConsentEvent(), "prod", CUSTOM_DOMAIN, ENDPOINT_PROD_CUSTOM_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentProdAndCustomDomain_withLocationHint_buildUrlWithProdEndpoint() {
 		locationHitResult = LOC_HINT;
-		assertProcessHitEndpoint(consentEvent, "prod", CUSTOM_DOMAIN, ENDPOINT_PROD_CUSTOM_LOC_HINT_CONSENT);
+		assertProcessHitEndpoint(getConsentEvent(), "prod", CUSTOM_DOMAIN, ENDPOINT_PROD_CUSTOM_LOC_HINT_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentPreProd_buildUrlWithPreProdEndpoint() {
-		assertProcessHitEndpoint(consentEvent, "pre-prod", null, ENDPOINT_PRE_PROD_CONSENT);
+		assertProcessHitEndpoint(getConsentEvent(), "pre-prod", null, ENDPOINT_PRE_PROD_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentPreProd_withLocationHint_buildUrlWithPreProdEndpoint() {
 		locationHitResult = LOC_HINT;
-		assertProcessHitEndpoint(consentEvent, "pre-prod", null, ENDPOINT_PRE_PROD_LOC_HINT_CONSENT);
+		assertProcessHitEndpoint(getConsentEvent(), "pre-prod", null, ENDPOINT_PRE_PROD_LOC_HINT_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentPreProdAndCustomDomain_buildUrlWithPreProdEndpoint() {
-		assertProcessHitEndpoint(consentEvent, "pre-prod", CUSTOM_DOMAIN, ENDPOINT_PRE_PROD_CUSTOM_CONSENT);
+		assertProcessHitEndpoint(getConsentEvent(), "pre-prod", CUSTOM_DOMAIN, ENDPOINT_PRE_PROD_CUSTOM_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentPreProdAndCustomDomain_withLocationHint_buildUrlWithPreProdEndpoint() {
 		locationHitResult = LOC_HINT;
-		assertProcessHitEndpoint(consentEvent, "pre-prod", CUSTOM_DOMAIN, ENDPOINT_PRE_PROD_CUSTOM_LOC_HINT_CONSENT);
+		assertProcessHitEndpoint(
+			getConsentEvent(),
+			"pre-prod",
+			CUSTOM_DOMAIN,
+			ENDPOINT_PRE_PROD_CUSTOM_LOC_HINT_CONSENT
+		);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentInt_buildUrlWithIntEndpoint() {
-		assertProcessHitEndpoint(consentEvent, "int", null, ENDPOINT_INT_CONSENT);
+		assertProcessHitEndpoint(getConsentEvent(), "int", null, ENDPOINT_INT_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentInt_withLocationHint_buildUrlWithIntEndpoint() {
 		locationHitResult = LOC_HINT;
-		assertProcessHitEndpoint(consentEvent, "int", null, ENDPOINT_INT_LOC_HINT_CONSENT);
+		assertProcessHitEndpoint(getConsentEvent(), "int", null, ENDPOINT_INT_LOC_HINT_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentIntAndCustomDomain_buildUrlWithIntEndpoint() {
 		// Integration endpoint does not support custom domains
-		assertProcessHitEndpoint(consentEvent, "int", CUSTOM_DOMAIN, ENDPOINT_INT_CONSENT);
+		assertProcessHitEndpoint(getConsentEvent(), "int", CUSTOM_DOMAIN, ENDPOINT_INT_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentIntAndCustomDomain_withLocationHint_buildUrlWithIntEndpoint() {
 		locationHitResult = LOC_HINT;
 		// Integration endpoint does not support custom domains
-		assertProcessHitEndpoint(consentEvent, "int", CUSTOM_DOMAIN, ENDPOINT_INT_LOC_HINT_CONSENT);
+		assertProcessHitEndpoint(getConsentEvent(), "int", CUSTOM_DOMAIN, ENDPOINT_INT_LOC_HINT_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentEmpty_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(consentEvent, "", null, ENDPOINT_PROD_CONSENT);
+		assertProcessHitEndpoint(getConsentEvent(), "", null, ENDPOINT_PROD_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentNull_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(consentEvent, null, null, ENDPOINT_PROD_CONSENT);
+		assertProcessHitEndpoint(getConsentEvent(), null, null, ENDPOINT_PROD_CONSENT);
 	}
 
 	@Test
 	public void testProcessHit_consentEvent_edgeEnvironmentInvalid_buildUrlWithProdEndpoint() {
-		assertProcessHitEndpoint(consentEvent, "somevalue", null, ENDPOINT_PROD_CONSENT);
+		assertProcessHitEndpoint(getConsentEvent(), "somevalue", null, ENDPOINT_PROD_CONSENT);
 	}
 
 	@Test
@@ -1134,7 +1063,7 @@ public class EdgeHitProcessorTests {
 		mockNetworkServiceResponse("https://test.com", new RetryResult(EdgeNetworkService.Retry.YES, retryInterval));
 
 		// test & verify
-		DataEntity dataEntity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap).toDataEntity();
+		DataEntity dataEntity = new EdgeDataEntity(getExperienceEvent(), edgeConfig, identityMap).toDataEntity();
 		assertNotNull(dataEntity);
 
 		assertProcessHitResult(dataEntity, false); // retry is YES so processHit should return false
@@ -1155,7 +1084,7 @@ public class EdgeHitProcessorTests {
 	public void testProcessHit_experienceEvent_sendsImplementationDetails() throws Exception {
 		mockNetworkServiceResponse("https://test.com", new RetryResult(EdgeNetworkService.Retry.NO));
 
-		DataEntity dataEntity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap).toDataEntity();
+		DataEntity dataEntity = new EdgeDataEntity(getExperienceEvent(), edgeConfig, identityMap).toDataEntity();
 		// test
 		hitProcessor =
 			new EdgeHitProcessor(
@@ -1209,7 +1138,7 @@ public class EdgeHitProcessorTests {
 	public void testProcessHit_nullStateCallback_doesNotSendImplementationDetails() {
 		mockNetworkServiceResponse("https://test.com", new RetryResult(EdgeNetworkService.Retry.NO));
 
-		DataEntity dataEntity = new EdgeDataEntity(experienceEvent, edgeConfig, identityMap).toDataEntity();
+		DataEntity dataEntity = new EdgeDataEntity(getExperienceEvent(), edgeConfig, identityMap).toDataEntity();
 		assertNotNull(dataEntity);
 
 		hitProcessor =
@@ -1233,7 +1162,7 @@ public class EdgeHitProcessorTests {
 	@Test
 	public void testProcessHit_consentEvent_doesNotSendImplementationDetails() {
 		mockNetworkServiceResponse("https://test.com", new RetryResult(EdgeNetworkService.Retry.NO));
-		DataEntity dataEntity = new EdgeDataEntity(consentEvent, edgeConfig, identityMap).toDataEntity();
+		DataEntity dataEntity = new EdgeDataEntity(getConsentEvent(), edgeConfig, identityMap).toDataEntity();
 		assertNotNull(dataEntity);
 
 		hitProcessor =
@@ -1286,6 +1215,260 @@ public class EdgeHitProcessorTests {
 
 		assertFalse(payloadCaptor.getValue().contains("implementationdetails"));
 	}
+
+	@Test
+	public void testProcessHit_experienceEvent_withDatastreamIdOverrideSet_sendsNetworkRequest_returnsTrue() {
+		// Tests that when a good hit is processed that a network request is made and the request returns 200
+
+		// setup
+		EdgeDataEntity entity = new EdgeDataEntity(
+			getExperienceEventWithConfig("testDatastreamId", null),
+			edgeConfig,
+			identityMap
+		);
+
+		// test
+		assertProcessHit(entity, true, true);
+	}
+
+	@Test
+	public void testProcessHit_experienceEvent_withDatastreamConfigOverrideSet_sendsNetworkRequest_returnsTrue() {
+		// Tests that when a good hit is processed that a network request is made and the request returns 200
+		Map<String, Object> configOverrides = new HashMap<>();
+		configOverrides.put("key", "value");
+
+		// setup
+		EdgeDataEntity entity = new EdgeDataEntity(
+			getExperienceEventWithConfig(null, configOverrides),
+			edgeConfig,
+			identityMap
+		);
+
+		// test
+		assertProcessHit(entity, true, true);
+	}
+
+	@Test
+	public void testProcessHit_experienceEvent_withDatastreamIdAndConfigOverrideSet_sendsNetworkRequest_returnsTrue() {
+		// Tests that when a good hit is processed that a network request is made and the request returns 200
+		Map<String, Object> configOverrides = new HashMap<>();
+		configOverrides.put("key", "value");
+
+		// setup
+		EdgeDataEntity entity = new EdgeDataEntity(
+			getExperienceEventWithConfig("testDatastreamId", configOverrides),
+			edgeConfig,
+			identityMap
+		);
+
+		// test
+		assertProcessHit(entity, true, true);
+	}
+
+	@Test
+	public void testProcessHit_experienceEvent_whenDatastreamIdOverrideSet_sendsSdkConfig() throws Exception {
+		mockNetworkServiceResponse("https://test.com", new RetryResult(EdgeNetworkService.Retry.NO));
+
+		Map<String, Object> configOverrides = new HashMap<>();
+		configOverrides.put("key", "value");
+
+		DataEntity dataEntity = new EdgeDataEntity(
+			getExperienceEventWithConfig("testDatastreamId", null),
+			edgeConfig,
+			identityMap
+		)
+			.toDataEntity();
+		// test
+		hitProcessor =
+			new EdgeHitProcessor(
+				mockNetworkResponseHandler,
+				mockEdgeNetworkService,
+				mockNamedCollection,
+				mockSharedStateCallback,
+				new EdgeStateCallback() {
+					@Override
+					public Map<String, Object> getImplementationDetails() {
+						return implementationDetails;
+					}
+
+					@Override
+					public String getLocationHint() {
+						return null;
+					}
+
+					@Override
+					public void setLocationHint(final String hint, final int ttlSeconds) {
+						// not called by hit processor
+					}
+				}
+			);
+		assertProcessHitResult(dataEntity, true);
+
+		ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+		ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
+		verify(mockEdgeNetworkService, times(1))
+			.doRequest(
+				urlCaptor.capture(),
+				payloadCaptor.capture(),
+				ArgumentMatchers.anyMap(),
+				any(EdgeNetworkService.ResponseCallback.class)
+			);
+
+		// Assert that the url contains the overridden datastreamId
+		assertTrue(urlCaptor.getValue().contains("configId=testDatastreamId"));
+
+		assertTrue(payloadCaptor.getValue().contains("sdkConfig"));
+
+		JSONObject requestJson = new JSONObject(payloadCaptor.getValue());
+		assertNotNull(requestJson);
+		JSONObject metaJson = requestJson.getJSONObject("meta");
+		assertNotNull(metaJson);
+		JSONObject sdkConfigJson = metaJson.getJSONObject("sdkConfig");
+		assertNotNull(sdkConfigJson);
+		JSONObject datastreamJson = sdkConfigJson.getJSONObject("datastream");
+		assertNotNull(datastreamJson);
+
+		assertEquals("works", datastreamJson.get("original"));
+	}
+
+	@Test
+	public void testProcessHit_experienceEvent_whenDatastreamConfigOverridesSet_sendsConfigOverrides()
+		throws Exception {
+		mockNetworkServiceResponse("https://test.com", new RetryResult(EdgeNetworkService.Retry.NO));
+
+		Map<String, Object> configOverrides = new HashMap<>();
+		configOverrides.put("key", "value");
+
+		DataEntity dataEntity = new EdgeDataEntity(
+			getExperienceEventWithConfig(null, configOverrides),
+			edgeConfig,
+			identityMap
+		)
+			.toDataEntity();
+		// test
+		hitProcessor =
+			new EdgeHitProcessor(
+				mockNetworkResponseHandler,
+				mockEdgeNetworkService,
+				mockNamedCollection,
+				mockSharedStateCallback,
+				new EdgeStateCallback() {
+					@Override
+					public Map<String, Object> getImplementationDetails() {
+						return implementationDetails;
+					}
+
+					@Override
+					public String getLocationHint() {
+						return null;
+					}
+
+					@Override
+					public void setLocationHint(final String hint, final int ttlSeconds) {
+						// not called by hit processor
+					}
+				}
+			);
+		assertProcessHitResult(dataEntity, true);
+
+		ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
+		verify(mockEdgeNetworkService, times(1))
+			.doRequest(
+				anyString(),
+				payloadCaptor.capture(),
+				ArgumentMatchers.anyMap(),
+				any(EdgeNetworkService.ResponseCallback.class)
+			);
+
+		assertTrue(payloadCaptor.getValue().contains("configOverrides"));
+
+		JSONObject requestJson = new JSONObject(payloadCaptor.getValue());
+		assertNotNull(requestJson);
+		JSONObject metaJson = requestJson.getJSONObject("meta");
+		assertNotNull(metaJson);
+		JSONObject configOverridesJson = metaJson.getJSONObject("configOverrides");
+		assertNotNull(configOverridesJson);
+
+		assertEquals("value", configOverridesJson.get("key"));
+	}
+
+	@Test
+	public void testProcessHit_experienceEvent_whenDatastreamIdAndConfigOverridesSet_sendsSdkConfigAndConfigOverrides()
+		throws Exception {
+		mockNetworkServiceResponse("https://test.com", new RetryResult(EdgeNetworkService.Retry.NO));
+
+		Map<String, Object> configOverrides = new HashMap<>();
+		configOverrides.put("key", "value");
+
+		DataEntity dataEntity = new EdgeDataEntity(
+			getExperienceEventWithConfig("testDatastreamId", configOverrides),
+			edgeConfig,
+			identityMap
+		)
+			.toDataEntity();
+		// test
+		hitProcessor =
+			new EdgeHitProcessor(
+				mockNetworkResponseHandler,
+				mockEdgeNetworkService,
+				mockNamedCollection,
+				mockSharedStateCallback,
+				new EdgeStateCallback() {
+					@Override
+					public Map<String, Object> getImplementationDetails() {
+						return implementationDetails;
+					}
+
+					@Override
+					public String getLocationHint() {
+						return null;
+					}
+
+					@Override
+					public void setLocationHint(final String hint, final int ttlSeconds) {
+						// not called by hit processor
+					}
+				}
+			);
+		assertProcessHitResult(dataEntity, true);
+
+		ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+		ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
+		verify(mockEdgeNetworkService, times(1))
+			.doRequest(
+				urlCaptor.capture(),
+				payloadCaptor.capture(),
+				ArgumentMatchers.anyMap(),
+				any(EdgeNetworkService.ResponseCallback.class)
+			);
+
+		assertTrue(payloadCaptor.getValue().contains("configOverrides"));
+
+		JSONObject requestJson = new JSONObject(payloadCaptor.getValue());
+		assertNotNull(requestJson);
+		JSONObject metaJson = requestJson.getJSONObject("meta");
+		assertNotNull(metaJson);
+
+		// Assert sdkConfig
+
+		// Assert that the url contains the overridden datastreamId
+		assertTrue(urlCaptor.getValue().contains("configId=testDatastreamId"));
+
+		JSONObject sdkConfigJson = metaJson.getJSONObject("sdkConfig");
+		assertNotNull(sdkConfigJson);
+		JSONObject datastreamJson = sdkConfigJson.getJSONObject("datastream");
+		assertNotNull(datastreamJson);
+
+		assertEquals("works", datastreamJson.get("original"));
+
+		// Assert configOverrides
+		JSONObject configOverridesJson = metaJson.getJSONObject("configOverrides");
+		assertNotNull(configOverridesJson);
+
+		assertEquals("value", configOverridesJson.get("key"));
+	}
+
+	//************************************************** Utils **************************************************
 
 	void assertProcessHitResult(@NotNull final DataEntity entity, final boolean expectedHitProcessingResult) {
 		hitProcessor.processHit(
@@ -1383,8 +1566,21 @@ public class EdgeHitProcessorTests {
 	}
 
 	private void mockNetworkServiceResponse(final String returnBuildUrl, final RetryResult returnRetry) {
-		when(mockEdgeNetworkService.buildUrl(any(EdgeEndpoint.class), anyString(), anyString()))
-			.thenReturn(returnBuildUrl);
+		ArgumentCaptor<String> datastreamIdCaptor = ArgumentCaptor.forClass(String.class);
+
+		when(mockEdgeNetworkService.buildUrl(any(EdgeEndpoint.class), datastreamIdCaptor.capture(), anyString()))
+			.thenAnswer(
+				new Answer<Object>() {
+					public Object answer(InvocationOnMock invocation) {
+						String capturedDatastreamId = datastreamIdCaptor.getValue();
+						return StringUtils.isNullOrEmpty(capturedDatastreamId)
+							? returnBuildUrl
+							: returnBuildUrl + "?configId=" + capturedDatastreamId;
+					}
+				}
+			);
+
+		//Return(returnBuildUrl);
 		when(
 			mockEdgeNetworkService.doRequest(
 				anyString(),
@@ -1503,31 +1699,81 @@ public class EdgeHitProcessorTests {
 		return null;
 	}
 
-	private Event getExperienceEventWithOverwritePath(final String path) {
-		return new Event.Builder("test-experience-event", EventType.EDGE, EventSource.REQUEST_CONTENT)
-			.setEventData(
-				new HashMap<String, Object>() {
-					{
-						put(
-							"xdm",
-							new HashMap<String, Object>() {
-								{
-									put("test", "data");
-								}
-							}
-						);
+	private Event getExperienceEvent() {
+		return getExperienceEvent(null, null);
+	}
 
-						put(
-							"request",
-							new HashMap<String, Object>() {
-								{
-									put("path", path);
-								}
-							}
-						);
-					}
-				}
-			)
+	private Event getExperienceEvent(Map<String, Object> request, Map<String, Object> config) {
+		Map<String, Object> xdmData = new HashMap<String, Object>() {
+			{
+				put("test", "data");
+			}
+		};
+		Map<String, Object> eventData = new HashMap<String, Object>();
+		eventData.put("xdm", xdmData);
+
+		if (!MapUtils.isNullOrEmpty(config)) {
+			eventData.put("config", config);
+		}
+
+		if (!MapUtils.isNullOrEmpty(request)) {
+			eventData.put("request", request);
+		}
+
+		Event experienceEvent = new Event.Builder("test-experience-event", EventType.EDGE, EventSource.REQUEST_CONTENT)
+			.setEventData(eventData)
 			.build();
+		return experienceEvent;
+	}
+
+	private Event getExperienceEventWithConfig(String datastreamIdOverride, Map<String, Object> configOverrides) {
+		Map<String, Object> config = new HashMap<>();
+		if (!StringUtils.isNullOrEmpty(datastreamIdOverride)) {
+			config.put("datastreamIdOverride", datastreamIdOverride);
+		}
+
+		if (!MapUtils.isNullOrEmpty(configOverrides)) {
+			config.put("datastreamConfigOverride", configOverrides);
+		}
+
+		return getExperienceEvent(null, config);
+	}
+
+	private Event getConsentEvent() {
+		return getConsentEvent(null);
+	}
+
+	private Event getConsentEventWithOverwritePath(String path) {
+		Map<String, Object> requestMap = new HashMap<>();
+		requestMap.put("path", path);
+		return getConsentEvent(requestMap);
+	}
+
+	private Event getConsentEvent(Map<String, Object> requestMap) {
+		Map<String, Object> consentsMap = new HashMap<>();
+		Map<String, Object> collectMap = new HashMap<>();
+		collectMap.put("val", "y");
+
+		consentsMap.put("collect", collectMap);
+
+		if (!MapUtils.isNullOrEmpty(requestMap)) {
+			consentsMap.put("request", requestMap);
+		}
+
+		Map<String, Object> finalMap = new HashMap<>();
+		finalMap.put("consents", consentsMap);
+
+		Event consentEvent = new Event.Builder("test-consent-event", EventType.EDGE, EventSource.UPDATE_CONSENT)
+			.setEventData(finalMap)
+			.build();
+
+		return consentEvent;
+	}
+
+	private Event getExperienceEventWithOverwritePath(final String path) {
+		Map<String, Object> requestMap = new HashMap<>();
+		requestMap.put("path", path);
+
+		return getExperienceEvent(requestMap, null);
 	}
 }
