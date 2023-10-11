@@ -9,7 +9,7 @@
   governing permissions and limitations under the License.
 */
 
-package com.adobe.marketing.mobile
+package com.adobe.marketing.mobile.edge
 
 data class SDKConfig(val datastream: Datastream) {
     fun toMap(): MutableMap<String, Any> {

@@ -11,6 +11,8 @@
 
 package com.adobe.marketing.mobile
 
+import com.adobe.marketing.mobile.edge.Datastream
+import com.adobe.marketing.mobile.edge.SDKConfig
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

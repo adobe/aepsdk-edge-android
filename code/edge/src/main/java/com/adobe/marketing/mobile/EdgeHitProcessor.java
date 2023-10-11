@@ -14,6 +14,8 @@ package com.adobe.marketing.mobile;
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import androidx.annotation.NonNull;
+import com.adobe.marketing.mobile.edge.Datastream;
+import com.adobe.marketing.mobile.edge.SDKConfig;
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.HitProcessing;
 import com.adobe.marketing.mobile.services.HitProcessingResult;

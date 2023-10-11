@@ -19,6 +19,8 @@ import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.fail;
 import static org.mockito.Mockito.when;
 
+import com.adobe.marketing.mobile.edge.Datastream;
+import com.adobe.marketing.mobile.edge.SDKConfig;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.JSONUtils;
 import com.fasterxml.jackson.databind.JsonNode;
