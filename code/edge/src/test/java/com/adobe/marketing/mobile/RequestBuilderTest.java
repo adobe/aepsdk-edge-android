@@ -354,6 +354,38 @@ public class RequestBuilderTest {
 	}
 
 	@Test
+	public void getPayloadWithExperienceEvents_doesNotSetConfigOverridesMeta_whenConfigOverridesEmpty()
+		throws Exception {
+		List<Event> events = getSingleEvent(getExperienceEventData("value", "5dd603781b95cc18a83d42ce"));
+		requestBuilder.addConfigOverrides(new HashMap() {});
+		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
+
+		assertNotNull(payload);
+		assertNumberOfEvents(payload, 1);
+
+		Map<String, String> payloadMap = new HashMap<>();
+		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
+
+		assertNull(payloadMap.get("meta.configOverrides"));
+	}
+
+	@Test
+	public void getPayloadWithExperienceEvents_doesNotSetConfigOverridesMeta_whenConfigOverridesNull()
+		throws Exception {
+		List<Event> events = getSingleEvent(getExperienceEventData("value", "5dd603781b95cc18a83d42ce"));
+		requestBuilder.addConfigOverrides(null);
+		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
+
+		assertNotNull(payload);
+		assertNumberOfEvents(payload, 1);
+
+		Map<String, String> payloadMap = new HashMap<>();
+		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
+
+		assertNull(payloadMap.get("meta.configOverrides"));
+	}
+
+	@Test
 	public void getPayloadWithExperienceEvents_addsIdentityMap_whenEcidGiven() throws Exception {
 		List<Event> events = getSingleEvent(getExperienceEventData("value"));
 		final String jsonStr =
