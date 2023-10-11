@@ -11,7 +11,7 @@
 
 package com.adobe.marketing.mobile
 
-internal data class SDKConfig(val datastream: Datastream) {
+data class SDKConfig(val datastream: Datastream) {
     fun toMap(): MutableMap<String, Any> {
         return mutableMapOf(
             "datastream" to datastream.toMap()
@@ -19,7 +19,7 @@ internal data class SDKConfig(val datastream: Datastream) {
     }
 }
 
-internal data class Datastream(val original: String) {
+data class Datastream(val original: String) {
     fun toMap(): MutableMap<String, Any> {
         return mutableMapOf(
             "original" to original
