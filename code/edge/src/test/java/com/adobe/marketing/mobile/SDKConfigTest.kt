@@ -19,6 +19,28 @@ import org.junit.Test
 class SDKConfigTest {
 
     @Test
+    fun test_sdkConfig_getters_happy() {
+        // setup
+        val datastream = Datastream("test")
+        val sdkConfig = SDKConfig(datastream)
+
+        // verify
+        assertEquals(datastream, sdkConfig.datastream)
+        assertEquals("test", sdkConfig.datastream.original)
+    }
+
+    @Test
+    fun test_sdkConfig_getters_emptyOriginalDatastream() {
+        // setup
+        val datastream = Datastream("")
+        val sdkConfig = SDKConfig(datastream)
+
+        // verify
+        assertEquals(datastream, sdkConfig.datastream)
+        assertEquals("", sdkConfig.datastream.original)
+    }
+
+    @Test
     fun test_datastream_toMap_happy() {
         // setup
         val datastream = Datastream("test")

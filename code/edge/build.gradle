@@ -210,8 +210,7 @@ tasks.register('platformUnitTestJacocoReport', JacocoReport) {
     dependsOn "testPhoneDebugUnitTest"
     def excludeRegex = ['**/BuildConfig.class']
     def javaClasses = fileTree(dir: "${project.buildDir}/intermediates/javac/phoneDebug/classes/com/adobe/marketing/mobile", excludes: excludeRegex)
-    def kotlinClasses = fileTree(dir: "${project.buildDir}/tmp/kotlin-classes/phoneDebug/classes/com/adobe/marketing/mobile", excludes: excludeRegex)
-
+    def kotlinClasses = fileTree(dir: "${project.buildDir}/tmp/kotlin-classes/phoneDebug", excludes: excludeRegex)
     classDirectories.setFrom(files([javaClasses, kotlinClasses]))
 
     additionalSourceDirs.setFrom files(android.sourceSets.main.java.sourceFiles)
@@ -232,7 +231,7 @@ tasks.register('platformFunctionalTestJacocoReport', JacocoReport) {
     dependsOn "createPhoneDebugCoverageReport"
     def excludeRegex = ['**/BuildConfig.class']
     def javaClasses = fileTree(dir: "${project.buildDir}/intermediates/javac/phoneDebug/classes/com/adobe/marketing/mobile", excludes: excludeRegex)
-    def kotlinClasses = fileTree(dir: "${project.buildDir}/tmp/kotlin-classes/phoneDebug/classes/com/adobe/marketing/mobile", excludes: excludeRegex)
+    def kotlinClasses = fileTree(dir: "${project.buildDir}/tmp/kotlin-classes/phoneDebug", excludes: excludeRegex)
 
     classDirectories.setFrom(files([javaClasses, kotlinClasses]))
     additionalSourceDirs.setFrom files(android.sourceSets.main.java.sourceFiles)
