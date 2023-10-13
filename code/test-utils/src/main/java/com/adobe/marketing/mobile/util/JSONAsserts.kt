@@ -126,6 +126,7 @@ object JSONAsserts {
      * @param typeMatchPaths The key paths in the expected JSON that should use type matching mode, where values require only the same type (and are non-null if the expected value is not null).
      */
     @JvmStatic
+    @JvmOverloads
     fun assertExactMatch(expected: Any, actual: Any?, typeMatchPaths: List<String> = emptyList()) {
         val pathTree = generatePathTree(paths = typeMatchPaths)
         assertFlexibleEqual(expected = expected, actual = actual, pathTree = pathTree, exactMatchMode = true)
