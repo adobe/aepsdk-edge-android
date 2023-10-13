@@ -101,7 +101,7 @@ dokkaJavadoc.configure {
         named("main") {
             noAndroidSdkLink.set(false)
             perPackageOption {
-                matchingRegex.set(".*\\.internal.*") // proper setting
+                matchingRegex.set(".*\\.internal.*")
                 suppress.set(true)
             }
         }
@@ -110,7 +110,7 @@ dokkaJavadoc.configure {
             named("phone") {
                 noAndroidSdkLink.set(false)
                 perPackageOption {
-                    matchingRegex.set(".*\\.internal.*") // proper setting
+                    matchingRegex.set(".*\\.internal.*")
                     suppress.set(true)
                 }
             }

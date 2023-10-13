@@ -43,4 +43,18 @@ class SDKConfigTest {
         // verify
         assertEquals(expectedMap, map)
     }
+
+    @Test
+    fun test_sdkConfig_toMap_emptyOriginalDatastreamID_returnsEmptyString() {
+        // setup
+        val datastream = Datastream("")
+        val sdkConfig = SDKConfig(datastream)
+        val expectedMap = mapOf("datastream" to mapOf("original" to ""))
+
+        // test
+        val map = sdkConfig.toMap()
+
+        // verify
+        assertEquals(expectedMap, map)
+    }
 }
