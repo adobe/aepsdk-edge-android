@@ -319,7 +319,7 @@ public class RequestBuilderTest {
 
 	@Test
 	public void getPayloadWithExperienceEvents_setsSdkConfigMeta_whenSdkConfigPresent() throws Exception {
-		List<Event> events = getSingleEvent(getExperienceEventData("value", "5dd603781b95cc18a83d42ce"));
+		List<Event> events = getSingleEvent(getExperienceEventData("value", null));
 		requestBuilder.addSdkConfig(new SDKConfig(new Datastream("OriginalDatastreamId")));
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
 

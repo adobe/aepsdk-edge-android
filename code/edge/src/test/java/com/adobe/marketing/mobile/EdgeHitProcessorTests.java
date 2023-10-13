@@ -32,6 +32,7 @@ import static org.mockito.Mockito.when;
 
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.NamedCollection;
+import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.MapUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
@@ -1317,18 +1318,16 @@ public class EdgeHitProcessorTests {
 		// Assert that the url contains the overridden datastreamId
 		assertTrue(urlCaptor.getValue().contains("configId=testDatastreamId"));
 
-		assertTrue(payloadCaptor.getValue().contains("sdkConfig"));
+		JSONObject expectedSdkConfigJSON = new JSONObject(
+			"{\"sdkConfig\":{" + "\"datastream\":{" + "\"original\":\"works\"" + "}" + "}" + "}"
+		);
 
+		assertTrue(payloadCaptor.getValue().contains("sdkConfig"));
 		JSONObject requestJson = new JSONObject(payloadCaptor.getValue());
 		assertNotNull(requestJson);
-		JSONObject metaJson = requestJson.getJSONObject("meta");
-		assertNotNull(metaJson);
-		JSONObject sdkConfigJson = metaJson.getJSONObject("sdkConfig");
-		assertNotNull(sdkConfigJson);
-		JSONObject datastreamJson = sdkConfigJson.getJSONObject("datastream");
-		assertNotNull(datastreamJson);
 
-		assertEquals("works", datastreamJson.get("original"));
+		JSONObject metaJson = requestJson.getJSONObject("meta");
+		JSONAsserts.assertExactMatch(expectedSdkConfigJSON, metaJson);
 	}
 
 	@Test
@@ -1382,14 +1381,15 @@ public class EdgeHitProcessorTests {
 
 		assertTrue(payloadCaptor.getValue().contains("configOverrides"));
 
+		JSONObject expectedConfigOverridesJSON = new JSONObject(
+			"{\"configOverrides\":{" + "\"key\":\"value\"" + "}" + "}"
+		);
+
 		JSONObject requestJson = new JSONObject(payloadCaptor.getValue());
 		assertNotNull(requestJson);
-		JSONObject metaJson = requestJson.getJSONObject("meta");
-		assertNotNull(metaJson);
-		JSONObject configOverridesJson = metaJson.getJSONObject("configOverrides");
-		assertNotNull(configOverridesJson);
 
-		assertEquals("value", configOverridesJson.get("key"));
+		JSONObject metaJson = requestJson.getJSONObject("meta");
+		JSONAsserts.assertExactMatch(expectedConfigOverridesJSON, metaJson);
 	}
 
 	@Test
@@ -1449,23 +1449,20 @@ public class EdgeHitProcessorTests {
 		JSONObject metaJson = requestJson.getJSONObject("meta");
 		assertNotNull(metaJson);
 
-		// Assert sdkConfig
-
 		// Assert that the url contains the overridden datastreamId
 		assertTrue(urlCaptor.getValue().contains("configId=testDatastreamId"));
 
-		JSONObject sdkConfigJson = metaJson.getJSONObject("sdkConfig");
-		assertNotNull(sdkConfigJson);
-		JSONObject datastreamJson = sdkConfigJson.getJSONObject("datastream");
-		assertNotNull(datastreamJson);
-
-		assertEquals("works", datastreamJson.get("original"));
+		// Assert sdkConfig
+		JSONObject expectedSdkConfigJSON = new JSONObject(
+			"{\"sdkConfig\":{" + "\"datastream\":{" + "\"original\":\"works\"" + "}" + "}" + "}"
+		);
+		JSONAsserts.assertExactMatch(expectedSdkConfigJSON, metaJson);
 
 		// Assert configOverrides
-		JSONObject configOverridesJson = metaJson.getJSONObject("configOverrides");
-		assertNotNull(configOverridesJson);
-
-		assertEquals("value", configOverridesJson.get("key"));
+		JSONObject expectedConfigOverridesJSON = new JSONObject(
+			"{\"configOverrides\":{" + "\"key\":\"value\"" + "}" + "}"
+		);
+		JSONAsserts.assertExactMatch(expectedConfigOverridesJSON, metaJson);
 	}
 
 	//************************************************** Utils **************************************************

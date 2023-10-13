@@ -264,6 +264,7 @@ dependencies {
     testImplementation "org.mockito:mockito-inline:${rootProject.ext.mockitoVersion}"
     testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.12.7'
     testImplementation 'org.json:json:20180813'
+    testImplementation project(":test-utils")
 
     androidTestImplementation('com.adobe.marketing.mobile:edgeconsent:2.+') {
         exclude group: 'com.adobe.marketing.mobile', module: 'edge'
