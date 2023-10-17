@@ -32,7 +32,6 @@ import static org.mockito.Mockito.when;
 
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.NamedCollection;
-import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.MapUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
@@ -1219,8 +1218,6 @@ public class EdgeHitProcessorTests {
 
 	@Test
 	public void testProcessHit_experienceEvent_withDatastreamIdOverrideSet_sendsNetworkRequest_returnsTrue() {
-		// Tests that when a good hit is processed that a network request is made and the request returns 200
-
 		// setup
 		EdgeDataEntity entity = new EdgeDataEntity(
 			getExperienceEventWithConfig("testDatastreamId", null),
@@ -1233,14 +1230,44 @@ public class EdgeHitProcessorTests {
 	}
 
 	@Test
+	public void testProcessHit_experienceEvent_withEmptyDatastreamIdOverride_sendsNetworkRequest_returnsTrue() {
+		// setup
+		EdgeDataEntity entity = new EdgeDataEntity(getExperienceEventWithConfig("", null), edgeConfig, identityMap);
+
+		// test
+		assertProcessHit(entity, true, true);
+	}
+
+	@Test
+	public void testProcessHit_experienceEvent_withNullDatastreamIdOverride_sendsNetworkRequest_returnsTrue() {
+		// setup
+		EdgeDataEntity entity = new EdgeDataEntity(getExperienceEventWithConfig(null, null), edgeConfig, identityMap);
+
+		// test
+		assertProcessHit(entity, true, true);
+	}
+
+	@Test
 	public void testProcessHit_experienceEvent_withDatastreamConfigOverrideSet_sendsNetworkRequest_returnsTrue() {
-		// Tests that when a good hit is processed that a network request is made and the request returns 200
+		// setup
 		Map<String, Object> configOverrides = new HashMap<>();
 		configOverrides.put("key", "value");
 
-		// setup
 		EdgeDataEntity entity = new EdgeDataEntity(
 			getExperienceEventWithConfig(null, configOverrides),
+			edgeConfig,
+			identityMap
+		);
+
+		// test
+		assertProcessHit(entity, true, true);
+	}
+
+	@Test
+	public void testProcessHit_experienceEvent_withEmptyDatastreamConfigOverride_sendsNetworkRequest_returnsTrue() {
+		// setup
+		EdgeDataEntity entity = new EdgeDataEntity(
+			getExperienceEventWithConfig(null, new HashMap<>()),
 			edgeConfig,
 			identityMap
 		);
@@ -1251,11 +1278,10 @@ public class EdgeHitProcessorTests {
 
 	@Test
 	public void testProcessHit_experienceEvent_withDatastreamIdAndConfigOverrideSet_sendsNetworkRequest_returnsTrue() {
-		// Tests that when a good hit is processed that a network request is made and the request returns 200
+		// setup
 		Map<String, Object> configOverrides = new HashMap<>();
 		configOverrides.put("key", "value");
 
-		// setup
 		EdgeDataEntity entity = new EdgeDataEntity(
 			getExperienceEventWithConfig("testDatastreamId", configOverrides),
 			edgeConfig,
@@ -1264,205 +1290,6 @@ public class EdgeHitProcessorTests {
 
 		// test
 		assertProcessHit(entity, true, true);
-	}
-
-	@Test
-	public void testProcessHit_experienceEvent_whenDatastreamIdOverrideSet_sendsSdkConfig() throws Exception {
-		mockNetworkServiceResponse("https://test.com", new RetryResult(EdgeNetworkService.Retry.NO));
-
-		Map<String, Object> configOverrides = new HashMap<>();
-		configOverrides.put("key", "value");
-
-		DataEntity dataEntity = new EdgeDataEntity(
-			getExperienceEventWithConfig("testDatastreamId", null),
-			edgeConfig,
-			identityMap
-		)
-			.toDataEntity();
-		// test
-		hitProcessor =
-			new EdgeHitProcessor(
-				mockNetworkResponseHandler,
-				mockEdgeNetworkService,
-				mockNamedCollection,
-				mockSharedStateCallback,
-				new EdgeStateCallback() {
-					@Override
-					public Map<String, Object> getImplementationDetails() {
-						return implementationDetails;
-					}
-
-					@Override
-					public String getLocationHint() {
-						return null;
-					}
-
-					@Override
-					public void setLocationHint(final String hint, final int ttlSeconds) {
-						// not called by hit processor
-					}
-				}
-			);
-		assertProcessHitResult(dataEntity, true);
-
-		ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
-		ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
-		verify(mockEdgeNetworkService, times(1))
-			.doRequest(
-				urlCaptor.capture(),
-				payloadCaptor.capture(),
-				ArgumentMatchers.anyMap(),
-				any(EdgeNetworkService.ResponseCallback.class)
-			);
-
-		// Assert that the url contains the overridden datastreamId
-		assertTrue(urlCaptor.getValue().contains("configId=testDatastreamId"));
-
-		JSONObject expectedSdkConfigJSON = new JSONObject(
-			"{\"sdkConfig\":{" + "\"datastream\":{" + "\"original\":\"works\"" + "}" + "}" + "}"
-		);
-
-		assertTrue(payloadCaptor.getValue().contains("sdkConfig"));
-		JSONObject requestJson = new JSONObject(payloadCaptor.getValue());
-		assertNotNull(requestJson);
-
-		JSONObject metaJson = requestJson.getJSONObject("meta");
-		JSONAsserts.assertExactMatch(expectedSdkConfigJSON, metaJson);
-	}
-
-	@Test
-	public void testProcessHit_experienceEvent_whenDatastreamConfigOverridesSet_sendsConfigOverrides()
-		throws Exception {
-		mockNetworkServiceResponse("https://test.com", new RetryResult(EdgeNetworkService.Retry.NO));
-
-		Map<String, Object> configOverrides = new HashMap<>();
-		configOverrides.put("key", "value");
-
-		DataEntity dataEntity = new EdgeDataEntity(
-			getExperienceEventWithConfig(null, configOverrides),
-			edgeConfig,
-			identityMap
-		)
-			.toDataEntity();
-		// test
-		hitProcessor =
-			new EdgeHitProcessor(
-				mockNetworkResponseHandler,
-				mockEdgeNetworkService,
-				mockNamedCollection,
-				mockSharedStateCallback,
-				new EdgeStateCallback() {
-					@Override
-					public Map<String, Object> getImplementationDetails() {
-						return implementationDetails;
-					}
-
-					@Override
-					public String getLocationHint() {
-						return null;
-					}
-
-					@Override
-					public void setLocationHint(final String hint, final int ttlSeconds) {
-						// not called by hit processor
-					}
-				}
-			);
-		assertProcessHitResult(dataEntity, true);
-
-		ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
-		verify(mockEdgeNetworkService, times(1))
-			.doRequest(
-				anyString(),
-				payloadCaptor.capture(),
-				ArgumentMatchers.anyMap(),
-				any(EdgeNetworkService.ResponseCallback.class)
-			);
-
-		assertTrue(payloadCaptor.getValue().contains("configOverrides"));
-
-		JSONObject expectedConfigOverridesJSON = new JSONObject(
-			"{\"configOverrides\":{" + "\"key\":\"value\"" + "}" + "}"
-		);
-
-		JSONObject requestJson = new JSONObject(payloadCaptor.getValue());
-		assertNotNull(requestJson);
-
-		JSONObject metaJson = requestJson.getJSONObject("meta");
-		JSONAsserts.assertExactMatch(expectedConfigOverridesJSON, metaJson);
-	}
-
-	@Test
-	public void testProcessHit_experienceEvent_whenDatastreamIdAndConfigOverridesSet_sendsSdkConfigAndConfigOverrides()
-		throws Exception {
-		mockNetworkServiceResponse("https://test.com", new RetryResult(EdgeNetworkService.Retry.NO));
-
-		Map<String, Object> configOverrides = new HashMap<>();
-		configOverrides.put("key", "value");
-
-		DataEntity dataEntity = new EdgeDataEntity(
-			getExperienceEventWithConfig("testDatastreamId", configOverrides),
-			edgeConfig,
-			identityMap
-		)
-			.toDataEntity();
-		// test
-		hitProcessor =
-			new EdgeHitProcessor(
-				mockNetworkResponseHandler,
-				mockEdgeNetworkService,
-				mockNamedCollection,
-				mockSharedStateCallback,
-				new EdgeStateCallback() {
-					@Override
-					public Map<String, Object> getImplementationDetails() {
-						return implementationDetails;
-					}
-
-					@Override
-					public String getLocationHint() {
-						return null;
-					}
-
-					@Override
-					public void setLocationHint(final String hint, final int ttlSeconds) {
-						// not called by hit processor
-					}
-				}
-			);
-		assertProcessHitResult(dataEntity, true);
-
-		ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
-		ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
-		verify(mockEdgeNetworkService, times(1))
-			.doRequest(
-				urlCaptor.capture(),
-				payloadCaptor.capture(),
-				ArgumentMatchers.anyMap(),
-				any(EdgeNetworkService.ResponseCallback.class)
-			);
-
-		assertTrue(payloadCaptor.getValue().contains("configOverrides"));
-
-		JSONObject requestJson = new JSONObject(payloadCaptor.getValue());
-		assertNotNull(requestJson);
-		JSONObject metaJson = requestJson.getJSONObject("meta");
-		assertNotNull(metaJson);
-
-		// Assert that the url contains the overridden datastreamId
-		assertTrue(urlCaptor.getValue().contains("configId=testDatastreamId"));
-
-		// Assert sdkConfig
-		JSONObject expectedSdkConfigJSON = new JSONObject(
-			"{\"sdkConfig\":{" + "\"datastream\":{" + "\"original\":\"works\"" + "}" + "}" + "}"
-		);
-		JSONAsserts.assertExactMatch(expectedSdkConfigJSON, metaJson);
-
-		// Assert configOverrides
-		JSONObject expectedConfigOverridesJSON = new JSONObject(
-			"{\"configOverrides\":{" + "\"key\":\"value\"" + "}" + "}"
-		);
-		JSONAsserts.assertExactMatch(expectedConfigOverridesJSON, metaJson);
 	}
 
 	//************************************************** Utils **************************************************
@@ -1725,13 +1552,8 @@ public class EdgeHitProcessorTests {
 
 	private Event getExperienceEventWithConfig(String datastreamIdOverride, Map<String, Object> configOverrides) {
 		Map<String, Object> config = new HashMap<>();
-		if (!StringUtils.isNullOrEmpty(datastreamIdOverride)) {
-			config.put("datastreamIdOverride", datastreamIdOverride);
-		}
-
-		if (!MapUtils.isNullOrEmpty(configOverrides)) {
-			config.put("datastreamConfigOverride", configOverrides);
-		}
+		config.put("datastreamIdOverride", datastreamIdOverride);
+		config.put("datastreamConfigOverride", configOverrides);
 
 		return getExperienceEvent(null, config);
 	}
