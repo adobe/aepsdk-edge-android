@@ -11,6 +11,10 @@
 
 package com.adobe.marketing.mobile.edge
 
+/**
+ * SDK configuration metadata. Used to pass the original SDK configuration
+ * to the Edge Network request when the configuration is overridden.
+ */
 data class SDKConfig(val datastream: Datastream) {
     fun toMap(): MutableMap<String, Any> {
         return mutableMapOf(
@@ -19,6 +23,10 @@ data class SDKConfig(val datastream: Datastream) {
     }
 }
 
+/**
+ * Field of the SDKConfig metadata. Used to pass the original datastream ID to the Edge Network request
+ * when the datastream ID is overridden.
+ */
 data class Datastream(val original: String) {
     fun toMap(): MutableMap<String, Any> {
         return mutableMapOf(

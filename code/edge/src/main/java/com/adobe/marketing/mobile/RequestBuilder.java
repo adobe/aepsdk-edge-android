@@ -53,8 +53,10 @@ class RequestBuilder {
 	// XDM payloads to be attached to the request
 	private final Map<String, Object> xdmPayloads;
 
+	// SDK configuration metadata containing original datastream ID if overridden
 	private SDKConfig sdkConfig;
 
+	/// Configuration override metadata for Edge Network services
 	private Map<String, Object> configOverrides;
 
 	RequestBuilder(final NamedCollection namedCollection) {
