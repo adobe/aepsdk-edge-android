@@ -197,6 +197,48 @@ class EdgeHitProcessor implements HitProcessing {
 	}
 
 	/**
+	 * Processes configuration overrides for the event. Returns datastream Id value to be used
+	 * for the current event based on the overrides provided for the event.
+	 *
+	 * @param eventConfigMap a {@link Map} containing configuration overrides.
+	 * @param request a {@link RequestBuilder} instance for the current event.
+	 * @param datastreamId the default datastream ID from the SDK configuration.
+	 * @return the datastream ID to be used for the current event.
+	 */
+	private String processEventConfigOverrides(
+		Map<String, Object> eventConfigMap,
+		RequestBuilder request,
+		String datastreamId
+	) {
+		// Check if datastream ID override is present
+		String datastreamIdOverride = DataReader.optString(
+			eventConfigMap,
+			EdgeConstants.EventDataKeys.Config.DATASTREAM_ID_OVERRIDE,
+			null
+		);
+
+		if (!StringUtils.isNullOrEmpty(datastreamIdOverride)) {
+			// Attach original datastream ID to the outgoing request
+			request.addSdkConfig(new SDKConfig(new Datastream(datastreamId)));
+		}
+
+		// Check if datastream config override is present
+		Map<String, Object> datastreamConfigOverride = DataReader.optTypedMap(
+			Object.class,
+			eventConfigMap,
+			EdgeConstants.EventDataKeys.Config.DATASTREAM_CONFIG_OVERRIDE,
+			null
+		);
+
+		if (!MapUtils.isNullOrEmpty(datastreamConfigOverride)) {
+			// Attach datastream config override to the outgoing request metadata
+			request.addConfigOverrides(datastreamConfigOverride);
+		}
+
+		return StringUtils.isNullOrEmpty(datastreamIdOverride) ? datastreamId : datastreamIdOverride;
+	}
+
+	/**
 	 * Process and send an ExperienceEvent network request.
 	 *
 	 * @param entityId the {@link DataEntity} unique identifier
@@ -226,33 +268,7 @@ class EdgeHitProcessor implements HitProcessing {
 		// Get config map containing overrides from the event
 		Map<String, Object> eventConfigMap = EventUtils.getConfig(entity.getEvent());
 
-		// Check if datastream ID override is present
-		String datastreamIdOverride = DataReader.optString(
-			eventConfigMap,
-			EdgeConstants.EventDataKeys.Config.DATASTREAM_ID_OVERRIDE,
-			null
-		);
-
-		if (!StringUtils.isNullOrEmpty(datastreamIdOverride)) {
-			// Attach original datastream ID to the outgoing request
-			request.addSdkConfig(new SDKConfig(new Datastream(datastreamId)));
-
-			// Update datastream ID for request since valid override ID is present
-			datastreamId = datastreamIdOverride;
-		}
-
-		// Check if datastream config override is present
-		Map<String, Object> datastreamConfigOverride = DataReader.optTypedMap(
-			Object.class,
-			eventConfigMap,
-			EdgeConstants.EventDataKeys.Config.DATASTREAM_CONFIG_OVERRIDE,
-			null
-		);
-
-		if (!MapUtils.isNullOrEmpty(datastreamConfigOverride)) {
-			// Attach datastream config override to the outgoing request metadata
-			request.addConfigOverrides(datastreamConfigOverride);
-		}
+		datastreamId = processEventConfigOverrides(eventConfigMap, request, datastreamId);
 
 		if (StringUtils.isNullOrEmpty(datastreamId)) {
 			// The Edge configuration ID value should get validated when creating the Hit,
