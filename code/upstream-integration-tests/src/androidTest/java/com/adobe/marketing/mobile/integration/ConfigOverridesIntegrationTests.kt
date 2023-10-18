@@ -36,6 +36,10 @@ class ConfigOverridesIntegrationTests {
     private val edgeLocationHint: String = BuildConfig.EDGE_LOCATION_HINT
     private val edgeEnvironment: String = BuildConfig.EDGE_ENVIRONMENT
     private val VALID_DATASTREAM_ID_OVERRIDE = "15d7bce0-3e2c-447b-bbda-129c57c60820"
+    private val VALID_DATASET_ID_CONFIGURED_AS_OVERRIDE = "6515e1dbfeb3b128d19bb1e4"
+    private val VALID_DATASET_ID_NOT_CONFIGURED_AS_OVERRIDE = "6515e1f6296d1e28d3209b9f"
+    private val VALID_RSID_CONFIGURED_AS_OVERRIDE = "mobile5.e2e.rsid2"
+    private val VALID_RSID_NOT_CONFIGURED_AS_OVERRIDE = "mobile5e2e.rsid3"
 
     @JvmField
     @Rule
@@ -147,13 +151,13 @@ class ConfigOverridesIntegrationTests {
             "com_adobe_experience_platform" to mapOf(
                 "datasets" to mapOf(
                     "event" to mapOf(
-                        "datasetId" to "6515e1dbfeb3b128d19bb1e4"
+                        "datasetId" to VALID_DATASET_ID_CONFIGURED_AS_OVERRIDE
                     )
                 )
             ),
             "com_adobe_analytics" to mapOf(
                 "reportSuites" to listOf(
-                    "mobile5.e2e.rsid2"
+                    VALID_RSID_CONFIGURED_AS_OVERRIDE
                 )
             )
         )
@@ -242,13 +246,13 @@ class ConfigOverridesIntegrationTests {
             "com_adobe_experience_platform" to mapOf(
                 "datasets" to mapOf(
                     "event" to mapOf(
-                        "datasetId" to "6515e1f6296d1e28d3209b9f"
+                        "datasetId" to VALID_DATASET_ID_NOT_CONFIGURED_AS_OVERRIDE
                     )
                 )
             ),
             "com_adobe_analytics" to mapOf(
                 "reportSuites" to listOf(
-                    "mobile5e2e.rsid3"
+                   VALID_RSID_NOT_CONFIGURED_AS_OVERRIDE
                 )
             )
         )
@@ -298,13 +302,13 @@ class ConfigOverridesIntegrationTests {
             "com_adobe_experience_platform" to mapOf(
                 "datasets" to mapOf(
                     "event" to mapOf(
-                        "datasetId" to "6515e1dbfeb3b128d19bb1e4"
+                        "datasetId" to VALID_DATASET_ID_CONFIGURED_AS_OVERRIDE
                     )
                 )
             ),
             "com_adobe_analytics" to mapOf(
                 "reportSuites" to listOf(
-                    "mobile5.e2e.rsid2",
+                    VALID_RSID_CONFIGURED_AS_OVERRIDE,
                     "DummyRSID2"
                 )
             )
