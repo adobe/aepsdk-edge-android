@@ -13,6 +13,7 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
+import com.adobe.marketing.mobile.edge.SDKConfig;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.CloneFailedException;
@@ -52,6 +53,12 @@ class RequestBuilder {
 	// XDM payloads to be attached to the request
 	private final Map<String, Object> xdmPayloads;
 
+	// SDK configuration metadata containing original datastream ID if overridden
+	private SDKConfig sdkConfig;
+
+	/// Configuration override metadata for Edge Network services
+	private Map<String, Object> configOverrides;
+
 	RequestBuilder(final NamedCollection namedCollection) {
 		storeResponsePayloadManager = new StoreResponsePayloadManager(namedCollection);
 		xdmPayloads = new HashMap<>();
@@ -83,6 +90,27 @@ class RequestBuilder {
 	}
 
 	/**
+	 * Adds SDK configuration containing original datastream ID to request metadata
+	 * if the original datastream ID is overridden
+	 * @param sdkConfig original SDK configuration to be added to the request metadata
+	 */
+	void addSdkConfig(final SDKConfig sdkConfig) {
+		this.sdkConfig = sdkConfig;
+	}
+
+	/**
+	 * Adds the provided configOverrides map to the request payload
+	 * @param configOverrides the config overrides to be added to the request metadata
+	 */
+	void addConfigOverrides(final Map<String, Object> configOverrides) {
+		if (MapUtils.isNullOrEmpty(configOverrides)) {
+			return;
+		}
+
+		this.configOverrides = configOverrides;
+	}
+
+	/**
 	 * Builds the request payload with all the provided parameters and experience events
 	 *
 	 * @param events list of experience events, should not be null/empty
@@ -97,9 +125,12 @@ class RequestBuilder {
 
 		// set gateway metadata to request if exists
 		KonductorConfig konductorConfig = buildKonductorConfig();
+
 		request.setRequestMetadata(
 			new RequestMetadata.Builder()
 				.setKonductorConfig(konductorConfig.toObjectMap())
+				.setSdkConfig(sdkConfig != null ? sdkConfig.toMap() : null)
+				.setConfigOverrides(configOverrides)
 				.setStateMetadata(new StateMetadata(storeResponsePayloadManager.getActiveStores()).toObjectMap())
 				.build()
 		);
@@ -209,6 +240,11 @@ class RequestBuilder {
 						// Remove this request object as it is internal to the SDK
 						// request object contains custom values to overwrite different request properties like path
 						data.remove(EdgeConstants.EventDataKeys.Request.KEY);
+					}
+					if (data.containsKey(EdgeConstants.EventDataKeys.Config.KEY)) {
+						// Remove this config object as it is internal to the SDK
+						// request object contains datastream ID override and datastream config overrides
+						data.remove(EdgeConstants.EventDataKeys.Config.KEY);
 					}
 					experienceEvents.add(data);
 				}
