@@ -358,7 +358,7 @@ class ConfigOverridesFunctionalTests {
         val experienceEvent = ExperienceEvent.Builder()
             .setXdmSchema(xdmData)
             .setData(customData)
-            .setDatastreamIdOverride("TestDatastreamId")
+            .setDatastreamIdOverride("5678abcd-abcd-1234-5678-123456abcdef")
             .build()
 
         Edge.sendEvent(experienceEvent, null)
@@ -373,7 +373,7 @@ class ConfigOverridesFunctionalTests {
         assertEquals(1, resultRequests.size.toLong())
 
         // Assert that provided datastreamIdOverride value is in the URL query param for configId
-        assertEquals("TestDatastreamId", resultRequests[0]!!.queryParam("configId"))
+        assertEquals("5678abcd-abcd-1234-5678-123456abcdef", resultRequests[0]!!.queryParam("configId"))
 
         val payloadJSONData = getPayloadJson(resultRequests[0])
         val eventJSONData = payloadJSONData.getJSONArray("events").getJSONObject(0)
@@ -605,7 +605,7 @@ class ConfigOverridesFunctionalTests {
             .setXdmSchema(xdmData)
             .setData(customData)
             .setDatastreamConfigOverride(configOverrides)
-            .setDatastreamIdOverride("TestDatastreamId")
+            .setDatastreamIdOverride("5678abcd-abcd-1234-5678-123456abcdef")
             .build()
 
         Edge.sendEvent(experienceEvent, null)
@@ -620,7 +620,7 @@ class ConfigOverridesFunctionalTests {
         assertEquals(1, resultRequests.size.toLong())
 
         // Assert that provided datastreamIdOverride value is in the URL query param for configId
-        assertEquals("TestDatastreamId", resultRequests[0]!!.queryParam("configId"))
+        assertEquals("5678abcd-abcd-1234-5678-123456abcdef", resultRequests[0]!!.queryParam("configId"))
 
         val payloadJSONData = getPayloadJson(resultRequests[0])
         val eventJSONData = payloadJSONData.getJSONArray("events").getJSONObject(0)
