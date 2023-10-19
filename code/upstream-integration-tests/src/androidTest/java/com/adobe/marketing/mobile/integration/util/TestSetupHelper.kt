@@ -17,7 +17,7 @@ object TestSetupHelper {
                 return "94f571f308d5/6b1be84da76a/launch-023a1b64f561-development"
             }
 
-            "preProd" -> {
+            "pre-prod" -> {
                 return "94f571f308d5/6b1be84da76a/launch-023a1b64f561-development"
             }
 

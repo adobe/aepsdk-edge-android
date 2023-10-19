@@ -7,6 +7,7 @@ import com.adobe.marketing.mobile.MobileCore
 import com.adobe.marketing.mobile.edge.identity.Identity
 import com.adobe.marketing.mobile.integration.util.TestSetupHelper
 import com.adobe.marketing.mobile.integration.util.TestSetupHelper.createInteractURL
+import com.adobe.marketing.mobile.integration.util.TestSetupHelper.expectEdgeEventHandle
 import com.adobe.marketing.mobile.services.HttpMethod
 import com.adobe.marketing.mobile.services.ServiceProvider
 import com.adobe.marketing.mobile.services.TestableNetworkRequest
@@ -24,6 +25,7 @@ import org.junit.Assert.assertEquals
 import com.adobe.marketing.mobile.integration.util.TestSetupHelper.getEnvironmentFileID
 import com.adobe.marketing.mobile.util.JSONAsserts
 import com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch
+import com.adobe.marketing.mobile.util.TestConstants
 import org.json.JSONObject
 import org.junit.Ignore
 
@@ -107,6 +109,7 @@ class ConfigOverridesIntegrationTests {
         val interactNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = edgeLocationHint), HttpMethod.POST)
 
         realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
+        expectEdgeEventHandle(TestConstants.EventSource.ERROR_RESPONSE_CONTENT, 1)
 
         val experienceEvent = ExperienceEvent.Builder()
             .setXdmSchema(mapOf("xdmtest" to "data"))
@@ -184,6 +187,7 @@ class ConfigOverridesIntegrationTests {
         val interactNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = edgeLocationHint), HttpMethod.POST)
 
         realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
+        expectEdgeEventHandle(TestConstants.EventSource.ERROR_RESPONSE_CONTENT, 1)
 
         val configOverridesWithDummyValues = mapOf(
             "com_adobe_experience_platform" to mapOf(
@@ -241,6 +245,7 @@ class ConfigOverridesIntegrationTests {
         val interactNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = edgeLocationHint), HttpMethod.POST)
 
         realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
+        expectEdgeEventHandle(TestConstants.EventSource.ERROR_RESPONSE_CONTENT, 1)
 
         val configOverridesWithUnconfiguredValues = mapOf(
             "com_adobe_experience_platform" to mapOf(
@@ -297,6 +302,7 @@ class ConfigOverridesIntegrationTests {
         val interactNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = edgeLocationHint), HttpMethod.POST)
 
         realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
+        expectEdgeEventHandle(TestConstants.EventSource.ERROR_RESPONSE_CONTENT, 1)
 
         val configOverrides = mapOf(
             "com_adobe_experience_platform" to mapOf(
