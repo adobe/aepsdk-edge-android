@@ -135,7 +135,7 @@ See [MobileCore.resetIdentities](https://github.com/adobe/aepsdk-core-android/bl
 
 Sends an Experience event to the Adobe Experience Platform Edge Network.
 
-Starting with `Edge` extension version **2.3.1** onwards, the `sendEvent` API supports optional Datastream overrides. This allows you to adjust your datastreams without the need for new ones or modifications to existing settings. The process involves two steps:
+Starting with `Edge` extension version **2.4.0** onwards, the `sendEvent` API supports optional Datastream overrides. This allows you to adjust your datastreams without the need for new ones or modifications to existing settings. The process involves two steps:
 
 1. Define your Datastream configuration overrides on the [datastream configuration page](https://experienceleague.adobe.com/docs/experience-platform/datastreams/configure.html).
 2. Send these overrides to the Edge Network using the `sendEvent` API.
@@ -535,8 +535,7 @@ public final class ExperienceEvent {
     public Builder setDatastreamIdOverride(final String datastreamIdOverride) {...}
 
     /**
-     * Override the default datastream configuration to trigger different datastream behaviors than the
-     * default ones for this event.
+     * Override the default datastream configuration settings for individual services for this event.
      *
      * When using {@link Edge#sendEvent}, this event is sent to the Experience Platform along with the
      * datastream overrides defined in {@code datastreamConfigOverride}.
