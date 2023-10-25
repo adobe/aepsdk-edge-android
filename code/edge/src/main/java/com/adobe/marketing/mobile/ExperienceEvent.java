@@ -70,7 +70,7 @@ public final class ExperienceEvent {
 		}
 
 		/**
-		 * Override the default datastream configuration to trigger different datastream behaviors than the default ones for this event.
+		 * Override the default datastream configuration settings for individual services for this event.
 		 *
 		 * When using {@link Edge#sendEvent}, this event is sent to the Experience Platform along with the
 		 * datastream overrides defined in {@code datastreamConfigOverride}.
