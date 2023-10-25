@@ -14,7 +14,7 @@ package com.adobe.marketing.mobile;
 final class EdgeConstants {
 
 	static final String EDGE_DATA_STORAGE = "EdgeDataStorage";
-	static final String EXTENSION_VERSION = "2.3.0";
+	static final String EXTENSION_VERSION = "2.4.0";
 	static final String EXTENSION_NAME = "com.adobe.edge";
 	static final String FRIENDLY_NAME = "Edge";
 	static final String LOG_TAG = FRIENDLY_NAME;
@@ -54,6 +54,13 @@ final class EdgeConstants {
 		static final String CONSENTS = "consents";
 		static final String IDENTITY_MAP = "identityMap";
 		static final String LOCATION_HINT = "locationHint";
+
+		static final class Config {
+
+			static final String KEY = "config";
+			static final String DATASTREAM_ID_OVERRIDE = "datastreamIdOverride";
+			static final String DATASTREAM_CONFIG_OVERRIDE = "datastreamConfigOverride";
+		}
 
 		static final class Request {
 

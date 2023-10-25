@@ -11,7 +11,7 @@
 
 package com.adobe.marketing.mobile.util;
 
-import static com.adobe.marketing.mobile.util.FunctionalTestConstants.LOG_TAG;
+import static com.adobe.marketing.mobile.util.TestConstants.LOG_TAG;
 import static com.adobe.marketing.mobile.util.MonitorExtension.EventSpec;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -22,6 +22,7 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.content.SharedPreferences;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.platform.app.InstrumentationRegistry;
 import com.adobe.marketing.mobile.AdobeCallbackWithError;
 import com.adobe.marketing.mobile.AdobeError;
@@ -29,22 +30,14 @@ import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.MobileCoreHelper;
-import com.adobe.marketing.mobile.services.FunctionalTestDataStoreService;
-import com.adobe.marketing.mobile.services.FunctionalTestNetworkService;
-import com.adobe.marketing.mobile.services.HttpConnecting;
-import com.adobe.marketing.mobile.services.HttpMethod;
+import com.adobe.marketing.mobile.services.MockDataStoreService;
 import com.adobe.marketing.mobile.services.Log;
-import com.adobe.marketing.mobile.services.NetworkRequest;
-import com.adobe.marketing.mobile.services.Networking;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.ServiceProviderHelper;
-import com.adobe.marketing.mobile.services.TestableNetworkRequest;
+
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,15 +47,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-public class FunctionalTestHelper {
+public class TestHelper {
 
-	private static final String LOG_SOURCE = "FunctionalTestHelper";
-
-	private static final FunctionalTestNetworkService testNetworkService = new FunctionalTestNetworkService();
+	private static final String LOG_SOURCE = "TestHelper";
 	private static Application defaultApplication;
 
 	// List of threads to wait for after test execution
@@ -80,7 +72,7 @@ public class FunctionalTestHelper {
 	 * To use, add the following to your test class:
 	 * <pre>
 	 * 	&#064;Rule
-	 * 	public FunctionalTestHelper.SetupCoreRule coreRule = new FunctionalTestHelper.SetupCoreRule();
+	 * 	public TestHelper.SetupCoreRule coreRule = new TestHelper.SetupCoreRule();
 	 * </pre>
 	 */
 	public static class SetupCoreRule implements TestRule {
@@ -98,10 +90,9 @@ public class FunctionalTestHelper {
 					}
 
 					MobileCoreHelper.resetSDK();
-					setTestableNetworkService();
 					MobileCore.setLogLevel(LoggingMode.VERBOSE);
 					MobileCore.setApplication(defaultApplication);
-					FunctionalTestDataStoreService.clearStores();
+					MockDataStoreService.clearStores();
 					clearAllDatastores();
 					Log.debug(LOG_TAG, LOG_SOURCE, "Execute '%s'", description.getMethodName());
 
@@ -115,7 +106,7 @@ public class FunctionalTestHelper {
 						Log.debug(LOG_TAG, LOG_SOURCE, "Finished '%s'", description.getMethodName());
 						waitForThreads(5000); // wait to allow thread to run after test execution
 						MobileCoreHelper.resetSDK();
-						FunctionalTestDataStoreService.clearStores();
+						MockDataStoreService.clearStores();
 						clearAllDatastores();
 						resetTestExpectations();
 						resetServiceProvider();
@@ -126,16 +117,20 @@ public class FunctionalTestHelper {
 	}
 
 	/**
-	 * Reset the {@link MobileCore} and {@link ServiceProvider} without clearing persistence or database.
-	 * Initializes {@code MobileCore} and {@code ServiceProvider} for testing after resetting by,
-	 * setting the {@link FunctionalTestNetworkService} to the {@code ServiceProvider}, and setting
-	 * the instrumented test application to {@code MobileCore}.
-	 * This method does not clear the shared preferences, application cache directory, or database directory.
+	 * Resets both the {@link MobileCore} and {@link ServiceProvider} instances without clearing persistence or database.
+	 *
+	 * After reset, this method initializes {@code MobileCore} and {@code ServiceProvider} for testing by
+	 * setting the instrumented test application to {@code MobileCore}.
+	 *
+	 * Warning: If a custom network service is registered with the {@link ServiceProvider} to be
+	 * used in the test case, it must be set again after calling this method.
+	 *
+	 * Note: This method does not clear shared preferences, the application cache directory,
+	 * or the database directory.
 	 */
 	public static void resetCoreHelper() {
 		MobileCoreHelper.resetSDK();
 		ServiceProviderHelper.resetServices();
-		setTestableNetworkService();
 		MobileCore.setLogLevel(LoggingMode.VERBOSE);
 		MobileCore.setApplication(defaultApplication);
 	}
@@ -229,7 +224,7 @@ public class FunctionalTestHelper {
 	 *
 	 * @param timeoutMillis max waiting time
 	 */
-	private static void waitForThreads(final int timeoutMillis) {
+	static void waitForThreads(final int timeoutMillis) {
 		int TEST_DEFAULT_TIMEOUT_MS = 1000;
 		int TEST_DEFAULT_SLEEP_MS = 50;
 		int TEST_INITIAL_SLEEP_MS = 100;
@@ -338,11 +333,6 @@ public class FunctionalTestHelper {
 	 */
 	public static void resetTestExpectations() {
 		Log.debug(LOG_TAG, LOG_SOURCE, "Resetting functional test expectations for events and network requests");
-
-		if (testNetworkService != null) {
-			testNetworkService.reset();
-		}
-
 		MonitorExtension.reset();
 	}
 
@@ -383,9 +373,9 @@ public class FunctionalTestHelper {
 		for (Map.Entry<EventSpec, ADBCountDownLatch> expected : expectedEvents.entrySet()) {
 			boolean awaitResult = expected
 				.getValue()
-				.await(FunctionalTestConstants.Defaults.WAIT_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+				.await(TestConstants.Defaults.WAIT_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 			assertTrue(
-				"Timed out waiting for event type " +
+		"Timed out waiting for event type " +
 				expected.getKey().type +
 				" and source " +
 				expected.getKey().source,
@@ -427,7 +417,7 @@ public class FunctionalTestHelper {
 	public static void assertUnexpectedEvents(final boolean shouldWait) throws InterruptedException {
 		// Short wait to allow events to come in
 		if (shouldWait) {
-			sleep(FunctionalTestConstants.Defaults.WAIT_TIMEOUT_MS);
+			sleep(TestConstants.Defaults.WAIT_TIMEOUT_MS);
 		}
 
 		int unexpectedEventsReceivedCount = 0;
@@ -440,7 +430,7 @@ public class FunctionalTestHelper {
 			ADBCountDownLatch expectedEventLatch = expectedEvents.get(receivedEvent.getKey());
 
 			if (expectedEventLatch != null) {
-				expectedEventLatch.await(FunctionalTestConstants.Defaults.WAIT_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+				expectedEventLatch.await(TestConstants.Defaults.WAIT_EVENT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 				int expectedCount = expectedEventLatch.getInitialCount();
 				int receivedCount = receivedEvent.getValue().size();
 				String failMessage = String.format(
@@ -484,7 +474,7 @@ public class FunctionalTestHelper {
 	/**
 	 * Returns the {@code Event}(s) dispatched through the Event Hub, or empty if none was found.
 	 * Use this API after calling {@link #setExpectationEvent(String, String, int)} to wait for
-	 * the expected events. The wait time for each event is {@link FunctionalTestConstants.Defaults#WAIT_EVENT_TIMEOUT_MS}ms.
+	 * the expected events. The wait time for each event is {@link TestConstants.Defaults#WAIT_EVENT_TIMEOUT_MS}ms.
 	 * @param type the event type as in the expectation
 	 * @param source the event source as in the expectation
 	 * @return list of events with the provided {@code type} and {@code source}, or empty if none was dispatched
@@ -493,7 +483,7 @@ public class FunctionalTestHelper {
 	 */
 	public static List<Event> getDispatchedEventsWith(final String type, final String source)
 		throws InterruptedException {
-		return getDispatchedEventsWith(type, source, FunctionalTestConstants.Defaults.WAIT_EVENT_TIMEOUT_MS);
+		return getDispatchedEventsWith(type, source, TestConstants.Defaults.WAIT_EVENT_TIMEOUT_MS);
 	}
 
 	/**
@@ -522,7 +512,7 @@ public class FunctionalTestHelper {
 				awaitResult
 			);
 		} else {
-			sleep(FunctionalTestConstants.Defaults.WAIT_TIMEOUT_MS);
+			sleep(TestConstants.Defaults.WAIT_TIMEOUT_MS);
 		}
 
 		return receivedEvents.containsKey(eventSpec) ? receivedEvents.get(eventSpec) : Collections.emptyList();
@@ -540,13 +530,13 @@ public class FunctionalTestHelper {
 		throws InterruptedException {
 		Event event = new Event.Builder(
 			"Get Shared State Request",
-			FunctionalTestConstants.EventType.MONITOR,
-			FunctionalTestConstants.EventSource.SHARED_STATE_REQUEST
+			TestConstants.EventType.MONITOR,
+			TestConstants.EventSource.SHARED_STATE_REQUEST
 		)
 			.setEventData(
 				new HashMap<String, Object>() {
 					{
-						put(FunctionalTestConstants.EventDataKey.STATE_OWNER, stateOwner);
+						put(TestConstants.EventDataKey.STATE_OWNER, stateOwner);
 					}
 				}
 			)
@@ -584,211 +574,6 @@ public class FunctionalTestHelper {
 		return sharedState.isEmpty() ? null : sharedState;
 	}
 
-	// ---------------------------------------------------------------------------------------------
-	// Network Test Helpers
-	// ---------------------------------------------------------------------------------------------
-
-	/**
-	 * Set a custom network response to an Edge network request.
-	 * @param url the url string for which to return the response
-	 * @param method the HTTP method for which to return the response
-	 * @param responseConnection the network response to be returned when a request matching the
-	 *                           {@code url} and {@code method} is received. If null is provided,
-	 *                           a default '200' response is used.
-	 */
-	public static void setNetworkResponseFor(
-		final String url,
-		final HttpMethod method,
-		final HttpConnecting responseConnection
-	) {
-		testNetworkService.setResponseConnectionFor(new TestableNetworkRequest(url, method), responseConnection);
-	}
-
-	/**
-	 * Set a network request expectation.
-	 * @param url the url string for which to set the expectation
-	 * @param method the HTTP method for which to set the expectation
-	 * @param expectedCount how many times a request with this {@code url} and {@code method} is expected to be sent
-	 */
-	public static void setExpectationNetworkRequest(
-		final String url,
-		final HttpMethod method,
-		final int expectedCount
-	) {
-		testNetworkService.setExpectedNetworkRequest(new TestableNetworkRequest(url, method), expectedCount);
-	}
-
-	/**
-	 * Asserts that the correct number of network requests were being sent, based on the previously set expectations.
-	 * @throws InterruptedException
-	 * @see #setExpectationNetworkRequest(String, HttpMethod, int)
-	 */
-	public static void assertNetworkRequestCount() throws InterruptedException {
-		waitForThreads(2000); // allow for some extra time for threads to finish before asserts
-		Map<TestableNetworkRequest, ADBCountDownLatch> expectedNetworkRequests = testNetworkService.getExpectedNetworkRequests();
-
-		if (expectedNetworkRequests.isEmpty()) {
-			fail(
-				"There are no network request expectations set, use this API after calling setExpectationNetworkRequest"
-			);
-			return;
-		}
-
-		for (Map.Entry<TestableNetworkRequest, ADBCountDownLatch> expectedRequest : expectedNetworkRequests.entrySet()) {
-			boolean awaitResult = expectedRequest.getValue().await(5, TimeUnit.SECONDS);
-			assertTrue(
-				"Time out waiting for network request with URL '" +
-				expectedRequest.getKey().getUrl() +
-				"' and method '" +
-				expectedRequest.getKey().getMethod().name() +
-				"'",
-				awaitResult
-			);
-			int expectedCount = expectedRequest.getValue().getInitialCount();
-			int receivedCount = expectedRequest.getValue().getCurrentCount();
-			String message = String.format(
-				"Expected %d network requests for URL %s (%s), but received %d",
-				expectedCount,
-				expectedRequest.getKey().getUrl(),
-				expectedRequest.getKey().getMethod(),
-				receivedCount
-			);
-			assertEquals(message, expectedCount, receivedCount);
-		}
-	}
-
-	/**
-	 * Returns the {@link TestableNetworkRequest}(s) sent through the
-	 * Core NetworkService, or empty if none was found. Use this API after calling
-	 * {@link #setExpectationNetworkRequest(String, HttpMethod, int)} to wait 2 seconds for each request.
-	 *
-	 * @param url The url string for which to retrieved the network requests sent
-	 * @param method the HTTP method for which to retrieve the network requests
-	 * @return list of network requests with the provided {@code url} and {@code method}, or empty if none was dispatched
-	 * @throws InterruptedException
-	 */
-	public static List<TestableNetworkRequest> getNetworkRequestsWith(final String url, final HttpMethod method)
-		throws InterruptedException {
-		return getNetworkRequestsWith(url, method, FunctionalTestConstants.Defaults.WAIT_NETWORK_REQUEST_TIMEOUT_MS);
-	}
-
-	/**
-	 * Returns the {@link TestableNetworkRequest}(s) sent through the
-	 * Core NetworkService, or empty if none was found. Use this API after calling
-	 * {@link #setExpectationNetworkRequest(String, HttpMethod, int)} to wait for each request.
-	 *
-	 * @param url The url string for which to retrieved the network requests sent
-	 * @param method the HTTP method for which to retrieve the network requests
-	 * @param timeoutMillis how long should this method wait for the expected network requests, in milliseconds
-	 * @return list of network requests with the provided {@code url} and {@code command}, or empty if none was dispatched
-	 * @throws InterruptedException
-	 */
-	public static List<TestableNetworkRequest> getNetworkRequestsWith(
-		final String url,
-		final HttpMethod method,
-		final int timeoutMillis
-	) throws InterruptedException {
-		TestableNetworkRequest networkRequest = new TestableNetworkRequest(url, method);
-
-		if (testNetworkService.isNetworkRequestExpected(networkRequest)) {
-			assertTrue(
-				"Time out waiting for network request(s) with URL '" +
-				networkRequest.getUrl() +
-				"' and method '" +
-				networkRequest.getMethod().name() +
-				"'",
-				testNetworkService.awaitFor(networkRequest, timeoutMillis)
-			);
-		} else {
-			sleep(timeoutMillis);
-		}
-
-		return testNetworkService.getReceivedNetworkRequestsMatching(networkRequest);
-	}
-
-	/**
-	 * Create a network response to be used when calling {@link #setNetworkResponseFor(String, HttpMethod, HttpConnecting)}.
-	 * @param responseString the network response string, returned by {@link HttpConnecting#getInputStream()}
-	 * @param code the HTTP status code, returned by {@link HttpConnecting#getResponseCode()}
-	 * @return an {@link HttpConnecting} object
-	 * @see #setNetworkResponseFor(String, HttpMethod, HttpConnecting)
-	 */
-	public static HttpConnecting createNetworkResponse(final String responseString, final int code) {
-		return createNetworkResponse(responseString, null, code, null, null);
-	}
-
-	/**
-	 * Create a network response to be used when calling {@link #setNetworkResponseFor(String, HttpMethod, HttpConnecting)}.
-	 * @param responseString the network response string, returned by {@link HttpConnecting#getInputStream()}
-	 * @param errorString the network error string, returned by {@link HttpConnecting#getErrorStream()}
-	 * @param code the HTTP status code, returned by {@link HttpConnecting#getResponseCode()}
-	 * @param responseMessage the network response message, returned by {@link HttpConnecting#getResponseMessage()}
-	 * @param propertyMap the network response header map, returned by {@link HttpConnecting#getResponsePropertyValue(String)}
-	 * @return an {@link HttpConnecting} object
-	 * @see #setNetworkResponseFor(String, HttpMethod, HttpConnecting)
-	 */
-	public static HttpConnecting createNetworkResponse(
-		final String responseString,
-		final String errorString,
-		final int code,
-		final String responseMessage,
-		final Map<String, String> propertyMap
-	) {
-		return new HttpConnecting() {
-			@Override
-			public InputStream getInputStream() {
-				if (responseString != null) {
-					return new ByteArrayInputStream(responseString.getBytes(StandardCharsets.UTF_8));
-				}
-
-				return null;
-			}
-
-			@Override
-			public InputStream getErrorStream() {
-				if (errorString != null) {
-					return new ByteArrayInputStream(errorString.getBytes(StandardCharsets.UTF_8));
-				}
-
-				return null;
-			}
-
-			@Override
-			public int getResponseCode() {
-				return code;
-			}
-
-			@Override
-			public String getResponseMessage() {
-				return responseMessage;
-			}
-
-			@Override
-			public String getResponsePropertyValue(String responsePropertyKey) {
-				if (propertyMap != null) {
-					return propertyMap.get(responsePropertyKey);
-				}
-
-				return null;
-			}
-
-			@Override
-			public void close() {}
-		};
-	}
-
-	/**
-	 * Sets the provided delay for all network responses, until reset
-	 * @param delaySec delay in seconds
-	 */
-	public static void enableNetworkResponseDelay(final Integer delaySec) {
-		if (delaySec < 0) {
-			return;
-		}
-
-		testNetworkService.enableDelayedResponse(delaySec);
-	}
-
 	/**
 	 * Pause test execution for the given {@code milliseconds}
 	 * @param milliseconds the time to sleep the current thread.
@@ -802,15 +587,6 @@ public class FunctionalTestHelper {
 	}
 
 	/**
-	 * Use this API for JSON formatted {@code NetworkRequest} body in order to retrieve a flattened map containing its data.
-	 * @param networkRequest the {@link NetworkRequest} to parse
-	 * @return The JSON request body represented as a flatten map
-	 */
-	public static Map<String, String> getFlattenedNetworkRequestBody(final NetworkRequest networkRequest) {
-		return FunctionalTestUtils.flattenBytes(networkRequest.getBody());
-	}
-
-	/**
 	 * Dummy Application for the test instrumentation
 	 */
 	public static class CustomApplication extends Application {
@@ -821,22 +597,22 @@ public class FunctionalTestHelper {
 	private static void clearAllDatastores() {
 		final List<String> knownDatastores = new ArrayList<String>() {
 			{
-				add(FunctionalTestConstants.SharedState.IDENTITY);
-				add(FunctionalTestConstants.SharedState.CONSENT);
-				add(FunctionalTestConstants.EDGE_DATA_STORAGE);
+				add(TestConstants.SharedState.IDENTITY);
+				add(TestConstants.SharedState.CONSENT);
+				add(TestConstants.EDGE_DATA_STORAGE);
 				add("AdobeMobile_ConfigState");
 			}
 		};
-		final Application application = FunctionalTestHelper.defaultApplication;
+		final Application application = TestHelper.defaultApplication;
 
 		if (application == null) {
-			fail("FunctionalTestHelper - Unable to clear datastores. Application is null, fast failing the test case.");
+			fail("TestHelper - Unable to clear datastores. Application is null, fast failing the test case.");
 		}
 
 		final Context context = application.getApplicationContext();
 
 		if (context == null) {
-			fail("FunctionalTestHelper - Unable to clear datastores. Context is null, fast failing the test case.");
+			fail("TestHelper - Unable to clear datastores. Context is null, fast failing the test case.");
 		}
 
 		for (String datastore : knownDatastores) {
@@ -844,7 +620,7 @@ public class FunctionalTestHelper {
 
 			if (sharedPreferences == null) {
 				fail(
-					"FunctionalTestHelper - Unable to clear datastores. sharedPreferences is null, fast failing the test case."
+					"TestHelper - Unable to clear datastores. sharedPreferences is null, fast failing the test case."
 				);
 			}
 
@@ -862,12 +638,5 @@ public class FunctionalTestHelper {
 		ServiceProviderHelper.cleanCacheDir();
 		ServiceProviderHelper.cleanDatabaseDir();
 		ServiceProviderHelper.resetServices();
-	}
-
-	/**
-	 * Replaces the {@link Networking} service with a mock network service.
-	 */
-	private static void setTestableNetworkService() {
-		ServiceProvider.getInstance().setNetworkService(testNetworkService);
 	}
 }

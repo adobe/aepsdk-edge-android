@@ -14,12 +14,15 @@ package com.adobe.marketing.mobile;
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import androidx.annotation.NonNull;
+import com.adobe.marketing.mobile.edge.Datastream;
+import com.adobe.marketing.mobile.edge.SDKConfig;
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.HitProcessing;
 import com.adobe.marketing.mobile.services.HitProcessingResult;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.MapUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -142,7 +145,11 @@ class EdgeHitProcessor implements HitProcessing {
 			}
 		};
 
-		String url = networkService.buildUrl(edgeHit.getEdgeEndpoint(), edgeHit.getConfigId(), edgeHit.getRequestId());
+		String url = networkService.buildUrl(
+			edgeHit.getEdgeEndpoint(),
+			edgeHit.getDatastreamId(),
+			edgeHit.getRequestId()
+		);
 
 		try {
 			Log.debug(
@@ -190,6 +197,48 @@ class EdgeHitProcessor implements HitProcessing {
 	}
 
 	/**
+	 * Processes configuration overrides for the event. Returns datastream Id value to be used
+	 * for the current event based on the overrides provided for the event.
+	 *
+	 * @param eventConfigMap a {@link Map} containing configuration overrides.
+	 * @param request a {@link RequestBuilder} instance for the current event.
+	 * @param datastreamId the default datastream ID from the SDK configuration.
+	 * @return the datastream ID to be used for the current event.
+	 */
+	private String processEventConfigOverrides(
+		Map<String, Object> eventConfigMap,
+		RequestBuilder request,
+		String datastreamId
+	) {
+		// Check if datastream ID override is present
+		String datastreamIdOverride = DataReader.optString(
+			eventConfigMap,
+			EdgeConstants.EventDataKeys.Config.DATASTREAM_ID_OVERRIDE,
+			null
+		);
+
+		if (!StringUtils.isNullOrEmpty(datastreamIdOverride)) {
+			// Attach original datastream ID to the outgoing request
+			request.addSdkConfig(new SDKConfig(new Datastream(datastreamId)));
+		}
+
+		// Check if datastream config override is present
+		Map<String, Object> datastreamConfigOverride = DataReader.optTypedMap(
+			Object.class,
+			eventConfigMap,
+			EdgeConstants.EventDataKeys.Config.DATASTREAM_CONFIG_OVERRIDE,
+			null
+		);
+
+		if (!MapUtils.isNullOrEmpty(datastreamConfigOverride)) {
+			// Attach datastream config override to the outgoing request metadata
+			request.addConfigOverrides(datastreamConfigOverride);
+		}
+
+		return StringUtils.isNullOrEmpty(datastreamIdOverride) ? datastreamId : datastreamIdOverride;
+	}
+
+	/**
 	 * Process and send an ExperienceEvent network request.
 	 *
 	 * @param entityId the {@link DataEntity} unique identifier
@@ -208,6 +257,31 @@ class EdgeHitProcessor implements HitProcessing {
 			request.addXdmPayload(stateCallback.getImplementationDetails());
 		}
 
+		Map<String, Object> edgeConfig = entity.getConfiguration();
+
+		String datastreamId = DataReader.optString(
+			edgeConfig,
+			EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID,
+			null
+		);
+
+		// Get config map containing overrides from the event
+		Map<String, Object> eventConfigMap = EventUtils.getConfig(entity.getEvent());
+
+		datastreamId = processEventConfigOverrides(eventConfigMap, request, datastreamId);
+
+		if (StringUtils.isNullOrEmpty(datastreamId)) {
+			// The Edge configuration ID value should get validated when creating the Hit,
+			// so we shouldn't get here in production.
+			Log.debug(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Cannot process Experience Event hit as the Edge Network configuration ID is null or empty, dropping current event (%s).",
+				entity.getEvent().getUniqueIdentifier()
+			);
+			return true; // Request complete, don't retry hit
+		}
+
 		final List<Event> listOfEvents = new ArrayList<>();
 		listOfEvents.add(entity.getEvent());
 		final JSONObject requestPayload = request.getPayloadWithExperienceEvents(listOfEvents);
@@ -223,25 +297,6 @@ class EdgeHitProcessor implements HitProcessing {
 			return true; // Request complete, don't retry hit
 		}
 
-		Map<String, Object> edgeConfig = entity.getConfiguration();
-
-		String edgeConfigId = DataReader.optString(
-			edgeConfig,
-			EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID,
-			null
-		);
-		if (StringUtils.isNullOrEmpty(edgeConfigId)) {
-			// The Edge configuration ID value should get validated when creating the Hit,
-			// so we shouldn't get here in production.
-			Log.debug(
-				LOG_TAG,
-				LOG_SOURCE,
-				"Cannot process Experience Event hit as the Edge Network configuration ID is null or empty, dropping current event (%s).",
-				entity.getEvent().getUniqueIdentifier()
-			);
-			return true; // Request complete, don't retry hit
-		}
-
 		Map<String, Object> requestProperties = getRequestProperties(entity.getEvent());
 		final EdgeEndpoint edgeEndpoint = getEdgeEndpoint(
 			EdgeNetworkService.RequestType.INTERACT,
@@ -249,7 +304,7 @@ class EdgeHitProcessor implements HitProcessing {
 			requestProperties
 		);
 
-		final EdgeHit edgeHit = new EdgeHit(edgeConfigId, requestPayload, edgeEndpoint);
+		final EdgeHit edgeHit = new EdgeHit(datastreamId, requestPayload, edgeEndpoint);
 
 		// NOTE: the order of these events need to be maintained as they were sent in the network request
 		// otherwise the response callback cannot be matched
@@ -288,12 +343,12 @@ class EdgeHitProcessor implements HitProcessing {
 		}
 
 		Map<String, Object> edgeConfig = entity.getConfiguration();
-		String edgeConfigId = DataReader.optString(
+		String datastreamId = DataReader.optString(
 			edgeConfig,
 			EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID,
 			null
 		);
-		if (StringUtils.isNullOrEmpty(edgeConfigId)) {
+		if (StringUtils.isNullOrEmpty(datastreamId)) {
 			// The Edge configuration ID value should get validated when creating the Hit,
 			// so we shouldn't get here in production.
 			Log.debug(
@@ -307,7 +362,7 @@ class EdgeHitProcessor implements HitProcessing {
 
 		final EdgeEndpoint edgeEndpoint = getEdgeEndpoint(EdgeNetworkService.RequestType.CONSENT, edgeConfig, null);
 
-		final EdgeHit edgeHit = new EdgeHit(edgeConfigId, consentPayload, edgeEndpoint);
+		final EdgeHit edgeHit = new EdgeHit(datastreamId, consentPayload, edgeEndpoint);
 
 		networkResponseHandler.addWaitingEvent(edgeHit.getRequestId(), entity.getEvent());
 		final Map<String, String> requestHeaders = getRequestHeaders();

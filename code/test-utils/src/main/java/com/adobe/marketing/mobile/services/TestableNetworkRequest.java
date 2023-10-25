@@ -11,7 +11,7 @@
 
 package com.adobe.marketing.mobile.services;
 
-import static com.adobe.marketing.mobile.util.FunctionalTestConstants.LOG_TAG;
+import static com.adobe.marketing.mobile.util.TestConstants.LOG_TAG;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -41,6 +41,17 @@ public class TestableNetworkRequest extends NetworkRequest {
 	) {
 		super(url, command, connectPayload, requestProperty, connectTimeout, readTimeout);
 		queryParamMap = splitQueryParameters(url);
+	}
+
+	public TestableNetworkRequest(NetworkRequest request) {
+		this(
+			request.getUrl(),
+			request.getMethod(),
+			request.getBody(),
+			request.getHeaders(),
+			request.getConnectTimeout(),
+			request.getReadTimeout()
+		);
 	}
 
 	public String queryParam(final String key) {
