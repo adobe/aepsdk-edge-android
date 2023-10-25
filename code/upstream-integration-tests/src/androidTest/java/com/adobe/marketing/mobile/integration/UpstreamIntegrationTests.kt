@@ -13,11 +13,14 @@ package com.adobe.marketing.mobile.integration
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.adobe.marketing.mobile.Edge
-import com.adobe.marketing.mobile.Event
 import com.adobe.marketing.mobile.ExperienceEvent
 import com.adobe.marketing.mobile.MobileCore
 import com.adobe.marketing.mobile.edge.identity.Identity
 import com.adobe.marketing.mobile.integration.util.EdgeLocationHint
+import com.adobe.marketing.mobile.integration.util.TestSetupHelper.createInteractURL
+import com.adobe.marketing.mobile.integration.util.TestSetupHelper.expectEdgeEventHandle
+import com.adobe.marketing.mobile.integration.util.TestSetupHelper.getEdgeEventHandles
+import com.adobe.marketing.mobile.integration.util.TestSetupHelper.getEdgeResponseErrors
 import com.adobe.marketing.mobile.services.HttpMethod
 import com.adobe.marketing.mobile.services.ServiceProvider
 import com.adobe.marketing.mobile.services.TestableNetworkRequest
@@ -30,12 +33,10 @@ import com.adobe.marketing.mobile.util.TestHelper.LogOnErrorRule
 import com.adobe.marketing.mobile.util.TestHelper.RegisterMonitorExtensionRule
 import com.adobe.marketing.mobile.util.TestHelper.SetupCoreRule
 import com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents
-import com.adobe.marketing.mobile.util.TestHelper.getDispatchedEventsWith
 import com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.fail
 import org.junit.Before
@@ -44,6 +45,8 @@ import org.junit.Test
 import org.junit.rules.RuleChain
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
+import com.adobe.marketing.mobile.integration.util.TestSetupHelper.getEnvironmentFileID
+import com.adobe.marketing.mobile.integration.util.TestSetupHelper.getLastLocationHintResultValue
 
 /**
  * Performs validation on integration with the Edge Network upstream service.
@@ -69,7 +72,8 @@ class UpstreamIntegrationTests {
         ServiceProvider.getInstance().networkService = realNetworkService
 
         // Set environment file ID for specific Edge Network environment
-        setMobileCoreEnvironmentFileID(edgeEnvironment)
+        MobileCore.configureWithAppID(getEnvironmentFileID(edgeEnvironment))
+
         val latch = CountDownLatch(1)
         MobileCore.registerExtensions(listOf(Edge.EXTENSION, Identity.EXTENSION)) {
             latch.countDown()
@@ -91,6 +95,8 @@ class UpstreamIntegrationTests {
     @After
     fun tearDown() {
         realNetworkService.reset()
+        // Clear any updated configuration
+        MobileCore.clearUpdatedConfiguration()
     }
 
     /**
@@ -98,7 +104,7 @@ class UpstreamIntegrationTests {
      */
     @Test
     fun testSendEvent_receivesExpectedNetworkResponse() {
-        val interactNetworkRequest = TestableNetworkRequest(createURLWith(locationHint = edgeLocationHint), HttpMethod.POST)
+        val interactNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = edgeLocationHint), HttpMethod.POST)
 
         realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
 
@@ -122,7 +128,7 @@ class UpstreamIntegrationTests {
     @Test
     fun testSendEvent_whenComplexEvent_receivesExpectedNetworkResponse() {
         // Setup
-        val interactNetworkRequest = TestableNetworkRequest(createURLWith(locationHint = edgeLocationHint), HttpMethod.POST)
+        val interactNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = edgeLocationHint), HttpMethod.POST)
 
         realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
 
@@ -162,7 +168,7 @@ class UpstreamIntegrationTests {
     @Test
     fun testSendEvent_whenComplexXDMEvent_receivesExpectedNetworkResponse() {
         // Setup
-        val interactNetworkRequest = TestableNetworkRequest(createURLWith(locationHint = edgeLocationHint), HttpMethod.POST)
+        val interactNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = edgeLocationHint), HttpMethod.POST)
 
         realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
 
@@ -460,7 +466,7 @@ class UpstreamIntegrationTests {
 
         // Set actual testing expectations
         // If test suite level location hint is not set, uses the value extracted from location hint result
-        val locationHintNetworkRequest = TestableNetworkRequest(createURLWith(locationHintResult), HttpMethod.POST)
+        val locationHintNetworkRequest = TestableNetworkRequest(createInteractURL(locationHintResult), HttpMethod.POST)
 
         realNetworkService.setExpectationForNetworkRequest(locationHintNetworkRequest, expectedCount = 1)
 
@@ -601,7 +607,7 @@ class UpstreamIntegrationTests {
 
         assertExpectedEvents(true)
 
-        val interactNetworkRequest = TestableNetworkRequest(createURLWith(locationHint = edgeLocationHint), HttpMethod.POST)
+        val interactNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = edgeLocationHint), HttpMethod.POST)
         realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
         expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.ERROR_RESPONSE_CONTENT, expectedCount = 1)
 
@@ -653,7 +659,7 @@ class UpstreamIntegrationTests {
         // Tests that an invalid location hint returns the expected error with 0 byte data body
 
         // Setup
-        val invalidNetworkRequest = TestableNetworkRequest(createURLWith(locationHint = "invalid"), HttpMethod.POST)
+        val invalidNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = "invalid"), HttpMethod.POST)
 
         realNetworkService.setExpectationForNetworkRequest(networkRequest = invalidNetworkRequest, expectedCount = 1)
         expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.ERROR_RESPONSE_CONTENT, expectedCount = 1)
@@ -694,96 +700,6 @@ class UpstreamIntegrationTests {
 
         // Error event assertions
         assertExpectedEvents(true)
-    }
-
-    private fun setMobileCoreEnvironmentFileID(edgeEnvironment: String) {
-        when (edgeEnvironment) {
-            "prod" -> {
-                MobileCore.configureWithAppID("94f571f308d5/6b1be84da76a/launch-023a1b64f561-development")
-            }
-            "preProd" -> {
-                MobileCore.configureWithAppID("94f571f308d5/6b1be84da76a/launch-023a1b64f561-development")
-            }
-            "int" -> {
-                // TODO: create integration environment environment file ID
-                MobileCore.configureWithAppID("94f571f308d5/6b1be84da76a/launch-023a1b64f561-development")
-            }
-            else -> {
-                // Catchall for any other values
-                println("Unsupported edgeEnvironment value: $edgeEnvironment. Using prod as default.")
-                MobileCore.configureWithAppID("94f571f308d5/6b1be84da76a/launch-023a1b64f561-development")
-            }
-        }
-    }
-
-    /**
-     * Creates a valid interact URL using the provided location hint. If location hint is invalid, returns default URL with no location hint.
-     *
-     * @param locationHint The `EdgeLocationHint`'s raw value to use in the URL.
-     * @return The interact URL with location hint applied, default URL if location hint is invalid.
-     */
-    private fun createURLWith(locationHint: EdgeLocationHint?): String {
-        locationHint?.let {
-            return createURLWith(locationHint = it.rawValue)
-        }
-        return "https://obumobile5.data.adobedc.net/ee/v1/interact"
-    }
-
-    /**
-     * Creates a valid interact URL using the provided location hint.
-     *
-     * @param locationHint The location hint String to use in the URL.
-     * @return The interact URL with location hint applied.
-     */
-    private fun createURLWith(locationHint: String?): String {
-        return if (locationHint.isNullOrEmpty()) {
-            "https://obumobile5.data.adobedc.net/ee/v1/interact"
-        } else {
-            "https://obumobile5.data.adobedc.net/ee/$locationHint/v1/interact"
-        }
-    }
-
-    /**
-     * Sets the expectation for an Edge event handle.
-     *
-     * @param expectedHandleType The expected handle type for the event.
-     * @param expectedCount The expected number of occurrences for the event. Default value is 1.
-     */
-    private fun expectEdgeEventHandle(expectedHandleType: String, expectedCount: Int = 1) {
-        setExpectationEvent(TestConstants.EventType.EDGE, expectedHandleType, expectedCount)
-    }
-
-    /**
-     * Retrieves Edge event handles for a specified handle type.
-     *
-     * @param expectedHandleType The handle type to filter events.
-     * @return A list of events matching the given handle type.
-     */
-    private fun getEdgeEventHandles(expectedHandleType: String): List<Event> {
-        return getDispatchedEventsWith(TestConstants.EventType.EDGE, expectedHandleType)
-    }
-
-    /**
-     * Retrieves Edge response errors.
-     *
-     * @return A list of events that represent Edge response errors.
-     */
-    private fun getEdgeResponseErrors(): List<Event> {
-        return getDispatchedEventsWith(TestConstants.EventType.EDGE, TestConstants.EventSource.ERROR_RESPONSE_CONTENT)
-    }
-
-    /**
-     * Extracts the Edge location hint from the location hint result.
-     *
-     * @return The last location hint result value, if available. Otherwise, returns `null`.
-     */
-    private fun getLastLocationHintResultValue(): String? {
-        val locationHintResultEvent = getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT).lastOrNull()
-        val payload = locationHintResultEvent?.eventData?.get("payload") as? List<Map<String, Any>> ?: return null
-        if (payload.indices.contains(2)) {
-            return payload[2]["hint"] as? String
-        }
-        return null
     }
 
     /**

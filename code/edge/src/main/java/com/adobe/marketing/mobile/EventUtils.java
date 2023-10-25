@@ -84,4 +84,8 @@ final class EventUtils {
 
 		return edgeConfig;
 	}
+
+	static Map<String, Object> getConfig(@NonNull final Event event) {
+		return DataReader.optTypedMap(Object.class, event.getEventData(), EdgeConstants.EventDataKeys.Config.KEY, null);
+	}
 }

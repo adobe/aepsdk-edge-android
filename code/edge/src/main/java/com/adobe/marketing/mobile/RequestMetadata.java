@@ -22,19 +22,25 @@ class RequestMetadata {
 
 	private static final String JSON_KEY_GATEWAY = "konductorConfig";
 	private static final String JSON_KEY_STATE = "state";
+	private static final String JSON_KEY_CONFIG_OVERRIDE = "configOverrides";
+	private static final String JSON_KEY_SDK_CONFIG = "sdkConfig";
 
 	private Map<String, Object> konductorConfig;
 	private Map<String, Object> state;
+	private Map<String, Object> sdkConfig;
+	private Map<String, Object> configOverrides;
 
 	private RequestMetadata() {
 		konductorConfig = new HashMap<>();
 		state = new HashMap<>();
+		sdkConfig = new HashMap<>();
+		configOverrides = new HashMap<>();
 	}
 
 	/**
-	 * Get the metadata for Edge Network.
+	 * Get the configuration for Edge Network.
 	 *
-	 * @return map of metadata for Edge Network
+	 * @return map of configuration for Edge Network
 	 */
 	Map<String, Object> getKonductorConfig() {
 		return konductorConfig;
@@ -43,10 +49,28 @@ class RequestMetadata {
 	/**
 	 * Get the state for Edge Network.
 	 *
-	 * @return Map of metadata for Edge Network
+	 * @return Map of state metadata for Edge Network
 	 */
 	Map<String, Object> getState() {
 		return state;
+	}
+
+	/**
+	 * Get the configuration overrides for Edge Network.
+	 *
+	 * @return Map of configuration overrides for Edge Network
+	 */
+	Map<String, Object> getConfigOverrides() {
+		return configOverrides;
+	}
+
+	/**
+	 * Get the sdk config for Edge Network.
+	 *
+	 * @return Map of sdk config for Edge Network
+	 */
+	Map<String, Object> getSdkConfig() {
+		return sdkConfig;
 	}
 
 	/**
@@ -58,6 +82,8 @@ class RequestMetadata {
 		Map<String, Object> serializedMap = new HashMap<>();
 		MapUtils.putIfNotEmpty(serializedMap, JSON_KEY_GATEWAY, konductorConfig);
 		MapUtils.putIfNotEmpty(serializedMap, JSON_KEY_STATE, state);
+		MapUtils.putIfNotEmpty(serializedMap, JSON_KEY_SDK_CONFIG, sdkConfig);
+		MapUtils.putIfNotEmpty(serializedMap, JSON_KEY_CONFIG_OVERRIDE, configOverrides);
 		return serializedMap;
 	}
 
@@ -93,6 +119,31 @@ class RequestMetadata {
 		RequestMetadata.Builder setStateMetadata(final Map<String, Object> stateMetadata) {
 			throwIfAlreadyBuilt();
 			requestMetadata.state = stateMetadata != null ? new HashMap<>(stateMetadata) : new HashMap<>();
+			return this;
+		}
+
+		/**
+		 * Sets the original SDK configuration metadata for Edge Network.
+		 *
+		 * @param sdkConfig the metadata for Edge Network
+		 * @return this {@code RequestMetadata.Builder} instance
+		 */
+		RequestMetadata.Builder setSdkConfig(final Map<String, Object> sdkConfig) {
+			throwIfAlreadyBuilt();
+			requestMetadata.sdkConfig = sdkConfig != null ? new HashMap<>(sdkConfig) : new HashMap<>();
+			return this;
+		}
+
+		/**
+		 * Sets the configuration overrides metadata for Edge Network.
+		 *
+		 * @param configOverrides the metadata for Edge Network
+		 * @return this {@code RequestMetadata.Builder} instance
+		 */
+		RequestMetadata.Builder setConfigOverrides(final Map<String, Object> configOverrides) {
+			throwIfAlreadyBuilt();
+			requestMetadata.configOverrides =
+				configOverrides != null ? new HashMap<>(configOverrides) : new HashMap<>();
 			return this;
 		}
 

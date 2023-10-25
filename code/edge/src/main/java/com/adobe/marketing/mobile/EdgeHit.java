@@ -19,31 +19,31 @@ import org.json.JSONObject;
  */
 class EdgeHit {
 
-	private final String configId;
+	private final String datastreamId;
 	private final String requestId;
 	private final JSONObject payload;
 	private final EdgeEndpoint edgeEndpoint;
 
 	/**
-	 * Creates an {@link EdgeHit} instance with the provided configId and payload, and generates an unique identifier
+	 * Creates an {@link EdgeHit} instance with the provided datastream ID and payload, and generates an unique identifier
 	 * to be used as {@code requestId}.
-	 *  @param configId the Edge configuration identifier (obtained from Configuration); should not be null
+	 *  @param datastreamId the Edge datastream identifier for this hit; should not be null
 	 * @param payload the network request payload
 	 * @param edgeEndpoint the endpoint URL for this hit
 	 */
-	EdgeHit(final String configId, final JSONObject payload, final EdgeEndpoint edgeEndpoint) {
-		this.configId = configId;
+	EdgeHit(final String datastreamId, final JSONObject payload, final EdgeEndpoint edgeEndpoint) {
+		this.datastreamId = datastreamId;
 		this.payload = payload;
 		this.edgeEndpoint = edgeEndpoint;
 		this.requestId = UUID.randomUUID().toString();
 	}
 
 	/**
-	 * The Edge configuration identifier (obtained from Configuration)
-	 * @return the configId for this hit
+	 * The Edge datastream identifier for this hit.
+	 * @return the datastreamId for this hit
 	 */
-	String getConfigId() {
-		return configId;
+	String getDatastreamId() {
+		return datastreamId;
 	}
 
 	/**
