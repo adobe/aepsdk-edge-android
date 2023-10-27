@@ -11,10 +11,8 @@
 
 package com.adobe.marketing.mobile.services;
 
-import static com.adobe.marketing.mobile.util.FunctionalTestConstants.LOG_TAG;
-
 import android.content.Context;
-import com.adobe.marketing.mobile.util.FunctionalTestConstants;
+import com.adobe.marketing.mobile.util.TestConstants;
 import java.io.File;
 
 /**
@@ -47,11 +45,11 @@ public class ServiceProviderHelper {
 	 * @see AppContextService#getApplicationContext()
 	 */
 	public static void cleanDatabaseDir() {
-		final String databaseName = FunctionalTestConstants.EXTENSION_NAME;
+		final String databaseName = TestConstants.EXTENSION_NAME;
 		Context appContext = ServiceProvider.getInstance().getAppContextService().getApplicationContext();
 		if (appContext == null) {
 			Log.debug(
-				LOG_TAG,
+				TestConstants.LOG_TAG,
 				LOG_SOURCE,
 				"Failed to clean database directory for (%s), the ApplicationContext is null",
 				databaseName
@@ -81,7 +79,7 @@ public class ServiceProviderHelper {
 
 			boolean wasDeleted = f.delete();
 			String msg = wasDeleted ? "Successfully deleted cache file/folder " : "Unable to delete cache file/folder ";
-			Log.debug(LOG_TAG, LOG_SOURCE, msg + "'" + f.getName() + "'");
+			Log.debug(TestConstants.LOG_TAG, LOG_SOURCE, msg + "'" + f.getName() + "'");
 		}
 	}
 }

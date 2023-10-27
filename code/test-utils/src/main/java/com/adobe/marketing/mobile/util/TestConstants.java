@@ -11,7 +11,7 @@
 
 package com.adobe.marketing.mobile.util;
 
-public class FunctionalTestConstants {
+public class TestConstants {
 
 	public static final String EVENT_NAME_REQUEST_CONTENT = "AEP Request Event";
 	public static final String EVENT_NAME_RESPONSE_CONTENT = "AEP Response Event Handle";
@@ -23,7 +23,8 @@ public class FunctionalTestConstants {
 
 	// Event type and sources used by Monitor Extension
 	public static class EventType {
-
+		public static final String CONFIGURATION = "com.adobe.eventType.configuration";
+		public static final String EDGE = "com.adobe.eventType.edge";
 		public static final String MONITOR = "com.adobe.functional.eventType.monitor";
 
 		private EventType() {}
@@ -31,8 +32,12 @@ public class FunctionalTestConstants {
 
 	public static class EventSource {
 
+		public static final String ERROR_RESPONSE_CONTENT = "com.adobe.eventSource.errorResponseContent";
+		public static final String LOCATION_HINT_RESULT = "locationHint:result";
+		public static final String RESPONSE_CONTENT = "com.adobe.eventSource.responseContent";
 		public static final String SHARED_STATE_REQUEST = "com.adobe.eventSource.sharedStateRequest";
 		public static final String SHARED_STATE_RESPONSE = "com.adobe.eventSource.sharedStateResponse";
+		public static final String STATE_STORE = "state:store";
 		public static final String UNREGISTER = "com.adobe.eventSource.unregister";
 
 		private EventSource() {}
@@ -135,5 +140,5 @@ public class FunctionalTestConstants {
 		private NetworkKeys() {}
 	}
 
-	private FunctionalTestConstants() {}
+	private TestConstants() {}
 }

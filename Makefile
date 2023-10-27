@@ -25,7 +25,7 @@ AAR_FILE_DIR =  $(ROOT_DIR)/code/$(PROJECT_NAME)/build/outputs/aar
 
 init:
 	git config core.hooksPath .githooks
-	
+
 clean:
 	(rm -rf ci)
 	(rm -rf $(AAR_FILE_DIR))
@@ -70,9 +70,13 @@ ci-functional-test: create-ci
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) connectedPhoneDebugAndroidTest platformFunctionalTestJacocoReport)
 	(cp -r ./code/$(EXTENSION-LIBRARY-FOLDER-NAME)/build ./ci/functional-test)
 
+ci-upstream-integration-test:
+	(./code/gradlew -p code/upstream-integration-tests uninstallDebugAndroidTest)
+	(./code/gradlew -p code/upstream-integration-tests connectedDebugAndroidTest -PEDGE_ENVIRONMENT=$(EDGE_ENVIRONMENT) -PEDGE_LOCATION_HINT=$(EDGE_LOCATION_HINT))
+
 ci-javadoc: create-ci
 	(mkdir -p ci/javadoc)
-	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) javadocPublic > ci/javadocPublic.log 2>&1)
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) javadocJar)
 	(cp -r ./code/$(EXTENSION-LIBRARY-FOLDER-NAME)/build ./ci/javadoc)
 
 ci-generate-library-debug:
@@ -91,7 +95,7 @@ ci-publish-main: clean build-release
 	(./code/gradlew -p code/${EXTENSION-LIBRARY-FOLDER-NAME} publishReleasePublicationToSonatypeRepository -Prelease)
 
 # usage: update-version VERSION=9.9.9 CORE-VERSION=8.8.8
-# usage: update-version VERSION=9.9.9 
+# usage: update-version VERSION=9.9.9
 update-version:
 	@echo "Updating version to $(VERSION), Core version to $(CORE-VERSION)"
 	sed -i '' "s/[0-9]*\.[0-9]*\.[0-9]/$(VERSION)/g" ./code/edge/src/main/java/com/adobe/marketing/mobile/EdgeConstants.java

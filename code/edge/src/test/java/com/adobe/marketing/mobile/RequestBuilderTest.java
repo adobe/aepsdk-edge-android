@@ -19,6 +19,8 @@ import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.fail;
 import static org.mockito.Mockito.when;
 
+import com.adobe.marketing.mobile.edge.Datastream;
+import com.adobe.marketing.mobile.edge.SDKConfig;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.JSONUtils;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -313,6 +315,74 @@ public class RequestBuilderTest {
 		assertEquals("true", payloadMap.get("meta.konductorConfig.streaming.enabled"));
 		assertEquals("\u0000", payloadMap.get("meta.konductorConfig.streaming.recordSeparator"));
 		assertEquals("\n", payloadMap.get("meta.konductorConfig.streaming.lineFeed"));
+	}
+
+	@Test
+	public void getPayloadWithExperienceEvents_setsSdkConfigMeta_whenSdkConfigPresent() throws Exception {
+		List<Event> events = getSingleEvent(getExperienceEventData("value", null));
+		requestBuilder.addSdkConfig(new SDKConfig(new Datastream("OriginalDatastreamId")));
+		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
+
+		assertNotNull(payload);
+		assertNumberOfEvents(payload, 1);
+
+		Map<String, String> payloadMap = new HashMap<>();
+		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
+
+		assertEquals("OriginalDatastreamId", payloadMap.get("meta.sdkConfig.datastream.original"));
+	}
+
+	@Test
+	public void getPayloadWithExperienceEvents_setsConfigOverridesMeta_whenConfigOverridesPresent() throws Exception {
+		List<Event> events = getSingleEvent(getExperienceEventData("value", "5dd603781b95cc18a83d42ce"));
+		requestBuilder.addConfigOverrides(
+			new HashMap() {
+				{
+					put("key", "val");
+				}
+			}
+		);
+		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
+
+		assertNotNull(payload);
+		assertNumberOfEvents(payload, 1);
+
+		Map<String, String> payloadMap = new HashMap<>();
+		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
+
+		assertEquals("val", payloadMap.get("meta.configOverrides.key"));
+	}
+
+	@Test
+	public void getPayloadWithExperienceEvents_doesNotSetConfigOverridesMeta_whenConfigOverridesEmpty()
+		throws Exception {
+		List<Event> events = getSingleEvent(getExperienceEventData("value", "5dd603781b95cc18a83d42ce"));
+		requestBuilder.addConfigOverrides(new HashMap() {});
+		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
+
+		assertNotNull(payload);
+		assertNumberOfEvents(payload, 1);
+
+		Map<String, String> payloadMap = new HashMap<>();
+		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
+
+		assertNull(payloadMap.get("meta.configOverrides"));
+	}
+
+	@Test
+	public void getPayloadWithExperienceEvents_doesNotSetConfigOverridesMeta_whenConfigOverridesNull()
+		throws Exception {
+		List<Event> events = getSingleEvent(getExperienceEventData("value", "5dd603781b95cc18a83d42ce"));
+		requestBuilder.addConfigOverrides(null);
+		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
+
+		assertNotNull(payload);
+		assertNumberOfEvents(payload, 1);
+
+		Map<String, String> payloadMap = new HashMap<>();
+		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
+
+		assertNull(payloadMap.get("meta.configOverrides"));
 	}
 
 	@Test
