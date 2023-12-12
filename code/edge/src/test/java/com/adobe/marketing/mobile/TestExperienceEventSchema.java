@@ -25,6 +25,7 @@ class TestExperienceEventSchema implements Schema {
 
 	private static final String LOG_TAG = "UnitTestsFramework";
 	private static final String LOG_SOURCE = "TestExperienceEventSchema";
+	private static final String EVENT_TYPE = "eventType";
 
 	private Map<String, Object> commerce;
 	private String eventMergeId;
@@ -80,7 +81,7 @@ class TestExperienceEventSchema implements Schema {
 	Map<String, Object> toObjectMap() {
 		Map<String, Object> serializedMap = new HashMap<>();
 
-		MapUtils.putIfNotEmpty(serializedMap, EdgeJson.Event.Xdm.EVENT_TYPE, eventType);
+		MapUtils.putIfNotEmpty(serializedMap, EVENT_TYPE, eventType);
 		MapUtils.putIfNotEmpty(serializedMap, EdgeJson.Event.Xdm.EVENT_MERGE_ID, eventMergeId);
 		MapUtils.putIfNotEmpty(serializedMap, EdgeJson.Event.Xdm.COMMERCE, commerce);
 		return serializedMap;
