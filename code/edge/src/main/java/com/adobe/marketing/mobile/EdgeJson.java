@@ -41,12 +41,8 @@ class EdgeJson {
 		static class Xdm {
 
 			static final String EVENT_ID = "_id";
-			static final String EVENT_MERGE_ID = "eventMergeId";
 			static final String TIMESTAMP = "timestamp";
 			static final String IDENTITY_MAP = "identityMap";
-			static final String COMMERCE = "commerce";
-			static final String BEACON = "beacon";
-			static final String PLACE_CONTEXT = "placeContext";
 
 			private Xdm() {}
 		}
