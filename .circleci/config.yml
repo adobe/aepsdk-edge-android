@@ -76,7 +76,7 @@ jobs:
 
       - run:
           name: Lint Code
-          command: make lint-check
+          command: make lint
 
       - android/save-gradle-cache:
           cache-prefix: << parameters.gradle-cache-prefix >>
@@ -111,20 +111,20 @@ jobs:
 
       - run:
           name: Javadoc
-          command: make ci-javadoc
+          command: make javadoc
       - store_artifacts:
-          path: ci/javadoc/build/reports
+          path: code/edge/build/dokka/javadoc
 
       - run:
           name: Build
-          command: make ci-build
+          command: make assemble-phone
 
       - run:
           name: Build App
-          command: make ci-build-app
+          command: make assemble-app
 
       - android/run-tests:
-          test-command: make ci-unit-test
+          test-command: make unit-test
 
       - android/save-gradle-cache:
           cache-prefix: << parameters.gradle-cache-prefix >>
@@ -134,13 +134,12 @@ jobs:
       # Code coverage upload using Codecov
       # See options explanation here: https://docs.codecov.com/docs/codecov-uploader
       - codecov/upload:
-          file: ci/unit-test/build/reports/jacoco/platformUnitTestJacocoReport/platformUnitTestJacocoReport.xml
+          file: code/edge/build/reports/jacoco/platformUnitTestJacocoReport/platformUnitTestJacocoReport.xml
           flags: unit-tests
 
       - store_artifacts:
-          path: ci/unit-test/build/reports
+          path: code/edge/build/reports/tests
 
-      # On test failures, the step in the Makefile to copy the reports to ci/ is not run, so store test results from build folder instead.
       - store_test_results:
           path: code/edge/build/test-results
 
@@ -172,9 +171,9 @@ jobs:
           #   It should match the name seen in the "sdkmanager --list" output
           system-image: system-images;android-29;default;x86
           #   The command to be run, while waiting for emulator startup
-          post-emulator-launch-assemble-command: make ci-build
+          post-emulator-launch-assemble-command: make assemble-phone
           #   The test command
-          test-command: make ci-functional-test
+          test-command: make functional-test
           restore-gradle-cache-prefix: << parameters.gradle-cache-prefix >>
 
       - android/save-build-cache:
@@ -183,13 +182,12 @@ jobs:
       # Code coverage upload using Codecov
       # See options explanation here: https://docs.codecov.com/docs/codecov-uploader
       - codecov/upload:
-          file: ci/functional-test/build/reports/coverage/androidTest/phone/debug/connected/report.xml
+          file: code/edge/build/reports/coverage/androidTest/phone/debug/connected/report.xml
           flags: functional-tests
 
       - store_artifacts:
-          path: ci/functional-test/build/reports
+          path: code/edge/build/reports/androidTests
 
-      # On test failures, the step in the Makefile to copy the reports to ci/ is not run, so store test results from build folder instead.
       - store_test_results:
           path: code/edge/build/outputs/androidTest-results
 
@@ -221,9 +219,9 @@ jobs:
           #   It should match the name seen in the "sdkmanager --list" output
           system-image: system-images;android-29;default;x86
           #   The command to be run, while waiting for emulator startup
-          post-emulator-launch-assemble-command: make ci-build
+          post-emulator-launch-assemble-command: make assemble-phone
           #   The test command
-          test-command: make ci-upstream-integration-test
+          test-command: make upstream-integration-test
           restore-gradle-cache-prefix: << parameters.gradle-cache-prefix >>
 
       - android/save-build-cache:

@@ -13,7 +13,6 @@
 EXTENSION-LIBRARY-FOLDER-NAME = edge
 
 TEST-APP-FOLDER-NAME = app
-BUILD-ASSEMBLE-LOCATION = ./ci/assemble
 ROOT_DIR=$(shell git rev-parse --show-toplevel)
 
 PROJECT_NAME = $(shell cat $(ROOT_DIR)/code/gradle.properties | grep "moduleProjectName" | cut -d'=' -f2)
@@ -27,12 +26,8 @@ init:
 	git config core.hooksPath .githooks
 
 clean:
-	(rm -rf ci)
 	(rm -rf $(AAR_FILE_DIR))
 	(./code/gradlew -p code clean)
-
-create-ci: clean
-	(mkdir -p ci)
 
 format:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) spotlessApply)
@@ -45,53 +40,40 @@ format-check:
 format-license:
 	(./code/gradlew -p code licenseFormat)
 
-lint-check:
+lint:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) lint)
 
-
-ci-build: create-ci
-	(mkdir -p ci/assemble)
-
-	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) assemblePhone)
-	(mv $(AAR_FILE_DIR)/$(EXTENSION-LIBRARY-FOLDER-NAME)-phone-release.aar  $(AAR_FILE_DIR)/$(MODULE_NAME)-release-$(LIB_VERSION).aar)
-	(cp -r ./code/$(EXTENSION-LIBRARY-FOLDER-NAME)/build $(BUILD-ASSEMBLE-LOCATION))
-
-ci-build-app:
-	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME) assemble)
-
-ci-unit-test: create-ci
-	(mkdir -p ci/unit-test)
+unit-test:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) platformUnitTestJacocoReport)
-	(cp -r ./code/$(EXTENSION-LIBRARY-FOLDER-NAME)/build ./ci/unit-test/)
 
-ci-functional-test: create-ci
-	(mkdir -p ci/functional-test)
+functional-test:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) uninstallPhoneDebugAndroidTest)
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) connectedPhoneDebugAndroidTest platformFunctionalTestJacocoReport)
-	(cp -r ./code/$(EXTENSION-LIBRARY-FOLDER-NAME)/build ./ci/functional-test)
 
-ci-upstream-integration-test:
+upstream-integration-test:
 	(./code/gradlew -p code/upstream-integration-tests uninstallDebugAndroidTest)
 	(./code/gradlew -p code/upstream-integration-tests connectedDebugAndroidTest -PEDGE_ENVIRONMENT=$(EDGE_ENVIRONMENT) -PEDGE_LOCATION_HINT=$(EDGE_LOCATION_HINT))
 
-ci-javadoc: create-ci
-	(mkdir -p ci/javadoc)
+javadoc:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) javadocJar)
-	(cp -r ./code/$(EXTENSION-LIBRARY-FOLDER-NAME)/build ./ci/javadoc)
 
-ci-generate-library-debug:
-		(./code/gradlew -p code/${EXTENSION-LIBRARY-FOLDER-NAME}  assemblePhoneDebug)
+assemble-phone:
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) assemblePhone)
+	(mv $(AAR_FILE_DIR)/$(EXTENSION-LIBRARY-FOLDER-NAME)-phone-release.aar  $(AAR_FILE_DIR)/$(MODULE_NAME)-release-$(LIB_VERSION).aar)
 
-ci-generate-library-release:
-		(./code/gradlew -p code/${EXTENSION-LIBRARY-FOLDER-NAME}  assemblePhoneRelease)
+assemble-phone-debug:
+	(./code/gradlew -p code/${EXTENSION-LIBRARY-FOLDER-NAME}  assemblePhoneDebug)
 
-build-release:
-	(./code/gradlew -p code/${EXTENSION-LIBRARY-FOLDER-NAME} clean lint assemblePhoneRelease)
+assemble-phone-release:
+	(./code/gradlew -p code/${EXTENSION-LIBRARY-FOLDER-NAME}  assemblePhoneRelease)
 
-ci-publish-staging: clean build-release
+assemble-app:
+	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME) assemble)
+
+publish-staging: clean assemble-phone-release
 	(./code/gradlew -p code/${EXTENSION-LIBRARY-FOLDER-NAME} publishReleasePublicationToSonatypeRepository)
 
-ci-publish-main: clean build-release
+publish-main: clean assemble-phone-release
 	(./code/gradlew -p code/${EXTENSION-LIBRARY-FOLDER-NAME} publishReleasePublicationToSonatypeRepository -Prelease)
 
 # usage: update-version VERSION=9.9.9 CORE-VERSION=8.8.8
