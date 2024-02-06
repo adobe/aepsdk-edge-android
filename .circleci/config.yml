@@ -124,7 +124,7 @@ jobs:
           command: make assemble-app
 
       - android/run-tests:
-          test-command: make unit-test
+          test-command: make unit-test-coverage
 
       - android/save-gradle-cache:
           cache-prefix: << parameters.gradle-cache-prefix >>
@@ -134,14 +134,14 @@ jobs:
       # Code coverage upload using Codecov
       # See options explanation here: https://docs.codecov.com/docs/codecov-uploader
       - codecov/upload:
-          file: code/edge/build/reports/jacoco/platformUnitTestJacocoReport/platformUnitTestJacocoReport.xml
+          file: code/edge/build/reports/coverage/test/phone/debug/report.xml
           flags: unit-tests
 
       - store_artifacts:
           path: code/edge/build/reports/tests
 
       - store_test_results:
-          path: code/edge/build/test-results
+          path: code/edge/build/test-results/testPhoneDebugUnitTest
 
   functional-test:
     parameters:

@@ -35,7 +35,10 @@ lint:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) lint)
 
 unit-test:
-	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) platformUnitTestJacocoReport)
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) testPhoneDebugUnitTest)
+
+unit-test-coverage:
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) createPhoneDebugUnitTestCoverageReport)
 
 functional-test:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) uninstallPhoneDebugAndroidTest)
