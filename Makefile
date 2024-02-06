@@ -67,11 +67,11 @@ assemble-phone-release:
 assemble-app:
 	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME) assemble)
 
-publish-staging: clean assemble-phone-release
-	(./code/gradlew -p code/${EXTENSION-LIBRARY-FOLDER-NAME} publishReleasePublicationToSonatypeRepository)
-
-publish-main: clean assemble-phone-release
+ci-publish: clean assemble-phone-release
 	(./code/gradlew -p code/${EXTENSION-LIBRARY-FOLDER-NAME} publishReleasePublicationToSonatypeRepository -Prelease)
+
+ci-publish-staging: clean assemble-phone-release
+	(./code/gradlew -p code/${EXTENSION-LIBRARY-FOLDER-NAME} publishReleasePublicationToSonatypeRepository)
 
 # usage: update-version VERSION=9.9.9 CORE-VERSION=8.8.8
 # usage: update-version VERSION=9.9.9
