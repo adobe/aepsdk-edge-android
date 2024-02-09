@@ -26,7 +26,6 @@ format:
 	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-JAVA) spotlessApply)
 	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-KOTLIN) spotlessApply)
 
-
 format-check:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) spotlessCheck)
 	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-JAVA) spotlessCheck)
@@ -78,6 +77,9 @@ ci-publish: clean assemble-phone-release
 ci-publish-staging: clean assemble-phone-release
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publishReleasePublicationToSonatypeRepository)
 
+ci-publish-maven-local-jitpack: assemble-phone-release
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publishReleasePublicationToMavenLocal -Pjitpack  -x signReleasePublication)
+		
 # usage: update-version VERSION=9.9.9 CORE-VERSION=8.8.8
 # usage: update-version VERSION=9.9.9
 update-version:
