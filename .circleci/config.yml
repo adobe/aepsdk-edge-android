@@ -123,6 +123,10 @@ jobs:
           name: Assemble App
           command: make assemble-app
 
+      - run:
+          name: Assemble for Jitpack
+          command: make ci-publish-maven-local-jitpack
+
       - android/run-tests:
           test-command: make unit-test-coverage
 
