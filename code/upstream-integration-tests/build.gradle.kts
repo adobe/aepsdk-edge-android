@@ -33,12 +33,12 @@ android {
         // that the app's state is completely cleared between tests.
         testInstrumentationRunnerArguments["clearPackageData"] = "true"
 
-        val edgeLocationHint: String = System.getProperty("EDGE_LOCATION_HINT", "")
-        val edgeEnvironment: String = System.getProperty("EDGE_ENVIRONMENT", "")
+        val EDGE_LOCATION_HINT: String by project
+        val EDGE_ENVIRONMENT: String by project
 
         // buildConfigField assignment with default values
-        buildConfigField("String", "EDGE_LOCATION_HINT", "\"$edgeLocationHint\"")
-        buildConfigField("String", "EDGE_ENVIRONMENT", "\"$edgeEnvironment\"")
+        buildConfigField("String", "EDGE_LOCATION_HINT", "\"$EDGE_LOCATION_HINT\"")
+        buildConfigField("String", "EDGE_ENVIRONMENT", "\"$EDGE_ENVIRONMENT\"")
     }
 
     buildTypes {
