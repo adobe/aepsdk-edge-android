@@ -1,0 +1,36 @@
+name: Update Version
+on:
+  workflow_dispatch:
+    inputs:
+      version: 
+        description: 'New version to use for the Edge extension. Example: 3.0.0'
+        required: true
+
+      core-dependency:
+        description: '[Optional] Update Core dependency in pom.xml. Example: 3.0.0'
+        required: false
+
+      identity-dependency:
+        description: '[Optional] Update Edge Identity dependency in pom.xml. Example: 3.0.0'
+        required: false
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+
+    steps:    
+    - name: Checkout
+      uses: actions/checkout@v3
+    
+    - name: Update Edge
+      run: (./scripts/version.sh -u -v ${{ github.event.inputs.version }} -d "Core ${{ github.event.inputs.core-dependency }}, EdgeIdentity ${{ github.event.inputs.identity-dependency }}")
+
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ github.token }}
+        commit-message: Updating version to ${{ github.event.inputs.version }}.
+        branch: version-${{ github.event.inputs.version }}-update
+        delete-branch: true
+        title: Updating version to ${{ github.event.inputs.version }}
+        body: Updating version to ${{ github.event.inputs.version }}
