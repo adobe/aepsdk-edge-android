@@ -76,9 +76,7 @@ public class EdgeFunctionalTests {
 		.build();
 
 	@Rule
-	public RuleChain rule = RuleChain
-		.outerRule(new LogOnErrorRule())
-		.around(new SetupCoreRule());
+	public RuleChain rule = RuleChain.outerRule(new LogOnErrorRule()).around(new SetupCoreRule());
 
 	@Before
 	public void setup() throws Exception {
@@ -96,7 +94,10 @@ public class EdgeFunctionalTests {
 		MobileCore.updateConfiguration(config);
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.registerExtensions(Arrays.asList(Edge.EXTENSION, Identity.EXTENSION, MonitorExtension.EXTENSION), o -> latch.countDown());
+		MobileCore.registerExtensions(
+			Arrays.asList(Edge.EXTENSION, Identity.EXTENSION, MonitorExtension.EXTENSION),
+			o -> latch.countDown()
+		);
 		latch.await();
 
 		assertExpectedEvents(false);

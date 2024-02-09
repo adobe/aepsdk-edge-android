@@ -53,9 +53,7 @@ public class EdgePathOverwriteTests {
 	private static final int TIMEOUT_MILLIS = 5000;
 
 	@Rule
-	public RuleChain rule = RuleChain
-		.outerRule(new TestHelper.LogOnErrorRule())
-		.around(new TestHelper.SetupCoreRule());
+	public RuleChain rule = RuleChain.outerRule(new TestHelper.LogOnErrorRule()).around(new TestHelper.SetupCoreRule());
 
 	@Before
 	public void setup() throws Exception {
@@ -73,7 +71,10 @@ public class EdgePathOverwriteTests {
 		MobileCore.updateConfiguration(config);
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.registerExtensions(Arrays.asList(Edge.EXTENSION, Identity.EXTENSION, MonitorExtension.EXTENSION), o -> latch.countDown());
+		MobileCore.registerExtensions(
+			Arrays.asList(Edge.EXTENSION, Identity.EXTENSION, MonitorExtension.EXTENSION),
+			o -> latch.countDown()
+		);
 		latch.await();
 
 		assertExpectedEvents(false);

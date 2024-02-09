@@ -64,9 +64,7 @@ public class SampleFunctionalTests {
 	private static final String responseBody = "{\"test\": \"json\"}";
 
 	@Rule
-	public RuleChain rule = RuleChain
-		.outerRule(new TestHelper.LogOnErrorRule())
-		.around(new TestHelper.SetupCoreRule());
+	public RuleChain rule = RuleChain.outerRule(new TestHelper.LogOnErrorRule()).around(new TestHelper.SetupCoreRule());
 
 	@Before
 	public void setup() throws Exception {
@@ -85,7 +83,10 @@ public class SampleFunctionalTests {
 		MobileCore.updateConfiguration(config);
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.registerExtensions(Arrays.asList(Edge.EXTENSION, Identity.EXTENSION, MonitorExtension.EXTENSION), o -> latch.countDown());
+		MobileCore.registerExtensions(
+			Arrays.asList(Edge.EXTENSION, Identity.EXTENSION, MonitorExtension.EXTENSION),
+			o -> latch.countDown()
+		);
 		latch.await();
 
 		// Wait for and verify all expected events are received

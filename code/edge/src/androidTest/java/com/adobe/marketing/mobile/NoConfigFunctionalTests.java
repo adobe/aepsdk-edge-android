@@ -54,9 +54,7 @@ public class NoConfigFunctionalTests {
 	private static final String EXEDGE_INTERACT_URL_STRING = TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
 
 	@Rule
-	public RuleChain rule = RuleChain
-		.outerRule(new LogOnErrorRule())
-		.around(new SetupCoreRule());
+	public RuleChain rule = RuleChain.outerRule(new LogOnErrorRule()).around(new SetupCoreRule());
 
 	@Before
 	public void setup() throws Exception {
@@ -65,7 +63,10 @@ public class NoConfigFunctionalTests {
 		setExpectationEvent(EventType.HUB, EventSource.SHARED_STATE, 2);
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.registerExtensions(Arrays.asList(Edge.EXTENSION, FakeIdentity.EXTENSION, MonitorExtension.EXTENSION), o -> latch.countDown());
+		MobileCore.registerExtensions(
+			Arrays.asList(Edge.EXTENSION, FakeIdentity.EXTENSION, MonitorExtension.EXTENSION),
+			o -> latch.countDown()
+		);
 
 		latch.await();
 

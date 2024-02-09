@@ -51,9 +51,7 @@ public class ConsentStatusChangeFunctionalTests {
 	private static final int EVENTS_COUNT = 5;
 
 	@Rule
-	public RuleChain rule = RuleChain
-		.outerRule(new TestHelper.LogOnErrorRule())
-		.around(new TestHelper.SetupCoreRule());
+	public RuleChain rule = RuleChain.outerRule(new TestHelper.LogOnErrorRule()).around(new TestHelper.SetupCoreRule());
 
 	@Before
 	public void setup() throws Exception {

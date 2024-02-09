@@ -20,7 +20,6 @@ import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.DataReaderException;
 import com.adobe.marketing.mobile.util.MapUtils;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @SuppressWarnings("unused")
@@ -37,8 +36,7 @@ public class Edge {
 	 *
 	 * @return The version as {@code String}
 	 */
-	@NonNull
-	public static String extensionVersion() {
+	@NonNull public static String extensionVersion() {
 		return EdgeConstants.EXTENSION_VERSION;
 	}
 

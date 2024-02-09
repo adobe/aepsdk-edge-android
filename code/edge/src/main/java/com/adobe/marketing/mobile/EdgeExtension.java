@@ -106,20 +106,17 @@ class EdgeExtension extends Extension {
 		state = new EdgeState(this.hitQueue, new EdgeProperties(getNamedCollection()), sharedStateCallback);
 	}
 
-	@NonNull
-	@Override
+	@NonNull @Override
 	protected String getName() {
 		return EdgeConstants.EXTENSION_NAME;
 	}
 
-	@NonNull
-	@Override
+	@NonNull @Override
 	protected String getFriendlyName() {
 		return EdgeConstants.FRIENDLY_NAME;
 	}
 
-	@NonNull
-	@Override
+	@NonNull @Override
 	protected String getVersion() {
 		return EdgeConstants.EXTENSION_VERSION;
 	}

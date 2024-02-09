@@ -51,9 +51,7 @@ public class IdentityStateFunctionalTests {
 	private static final String CONFIG_ID = "1234abcd-abcd-1234-5678-123456abcdef";
 
 	@Rule
-	public RuleChain rule = RuleChain
-		.outerRule(new LogOnErrorRule())
-		.around(new SetupCoreRule());
+	public RuleChain rule = RuleChain.outerRule(new LogOnErrorRule()).around(new SetupCoreRule());
 
 	@Before
 	public void setup() throws Exception {
@@ -71,7 +69,10 @@ public class IdentityStateFunctionalTests {
 		MobileCore.updateConfiguration(config);
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.registerExtensions(Arrays.asList(Edge.EXTENSION, FakeIdentity.EXTENSION, MonitorExtension.EXTENSION), o -> latch.countDown());
+		MobileCore.registerExtensions(
+			Arrays.asList(Edge.EXTENSION, FakeIdentity.EXTENSION, MonitorExtension.EXTENSION),
+			o -> latch.countDown()
+		);
 
 		latch.await();
 
