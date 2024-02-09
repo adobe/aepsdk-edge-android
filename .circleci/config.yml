@@ -12,8 +12,8 @@
 
 version: 2.1
 orbs:
-  android: circleci/android@2.1.2
-  codecov: codecov/codecov@3.2.4
+  android: circleci/android@2.4.0
+  codecov: codecov/codecov@4.0.1
 
 # Workflows orchestrate a set of jobs to be run;
 workflows:
@@ -60,7 +60,7 @@ jobs:
     # List of available Android Docker images: https://circleci.com/developer/images/image/cimg/android#image-tags
     executor:
       name: android/android-docker
-      tag: 2022.09.2-node
+      tag: 2024.01.1
 
     steps:
       - checkout
@@ -99,7 +99,7 @@ jobs:
     # List of available Android Docker images: https://circleci.com/developer/images/image/cimg/android#image-tags
     executor:
       name: android/android-docker
-      tag: 2022.09.2-node
+      tag: 2024.01.1
 
     steps:
       - checkout
@@ -160,7 +160,7 @@ jobs:
     executor:
       name: android/android-machine
       resource-class: large
-      tag: 2022.09.1
+      tag: 2024.01.1
     steps:
       - checkout
 
