@@ -71,11 +71,11 @@ jobs:
           cache-prefix: << parameters.build-cache-prefix >>
 
       - run:
-          name: Check Code Format
+          name: Check Format
           command: make checkformat
 
       - run:
-          name: Lint Code
+          name: Lint
           command: make lint
 
       - android/save-gradle-cache:
@@ -116,11 +116,11 @@ jobs:
           path: code/edge/build/dokka/javadoc
 
       - run:
-          name: Build
+          name: Assemble Phone
           command: make assemble-phone
 
       - run:
-          name: Build App
+          name: Assemble App
           command: make assemble-app
 
       - android/run-tests:
