@@ -12,7 +12,8 @@
 
 EXTENSION-LIBRARY-FOLDER-NAME = edge
 
-TEST-APP-FOLDER-NAME = app
+TEST-APP-FOLDER-NAME-JAVA = app
+TEST-APP-FOLDER-NAME-KOTLIN = app-kotlin
 
 init:
 	git config core.hooksPath .githooks
@@ -22,11 +23,14 @@ clean:
 
 format:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) spotlessApply)
-	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME) spotlessApply)
+	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-JAVA) spotlessApply)
+	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-KOTLIN) spotlessApply)
+
 
 format-check:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) spotlessCheck)
-	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME) spotlessCheck)
+	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-JAVA) spotlessCheck)
+	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-KOTLIN) spotlessCheck)
 
 format-license:
 	(./code/gradlew -p code licenseFormat)
@@ -65,7 +69,8 @@ assemble-phone-release:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME)  assemblePhoneRelease)
 
 assemble-app:
-	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME) assemble)
+	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-JAVA) assemble)
+	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-KOTLIN) assemble)
 
 ci-publish: clean assemble-phone-release
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publishReleasePublicationToSonatypeRepository -Prelease)

@@ -71,7 +71,9 @@ dependencies {
 
     implementation("com.adobe.marketing.mobile:core:$mavenCoreVersion-SNAPSHOT")
     implementation("com.adobe.marketing.mobile:edgeidentity:2.0.1")
-    implementation("com.adobe.marketing.mobile:edgeconsent:2.0.0")
+    implementation("com.adobe.marketing.mobile:edgeconsent:2.0.0") {
+        exclude(group = "com.adobe.marketing.mobile", module = "edge")
+    }
     implementation("com.adobe.marketing.mobile:assurance:2.2.1")
 
     implementation("com.google.code.gson:gson:2.8.9")
