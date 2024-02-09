@@ -71,14 +71,14 @@ assemble-app:
 	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-JAVA) assemble)
 	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-KOTLIN) assemble)
 
-ci-publish: clean assemble-phone-release
-	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publishReleasePublicationToSonatypeRepository -Prelease)
+ci-publish-maven-local-jitpack: assemble-phone-release
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publishReleasePublicationToMavenLocal -Pjitpack  -x signReleasePublication)
 
 ci-publish-staging: clean assemble-phone-release
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publishReleasePublicationToSonatypeRepository)
 
-ci-publish-maven-local-jitpack: assemble-phone-release
-	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publishReleasePublicationToMavenLocal -Pjitpack  -x signReleasePublication)
+ci-publish: clean assemble-phone-release
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publishReleasePublicationToSonatypeRepository -Prelease)
 		
 # usage: update-version VERSION=9.9.9 CORE-VERSION=8.8.8
 # usage: update-version VERSION=9.9.9
