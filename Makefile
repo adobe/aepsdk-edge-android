@@ -26,7 +26,7 @@ format:
 	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-JAVA) spotlessApply)
 	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-KOTLIN) spotlessApply)
 
-format-check:
+checkformat:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) spotlessCheck)
 	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-JAVA) spotlessCheck)
 	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-KOTLIN) spotlessCheck)

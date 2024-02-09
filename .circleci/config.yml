@@ -72,7 +72,7 @@ jobs:
 
       - run:
           name: Check Code Format
-          command: make format-check
+          command: make checkformat
 
       - run:
           name: Lint Code
