@@ -19,6 +19,7 @@ val mavenEdgeIdentityVersion: String by project
 
 aepLibrary {
     namespace = "com.adobe.marketing.mobile.edge"
+    enableSpotless = true
     enableSpotlessPrettierForJava = true
     enableDokkaDoc = true
     //enableCheckStyle = true
