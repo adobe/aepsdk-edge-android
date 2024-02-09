@@ -10,6 +10,8 @@
  * governing permissions and limitations under the License.
  */
 
+apply(plugin = "aep-license")
+
 buildscript {
     repositories {
         gradlePluginPortal()
@@ -19,6 +21,6 @@ buildscript {
         mavenLocal()
     }
     dependencies {
-        classpath("com.github.adobe:aepsdk-commons:9deb721db7")
+        classpath("com.github.praveek:aepsdk-commons:3fd2bb386a")
     }
 }
