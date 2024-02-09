@@ -49,8 +49,7 @@ public class RestartFunctionalTests {
 	@Rule
 	public RuleChain rule = RuleChain
 		.outerRule(new TestHelper.LogOnErrorRule())
-		.around(new TestHelper.SetupCoreRule())
-		.around(new TestHelper.RegisterMonitorExtensionRule());
+		.around(new TestHelper.SetupCoreRule());
 
 	@Before
 	public void setup() throws Exception {

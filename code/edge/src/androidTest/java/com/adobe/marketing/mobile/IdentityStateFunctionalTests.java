@@ -13,7 +13,6 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
 import static com.adobe.marketing.mobile.util.TestHelper.LogOnErrorRule;
-import static com.adobe.marketing.mobile.util.TestHelper.RegisterMonitorExtensionRule;
 import static com.adobe.marketing.mobile.util.TestHelper.SetupCoreRule;
 import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
 import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
@@ -29,6 +28,7 @@ import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.FakeIdentity;
 import com.adobe.marketing.mobile.util.JSONUtils;
 import com.adobe.marketing.mobile.util.MockNetworkService;
+import com.adobe.marketing.mobile.util.MonitorExtension;
 import com.adobe.marketing.mobile.util.TestConstants;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -53,8 +53,7 @@ public class IdentityStateFunctionalTests {
 	@Rule
 	public RuleChain rule = RuleChain
 		.outerRule(new LogOnErrorRule())
-		.around(new SetupCoreRule())
-		.around(new RegisterMonitorExtensionRule());
+		.around(new SetupCoreRule());
 
 	@Before
 	public void setup() throws Exception {
@@ -72,7 +71,7 @@ public class IdentityStateFunctionalTests {
 		MobileCore.updateConfiguration(config);
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.registerExtensions(Arrays.asList(Edge.EXTENSION, FakeIdentity.EXTENSION), o -> latch.countDown());
+		MobileCore.registerExtensions(Arrays.asList(Edge.EXTENSION, FakeIdentity.EXTENSION, MonitorExtension.EXTENSION), o -> latch.countDown());
 
 		latch.await();
 

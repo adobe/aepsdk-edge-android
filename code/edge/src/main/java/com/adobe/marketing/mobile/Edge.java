@@ -43,25 +43,6 @@ public class Edge {
 	}
 
 	/**
-	 * Registers the extension with the Mobile SDK. This method should be called only once in your application class.
-	 * @deprecated as of 2.0.0, use {@link MobileCore#registerExtensions(List, AdobeCallback)} with {@link Edge#EXTENSION} instead.
-	 */
-	@Deprecated
-	@SuppressWarnings("deprecation")
-	public static void registerExtension() {
-		MobileCore.registerExtension(
-			EdgeExtension.class,
-			extensionError -> {
-				Log.error(
-					LOG_TAG,
-					LOG_SOURCE,
-					"There was an error registering the Edge extension: " + extensionError.getErrorName()
-				);
-			}
-		);
-	}
-
-	/**
 	 * Sends an event to Adobe Experience Edge and registers a callback for responses coming from the Edge Network.
 	 *
 	 * @param experienceEvent event to be sent to Adobe Experience Edge; should not be null

@@ -55,24 +55,6 @@ public class EdgePublicAPITests {
 		mockCore.close();
 	}
 
-	@SuppressWarnings({ "deprecation", "rawtypes" })
-	@Test
-	public void testRegisterExtension_registersWithMobileCore() {
-		Edge.registerExtension();
-
-		final ArgumentCaptor<Class> extensionClassCaptor = ArgumentCaptor.forClass(Class.class);
-		final ArgumentCaptor<ExtensionErrorCallback> callbackCaptor = ArgumentCaptor.forClass(
-			ExtensionErrorCallback.class
-		);
-		mockCore.verify(
-			() -> MobileCore.registerExtension(extensionClassCaptor.capture(), callbackCaptor.capture()),
-			times(1)
-		);
-
-		assertEquals(EdgeExtension.class, extensionClassCaptor.getValue());
-		assertNotNull(callbackCaptor.getValue());
-	}
-
 	@Test
 	public void testExtensionVersion_verifyModuleVersionInPropertiesFile_asEqual() {
 		Properties properties = loadProperties(GRADLE_PROPERTIES_PATH);

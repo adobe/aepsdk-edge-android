@@ -135,40 +135,6 @@ public class TestHelper {
 		MobileCore.setApplication(defaultApplication);
 	}
 
-	/**
-	 * {@code TestRule} which registers the {@code MonitorExtension}, allowing test cases to assert
-	 * events passing through the {@code EventHub}. This {@code TestRule} must be applied after
-	 * the {@link SetupCoreRule} to ensure the {@code MobileCore} is setup for testing first.
-	 *
-	 * To use, add the following to your test class:
-	 * <pre>
-	 *  &#064;Rule
-	 * 	public RuleChain rule = RuleChain.outerRule(new SetupCoreRule())
-	 * 							.around(new RegisterMonitorExtensionRule());
-	 * </pre>
-	 */
-	public static class RegisterMonitorExtensionRule implements TestRule {
-
-		@Override
-		@SuppressWarnings("deprecation")
-		public Statement apply(@NonNull final Statement base, @NonNull final Description description) {
-			return new Statement() {
-				@Override
-				public void evaluate() throws Throwable {
-					// Use registerExtension here to avoid starting the core yet, the tests should
-					// start it after all extensions have been registered
-					MobileCore.registerExtension(MonitorExtension.EXTENSION, null);
-
-					try {
-						base.evaluate();
-					} finally {
-						MonitorExtension.reset();
-					}
-				}
-			};
-		}
-	}
-
 	public static class LogOnErrorRule implements TestRule {
 
 		@Override

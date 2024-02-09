@@ -21,7 +21,7 @@ import com.adobe.marketing.mobile.edge.identity.Identity
 
 class TestApplication : Application() {
     // TODO: Set up the preferred Environment File ID from your mobile property configured in Data Collection UI
-    private var ENVIRONMENT_FILE_ID: String = ""
+    private var ENVIRONMENT_FILE_ID: String = "94f571f308d5/b8f8c0249582/launch-609c8602cc82-development"
 
     override fun onCreate() {
         super.onCreate()
