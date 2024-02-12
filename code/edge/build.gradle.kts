@@ -22,8 +22,7 @@ aepLibrary {
     enableSpotless = true
     enableSpotlessPrettierForJava = true
     enableDokkaDoc = true
-    //enableCheckStyle = true
-    
+
     publishing {
         gitRepoName = "aepsdk-edge-android"
         addCoreDependency(mavenCoreVersion)
