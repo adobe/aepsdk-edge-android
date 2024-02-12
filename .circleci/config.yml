@@ -60,7 +60,7 @@ jobs:
     # List of available Android Docker images: https://circleci.com/developer/images/image/cimg/android#image-tags
     executor:
       name: android/android-docker
-      tag: 2024.01.1
+      tag: 2024.01.1-node
 
     steps:
       - checkout
@@ -99,7 +99,7 @@ jobs:
     # List of available Android Docker images: https://circleci.com/developer/images/image/cimg/android#image-tags
     executor:
       name: android/android-docker
-      tag: 2024.01.1
+      tag: 2024.01.1-node
 
     steps:
       - checkout
