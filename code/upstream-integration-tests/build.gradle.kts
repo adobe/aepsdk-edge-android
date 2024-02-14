@@ -15,6 +15,15 @@ import com.adobe.marketing.mobile.gradle.BuildConstants
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
+    id("com.diffplug.spotless")
+}
+
+configure<com.diffplug.gradle.spotless.SpotlessExtension> {
+    kotlin {
+        target("src/*/java/**/*.kt")
+        ktlint(BuildConstants.Versions.KTLINT)
+        licenseHeader(BuildConstants.ADOBE_LICENSE_HEADER)
+    }
 }
 
 android {
