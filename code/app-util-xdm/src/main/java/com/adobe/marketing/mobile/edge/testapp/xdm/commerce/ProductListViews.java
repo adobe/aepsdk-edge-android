@@ -9,24 +9,24 @@
   governing permissions and limitations under the License.
 */
 
-package com.adobe.marketing.tester.xdm.commerce;
+package com.adobe.marketing.mobile.edge.testapp.xdm.commerce;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Class {@code SaveForLaters}
- * Product list is saved for future use, for example a product wish list.
+ * Class {@code ProductListViews}
+ * View or views of a product-list has occurred.
  *
- * XDM Property Java Object Generated 2020-10-01 15:22:47.698626 -0700 PDT m=+1.800498671 by XDMTool
+ * XDM Property Java Object Generated 2020-10-01 15:22:47.697368 -0700 PDT m=+1.799241143 by XDMTool
  */
 @SuppressWarnings("unused")
-public class SaveForLaters implements com.adobe.marketing.mobile.xdm.Property {
+public class ProductListViews implements com.adobe.marketing.mobile.xdm.Property {
 
 	private String id;
 	private double value;
 
-	public SaveForLaters() {}
+	public ProductListViews() {}
 
 	@Override
 	public Map<String, Object> serializeToXdm() {

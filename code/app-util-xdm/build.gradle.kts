@@ -19,7 +19,7 @@ plugins {
 val mavenCoreVersion: String by project
 
 android {
-    namespace = "com.adobe.marketing.tester.xdm.commerce"
+    namespace = "com.adobe.marketing.mobile.edge.testapp.xdm.commerce"
 
     defaultConfig {
         minSdk = BuildConstants.Versions.MIN_SDK_VERSION

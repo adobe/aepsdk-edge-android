@@ -9,24 +9,24 @@
   governing permissions and limitations under the License.
 */
 
-package com.adobe.marketing.tester.xdm.commerce;
+package com.adobe.marketing.mobile.edge.testapp.xdm.commerce;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Class {@code CartAbandons}
- * A product list has been identified as no longer accessible or purchasable by the user.
+ * Class {@code SaveForLaters}
+ * Product list is saved for future use, for example a product wish list.
  *
- * XDM Property Java Object Generated 2020-10-01 15:22:47.696845 -0700 PDT m=+1.798718037 by XDMTool
+ * XDM Property Java Object Generated 2020-10-01 15:22:47.698626 -0700 PDT m=+1.800498671 by XDMTool
  */
 @SuppressWarnings("unused")
-public class CartAbandons implements com.adobe.marketing.mobile.xdm.Property {
+public class SaveForLaters implements com.adobe.marketing.mobile.xdm.Property {
 
 	private String id;
 	private double value;
 
-	public CartAbandons() {}
+	public SaveForLaters() {}
 
 	@Override
 	public Map<String, Object> serializeToXdm() {

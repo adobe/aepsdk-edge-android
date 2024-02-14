@@ -9,24 +9,24 @@
   governing permissions and limitations under the License.
 */
 
-package com.adobe.marketing.tester.xdm.commerce;
+package com.adobe.marketing.mobile.edge.testapp.xdm.commerce;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Class {@code ProductListRemovals}
- * Removal or removals of a product entry from a product list, for example a product is removed from a shopping cart.
+ * Class {@code Checkouts}
+ * An action during a checkout process of a product list, there can be more than one checkout event if there are multiple steps in a checkout process. If there are multiple steps the event time information and referenced page or experience is used to identify the step individual events represent in order.
  *
- * XDM Property Java Object Generated 2020-10-01 15:22:47.694077 -0700 PDT m=+1.795949545 by XDMTool
+ * XDM Property Java Object Generated 2020-10-01 15:22:47.698091 -0700 PDT m=+1.799963771 by XDMTool
  */
 @SuppressWarnings("unused")
-public class ProductListRemovals implements com.adobe.marketing.mobile.xdm.Property {
+public class Checkouts implements com.adobe.marketing.mobile.xdm.Property {
 
 	private String id;
 	private double value;
 
-	public ProductListRemovals() {}
+	public Checkouts() {}
 
 	@Override
 	public Map<String, Object> serializeToXdm() {

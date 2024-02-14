@@ -9,7 +9,7 @@
   governing permissions and limitations under the License.
 */
 
-package com.adobe.marketing.tester.xdm.commerce;
+package com.adobe.marketing.mobile.edge.testapp.xdm.commerce;
 
 import com.adobe.marketing.mobile.util.TimeUtils;
 

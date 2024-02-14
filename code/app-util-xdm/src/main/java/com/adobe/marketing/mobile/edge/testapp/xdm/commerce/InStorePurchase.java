@@ -9,24 +9,24 @@
   governing permissions and limitations under the License.
 */
 
-package com.adobe.marketing.tester.xdm.commerce;
+package com.adobe.marketing.mobile.edge.testapp.xdm.commerce;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Class {@code Purchases}
- * An order has been accepted. Purchase is the only required action in a commerce conversion. Purchase must have a product list referenced.
+ * Class {@code InStorePurchase}
+ * 'inStore' purchase is saved for analytics use.
  *
- * XDM Property Java Object Generated 2020-10-01 15:22:47.698346 -0700 PDT m=+1.800218563 by XDMTool
+ * XDM Property Java Object Generated 2020-10-01 15:22:47.698181 -0700 PDT m=+1.800053965 by XDMTool
  */
 @SuppressWarnings("unused")
-public class Purchases implements com.adobe.marketing.mobile.xdm.Property {
+public class InStorePurchase implements com.adobe.marketing.mobile.xdm.Property {
 
 	private String id;
 	private double value;
 
-	public Purchases() {}
+	public InStorePurchase() {}
 
 	@Override
 	public Map<String, Object> serializeToXdm() {

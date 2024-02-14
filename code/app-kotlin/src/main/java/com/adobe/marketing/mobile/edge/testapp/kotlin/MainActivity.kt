@@ -29,11 +29,11 @@ import com.adobe.marketing.mobile.edge.identity.IdentityItem
 import com.adobe.marketing.mobile.edge.identity.IdentityMap
 import com.adobe.marketing.mobile.edge.testapp.kotlin.data.LocationHint
 import com.adobe.marketing.mobile.services.Log
-import com.adobe.marketing.tester.xdm.commerce.Commerce
-import com.adobe.marketing.tester.xdm.commerce.MobileSDKCommerceSchema
-import com.adobe.marketing.tester.xdm.commerce.Order
-import com.adobe.marketing.tester.xdm.commerce.ProductListAdds
-import com.adobe.marketing.tester.xdm.commerce.Purchases
+import com.adobe.marketing.mobile.edge.testapp.xdm.commerce.Commerce
+import com.adobe.marketing.mobile.edge.testapp.xdm.commerce.MobileSDKCommerceSchema
+import com.adobe.marketing.mobile.edge.testapp.xdm.commerce.Order
+import com.adobe.marketing.mobile.edge.testapp.xdm.commerce.ProductListAdds
+import com.adobe.marketing.mobile.edge.testapp.xdm.commerce.Purchases
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 

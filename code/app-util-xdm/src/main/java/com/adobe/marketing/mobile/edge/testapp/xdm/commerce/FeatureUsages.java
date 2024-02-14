@@ -9,24 +9,24 @@
   governing permissions and limitations under the License.
 */
 
-package com.adobe.marketing.tester.xdm.commerce;
+package com.adobe.marketing.mobile.edge.testapp.xdm.commerce;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Class {@code Checkouts}
- * An action during a checkout process of a product list, there can be more than one checkout event if there are multiple steps in a checkout process. If there are multiple steps the event time information and referenced page or experience is used to identify the step individual events represent in order.
+ * Class {@code FeatureUsages}
+ * Activation of an application feature that is being measured.
  *
- * XDM Property Java Object Generated 2020-10-01 15:22:47.698091 -0700 PDT m=+1.799963771 by XDMTool
+ * XDM Property Java Object Generated 2020-10-01 15:23:09.634319 -0700 PDT m=+1.831596722 by XDMTool
  */
 @SuppressWarnings("unused")
-public class Checkouts implements com.adobe.marketing.mobile.xdm.Property {
+public class FeatureUsages implements com.adobe.marketing.mobile.xdm.Property {
 
 	private String id;
 	private double value;
 
-	public Checkouts() {}
+	public FeatureUsages() {}
 
 	@Override
 	public Map<String, Object> serializeToXdm() {

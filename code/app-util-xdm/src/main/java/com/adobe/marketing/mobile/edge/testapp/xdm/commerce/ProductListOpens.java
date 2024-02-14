@@ -9,24 +9,24 @@
   governing permissions and limitations under the License.
 */
 
-package com.adobe.marketing.tester.xdm.commerce;
+package com.adobe.marketing.mobile.edge.testapp.xdm.commerce;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Class {@code ProductListReopens}
- * A product list that was no longer accessible (abandoned) has been re-activated by the user. Example via a re-marketing activity.
+ * Class {@code ProductListOpens}
+ * Initializations of a new product list, for example a shopping cart is created.
  *
- * XDM Property Java Object Generated 2020-10-01 15:22:47.697266 -0700 PDT m=+1.799138523 by XDMTool
+ * XDM Property Java Object Generated 2020-10-01 15:22:47.693968 -0700 PDT m=+1.795841070 by XDMTool
  */
 @SuppressWarnings("unused")
-public class ProductListReopens implements com.adobe.marketing.mobile.xdm.Property {
+public class ProductListOpens implements com.adobe.marketing.mobile.xdm.Property {
 
 	private String id;
 	private double value;
 
-	public ProductListReopens() {}
+	public ProductListOpens() {}
 
 	@Override
 	public Map<String, Object> serializeToXdm() {

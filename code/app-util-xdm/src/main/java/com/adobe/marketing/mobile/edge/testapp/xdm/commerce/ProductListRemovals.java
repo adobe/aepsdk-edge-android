@@ -9,24 +9,24 @@
   governing permissions and limitations under the License.
 */
 
-package com.adobe.marketing.tester.xdm.commerce;
+package com.adobe.marketing.mobile.edge.testapp.xdm.commerce;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Class {@code FeatureUsages}
- * Activation of an application feature that is being measured.
+ * Class {@code ProductListRemovals}
+ * Removal or removals of a product entry from a product list, for example a product is removed from a shopping cart.
  *
- * XDM Property Java Object Generated 2020-10-01 15:23:09.634319 -0700 PDT m=+1.831596722 by XDMTool
+ * XDM Property Java Object Generated 2020-10-01 15:22:47.694077 -0700 PDT m=+1.795949545 by XDMTool
  */
 @SuppressWarnings("unused")
-public class FeatureUsages implements com.adobe.marketing.mobile.xdm.Property {
+public class ProductListRemovals implements com.adobe.marketing.mobile.xdm.Property {
 
 	private String id;
 	private double value;
 
-	public FeatureUsages() {}
+	public ProductListRemovals() {}
 
 	@Override
 	public Map<String, Object> serializeToXdm() {

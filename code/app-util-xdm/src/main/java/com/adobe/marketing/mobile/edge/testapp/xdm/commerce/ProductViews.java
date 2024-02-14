@@ -9,24 +9,24 @@
   governing permissions and limitations under the License.
 */
 
-package com.adobe.marketing.tester.xdm.commerce;
+package com.adobe.marketing.mobile.edge.testapp.xdm.commerce;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Class {@code ProductListOpens}
- * Initializations of a new product list, for example a shopping cart is created.
+ * Class {@code ProductViews}
+ * View or views of a product have occurred.
  *
- * XDM Property Java Object Generated 2020-10-01 15:22:47.693968 -0700 PDT m=+1.795841070 by XDMTool
+ * XDM Property Java Object Generated 2020-10-01 15:22:47.698266 -0700 PDT m=+1.800139052 by XDMTool
  */
 @SuppressWarnings("unused")
-public class ProductListOpens implements com.adobe.marketing.mobile.xdm.Property {
+public class ProductViews implements com.adobe.marketing.mobile.xdm.Property {
 
 	private String id;
 	private double value;
 
-	public ProductListOpens() {}
+	public ProductViews() {}
 
 	@Override
 	public Map<String, Object> serializeToXdm() {
