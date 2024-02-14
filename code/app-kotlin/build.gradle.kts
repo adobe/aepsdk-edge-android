@@ -22,6 +22,7 @@ val mavenCoreVersion: String by project
 
 configure<com.diffplug.gradle.spotless.SpotlessExtension> {
     kotlin {
+        target("src/*/java/**/*.kt")
         ktlint(BuildConstants.Versions.KTLINT)
         licenseHeader(BuildConstants.ADOBE_LICENSE_HEADER)
     }

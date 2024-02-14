@@ -1,3 +1,14 @@
+/*
+  Copyright 2023 Adobe. All rights reserved.
+  This file is licensed to you under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License. You may obtain a copy
+  of the License at http://www.apache.org/licenses/LICENSE-2.0
+  Unless required by applicable law or agreed to in writing, software distributed under
+  the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+  OF ANY KIND, either express or implied. See the License for the specific language
+  governing permissions and limitations under the License.
+*/
+
 package com.adobe.marketing.mobile.edge.testapp.kotlin
 
 import android.annotation.SuppressLint
@@ -28,12 +39,12 @@ import com.adobe.marketing.mobile.edge.identity.Identity
 import com.adobe.marketing.mobile.edge.identity.IdentityItem
 import com.adobe.marketing.mobile.edge.identity.IdentityMap
 import com.adobe.marketing.mobile.edge.testapp.kotlin.data.LocationHint
-import com.adobe.marketing.mobile.services.Log
 import com.adobe.marketing.mobile.edge.testapp.xdm.commerce.Commerce
 import com.adobe.marketing.mobile.edge.testapp.xdm.commerce.MobileSDKCommerceSchema
 import com.adobe.marketing.mobile.edge.testapp.xdm.commerce.Order
 import com.adobe.marketing.mobile.edge.testapp.xdm.commerce.ProductListAdds
 import com.adobe.marketing.mobile.edge.testapp.xdm.commerce.Purchases
+import com.adobe.marketing.mobile.services.Log
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 
@@ -75,8 +86,7 @@ class MainActivity : AppCompatActivity() {
         setHintSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             // Item selector handler for drop-down spinner which calls setLocationHint
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, pos: Int, id: Long) {
-                if (hasSpinnerBooted)
-                {
+                if (hasSpinnerBooted) {
                     val locationHint: LocationHint = LocationHint.fromOrdinal(pos)
                     Edge.setLocationHint(LocationHint.value(locationHint))
                 }
@@ -132,7 +142,6 @@ class MainActivity : AppCompatActivity() {
             Edge.getLocationHint {
                 val textViewGetData: TextView = findViewById(R.id.tvGetData)
                 runOnUiThread { textViewGetData.text = "'$it'" }
-
             }
         }
 
@@ -197,7 +206,7 @@ class MainActivity : AppCompatActivity() {
             val valuesList = mutableListOf<String>()
             valuesList.add("val1")
             valuesList.add("val2")
-            val eventData = mutableMapOf<String , Any>()
+            val eventData = mutableMapOf<String, Any>()
             eventData["test"] = "request"
             eventData["customText"] = "mytext"
             eventData["listExample"] = valuesList
@@ -231,8 +240,8 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.btnSubmitCompleteEvent).setOnClickListener {
             val eventData = mapOf<String, Any>(
-                    "xdm" to createCommerceXDM().serializeToXdm(),
-                    "request" to mapOf<String, Any>("sendCompletion" to true)
+                "xdm" to createCommerceXDM().serializeToXdm(),
+                "request" to mapOf<String, Any>("sendCompletion" to true)
             )
 
             val event = Event.Builder(
@@ -240,8 +249,8 @@ class MainActivity : AppCompatActivity() {
                 EventType.EDGE,
                 EventSource.REQUEST_CONTENT
             )
-                    .setEventData(eventData)
-                    .build()
+                .setEventData(eventData)
+                .build()
 
             MobileCore.dispatchEventWithResponseCallback(
                 event,
@@ -263,11 +272,12 @@ class MainActivity : AppCompatActivity() {
                             textViewGetData.text = "Dispatch Event Failed '${error?.errorName}"
                         }
                     }
-                })
+                }
+            )
         }
     }
 
-    private fun createCommerceXDM() : MobileSDKCommerceSchema {
+    private fun createCommerceXDM(): MobileSDKCommerceSchema {
         // Create XDM data with Commerce data for purchases action
         val xdmData = MobileSDKCommerceSchema()
         val order = Order()
