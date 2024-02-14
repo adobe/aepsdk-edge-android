@@ -12,8 +12,8 @@
 
 version: 2.1
 orbs:
-  android: circleci/android@2.1.2
-  codecov: codecov/codecov@3.2.4
+  android: circleci/android@2.4.0
+  codecov: codecov/codecov@4.0.1
 
 # Workflows orchestrate a set of jobs to be run;
 workflows:
@@ -60,7 +60,7 @@ jobs:
     # List of available Android Docker images: https://circleci.com/developer/images/image/cimg/android#image-tags
     executor:
       name: android/android-docker
-      tag: 2022.09.2-node
+      tag: 2024.01.1-node
 
     steps:
       - checkout
@@ -71,11 +71,11 @@ jobs:
           cache-prefix: << parameters.build-cache-prefix >>
 
       - run:
-          name: Check Code Format
-          command: make format-check
+          name: Check Format
+          command: make checkformat
 
       - run:
-          name: Lint Code
+          name: Lint
           command: make lint
 
       - android/save-gradle-cache:
@@ -99,7 +99,7 @@ jobs:
     # List of available Android Docker images: https://circleci.com/developer/images/image/cimg/android#image-tags
     executor:
       name: android/android-docker
-      tag: 2022.09.2-node
+      tag: 2024.01.1-node
 
     steps:
       - checkout
@@ -116,12 +116,16 @@ jobs:
           path: code/edge/build/dokka/javadoc
 
       - run:
-          name: Build
+          name: Assemble Phone
           command: make assemble-phone
 
       - run:
-          name: Build App
+          name: Assemble App
           command: make assemble-app
+
+      - run:
+          name: Assemble for Jitpack
+          command: make ci-publish-maven-local-jitpack
 
       - android/run-tests:
           test-command: make unit-test-coverage
@@ -156,7 +160,7 @@ jobs:
     executor:
       name: android/android-machine
       resource-class: large
-      tag: 2022.09.1
+      tag: 2024.01.1
     steps:
       - checkout
 

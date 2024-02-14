@@ -20,7 +20,6 @@ import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.DataReaderException;
 import com.adobe.marketing.mobile.util.MapUtils;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @SuppressWarnings("unused")
@@ -37,28 +36,8 @@ public class Edge {
 	 *
 	 * @return The version as {@code String}
 	 */
-	@NonNull
-	public static String extensionVersion() {
+	@NonNull public static String extensionVersion() {
 		return EdgeConstants.EXTENSION_VERSION;
-	}
-
-	/**
-	 * Registers the extension with the Mobile SDK. This method should be called only once in your application class.
-	 * @deprecated as of 2.0.0, use {@link MobileCore#registerExtensions(List, AdobeCallback)} with {@link Edge#EXTENSION} instead.
-	 */
-	@Deprecated
-	@SuppressWarnings("deprecation")
-	public static void registerExtension() {
-		MobileCore.registerExtension(
-			EdgeExtension.class,
-			extensionError -> {
-				Log.error(
-					LOG_TAG,
-					LOG_SOURCE,
-					"There was an error registering the Edge extension: " + extensionError.getErrorName()
-				);
-			}
-		);
 	}
 
 	/**

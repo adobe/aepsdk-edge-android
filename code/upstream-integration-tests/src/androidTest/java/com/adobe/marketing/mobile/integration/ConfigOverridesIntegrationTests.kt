@@ -25,6 +25,7 @@ import org.junit.Assert.assertEquals
 import com.adobe.marketing.mobile.integration.util.TestSetupHelper.getEnvironmentFileID
 import com.adobe.marketing.mobile.util.JSONAsserts
 import com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch
+import com.adobe.marketing.mobile.util.MonitorExtension
 import com.adobe.marketing.mobile.util.TestConstants
 import org.json.JSONObject
 import org.junit.Ignore
@@ -48,7 +49,6 @@ class ConfigOverridesIntegrationTests {
     var rule: RuleChain = RuleChain
         .outerRule(TestHelper.LogOnErrorRule())
         .around(TestHelper.SetupCoreRule())
-        .around(TestHelper.RegisterMonitorExtensionRule())
 
     @Before
     @Throws(Exception::class)
@@ -60,7 +60,7 @@ class ConfigOverridesIntegrationTests {
         // Set environment file ID for specific Edge Network environment
         MobileCore.configureWithAppID(getEnvironmentFileID(edgeEnvironment))
         val latch = CountDownLatch(1)
-        MobileCore.registerExtensions(listOf(Edge.EXTENSION, Identity.EXTENSION)) {
+        MobileCore.registerExtensions(listOf(Edge.EXTENSION, Identity.EXTENSION, MonitorExtension.EXTENSION)) {
             latch.countDown()
         }
         latch.await()

@@ -47,10 +47,7 @@ public class RestartFunctionalTests {
 	private static final int TIMEOUT_MILLIS = 5000;
 
 	@Rule
-	public RuleChain rule = RuleChain
-		.outerRule(new TestHelper.LogOnErrorRule())
-		.around(new TestHelper.SetupCoreRule())
-		.around(new TestHelper.RegisterMonitorExtensionRule());
+	public RuleChain rule = RuleChain.outerRule(new TestHelper.LogOnErrorRule()).around(new TestHelper.SetupCoreRule());
 
 	@Before
 	public void setup() throws Exception {

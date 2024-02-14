@@ -43,8 +43,7 @@ public class FakeIdentity extends FakeExtension {
 	/**
 	 * @return the real name of the Edge Identity extension
 	 */
-	@NonNull
-	@Override
+	@NonNull @Override
 	protected String getName() {
 		return "com.adobe.edge.identity";
 	}

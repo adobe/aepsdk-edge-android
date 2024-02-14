@@ -30,7 +30,6 @@ import com.adobe.marketing.mobile.util.RealNetworkService
 import com.adobe.marketing.mobile.util.TestConstants
 import com.adobe.marketing.mobile.util.TestHelper
 import com.adobe.marketing.mobile.util.TestHelper.LogOnErrorRule
-import com.adobe.marketing.mobile.util.TestHelper.RegisterMonitorExtensionRule
 import com.adobe.marketing.mobile.util.TestHelper.SetupCoreRule
 import com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents
 import com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent
@@ -47,6 +46,7 @@ import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
 import com.adobe.marketing.mobile.integration.util.TestSetupHelper.getEnvironmentFileID
 import com.adobe.marketing.mobile.integration.util.TestSetupHelper.getLastLocationHintResultValue
+import com.adobe.marketing.mobile.util.MonitorExtension
 
 /**
  * Performs validation on integration with the Edge Network upstream service.
@@ -62,7 +62,6 @@ class UpstreamIntegrationTests {
     var rule: RuleChain = RuleChain
         .outerRule(LogOnErrorRule())
         .around(SetupCoreRule())
-        .around(RegisterMonitorExtensionRule())
 
     @Before
     @Throws(Exception::class)
@@ -75,7 +74,7 @@ class UpstreamIntegrationTests {
         MobileCore.configureWithAppID(getEnvironmentFileID(edgeEnvironment))
 
         val latch = CountDownLatch(1)
-        MobileCore.registerExtensions(listOf(Edge.EXTENSION, Identity.EXTENSION)) {
+        MobileCore.registerExtensions(listOf(Edge.EXTENSION, Identity.EXTENSION, MonitorExtension.EXTENSION)) {
             latch.countDown()
         }
         latch.await()

@@ -18,6 +18,7 @@ import com.adobe.marketing.mobile.services.ServiceProvider
 import com.adobe.marketing.mobile.services.TestableNetworkRequest
 import com.adobe.marketing.mobile.util.JSONAsserts
 import com.adobe.marketing.mobile.util.MockNetworkService
+import com.adobe.marketing.mobile.util.MonitorExtension
 import com.adobe.marketing.mobile.util.TestConstants
 import com.adobe.marketing.mobile.util.TestHelper
 import org.json.JSONObject
@@ -47,7 +48,6 @@ class ConfigOverridesFunctionalTests {
     var rule: RuleChain = RuleChain
         .outerRule(TestHelper.LogOnErrorRule())
         .around(TestHelper.SetupCoreRule())
-        .around(TestHelper.RegisterMonitorExtensionRule())
 
     @Before
     @Throws(Exception::class)
@@ -64,7 +64,7 @@ class ConfigOverridesFunctionalTests {
         MobileCore.updateConfiguration(config)
         val latch = CountDownLatch(1)
         MobileCore.registerExtensions(
-            Arrays.asList(Edge.EXTENSION, Identity.EXTENSION),
+            Arrays.asList(Edge.EXTENSION, Identity.EXTENSION, MonitorExtension.EXTENSION),
             AdobeCallback { o: Any? -> latch.countDown() }
         )
         latch.await()

@@ -12,7 +12,8 @@
 
 EXTENSION-LIBRARY-FOLDER-NAME = edge
 
-TEST-APP-FOLDER-NAME = app
+TEST-APP-FOLDER-NAME-JAVA = app
+TEST-APP-FOLDER-NAME-KOTLIN = app-kotlin
 
 init:
 	git config core.hooksPath .githooks
@@ -22,11 +23,13 @@ clean:
 
 format:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) spotlessApply)
-	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME) spotlessApply)
+	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-JAVA) spotlessApply)
+	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-KOTLIN) spotlessApply)
 
-format-check:
+checkformat:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) spotlessCheck)
-	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME) spotlessCheck)
+	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-JAVA) spotlessCheck)
+	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-KOTLIN) spotlessCheck)
 
 format-license:
 	(./code/gradlew -p code licenseFormat)
@@ -65,22 +68,14 @@ assemble-phone-release:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME)  assemblePhoneRelease)
 
 assemble-app:
-	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME) assemble)
+	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-JAVA) assemble)
+	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-KOTLIN) assemble)
 
-ci-publish: clean assemble-phone-release
-	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publishReleasePublicationToSonatypeRepository -Prelease)
+ci-publish-maven-local-jitpack:
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publishReleasePublicationToMavenLocal -Pjitpack  -x signReleasePublication)
 
-ci-publish-staging: clean assemble-phone-release
+ci-publish-staging:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publishReleasePublicationToSonatypeRepository)
 
-# usage: update-version VERSION=9.9.9 CORE-VERSION=8.8.8
-# usage: update-version VERSION=9.9.9
-update-version:
-	@echo "Updating version to $(VERSION), Core version to $(CORE-VERSION)"
-	sed -i '' "s/[0-9]*\.[0-9]*\.[0-9]/$(VERSION)/g" ./code/edge/src/main/java/com/adobe/marketing/mobile/EdgeConstants.java
-	sed -i '' "s/\(moduleVersion=\)[0-9]*\.[0-9]*\.[0-9]/\1$(VERSION)/g" ./code/gradle.properties
-	@if [ -z "$(CORE-VERSION)" ]; then \
-		echo "CORE-VERSION was not provided, skipping"; \
-	else \
-		sed -i '' "s/\(mavenCoreVersion=\)[0-9]*\.[0-9]*\.[0-9]/\1$(CORE-VERSION)/g" ./code/gradle.properties; \
-	fi
+ci-publish:
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publishReleasePublicationToSonatypeRepository -Prelease)

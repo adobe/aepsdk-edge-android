@@ -10,30 +10,7 @@
 # governing permissions and limitations under the License.
 #
 
-codecov:
-  notify:
-    require_ci_to_pass: yes
-
-coverage:
-  precision: 2
-  round: nearest
-  range: "70...90"
-
-  status:
-    project: yes
-    patch: yes
-    changes: no
-
-parsers:
-  gcov:
-    branch_detection:
-      conditional: yes
-      loop: yes
-      method: no
-      macro: no
-
-comment:
-  layout: "header, diff, flags, files"
-  behavior: default
-  require_changes: no
-
+jdk:
+  - openjdk17
+install:
+   - make ci-publish-maven-local-jitpack
