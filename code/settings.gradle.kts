@@ -27,7 +27,7 @@ dependencyResolutionManagement {
         maven { url = uri("https://jitpack.io") }
     }
 }
-rootProject.name = "edge-sdk"
+rootProject.name = "aepsdk-edge-android"
 include (":edge",
         ":app",
         ":app-kotlin",
