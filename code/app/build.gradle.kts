@@ -32,7 +32,7 @@ configure<com.diffplug.gradle.spotless.SpotlessExtension> {
 }
 
 android {
-    namespace = "com.adobe.marketing.tester"
+    namespace = "com.adobe.marketing.mobile.edge.testapp.java"
 
     defaultConfig {
         applicationId = "com.adobe.marketing.tester"

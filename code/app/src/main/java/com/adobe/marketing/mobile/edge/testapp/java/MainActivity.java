@@ -9,9 +9,9 @@
   governing permissions and limitations under the License.
 */
 
-package com.adobe.marketing.tester;
+package com.adobe.marketing.mobile.edge.testapp.java;
 
-import static com.adobe.marketing.tester.TestApplication.LOG_TAG;
+import static com.adobe.marketing.mobile.edge.testapp.java.TestApplication.LOG_TAG;
 
 import android.content.Intent;
 import android.net.Uri;

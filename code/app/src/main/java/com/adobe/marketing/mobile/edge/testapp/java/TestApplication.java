@@ -9,7 +9,7 @@
   governing permissions and limitations under the License.
 */
 
-package com.adobe.marketing.tester;
+package com.adobe.marketing.mobile.edge.testapp.java;
 
 import android.app.Application;
 import com.adobe.marketing.mobile.Assurance;
