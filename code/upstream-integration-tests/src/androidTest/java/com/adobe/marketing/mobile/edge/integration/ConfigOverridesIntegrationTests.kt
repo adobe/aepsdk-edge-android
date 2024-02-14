@@ -1,34 +1,29 @@
-package com.adobe.marketing.mobile.integration
+package com.adobe.marketing.mobile.edge.integration
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.adobe.marketing.mobile.Edge
 import com.adobe.marketing.mobile.ExperienceEvent
 import com.adobe.marketing.mobile.MobileCore
 import com.adobe.marketing.mobile.edge.identity.Identity
-import com.adobe.marketing.mobile.integration.util.TestSetupHelper
-import com.adobe.marketing.mobile.integration.util.TestSetupHelper.createInteractURL
-import com.adobe.marketing.mobile.integration.util.TestSetupHelper.expectEdgeEventHandle
+import com.adobe.marketing.mobile.edge.integration.util.TestSetupHelper
 import com.adobe.marketing.mobile.services.HttpMethod
 import com.adobe.marketing.mobile.services.ServiceProvider
 import com.adobe.marketing.mobile.services.TestableNetworkRequest
+import com.adobe.marketing.mobile.util.JSONAsserts
+import com.adobe.marketing.mobile.util.MonitorExtension
 import com.adobe.marketing.mobile.util.RealNetworkService
+import com.adobe.marketing.mobile.util.TestConstants
 import com.adobe.marketing.mobile.util.TestHelper
+import org.json.JSONObject
 import org.junit.After
+import org.junit.Assert
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
-import org.junit.Assert.assertEquals
-
-import com.adobe.marketing.mobile.integration.util.TestSetupHelper.getEnvironmentFileID
-import com.adobe.marketing.mobile.util.JSONAsserts
-import com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch
-import com.adobe.marketing.mobile.util.MonitorExtension
-import com.adobe.marketing.mobile.util.TestConstants
-import org.json.JSONObject
-import org.junit.Ignore
 
 /**
  * Performs validation on integration with the Edge Network upstream service with configOverrides.
@@ -46,8 +41,7 @@ class ConfigOverridesIntegrationTests {
 
     @JvmField
     @Rule
-    var rule: RuleChain = RuleChain
-        .outerRule(TestHelper.LogOnErrorRule())
+    var rule: RuleChain = RuleChain.outerRule(TestHelper.LogOnErrorRule())
         .around(TestHelper.SetupCoreRule())
 
     @Before
@@ -58,9 +52,15 @@ class ConfigOverridesIntegrationTests {
         ServiceProvider.getInstance().networkService = realNetworkService
 
         // Set environment file ID for specific Edge Network environment
-        MobileCore.configureWithAppID(getEnvironmentFileID(edgeEnvironment))
+        MobileCore.configureWithAppID(TestSetupHelper.getEnvironmentFileID(edgeEnvironment))
         val latch = CountDownLatch(1)
-        MobileCore.registerExtensions(listOf(Edge.EXTENSION, Identity.EXTENSION, MonitorExtension.EXTENSION)) {
+        MobileCore.registerExtensions(
+            listOf(
+                Edge.EXTENSION,
+                Identity.EXTENSION,
+                MonitorExtension.EXTENSION
+            )
+        ) {
             latch.countDown()
         }
         latch.await()
@@ -85,7 +85,10 @@ class ConfigOverridesIntegrationTests {
 
     @Test
     fun testSendEvent_withValidDatastreamIdOverride_receivesExpectedNetworkResponse() {
-        val interactNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = edgeLocationHint), HttpMethod.POST)
+        val interactNetworkRequest = TestableNetworkRequest(
+            TestSetupHelper.createInteractURL(locationHint = edgeLocationHint),
+            HttpMethod.POST
+        )
 
         realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
 
@@ -100,16 +103,19 @@ class ConfigOverridesIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        assertEquals(1, matchingResponses?.size)
-        assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
+        Assert.assertEquals(1, matchingResponses?.size)
+        Assert.assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
     }
 
     @Test
     fun testSendEvent_withInvalidDatastreamIdOverride_receivesErrorResponse() {
-        val interactNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = edgeLocationHint), HttpMethod.POST)
+        val interactNetworkRequest = TestableNetworkRequest(
+            TestSetupHelper.createInteractURL(locationHint = edgeLocationHint),
+            HttpMethod.POST
+        )
 
         realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
-        expectEdgeEventHandle(TestConstants.EventSource.ERROR_RESPONSE_CONTENT, 1)
+        TestSetupHelper.expectEdgeEventHandle(TestConstants.EventSource.ERROR_RESPONSE_CONTENT, 1)
 
         val experienceEvent = ExperienceEvent.Builder()
             .setXdmSchema(mapOf("xdmtest" to "data"))
@@ -122,8 +128,8 @@ class ConfigOverridesIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        assertEquals(1, matchingResponses?.size)
-        assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
+        Assert.assertEquals(1, matchingResponses?.size)
+        Assert.assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
 
         val expectedErrorJSON = """
         {
@@ -135,7 +141,7 @@ class ConfigOverridesIntegrationTests {
 
         val errorEvents = TestSetupHelper.getEdgeResponseErrors()
 
-        assertEquals(1, errorEvents.size)
+        Assert.assertEquals(1, errorEvents.size)
 
         val errorEvent = errorEvents.first()
         JSONAsserts.assertExactMatch(
@@ -146,7 +152,10 @@ class ConfigOverridesIntegrationTests {
 
     @Test
     fun testSendEvent_withValidDatastreamConfigOverride_receivesExpectedNetworkResponse() {
-        val interactNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = edgeLocationHint), HttpMethod.POST)
+        val interactNetworkRequest = TestableNetworkRequest(
+            TestSetupHelper.createInteractURL(locationHint = edgeLocationHint),
+            HttpMethod.POST
+        )
 
         realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
 
@@ -176,18 +185,21 @@ class ConfigOverridesIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        assertEquals(1, matchingResponses?.size)
-        assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
+        Assert.assertEquals(1, matchingResponses?.size)
+        Assert.assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
     }
 
     // TODO: Enable after PDCL-11131 issue is fixed
     @Ignore
     @Test
     fun testSendEvent_withInvalidDatastreamConfigOverride_dummyValues_receivesErrorResponse() {
-        val interactNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = edgeLocationHint), HttpMethod.POST)
+        val interactNetworkRequest = TestableNetworkRequest(
+            TestSetupHelper.createInteractURL(locationHint = edgeLocationHint),
+            HttpMethod.POST
+        )
 
         realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
-        expectEdgeEventHandle(TestConstants.EventSource.ERROR_RESPONSE_CONTENT, 1)
+        TestSetupHelper.expectEdgeEventHandle(TestConstants.EventSource.ERROR_RESPONSE_CONTENT, 1)
 
         val configOverridesWithDummyValues = mapOf(
             "com_adobe_experience_platform" to mapOf(
@@ -216,8 +228,8 @@ class ConfigOverridesIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        assertEquals(1, matchingResponses?.size)
-        assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
+        Assert.assertEquals(1, matchingResponses?.size)
+        Assert.assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
 
         val expectedErrorJSON = """
         {
@@ -229,7 +241,7 @@ class ConfigOverridesIntegrationTests {
 
         val errorEvents = TestSetupHelper.getEdgeResponseErrors()
 
-        assertEquals(1, errorEvents.size)
+        Assert.assertEquals(1, errorEvents.size)
 
         val errorEvent = errorEvents.first()
         JSONAsserts.assertExactMatch(
@@ -242,10 +254,13 @@ class ConfigOverridesIntegrationTests {
     @Ignore
     @Test
     fun testSendEvent_withInvalidDatastreamConfigOverride_notConfiguredValues_receivesErrorResponse() {
-        val interactNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = edgeLocationHint), HttpMethod.POST)
+        val interactNetworkRequest = TestableNetworkRequest(
+            TestSetupHelper.createInteractURL(locationHint = edgeLocationHint),
+            HttpMethod.POST
+        )
 
         realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
-        expectEdgeEventHandle(TestConstants.EventSource.ERROR_RESPONSE_CONTENT, 1)
+        TestSetupHelper.expectEdgeEventHandle(TestConstants.EventSource.ERROR_RESPONSE_CONTENT, 1)
 
         val configOverridesWithUnconfiguredValues = mapOf(
             "com_adobe_experience_platform" to mapOf(
@@ -273,8 +288,8 @@ class ConfigOverridesIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        assertEquals(1, matchingResponses?.size)
-        assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
+        Assert.assertEquals(1, matchingResponses?.size)
+        Assert.assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
 
         val expectedErrorJSON = """
         {
@@ -286,7 +301,7 @@ class ConfigOverridesIntegrationTests {
 
         val errorEvents = TestSetupHelper.getEdgeResponseErrors()
 
-        assertEquals(1, errorEvents.size)
+        Assert.assertEquals(1, errorEvents.size)
 
         val errorEvent = errorEvents.first()
         JSONAsserts.assertExactMatch(
@@ -299,10 +314,13 @@ class ConfigOverridesIntegrationTests {
     @Ignore
     @Test
     fun testSendEvent_withInvalidDatastreamConfigOverride_validAndDummyValues_receivesExpectedNetworkResponse() {
-        val interactNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = edgeLocationHint), HttpMethod.POST)
+        val interactNetworkRequest = TestableNetworkRequest(
+            TestSetupHelper.createInteractURL(locationHint = edgeLocationHint),
+            HttpMethod.POST
+        )
 
         realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
-        expectEdgeEventHandle(TestConstants.EventSource.ERROR_RESPONSE_CONTENT, 1)
+        TestSetupHelper.expectEdgeEventHandle(TestConstants.EventSource.ERROR_RESPONSE_CONTENT, 1)
 
         val configOverrides = mapOf(
             "com_adobe_experience_platform" to mapOf(
@@ -331,8 +349,8 @@ class ConfigOverridesIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        assertEquals(1, matchingResponses?.size)
-        assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
+        Assert.assertEquals(1, matchingResponses?.size)
+        Assert.assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
 
         val expectedErrorJSON = """
         {
@@ -344,7 +362,7 @@ class ConfigOverridesIntegrationTests {
 
         val errorEvents = TestSetupHelper.getEdgeResponseErrors()
 
-        assertEquals(1, errorEvents.size)
+        Assert.assertEquals(1, errorEvents.size)
 
         val errorEvent = errorEvents.first()
         JSONAsserts.assertExactMatch(

@@ -18,7 +18,7 @@ plugins {
 }
 
 android {
-    namespace = "com.adobe.marketing.mobile.integration"
+    namespace = "com.adobe.marketing.mobile.edge.integration"
 
     defaultConfig {
         minSdk = BuildConstants.Versions.MIN_SDK_VERSION

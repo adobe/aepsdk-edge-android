@@ -1,52 +1,29 @@
-/*
-  Copyright 2023 Adobe. All rights reserved.
-  This file is licensed to you under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy
-  of the License at http://www.apache.org/licenses/LICENSE-2.0
-  Unless required by applicable law or agreed to in writing, software distributed under
-  the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
-  OF ANY KIND, either express or implied. See the License for the specific language
-  governing permissions and limitations under the License.
-*/
-
-package com.adobe.marketing.mobile.integration
+package com.adobe.marketing.mobile.edge.integration
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.adobe.marketing.mobile.Edge
 import com.adobe.marketing.mobile.ExperienceEvent
 import com.adobe.marketing.mobile.MobileCore
 import com.adobe.marketing.mobile.edge.identity.Identity
-import com.adobe.marketing.mobile.integration.util.EdgeLocationHint
-import com.adobe.marketing.mobile.integration.util.TestSetupHelper.createInteractURL
-import com.adobe.marketing.mobile.integration.util.TestSetupHelper.expectEdgeEventHandle
-import com.adobe.marketing.mobile.integration.util.TestSetupHelper.getEdgeEventHandles
-import com.adobe.marketing.mobile.integration.util.TestSetupHelper.getEdgeResponseErrors
+import com.adobe.marketing.mobile.edge.integration.util.EdgeLocationHint
+import com.adobe.marketing.mobile.edge.integration.util.TestSetupHelper
 import com.adobe.marketing.mobile.services.HttpMethod
 import com.adobe.marketing.mobile.services.ServiceProvider
 import com.adobe.marketing.mobile.services.TestableNetworkRequest
-import com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch
-import com.adobe.marketing.mobile.util.JSONAsserts.assertTypeMatch
+import com.adobe.marketing.mobile.util.JSONAsserts
+import com.adobe.marketing.mobile.util.MonitorExtension
 import com.adobe.marketing.mobile.util.RealNetworkService
 import com.adobe.marketing.mobile.util.TestConstants
 import com.adobe.marketing.mobile.util.TestHelper
-import com.adobe.marketing.mobile.util.TestHelper.LogOnErrorRule
-import com.adobe.marketing.mobile.util.TestHelper.SetupCoreRule
-import com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents
-import com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent
 import org.json.JSONObject
 import org.junit.After
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Assert.fail
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
-import com.adobe.marketing.mobile.integration.util.TestSetupHelper.getEnvironmentFileID
-import com.adobe.marketing.mobile.integration.util.TestSetupHelper.getLastLocationHintResultValue
-import com.adobe.marketing.mobile.util.MonitorExtension
 
 /**
  * Performs validation on integration with the Edge Network upstream service.
@@ -59,9 +36,8 @@ class UpstreamIntegrationTests {
 
     @JvmField
     @Rule
-    var rule: RuleChain = RuleChain
-        .outerRule(LogOnErrorRule())
-        .around(SetupCoreRule())
+    var rule: RuleChain = RuleChain.outerRule(TestHelper.LogOnErrorRule())
+        .around(TestHelper.SetupCoreRule())
 
     @Before
     @Throws(Exception::class)
@@ -71,10 +47,16 @@ class UpstreamIntegrationTests {
         ServiceProvider.getInstance().networkService = realNetworkService
 
         // Set environment file ID for specific Edge Network environment
-        MobileCore.configureWithAppID(getEnvironmentFileID(edgeEnvironment))
+        MobileCore.configureWithAppID(TestSetupHelper.getEnvironmentFileID(edgeEnvironment))
 
         val latch = CountDownLatch(1)
-        MobileCore.registerExtensions(listOf(Edge.EXTENSION, Identity.EXTENSION, MonitorExtension.EXTENSION)) {
+        MobileCore.registerExtensions(
+            listOf(
+                Edge.EXTENSION,
+                Identity.EXTENSION,
+                MonitorExtension.EXTENSION
+            )
+        ) {
             latch.countDown()
         }
         latch.await()
@@ -103,7 +85,10 @@ class UpstreamIntegrationTests {
      */
     @Test
     fun testSendEvent_receivesExpectedNetworkResponse() {
-        val interactNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = edgeLocationHint), HttpMethod.POST)
+        val interactNetworkRequest = TestableNetworkRequest(
+            TestSetupHelper.createInteractURL(locationHint = edgeLocationHint),
+            HttpMethod.POST
+        )
 
         realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
 
@@ -117,8 +102,8 @@ class UpstreamIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        assertEquals(1, matchingResponses?.size)
-        assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
+        Assert.assertEquals(1, matchingResponses?.size)
+        Assert.assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
     }
 
     /**
@@ -127,7 +112,10 @@ class UpstreamIntegrationTests {
     @Test
     fun testSendEvent_whenComplexEvent_receivesExpectedNetworkResponse() {
         // Setup
-        val interactNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = edgeLocationHint), HttpMethod.POST)
+        val interactNetworkRequest = TestableNetworkRequest(
+            TestSetupHelper.createInteractURL(locationHint = edgeLocationHint),
+            HttpMethod.POST
+        )
 
         realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
 
@@ -157,8 +145,8 @@ class UpstreamIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        assertEquals(1, matchingResponses?.size)
-        assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
+        Assert.assertEquals(1, matchingResponses?.size)
+        Assert.assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
     }
 
     /**
@@ -167,7 +155,10 @@ class UpstreamIntegrationTests {
     @Test
     fun testSendEvent_whenComplexXDMEvent_receivesExpectedNetworkResponse() {
         // Setup
-        val interactNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = edgeLocationHint), HttpMethod.POST)
+        val interactNetworkRequest = TestableNetworkRequest(
+            TestSetupHelper.createInteractURL(locationHint = edgeLocationHint),
+            HttpMethod.POST
+        )
 
         realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
 
@@ -192,8 +183,8 @@ class UpstreamIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        assertEquals(1, matchingResponses?.size)
-        assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
+        Assert.assertEquals(1, matchingResponses?.size)
+        Assert.assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
     }
 
     /**
@@ -202,8 +193,14 @@ class UpstreamIntegrationTests {
     @Test
     fun testSendEvent_receivesExpectedEventHandles() {
         // Setup
-        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT, expectedCount = 1)
-        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.STATE_STORE, expectedCount = 1)
+        TestSetupHelper.expectEdgeEventHandle(
+            expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT,
+            expectedCount = 1
+        )
+        TestSetupHelper.expectEdgeEventHandle(
+            expectedHandleType = TestConstants.EventSource.STATE_STORE,
+            expectedCount = 1
+        )
 
         val experienceEvent = ExperienceEvent.Builder()
             .setXdmSchema(mapOf("xdmtest" to "data"))
@@ -214,7 +211,7 @@ class UpstreamIntegrationTests {
         Edge.sendEvent(experienceEvent) {}
 
         // Verify
-        assertExpectedEvents(true)
+        TestHelper.assertExpectedEvents(true)
     }
 
     /**
@@ -223,8 +220,14 @@ class UpstreamIntegrationTests {
     @Test
     fun testSendEvent_doesNotReceivesErrorEvent() {
         // Setup
-        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT, expectedCount = 1)
-        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.STATE_STORE, expectedCount = 1)
+        TestSetupHelper.expectEdgeEventHandle(
+            expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT,
+            expectedCount = 1
+        )
+        TestSetupHelper.expectEdgeEventHandle(
+            expectedHandleType = TestConstants.EventSource.STATE_STORE,
+            expectedCount = 1
+        )
 
         val experienceEvent = ExperienceEvent.Builder()
             .setXdmSchema(mapOf("xdmtest" to "data"))
@@ -235,10 +238,11 @@ class UpstreamIntegrationTests {
         Edge.sendEvent(experienceEvent) {}
 
         // Verify
-        assertExpectedEvents(true)
+        TestHelper.assertExpectedEvents(true)
 
-        val errorEvents = getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.ERROR_RESPONSE_CONTENT)
-        assertEquals(0, errorEvents.size)
+        val errorEvents =
+            TestSetupHelper.getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.ERROR_RESPONSE_CONTENT)
+        Assert.assertEquals(0, errorEvents.size)
     }
 
     /**
@@ -251,7 +255,10 @@ class UpstreamIntegrationTests {
         // Clear any existing location hint
         Edge.setLocationHint(null)
 
-        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT, expectedCount = 1)
+        TestSetupHelper.expectEdgeEventHandle(
+            expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT,
+            expectedCount = 1
+        )
 
         val experienceEvent = ExperienceEvent.Builder()
             .setXdmSchema(mapOf("xdmtest" to "data"))
@@ -275,9 +282,10 @@ class UpstreamIntegrationTests {
          """.trimIndent()
 
         // Unsafe access used since testSendEvent_receivesExpectedEventHandles guarantees existence
-        val locationHintResult = getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT).first()
+        val locationHintResult = TestSetupHelper.getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT)
+            .first()
 
-        assertTypeMatch(
+        JSONAsserts.assertTypeMatch(
             expected = JSONObject(expectedLocationHintJSON),
             actual = JSONObject(locationHintResult.eventData),
             exactMatchPaths = listOf("payload[*].scope")
@@ -295,7 +303,10 @@ class UpstreamIntegrationTests {
             // Setup
             Edge.setLocationHint(locationHint)
 
-            expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT, expectedCount = 1)
+            TestSetupHelper.expectEdgeEventHandle(
+                expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT,
+                expectedCount = 1
+            )
 
             val experienceEvent = ExperienceEvent.Builder()
                 .setXdmSchema(mapOf("xdmtest" to "data"))
@@ -319,8 +330,9 @@ class UpstreamIntegrationTests {
             """.trimIndent()
 
             // Unsafe access used since testSendEvent_receivesExpectedEventHandles guarantees existence
-            val locationHintResult = getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT).first()
-            assertTypeMatch(
+            val locationHintResult = TestSetupHelper.getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT)
+                .first()
+            JSONAsserts.assertTypeMatch(
                 expected = JSONObject(expectedLocationHintJSON),
                 actual = JSONObject(locationHintResult.eventData),
                 exactMatchPaths = listOf("payload[*].scope", "payload[*].hint")
@@ -336,7 +348,10 @@ class UpstreamIntegrationTests {
     @Test
     fun testSendEvent_with_NO_priorState_receivesExpectedStateStoreEventHandle() {
         // Setup
-        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.STATE_STORE, expectedCount = 1)
+        TestSetupHelper.expectEdgeEventHandle(
+            expectedHandleType = TestConstants.EventSource.STATE_STORE,
+            expectedCount = 1
+        )
 
         val experienceEvent = ExperienceEvent.Builder()
             .setXdmSchema(mapOf("xdmtest" to "data"))
@@ -365,13 +380,19 @@ class UpstreamIntegrationTests {
         """.trimIndent()
 
         // Unsafe access used since testSendEvent_receivesExpectedEventHandles guarantees existence
-        val stateStoreEvent = getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.STATE_STORE).last()
+        val stateStoreEvent = TestSetupHelper.getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.STATE_STORE)
+            .last()
 
         // Exact match used here to strictly validate `payload` array element count == 2
-        assertExactMatch(
+        JSONAsserts.assertExactMatch(
             expected = JSONObject(expectedStateStoreJSON),
             actual = JSONObject(stateStoreEvent.eventData),
-            typeMatchPaths = listOf("payload[0].maxAge", "payload[0].value", "payload[1].maxAge", "payload[1].value")
+            typeMatchPaths = listOf(
+                "payload[0].maxAge",
+                "payload[0].value",
+                "payload[1].maxAge",
+                "payload[1].value"
+            )
         )
     }
 
@@ -394,7 +415,10 @@ class UpstreamIntegrationTests {
             // Set location hint
             Edge.setLocationHint(locationHint)
 
-            expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.STATE_STORE, expectedCount = 1)
+            TestSetupHelper.expectEdgeEventHandle(
+                expectedHandleType = TestConstants.EventSource.STATE_STORE,
+                expectedCount = 1
+            )
 
             // Test
             Edge.sendEvent(experienceEvent) {}
@@ -413,10 +437,11 @@ class UpstreamIntegrationTests {
             """.trimIndent()
 
             // Unsafe access used since testSendEvent_receivesExpectedEventHandles guarantees existence
-            val stateStoreEvent = getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.STATE_STORE).last()
+            val stateStoreEvent = TestSetupHelper.getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.STATE_STORE)
+                .last()
 
             // Exact match used here to strictly validate `payload` array element count == 2
-            assertExactMatch(
+            JSONAsserts.assertExactMatch(
                 expected = JSONObject(expectedStateStoreJSON),
                 actual = JSONObject(stateStoreEvent.eventData),
                 typeMatchPaths = listOf("payload[0].maxAge")
@@ -434,7 +459,7 @@ class UpstreamIntegrationTests {
     fun testSendEventx2_receivesExpectedNetworkResponse() {
         // Setup
         // These expectations are used as a barrier for the event processing to complete
-        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT)
+        TestSetupHelper.expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT)
 
         val experienceEvent = ExperienceEvent.Builder()
             .setXdmSchema(mapOf("xdmtest" to "data"))
@@ -445,27 +470,30 @@ class UpstreamIntegrationTests {
         Edge.sendEvent(experienceEvent) {}
 
         // Extract location hint from Edge Network location hint response event
-        val locationHintResult = getLastLocationHintResultValue()
+        val locationHintResult = TestSetupHelper.getLastLocationHintResultValue()
 
         if (locationHintResult.isNullOrEmpty()) {
-            fail("Unable to extract valid location hint from location hint result event handle.")
+            Assert.fail("Unable to extract valid location hint from location hint result event handle.")
         }
 
         // If there is a location hint preset for the test suite, check consistency between it and the
         // value from the Edge Network
         if (edgeLocationHint.isNotEmpty()) {
-            assertEquals(edgeLocationHint, locationHintResult)
+            Assert.assertEquals(edgeLocationHint, locationHintResult)
         }
 
         // Wait on all expectations to finish processing before clearing expectations
-        assertExpectedEvents(true)
+        TestHelper.assertExpectedEvents(true)
 
         // Reset all test expectations
         resetTestExpectations()
 
         // Set actual testing expectations
         // If test suite level location hint is not set, uses the value extracted from location hint result
-        val locationHintNetworkRequest = TestableNetworkRequest(createInteractURL(locationHintResult), HttpMethod.POST)
+        val locationHintNetworkRequest = TestableNetworkRequest(
+            TestSetupHelper.createInteractURL(locationHintResult),
+            HttpMethod.POST
+        )
 
         realNetworkService.setExpectationForNetworkRequest(locationHintNetworkRequest, expectedCount = 1)
 
@@ -478,8 +506,8 @@ class UpstreamIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(locationHintNetworkRequest)
 
-        assertEquals(1, matchingResponses?.size)
-        assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
+        Assert.assertEquals(1, matchingResponses?.size)
+        Assert.assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
     }
 
     /**
@@ -488,8 +516,14 @@ class UpstreamIntegrationTests {
     @Test
     fun testSendEventx2_receivesExpectedEventHandles() {
         // Setup
-        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT, expectedCount = 2)
-        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.STATE_STORE, expectedCount = 2)
+        TestSetupHelper.expectEdgeEventHandle(
+            expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT,
+            expectedCount = 2
+        )
+        TestSetupHelper.expectEdgeEventHandle(
+            expectedHandleType = TestConstants.EventSource.STATE_STORE,
+            expectedCount = 2
+        )
 
         val experienceEvent = ExperienceEvent.Builder()
             .setXdmSchema(mapOf("xdmtest" to "data"))
@@ -501,7 +535,7 @@ class UpstreamIntegrationTests {
         Edge.sendEvent(experienceEvent) {}
 
         // Verify
-        assertExpectedEvents(true)
+        TestHelper.assertExpectedEvents(true)
     }
 
     /**
@@ -510,8 +544,14 @@ class UpstreamIntegrationTests {
     @Test
     fun testSendEventx2_doesNotReceivesErrorEvent() {
         // Setup
-        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT, expectedCount = 2)
-        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.STATE_STORE, expectedCount = 2)
+        TestSetupHelper.expectEdgeEventHandle(
+            expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT,
+            expectedCount = 2
+        )
+        TestSetupHelper.expectEdgeEventHandle(
+            expectedHandleType = TestConstants.EventSource.STATE_STORE,
+            expectedCount = 2
+        )
 
         val experienceEvent = ExperienceEvent.Builder()
             .setXdmSchema(mapOf("xdmtest" to "data"))
@@ -523,10 +563,11 @@ class UpstreamIntegrationTests {
         Edge.sendEvent(experienceEvent) {}
 
         // Verify
-        assertExpectedEvents(true)
+        TestHelper.assertExpectedEvents(true)
 
-        val errorEvents = getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.ERROR_RESPONSE_CONTENT)
-        assertEquals(0, errorEvents.size)
+        val errorEvents =
+            TestSetupHelper.getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.ERROR_RESPONSE_CONTENT)
+        Assert.assertEquals(0, errorEvents.size)
     }
 
     /**
@@ -536,7 +577,7 @@ class UpstreamIntegrationTests {
     @Test
     fun testSendEventx2_receivesExpectedLocationHintEventHandle() {
         // Setup
-        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT)
+        TestSetupHelper.expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT)
 
         val experienceEvent = ExperienceEvent.Builder()
             .setXdmSchema(mapOf("xdmtest" to "data"))
@@ -546,16 +587,19 @@ class UpstreamIntegrationTests {
         Edge.sendEvent(experienceEvent) {}
 
         // Extract location hint from Edge Network location hint response event
-        val locationHintResult = getLastLocationHintResultValue()
+        val locationHintResult = TestSetupHelper.getLastLocationHintResultValue()
         if (locationHintResult.isNullOrEmpty()) {
-            fail("Unable to extract valid location hint from location hint result event handle.")
+            Assert.fail("Unable to extract valid location hint from location hint result event handle.")
         }
 
         // Reset all test expectations
         resetTestExpectations()
 
         // Set actual testing expectations
-        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT, expectedCount = 1)
+        TestSetupHelper.expectEdgeEventHandle(
+            expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT,
+            expectedCount = 1
+        )
 
         // Test
         // 2nd event
@@ -565,7 +609,7 @@ class UpstreamIntegrationTests {
         // If there is a location hint preset for the test suite, check consistency between it and the
         // value from the Edge Network
         if (edgeLocationHint.isNotEmpty()) {
-            assertEquals(edgeLocationHint, locationHintResult)
+            Assert.assertEquals(edgeLocationHint, locationHintResult)
         }
 
         // Verify location hint consistency between 1st and 2nd event handles
@@ -582,8 +626,9 @@ class UpstreamIntegrationTests {
         """.trimIndent()
 
         // Unsafe access used since testSendEvent_receivesExpectedEventHandles guarantees existence
-        val locationHintResultEvent = getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT).first()
-        assertTypeMatch(
+        val locationHintResultEvent = TestSetupHelper.getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT)
+            .first()
+        JSONAsserts.assertTypeMatch(
             expected = JSONObject(expectedLocationHintJSON),
             actual = JSONObject(locationHintResultEvent.eventData),
             exactMatchPaths = listOf("payload[*].scope", "payload[*].hint")
@@ -600,15 +645,25 @@ class UpstreamIntegrationTests {
         // configuration's shared state not reaching Edge before it starts processing the sendEvent event
         // 1st: from remote config download(?)
         // 2nd: from updateConfiguration
-        setExpectationEvent(TestConstants.EventType.CONFIGURATION, TestConstants.EventSource.RESPONSE_CONTENT, 2)
+        TestHelper.setExpectationEvent(
+            TestConstants.EventType.CONFIGURATION,
+            TestConstants.EventSource.RESPONSE_CONTENT,
+            2
+        )
 
         MobileCore.updateConfiguration(mapOf("edge.configId" to "12345-example"))
 
-        assertExpectedEvents(true)
+        TestHelper.assertExpectedEvents(true)
 
-        val interactNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = edgeLocationHint), HttpMethod.POST)
+        val interactNetworkRequest = TestableNetworkRequest(
+            TestSetupHelper.createInteractURL(locationHint = edgeLocationHint),
+            HttpMethod.POST
+        )
         realNetworkService.setExpectationForNetworkRequest(interactNetworkRequest, expectedCount = 1)
-        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.ERROR_RESPONSE_CONTENT, expectedCount = 1)
+        TestSetupHelper.expectEdgeEventHandle(
+            expectedHandleType = TestConstants.EventSource.ERROR_RESPONSE_CONTENT,
+            expectedCount = 1
+        )
 
         val experienceEvent = ExperienceEvent.Builder()
             .setXdmSchema(mapOf("xdmtest" to "data"))
@@ -623,8 +678,8 @@ class UpstreamIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        assertEquals(1, matchingResponses?.size)
-        assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
+        Assert.assertEquals(1, matchingResponses?.size)
+        Assert.assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
 
         // Event assertions
         val expectedErrorJSON = """
@@ -641,12 +696,12 @@ class UpstreamIntegrationTests {
         }
         """.trimIndent()
 
-        val errorEvents = getEdgeResponseErrors()
+        val errorEvents = TestSetupHelper.getEdgeResponseErrors()
 
-        assertEquals(1, errorEvents.size)
+        Assert.assertEquals(1, errorEvents.size)
 
         val errorEvent = errorEvents.first()
-        assertTypeMatch(
+        JSONAsserts.assertTypeMatch(
             expected = JSONObject(expectedErrorJSON),
             actual = JSONObject(errorEvent.eventData),
             exactMatchPaths = listOf("status", "title", "type")
@@ -658,10 +713,16 @@ class UpstreamIntegrationTests {
         // Tests that an invalid location hint returns the expected error with 0 byte data body
 
         // Setup
-        val invalidNetworkRequest = TestableNetworkRequest(createInteractURL(locationHint = "invalid"), HttpMethod.POST)
+        val invalidNetworkRequest = TestableNetworkRequest(
+            TestSetupHelper.createInteractURL(locationHint = "invalid"),
+            HttpMethod.POST
+        )
 
         realNetworkService.setExpectationForNetworkRequest(networkRequest = invalidNetworkRequest, expectedCount = 1)
-        expectEdgeEventHandle(expectedHandleType = TestConstants.EventSource.ERROR_RESPONSE_CONTENT, expectedCount = 1)
+        TestSetupHelper.expectEdgeEventHandle(
+            expectedHandleType = TestConstants.EventSource.ERROR_RESPONSE_CONTENT,
+            expectedCount = 1
+        )
 
         Edge.setLocationHint("invalid")
 
@@ -678,27 +739,27 @@ class UpstreamIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(networkRequest = invalidNetworkRequest)
 
-        assertEquals(1, matchingResponses?.size)
+        Assert.assertEquals(1, matchingResponses?.size)
         // Convenience to assert directly on the first element in the rest of the test case
         val matchingResponse = matchingResponses?.firstOrNull()
-        assertEquals(404, matchingResponse?.responseCode)
+        Assert.assertEquals(404, matchingResponse?.responseCode)
 
         val contentLengthHeader = matchingResponse?.getResponsePropertyValue("Content-Length")
         val contentLength = contentLengthHeader?.toIntOrNull()
 
         if (contentLength != null) {
             println("Content-Length: $contentLength")
-            assertEquals(0, contentLength)
+            Assert.assertEquals(0, contentLength)
         } else {
             println("Content-Length header not found or not a valid integer")
         }
 
         // Should be null when there is no response body from the server
         val responseBodySize = matchingResponse?.inputStream?.readBytes()?.size
-        assertNull(responseBodySize)
+        Assert.assertNull(responseBodySize)
 
         // Error event assertions
-        assertExpectedEvents(true)
+        TestHelper.assertExpectedEvents(true)
     }
 
     /**

@@ -1,4 +1,4 @@
-package com.adobe.marketing.mobile.integration.util
+package com.adobe.marketing.mobile.edge.integration.util
 
 import com.adobe.marketing.mobile.Event
 import com.adobe.marketing.mobile.util.TestConstants
