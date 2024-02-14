@@ -1,15 +1,4 @@
-/*
-  Copyright 2023 Adobe. All rights reserved.
-  This file is licensed to you under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy
-  of the License at http://www.apache.org/licenses/LICENSE-2.0
-  Unless required by applicable law or agreed to in writing, software distributed under
-  the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
-  OF ANY KIND, either express or implied. See the License for the specific language
-  governing permissions and limitations under the License.
-*/
-
-package com.adobe.marketing.tester.app
+package com.adobe.marketing.mobile.edge.testapp.kotlin
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -17,7 +6,11 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.*
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.Spinner
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.adobe.marketing.mobile.AdobeCallbackWithError
 import com.adobe.marketing.mobile.AdobeError
@@ -34,9 +27,13 @@ import com.adobe.marketing.mobile.edge.identity.AuthenticatedState
 import com.adobe.marketing.mobile.edge.identity.Identity
 import com.adobe.marketing.mobile.edge.identity.IdentityItem
 import com.adobe.marketing.mobile.edge.identity.IdentityMap
+import com.adobe.marketing.mobile.edge.testapp.kotlin.data.LocationHint
 import com.adobe.marketing.mobile.services.Log
-import com.adobe.marketing.tester.app.data.LocationHint
-import com.adobe.marketing.tester.xdm.commerce.*
+import com.adobe.marketing.tester.xdm.commerce.Commerce
+import com.adobe.marketing.tester.xdm.commerce.MobileSDKCommerceSchema
+import com.adobe.marketing.tester.xdm.commerce.Order
+import com.adobe.marketing.tester.xdm.commerce.ProductListAdds
+import com.adobe.marketing.tester.xdm.commerce.Purchases
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 
@@ -75,7 +72,7 @@ class MainActivity : AppCompatActivity() {
     private fun setUpLocationHintSpinner() {
         hasSpinnerBooted = false
         val setHintSpinner = findViewById<Spinner>(R.id.set_hint_spinner)
-        setHintSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
+        setHintSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             // Item selector handler for drop-down spinner which calls setLocationHint
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, pos: Int, id: Long) {
                 if (hasSpinnerBooted)
@@ -134,7 +131,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btn_get_hint).setOnClickListener {
             Edge.getLocationHint {
                 val textViewGetData: TextView = findViewById(R.id.tvGetData)
-                runOnUiThread{ textViewGetData.text = "'$it'" }
+                runOnUiThread { textViewGetData.text = "'$it'" }
 
             }
         }
@@ -228,7 +225,7 @@ class MainActivity : AppCompatActivity() {
                 )
 
                 val textViewGetData: TextView = findViewById(R.id.tvGetData)
-                runOnUiThread{ textViewGetData.text = json }
+                runOnUiThread { textViewGetData.text = json }
             }
         }
 
@@ -238,27 +235,35 @@ class MainActivity : AppCompatActivity() {
                     "request" to mapOf<String, Any>("sendCompletion" to true)
             )
 
-            val event = Event.Builder("Edge Event Send Completion Request", EventType.EDGE, EventSource.REQUEST_CONTENT)
+            val event = Event.Builder(
+                "Edge Event Send Completion Request",
+                EventType.EDGE,
+                EventSource.REQUEST_CONTENT
+            )
                     .setEventData(eventData)
                     .build()
 
-            MobileCore.dispatchEventWithResponseCallback(event, 2000L, object : AdobeCallbackWithError<Event?> {
-                @SuppressLint("SetTextI18n")
-                override fun call(completeEvent: Event?) {
-                    val textViewGetData: TextView = findViewById(R.id.tvGetData)
-                    runOnUiThread{
-                            textViewGetData.text = "Completion Event received: ${completeEvent?.eventData}"
+            MobileCore.dispatchEventWithResponseCallback(
+                event,
+                2000L,
+                object : AdobeCallbackWithError<Event?> {
+                    @SuppressLint("SetTextI18n")
+                    override fun call(completeEvent: Event?) {
+                        val textViewGetData: TextView = findViewById(R.id.tvGetData)
+                        runOnUiThread {
+                            textViewGetData.text =
+                                "Completion Event received: ${completeEvent?.eventData}"
+                        }
                     }
-                }
 
-                @SuppressLint("SetTextI18n")
-                override fun fail(error: AdobeError?) {
-                    val textViewGetData: TextView = findViewById(R.id.tvGetData)
-                    runOnUiThread {
-                        textViewGetData.text= "Dispatch Event Failed '${error?.errorName}"
+                    @SuppressLint("SetTextI18n")
+                    override fun fail(error: AdobeError?) {
+                        val textViewGetData: TextView = findViewById(R.id.tvGetData)
+                        runOnUiThread {
+                            textViewGetData.text = "Dispatch Event Failed '${error?.errorName}"
+                        }
                     }
-                }
-            })
+                })
         }
     }
 
