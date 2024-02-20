@@ -23,6 +23,9 @@ parameters:
   build-cache-prefix:
     type: string
     default: v1
+  build-path:
+    type: string
+    default: code/edge/build
 
 # Workflows orchestrate a set of jobs to be run;
 workflows:
@@ -79,7 +82,7 @@ jobs:
 
       # Store Lint report
       - store_artifacts:
-          path: code/edge/build/reports
+          path: << pipeline.parameters.build-path >>/reports
 
   build-and-unit-test:
 
@@ -100,7 +103,7 @@ jobs:
           name: Javadoc
           command: make javadoc
       - store_artifacts:
-          path: code/edge/build/dokka/javadoc
+          path: << pipeline.parameters.build-path >>/dokka/javadoc
 
       - run:
           name: Assemble Phone
@@ -123,15 +126,15 @@ jobs:
           cache-prefix: << pipeline.parameters.build-cache-prefix >>
 
       - store_artifacts:
-          path: code/edge/build/reports/tests
+          path: << pipeline.parameters.build-path >>/reports/tests
 
       - store_test_results:
-          path: code/edge/build/test-results/testPhoneDebugUnitTest
+          path: << pipeline.parameters.build-path >>/test-results/testPhoneDebugUnitTest
 
       # Code coverage upload using Codecov
       # See options explanation here: https://docs.codecov.com/docs/codecov-uploader
       - codecov/upload:
-          file: code/edge/build/reports/coverage/test/phone/debug/report.xml
+          file: << pipeline.parameters.build-path >>/reports/coverage/test/phone/debug/report.xml
           flags: unit-tests
 
   functional-test:
@@ -164,15 +167,15 @@ jobs:
           cache-prefix: << pipeline.parameters.build-cache-prefix >>
 
       - store_artifacts:
-          path: code/edge/build/reports/androidTests
+          path: << pipeline.parameters.build-path >>/reports/androidTests
 
       - store_test_results:
-          path: code/edge/build/outputs/androidTest-results
+          path: << pipeline.parameters.build-path >>/outputs/androidTest-results
 
       # Code coverage upload using Codecov
       # See options explanation here: https://docs.codecov.com/docs/codecov-uploader
       - codecov/upload:
-          file: code/edge/build/reports/coverage/androidTest/phone/debug/connected/report.xml
+          file: << pipeline.parameters.build-path >>/reports/coverage/androidTest/phone/debug/connected/report.xml
           flags: functional-tests
 
   integration-test:
