@@ -11,13 +11,9 @@
 
 package com.adobe.marketing.mobile.xdm;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.TimeZone;
 
 public final class Formatters {
 
@@ -42,54 +38,6 @@ public final class Formatters {
 		}
 
 		return serializedList;
-	}
-
-	// example: 2017-09-26T15:52:25-07:00
-	private static final String TIMESTAMP_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'";
-	private static final String DATE_FORMAT = "yyyy-MM-dd";
-
-	/**
-	 * Formats a {@code Date} to an ISO 8601 date-time string in UTC as defined in
-	 * <a href="https://tools.ietf.org/html/rfc3339#section-5.6">RFC 3339, section 5.6</a>
-	 * For example, 2017-09-26T15:52:25Z
-	 *
-	 * @param timestamp a timestamp
-	 * @return {@code timestamp} formatted to a string in the format of 'yyyy-MM-dd'T'HH:mm:ss'Z'',
-	 * or an empty string if {@code timestamp} is null
-	 *
-	 * @deprecated as of 2.0.0, replaced by {@code TimeUtils.getISO8601UTCDateWithMilliseconds} from Mobile Core
-	 */
-	@Deprecated
-	public static String dateToISO8601String(final Date timestamp) {
-		if (timestamp == null) {
-			return "";
-		}
-
-		SimpleDateFormat simpleDateFormat = new SimpleDateFormat(TIMESTAMP_FORMAT, Locale.US);
-		simpleDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-		return simpleDateFormat.format(timestamp);
-	}
-
-	/**
-	 * Formats a {@code Date} to a full-date string defined in
-	 * <a href="https://tools.ietf.org/html/rfc3339#section-5.6">RFC 3339, section 5.6</a>,
-	 * representing a date without time.
-	 * For example, 2017-09-26
-	 *
-	 * @param date a date
-	 * @return {@code date} formatted to a string in the format of 'yyy-MM-dd', or an empty string
-	 * if {@code date} is null
-	 *
-	 * @deprecated as of 2.0.0, replaced by {@code TimeUtils.getISO8601FullDate} from Mobile Core
-	 */
-	@Deprecated
-	public static String dateToShortDateString(final Date date) {
-		if (date == null) {
-			return "";
-		}
-
-		SimpleDateFormat simpleDateFormat = new SimpleDateFormat(DATE_FORMAT, Locale.US);
-		return simpleDateFormat.format(date);
 	}
 
 	private Formatters() {}
