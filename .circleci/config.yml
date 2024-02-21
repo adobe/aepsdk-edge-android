@@ -15,30 +15,34 @@ orbs:
   android: circleci/android@2.4.0
   codecov: codecov/codecov@4.0.1
 
+# Define pipeline parameters available to all jobs
+parameters:
+  gradle-cache-prefix:
+    type: string
+    default: v1
+  build-cache-prefix:
+    type: string
+    default: v1
+  build-path:
+    type: string
+    default: code/edge/build
+
 # Workflows orchestrate a set of jobs to be run;
 workflows:
   version: 2
   build-test-deploy:
     jobs:
-      - validate-code:
-          gradle-cache-prefix: v1
-          build-cache-prefix: v1
+      - validate-code
 
       - build-and-unit-test:
-          gradle-cache-prefix: v1
-          build-cache-prefix: v1
           requires:
             - validate-code
 
       - functional-test:
-          gradle-cache-prefix: v1
-          build-cache-prefix: v1
           requires:
             - validate-code
-      
+
       - integration-test:
-          gradle-cache-prefix: v1
-          build-cache-prefix: v1
           requires:
             - validate-code
           filters:
@@ -49,13 +53,6 @@ workflows:
 
 jobs:
   validate-code:
-    parameters:
-      gradle-cache-prefix:
-        type: string
-        default: v1
-      build-cache-prefix:
-        type: string
-        default: v1
 
     # List of available Android Docker images: https://circleci.com/developer/images/image/cimg/android#image-tags
     executor:
@@ -66,9 +63,9 @@ jobs:
       - checkout
 
       - android/restore-gradle-cache:
-          cache-prefix: << parameters.gradle-cache-prefix >>
+          cache-prefix: << pipeline.parameters.gradle-cache-prefix >>
       - android/restore-build-cache:
-          cache-prefix: << parameters.build-cache-prefix >>
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>
 
       - run:
           name: Check Format
@@ -79,22 +76,15 @@ jobs:
           command: make lint
 
       - android/save-gradle-cache:
-          cache-prefix: << parameters.gradle-cache-prefix >>
+          cache-prefix: << pipeline.parameters.gradle-cache-prefix >>
       - android/save-build-cache:
-          cache-prefix: << parameters.build-cache-prefix >>
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>
 
       # Store Lint report
       - store_artifacts:
-          path: code/edge/build/reports
+          path: << pipeline.parameters.build-path >>/reports
 
   build-and-unit-test:
-    parameters:
-      gradle-cache-prefix:
-        type: string
-        default: v1
-      build-cache-prefix:
-        type: string
-        default: v1
 
     # List of available Android Docker images: https://circleci.com/developer/images/image/cimg/android#image-tags
     executor:
@@ -105,15 +95,15 @@ jobs:
       - checkout
 
       - android/restore-gradle-cache:
-          cache-prefix: << parameters.gradle-cache-prefix >>
+          cache-prefix: << pipeline.parameters.gradle-cache-prefix >>
       - android/restore-build-cache:
-          cache-prefix: << parameters.build-cache-prefix >>
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>
 
       - run:
           name: Javadoc
           command: make javadoc
       - store_artifacts:
-          path: code/edge/build/dokka/javadoc
+          path: << pipeline.parameters.build-path >>/dokka/javadoc
 
       - run:
           name: Assemble Phone
@@ -131,30 +121,23 @@ jobs:
           test-command: make unit-test-coverage
 
       - android/save-gradle-cache:
-          cache-prefix: << parameters.gradle-cache-prefix >>
+          cache-prefix: << pipeline.parameters.gradle-cache-prefix >>
       - android/save-build-cache:
-          cache-prefix: << parameters.build-cache-prefix >>
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>
 
       - store_artifacts:
-          path: code/edge/build/reports/tests
+          path: << pipeline.parameters.build-path >>/reports/tests
 
       - store_test_results:
-          path: code/edge/build/test-results/testPhoneDebugUnitTest
+          path: << pipeline.parameters.build-path >>/test-results/testPhoneDebugUnitTest
 
       # Code coverage upload using Codecov
       # See options explanation here: https://docs.codecov.com/docs/codecov-uploader
       - codecov/upload:
-          file: code/edge/build/reports/coverage/test/phone/debug/report.xml
+          file: << pipeline.parameters.build-path >>/reports/coverage/test/phone/debug/report.xml
           flags: unit-tests
 
   functional-test:
-    parameters:
-      gradle-cache-prefix:
-        type: string
-        default: v1
-      build-cache-prefix:
-        type: string
-        default: v1
 
     # list of available Android machine images: https://circleci.com/developer/machine/image/android#image-tags
     executor:
@@ -165,7 +148,7 @@ jobs:
       - checkout
 
       - android/restore-build-cache:
-          cache-prefix: << parameters.build-cache-prefix >>
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>
 
       - run:
           name: List available emulator images
@@ -178,31 +161,24 @@ jobs:
           post-emulator-launch-assemble-command: make assemble-phone
           #   The test command
           test-command: make functional-test-coverage
-          restore-gradle-cache-prefix: << parameters.gradle-cache-prefix >>
+          restore-gradle-cache-prefix: << pipeline.parameters.gradle-cache-prefix >>
 
       - android/save-build-cache:
-          cache-prefix: << parameters.build-cache-prefix >>
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>
 
       - store_artifacts:
-          path: code/edge/build/reports/androidTests
+          path: << pipeline.parameters.build-path >>/reports/androidTests
 
       - store_test_results:
-          path: code/edge/build/outputs/androidTest-results
+          path: << pipeline.parameters.build-path >>/outputs/androidTest-results
 
       # Code coverage upload using Codecov
       # See options explanation here: https://docs.codecov.com/docs/codecov-uploader
       - codecov/upload:
-          file: code/edge/build/reports/coverage/androidTest/phone/debug/connected/report.xml
+          file: << pipeline.parameters.build-path >>/reports/coverage/androidTest/phone/debug/connected/report.xml
           flags: functional-tests
 
   integration-test:
-    parameters:
-      gradle-cache-prefix:
-        type: string
-        default: v1
-      build-cache-prefix:
-        type: string
-        default: v1
 
     # list of available Android machine images: https://circleci.com/developer/machine/image/android#image-tags
     executor:
@@ -213,7 +189,7 @@ jobs:
       - checkout
 
       - android/restore-build-cache:
-          cache-prefix: << parameters.build-cache-prefix >>
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>
 
       - run:
           name: List available emulator images
@@ -226,10 +202,10 @@ jobs:
           post-emulator-launch-assemble-command: make assemble-phone
           #   The test command
           test-command: make upstream-integration-test
-          restore-gradle-cache-prefix: << parameters.gradle-cache-prefix >>
+          restore-gradle-cache-prefix: << pipeline.parameters.gradle-cache-prefix >>
 
       - android/save-build-cache:
-          cache-prefix: << parameters.build-cache-prefix >>
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>
 
       # On test failures, the step in the Makefile to copy the reports to ci/ is not run, so store test results from build folder instead.
       - store_test_results:
