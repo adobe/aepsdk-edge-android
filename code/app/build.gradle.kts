@@ -18,6 +18,7 @@ plugins {
 }
 
 val mavenCoreVersion: String by project
+val mavenEdgeIdentityVersion: String by project
 
 configure<com.diffplug.gradle.spotless.SpotlessExtension> {
     java {
@@ -68,7 +69,9 @@ dependencies {
     implementation(project(":app-util-xdm"))
 
     implementation("com.adobe.marketing.mobile:core:$mavenCoreVersion-SNAPSHOT")
-    implementation("com.adobe.marketing.mobile:edgeidentity:2.0.1")
+    implementation("com.adobe.marketing.mobile:edgeidentity:$mavenEdgeIdentityVersion-SNAPSHOT") {
+        exclude(group = "com.adobe.marketing.mobile", module = "core")
+    }
     implementation("com.adobe.marketing.mobile:edgeconsent:2.0.0") {
         exclude(group = "com.adobe.marketing.mobile", module = "edge")
     }
