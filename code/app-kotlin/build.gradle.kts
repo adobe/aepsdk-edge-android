@@ -67,6 +67,10 @@ android {
     }
 }
 
+configurations.configureEach {
+    resolutionStrategy.cacheChangingModulesFor(0, "seconds")
+}
+
 dependencies {
     implementation(project(":edge"))
     implementation(project(":app-util-xdm"))
