@@ -24,6 +24,7 @@ import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.MapUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
+import com.adobe.marketing.mobile.util.UrlUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -150,6 +151,28 @@ class EdgeHitProcessor implements HitProcessing {
 			edgeHit.getDatastreamId(),
 			edgeHit.getRequestId()
 		);
+
+		if (!UrlUtils.isValidUrl(url)) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Unable to send network request with id (%s) as url is malformed, '%s'.",
+				edgeHit.getRequestId(),
+				url
+			);
+			return true;
+		}
+
+		if (!url.startsWith("https")) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Unable to send network request with id (%s) as url scheme must be 'https', '%s'.",
+				edgeHit.getRequestId(),
+				url
+			);
+			return true;
+		}
 
 		try {
 			Log.debug(
