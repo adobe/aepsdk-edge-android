@@ -152,25 +152,15 @@ class EdgeHitProcessor implements HitProcessing {
 			edgeHit.getRequestId()
 		);
 
-		if (!UrlUtils.isValidUrl(url)) {
+		if (!isValidUrl(url)) {
 			Log.warning(
 				LOG_TAG,
 				LOG_SOURCE,
-				"Unable to send network request with id (%s) as url is malformed, '%s'.",
-				edgeHit.getRequestId(),
+				"Unable to send network request for entity (%s) as URL is malformed or scheme is not 'https', '%s'.",
+				entityId,
 				url
 			);
-			return true;
-		}
 
-		if (!url.startsWith("https")) {
-			Log.warning(
-				LOG_TAG,
-				LOG_SOURCE,
-				"Unable to send network request with id (%s) as url scheme must be 'https', '%s'.",
-				edgeHit.getRequestId(),
-				url
-			);
 			return true;
 		}
 
@@ -217,6 +207,20 @@ class EdgeHitProcessor implements HitProcessing {
 
 			return false; // Hit failed to send, retry after interval
 		}
+	}
+
+	private boolean isValidUrl(final String url) {
+		if (!UrlUtils.isValidUrl(url)) {
+			Log.debug(LOG_TAG, LOG_SOURCE, "Request invalid, URL is malformed, '%s'.", url);
+			return false;
+		}
+
+		if (!url.startsWith("https")) {
+			Log.debug(LOG_TAG, LOG_SOURCE, "Request invalid, URL scheme must be 'https', '%s'.", url);
+			return false;
+		}
+
+		return true;
 	}
 
 	/**

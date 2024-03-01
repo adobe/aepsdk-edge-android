@@ -589,7 +589,7 @@ public class EdgeHitProcessorTests {
 		when(mockEdgeNetworkService.buildUrl(endpoint, configId, hit.getRequestId()))
 			.thenReturn("https://www.adobe.com:_80/");
 
-		hitProcessor.sendNetworkRequest(null, hit, new HashMap<String, String>());
+		final boolean hitComplete = hitProcessor.sendNetworkRequest(null, hit, new HashMap<String, String>());
 
 		// verify
 		verify(mockEdgeNetworkService, never())
@@ -599,6 +599,8 @@ public class EdgeHitProcessorTests {
 				ArgumentMatchers.anyMap(),
 				any(EdgeNetworkService.ResponseCallback.class)
 			);
+
+		assertTrue(hitComplete);
 	}
 
 	@Test
@@ -617,7 +619,7 @@ public class EdgeHitProcessorTests {
 		final EdgeHit hit = new EdgeHit(configId, requestBody, endpoint);
 		when(mockEdgeNetworkService.buildUrl(endpoint, configId, hit.getRequestId())).thenReturn("http://test.com");
 
-		hitProcessor.sendNetworkRequest(null, hit, new HashMap<String, String>());
+		final boolean hitComplete = hitProcessor.sendNetworkRequest(null, hit, new HashMap<String, String>());
 
 		// verify
 		verify(mockEdgeNetworkService, never())
@@ -627,6 +629,8 @@ public class EdgeHitProcessorTests {
 				ArgumentMatchers.anyMap(),
 				any(EdgeNetworkService.ResponseCallback.class)
 			);
+
+		assertTrue(hitComplete);
 	}
 
 	@Test
