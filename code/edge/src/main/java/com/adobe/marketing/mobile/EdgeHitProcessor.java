@@ -209,6 +209,17 @@ class EdgeHitProcessor implements HitProcessing {
 		}
 	}
 
+	/**
+	 * Validates a given URL.
+	 * Checks that a URL is valid by ensuring:
+	 * <ul>
+	 *     <li>The URL is not null or empty.</li>
+	 *     <li>The URL is parsable by the {@link java.net.URL} class.</li>
+	 *     <li>The URL scheme is "HTTPS".</li>
+	 * </ul>
+	 * @param url the URL string to validate
+	 * @return true if the URL is valid, false otherwise.
+	 */
 	private boolean isValidUrl(final String url) {
 		if (!UrlUtils.isValidUrl(url)) {
 			Log.debug(LOG_TAG, LOG_SOURCE, "Request invalid, URL is malformed, '%s'.", url);
