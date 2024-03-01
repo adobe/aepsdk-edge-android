@@ -573,8 +573,7 @@ public class EdgeHitProcessorTests {
 	}
 
 	@Test
-	public void testSendNetworkRequest_returnsTrue_doesNotSendNetworkRequest_whenMalformedUrl()
-		throws InterruptedException {
+	public void testSendNetworkRequest_whenMalformedUrl_returnsTrue_doesNotSendNetworkRequest() {
 		// setup
 		final String configId = "456";
 		final JSONObject requestBody = getOneEventJson();
@@ -604,8 +603,7 @@ public class EdgeHitProcessorTests {
 	}
 
 	@Test
-	public void testSendNetworkRequest_returnsTrue_doesNotSendNetworkRequest_whenWrongScheme()
-		throws InterruptedException {
+	public void testSendNetworkRequest_whenWrongScheme_returnsTrue_doesNotSendNetworkRequest() {
 		// setup
 		final String configId = "456";
 		final JSONObject requestBody = getOneEventJson();
