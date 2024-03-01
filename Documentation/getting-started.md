@@ -45,9 +45,9 @@ The Edge Network extension depends on the following extensions:
 1. Add the Mobile Core, Identity for Edge Network, and Edge Network extensions to your project using the app's Gradle file:
 
 ```gradle
-implementation 'com.adobe.marketing.mobile:core:2.+'
-implementation 'com.adobe.marketing.mobile:edge:2.+'
-implementation 'com.adobe.marketing.mobile:edgeidentity:2.+'
+implementation 'com.adobe.marketing.mobile:core:3.+'
+implementation 'com.adobe.marketing.mobile:edge:3.+'
+implementation 'com.adobe.marketing.mobile:edgeidentity:3.+'
 ```
 
 > **Warning**  
