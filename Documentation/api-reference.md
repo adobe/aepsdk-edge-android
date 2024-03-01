@@ -8,7 +8,6 @@ Refer to the [Getting started guide](getting-started.md).
 
 - [extensionVersion](#extensionversion)
 - [getLocationHint](#getLocationHint)
-- [registerExtension](#registerextension)
 - [resetIdentities](#resetidentities)
 - [sendEvent](#sendevent)
 - [setLocationHint](#setlocationhint)
@@ -83,42 +82,6 @@ Edge.getLocationHint(object: AdobeCallbackWithError<String> {
       // Handle the error here
     }
 })
-```
-
-------
-
-### registerExtension
-
-Registers the Edge Network extension with the Mobile Core extension.
-
-> **Warning**
-> Deprecated as of 2.0.0. Use the [MobileCore.registerExtensions API](https://github.com/adobe/aepsdk-core-android/blob/main/Documentation/MobileCore/api-reference.md) instead.
-
-
-#### Java
-
-##### Syntax
-```java
-public static void registerExtension()
-```
-
-##### Example
-```java
-import com.adobe.marketing.mobile.Edge;
-
-...
-Edge.registerExtension();
-```
-
-#### Kotlin
-
-##### Example
-```kotlin
-import com.adobe.marketing.mobile.Edge
-
-...
-
-Edge.registerExtension()
 ```
 
 ------
