@@ -573,6 +573,65 @@ public class EdgeHitProcessorTests {
 	}
 
 	@Test
+	public void testSendNetworkRequest_whenMalformedUrl_returnsTrue_doesNotSendNetworkRequest() {
+		// setup
+		final String configId = "456";
+		final JSONObject requestBody = getOneEventJson();
+		final EdgeEndpoint endpoint = new EdgeEndpoint(
+			EdgeNetworkService.RequestType.INTERACT,
+			"prod",
+			null,
+			null,
+			null
+		);
+		final EdgeHit hit = new EdgeHit(configId, requestBody, endpoint);
+		when(mockEdgeNetworkService.buildUrl(endpoint, configId, hit.getRequestId()))
+			.thenReturn("https://www.adobe.com:_80/");
+
+		final boolean hitComplete = hitProcessor.sendNetworkRequest(null, hit, new HashMap<String, String>());
+
+		// verify
+		verify(mockEdgeNetworkService, never())
+			.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.anyMap(),
+				any(EdgeNetworkService.ResponseCallback.class)
+			);
+
+		assertTrue(hitComplete);
+	}
+
+	@Test
+	public void testSendNetworkRequest_whenWrongScheme_returnsTrue_doesNotSendNetworkRequest() {
+		// setup
+		final String configId = "456";
+		final JSONObject requestBody = getOneEventJson();
+		final EdgeEndpoint endpoint = new EdgeEndpoint(
+			EdgeNetworkService.RequestType.INTERACT,
+			"prod",
+			null,
+			null,
+			null
+		);
+		final EdgeHit hit = new EdgeHit(configId, requestBody, endpoint);
+		when(mockEdgeNetworkService.buildUrl(endpoint, configId, hit.getRequestId())).thenReturn("http://test.com");
+
+		final boolean hitComplete = hitProcessor.sendNetworkRequest(null, hit, new HashMap<String, String>());
+
+		// verify
+		verify(mockEdgeNetworkService, never())
+			.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.anyMap(),
+				any(EdgeNetworkService.ResponseCallback.class)
+			);
+
+		assertTrue(hitComplete);
+	}
+
+	@Test
 	public void testProcessHit_onResetHit_clearsStatePayloads() throws InterruptedException {
 		// setup
 		final Event resetEvent = new Event.Builder("Reset Event", EventType.EDGE_IDENTITY, EventSource.RESET_COMPLETE)
