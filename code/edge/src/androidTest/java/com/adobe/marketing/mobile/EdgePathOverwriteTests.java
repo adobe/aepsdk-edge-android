@@ -25,6 +25,7 @@ import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.MockNetworkService;
+import com.adobe.marketing.mobile.util.MonitorExtension;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
 import java.util.ArrayList;
@@ -52,10 +53,7 @@ public class EdgePathOverwriteTests {
 	private static final int TIMEOUT_MILLIS = 5000;
 
 	@Rule
-	public RuleChain rule = RuleChain
-		.outerRule(new TestHelper.LogOnErrorRule())
-		.around(new TestHelper.SetupCoreRule())
-		.around(new TestHelper.RegisterMonitorExtensionRule());
+	public RuleChain rule = RuleChain.outerRule(new TestHelper.LogOnErrorRule()).around(new TestHelper.SetupCoreRule());
 
 	@Before
 	public void setup() throws Exception {
@@ -73,7 +71,10 @@ public class EdgePathOverwriteTests {
 		MobileCore.updateConfiguration(config);
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.registerExtensions(Arrays.asList(Edge.EXTENSION, Identity.EXTENSION), o -> latch.countDown());
+		MobileCore.registerExtensions(
+			Arrays.asList(Edge.EXTENSION, Identity.EXTENSION, MonitorExtension.EXTENSION),
+			o -> latch.countDown()
+		);
 		latch.await();
 
 		assertExpectedEvents(false);

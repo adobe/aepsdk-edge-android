@@ -13,7 +13,6 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
 import static com.adobe.marketing.mobile.util.TestHelper.LogOnErrorRule;
-import static com.adobe.marketing.mobile.util.TestHelper.RegisterMonitorExtensionRule;
 import static com.adobe.marketing.mobile.util.TestHelper.SetupCoreRule;
 import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
 import static com.adobe.marketing.mobile.util.TestHelper.assertUnexpectedEvents;
@@ -33,6 +32,7 @@ import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.MockNetworkService;
+import com.adobe.marketing.mobile.util.MonitorExtension;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
 import com.adobe.marketing.mobile.util.TestUtils;
@@ -76,10 +76,7 @@ public class EdgeFunctionalTests {
 		.build();
 
 	@Rule
-	public RuleChain rule = RuleChain
-		.outerRule(new LogOnErrorRule())
-		.around(new SetupCoreRule())
-		.around(new RegisterMonitorExtensionRule());
+	public RuleChain rule = RuleChain.outerRule(new LogOnErrorRule()).around(new SetupCoreRule());
 
 	@Before
 	public void setup() throws Exception {
@@ -97,7 +94,10 @@ public class EdgeFunctionalTests {
 		MobileCore.updateConfiguration(config);
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		MobileCore.registerExtensions(Arrays.asList(Edge.EXTENSION, Identity.EXTENSION), o -> latch.countDown());
+		MobileCore.registerExtensions(
+			Arrays.asList(Edge.EXTENSION, Identity.EXTENSION, MonitorExtension.EXTENSION),
+			o -> latch.countDown()
+		);
 		latch.await();
 
 		assertExpectedEvents(false);

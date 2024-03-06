@@ -12,96 +12,70 @@
 
 EXTENSION-LIBRARY-FOLDER-NAME = edge
 
-TEST-APP-FOLDER-NAME = app
-BUILD-ASSEMBLE-LOCATION = ./ci/assemble
-ROOT_DIR=$(shell git rev-parse --show-toplevel)
-
-PROJECT_NAME = $(shell cat $(ROOT_DIR)/code/gradle.properties | grep "moduleProjectName" | cut -d'=' -f2)
-AAR_NAME = $(shell cat $(ROOT_DIR)/code/gradle.properties | grep "moduleAARName" | cut -d'=' -f2)
-MODULE_NAME = $(shell cat $(ROOT_DIR)/code/gradle.properties | grep "moduleName" | cut -d'=' -f2)
-LIB_VERSION = $(shell cat $(ROOT_DIR)/code/gradle.properties | grep "moduleVersion" | cut -d'=' -f2)
-SOURCE_FILE_DIR =  $(ROOT_DIR)/code/$(PROJECT_NAME)
-AAR_FILE_DIR =  $(ROOT_DIR)/code/$(PROJECT_NAME)/build/outputs/aar
+TEST-APP-FOLDER-NAME-JAVA = app
+TEST-APP-FOLDER-NAME-KOTLIN = app-kotlin
 
 init:
 	git config core.hooksPath .githooks
 
 clean:
-	(rm -rf ci)
-	(rm -rf $(AAR_FILE_DIR))
 	(./code/gradlew -p code clean)
-
-create-ci: clean
-	(mkdir -p ci)
 
 format:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) spotlessApply)
-	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME) spotlessApply)
+	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-JAVA) spotlessApply)
+	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-KOTLIN) spotlessApply)
 
-format-check:
+checkformat:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) spotlessCheck)
-	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME) spotlessCheck)
+	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-JAVA) spotlessCheck)
+	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-KOTLIN) spotlessCheck)
 
 format-license:
 	(./code/gradlew -p code licenseFormat)
 
-lint-check:
+lint:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) lint)
 
+unit-test:
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) testPhoneDebugUnitTest)
 
-ci-build: create-ci
-	(mkdir -p ci/assemble)
+unit-test-coverage:
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) createPhoneDebugUnitTestCoverageReport)
 
-	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) assemblePhone)
-	(mv $(AAR_FILE_DIR)/$(EXTENSION-LIBRARY-FOLDER-NAME)-phone-release.aar  $(AAR_FILE_DIR)/$(MODULE_NAME)-release-$(LIB_VERSION).aar)
-	(cp -r ./code/$(EXTENSION-LIBRARY-FOLDER-NAME)/build $(BUILD-ASSEMBLE-LOCATION))
-
-ci-build-app:
-	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME) assemble)
-
-ci-unit-test: create-ci
-	(mkdir -p ci/unit-test)
-	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) platformUnitTestJacocoReport)
-	(cp -r ./code/$(EXTENSION-LIBRARY-FOLDER-NAME)/build ./ci/unit-test/)
-
-ci-functional-test: create-ci
-	(mkdir -p ci/functional-test)
+functional-test:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) uninstallPhoneDebugAndroidTest)
-	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) connectedPhoneDebugAndroidTest platformFunctionalTestJacocoReport)
-	(cp -r ./code/$(EXTENSION-LIBRARY-FOLDER-NAME)/build ./ci/functional-test)
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) connectedPhoneDebugAndroidTest)
 
-ci-upstream-integration-test:
+functional-test-coverage:
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) uninstallPhoneDebugAndroidTest)
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) createPhoneDebugAndroidTestCoverageReport)
+
+upstream-integration-test:
 	(./code/gradlew -p code/upstream-integration-tests uninstallDebugAndroidTest)
 	(./code/gradlew -p code/upstream-integration-tests connectedDebugAndroidTest -PEDGE_ENVIRONMENT=$(EDGE_ENVIRONMENT) -PEDGE_LOCATION_HINT=$(EDGE_LOCATION_HINT))
 
-ci-javadoc: create-ci
-	(mkdir -p ci/javadoc)
+javadoc:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) javadocJar)
-	(cp -r ./code/$(EXTENSION-LIBRARY-FOLDER-NAME)/build ./ci/javadoc)
 
-ci-generate-library-debug:
-		(./code/gradlew -p code/${EXTENSION-LIBRARY-FOLDER-NAME}  assemblePhoneDebug)
+assemble-phone:
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) assemblePhone)
 
-ci-generate-library-release:
-		(./code/gradlew -p code/${EXTENSION-LIBRARY-FOLDER-NAME}  assemblePhoneRelease)
+assemble-phone-debug:
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME)  assemblePhoneDebug)
 
-build-release:
-	(./code/gradlew -p code/${EXTENSION-LIBRARY-FOLDER-NAME} clean lint assemblePhoneRelease)
+assemble-phone-release:
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME)  assemblePhoneRelease)
 
-ci-publish-staging: clean build-release
-	(./code/gradlew -p code/${EXTENSION-LIBRARY-FOLDER-NAME} publishReleasePublicationToSonatypeRepository)
+assemble-app:
+	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-JAVA) assemble)
+	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-KOTLIN) assemble)
 
-ci-publish-main: clean build-release
-	(./code/gradlew -p code/${EXTENSION-LIBRARY-FOLDER-NAME} publishReleasePublicationToSonatypeRepository -Prelease)
+ci-publish-maven-local-jitpack:
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publishReleasePublicationToMavenLocal -Pjitpack  -x signReleasePublication)
 
-# usage: update-version VERSION=9.9.9 CORE-VERSION=8.8.8
-# usage: update-version VERSION=9.9.9
-update-version:
-	@echo "Updating version to $(VERSION), Core version to $(CORE-VERSION)"
-	sed -i '' "s/[0-9]*\.[0-9]*\.[0-9]/$(VERSION)/g" ./code/edge/src/main/java/com/adobe/marketing/mobile/EdgeConstants.java
-	sed -i '' "s/\(moduleVersion=\)[0-9]*\.[0-9]*\.[0-9]/\1$(VERSION)/g" ./code/gradle.properties
-	@if [ -z "$(CORE-VERSION)" ]; then \
-		echo "CORE-VERSION was not provided, skipping"; \
-	else \
-		sed -i '' "s/\(mavenCoreVersion=\)[0-9]*\.[0-9]*\.[0-9]/\1$(CORE-VERSION)/g" ./code/gradle.properties; \
-	fi
+ci-publish-staging:
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publishReleasePublicationToSonatypeRepository)
+
+ci-publish:
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publishReleasePublicationToSonatypeRepository -Prelease)

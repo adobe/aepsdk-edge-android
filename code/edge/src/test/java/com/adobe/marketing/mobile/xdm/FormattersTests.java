@@ -15,62 +15,12 @@ import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 import org.junit.Test;
 
 public class FormattersTests {
-
-	@Test
-	@SuppressWarnings("deprecation")
-	public void dateToISO8601String_onValidTimestamp_returnsFormattedString() {
-		Calendar cal = new Calendar.Builder()
-			.set(Calendar.YEAR, 2019)
-			.set(Calendar.MONTH, Calendar.SEPTEMBER)
-			.set(Calendar.DAY_OF_MONTH, 23)
-			.set(Calendar.HOUR, 11)
-			.set(Calendar.MINUTE, 15)
-			.set(Calendar.SECOND, 45)
-			.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"))
-			.build();
-
-		String serializedDate = Formatters.dateToISO8601String(cal.getTime());
-		// Expected time in UTC which is +7 hours from America/Los_Angeles during Daylight Savings
-		assertEquals("2019-09-23T18:15:45Z", serializedDate);
-	}
-
-	@Test
-	@SuppressWarnings("deprecation")
-	public void dateToISO8601String_onNull_returnsEmptyString() {
-		String serializedDate = Formatters.dateToISO8601String(null);
-		assertEquals("", serializedDate);
-	}
-
-	@Test
-	@SuppressWarnings("deprecation")
-	public void dateToShortDateString_onValidTimestamp_returnsFormattedString() {
-		Calendar cal = new Calendar.Builder()
-			.set(Calendar.YEAR, 2019)
-			.set(Calendar.MONTH, Calendar.SEPTEMBER)
-			.set(Calendar.DAY_OF_MONTH, 23)
-			.set(Calendar.HOUR, 11)
-			.set(Calendar.MINUTE, 15)
-			.set(Calendar.SECOND, 45)
-			.build();
-
-		String serializedDate = Formatters.dateToShortDateString(cal.getTime());
-		assertEquals("2019-09-23", serializedDate);
-	}
-
-	@Test
-	@SuppressWarnings("deprecation")
-	public void dateToShortDateString_onNull_returnsEmptyString() {
-		String serializedDate = Formatters.dateToShortDateString(null);
-		assertEquals("", serializedDate);
-	}
 
 	@Test
 	public void serializeFromList_singlePropertyList_returnsMapWithSingleProperty() {
