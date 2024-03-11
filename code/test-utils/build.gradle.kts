@@ -51,7 +51,7 @@ android {
 
 dependencies {
     implementation(project(":edge"))
-    implementation("com.adobe.marketing.mobile:core:$mavenCoreVersion-SNAPSHOT")
+    implementation("com.adobe.marketing.mobile:core:$mavenCoreVersion")
 
     implementation("androidx.test.ext:junit:${BuildConstants.Versions.ANDROIDX_TEST_EXT_JUNIT}")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.12.7")
