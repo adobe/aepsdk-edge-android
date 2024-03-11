@@ -75,12 +75,11 @@ dependencies {
     implementation(project(":edge"))
     implementation(project(":app-util-xdm"))
 
-    implementation("com.adobe.marketing.mobile:core:$mavenCoreVersion-SNAPSHOT")
-    implementation("com.adobe.marketing.mobile:edgeidentity:$mavenEdgeIdentityVersion-SNAPSHOT") {
-        exclude(group = "com.adobe.marketing.mobile", module = "core")
-    }
-    implementation("com.adobe.marketing.mobile:edgeconsent:2.0.0") {
+    implementation("com.adobe.marketing.mobile:core:$mavenCoreVersion")
+    implementation("com.adobe.marketing.mobile:edgeidentity:$mavenEdgeIdentityVersion")
+    implementation("com.adobe.marketing.mobile:edgeconsent:3.0.0-SNAPSHOT") {
         exclude(group = "com.adobe.marketing.mobile", module = "edge")
+        exclude(group = "com.adobe.marketing.mobile", module = "core")
     }
     implementation("com.adobe.marketing.mobile:assurance:2.2.1")
 
