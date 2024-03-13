@@ -18,7 +18,7 @@ import org.junit.Test;
 public class EdgeExtensionVersionTest {
 
 	@Test
-	public void internalExtensionVersion_publicExtensionVersion_asEqual() {
+	public void extensionVersion_verifyVersionInConstants_asEqual() {
 		assertEquals(EdgeConstants.EXTENSION_VERSION, Edge.extensionVersion());
 	}
 }
