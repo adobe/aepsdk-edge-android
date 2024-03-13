@@ -12,62 +12,13 @@
 package com.adobe.marketing.mobile;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
 import org.junit.Test;
 
 public class EdgeExtensionVersionTest {
 
-	private static final String GRADLE_PROPERTIES_PATH = "../gradle.properties";
-	private static final String PROPERTY_MODULE_VERSION = "moduleVersion";
-
 	@Test
-	public void extensionVersion_verifyModuleVersionInPropertiesFile_asEqual() {
-		Properties properties = loadProperties(GRADLE_PROPERTIES_PATH);
-
-		assertNotNull(Edge.extensionVersion());
-		assertFalse(Edge.extensionVersion().isEmpty());
-
-		String moduleVersion = properties.getProperty(PROPERTY_MODULE_VERSION);
-		assertNotNull(moduleVersion);
-		assertFalse(moduleVersion.isEmpty());
-
-		assertEquals(
-			String.format(
-				"Expected version to match in gradle.properties (%s) and extensionVersion API (%s)",
-				moduleVersion,
-				Edge.extensionVersion()
-			),
-			moduleVersion,
-			Edge.extensionVersion()
-		);
-	}
-
-	private Properties loadProperties(final String filepath) {
-		Properties properties = new Properties();
-		InputStream input = null;
-
-		try {
-			input = new FileInputStream(filepath);
-
-			properties.load(input);
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			if (input != null) {
-				try {
-					input.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-
-		return properties;
+	public void internalExtensionVersion_publicExtensionVersion_asEqual() {
+		assertEquals(EdgeConstants.EXTENSION_VERSION, Edge.extensionVersion());
 	}
 }
