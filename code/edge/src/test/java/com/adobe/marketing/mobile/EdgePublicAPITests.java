@@ -20,11 +20,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
-import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
@@ -505,28 +501,5 @@ public class EdgePublicAPITests {
 
 		MobileCore.dispatchEvent(responseEvent);
 		latch.await(2000, TimeUnit.MILLISECONDS);
-	}
-
-	private Properties loadProperties(final String filepath) {
-		Properties properties = new Properties();
-		InputStream input = null;
-
-		try {
-			input = new FileInputStream(filepath);
-
-			properties.load(input);
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			if (input != null) {
-				try {
-					input.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-
-		return properties;
 	}
 }
