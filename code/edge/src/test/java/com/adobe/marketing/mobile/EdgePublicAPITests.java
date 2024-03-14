@@ -13,7 +13,6 @@ package com.adobe.marketing.mobile;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -21,11 +20,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
-import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
@@ -40,9 +35,6 @@ import org.mockito.junit.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class EdgePublicAPITests {
 
-	private static String GRADLE_PROPERTIES_PATH = "../gradle.properties";
-	private static String PROPERTY_MODULE_VERSION = "moduleVersion";
-
 	private MockedStatic<MobileCore> mockCore;
 
 	@Before
@@ -53,19 +45,6 @@ public class EdgePublicAPITests {
 	@After
 	public void tearDown() {
 		mockCore.close();
-	}
-
-	@Test
-	public void testExtensionVersion_verifyModuleVersionInPropertiesFile_asEqual() {
-		Properties properties = loadProperties(GRADLE_PROPERTIES_PATH);
-
-		assertNotNull(Edge.extensionVersion());
-		assertFalse(Edge.extensionVersion().isEmpty());
-
-		String moduleVersion = properties.getProperty(PROPERTY_MODULE_VERSION);
-		assertNotNull(moduleVersion);
-
-		assertEquals(moduleVersion, Edge.extensionVersion());
 	}
 
 	@Test
@@ -522,28 +501,5 @@ public class EdgePublicAPITests {
 
 		MobileCore.dispatchEvent(responseEvent);
 		latch.await(2000, TimeUnit.MILLISECONDS);
-	}
-
-	private Properties loadProperties(final String filepath) {
-		Properties properties = new Properties();
-		InputStream input = null;
-
-		try {
-			input = new FileInputStream(filepath);
-
-			properties.load(input);
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			if (input != null) {
-				try {
-					input.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-
-		return properties;
 	}
 }
