@@ -51,7 +51,7 @@ workflows:
                 - main
                 - staging
       
-      - build_sample_app:
+      - build-test-app:
           requires:
             - validate-code
           filters:
@@ -213,7 +213,7 @@ jobs:
       - store_test_results:
           path: code/integration-tests/build/outputs/androidTest-results/connected
 
-  build_sample_app:
+  build-test-app:
 
     executor:
       name: android/android-docker
