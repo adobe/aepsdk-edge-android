@@ -50,6 +50,16 @@ workflows:
               only:
                 - main
                 - staging
+      
+      - build_sample_app:
+          requires:
+            - validate-code
+          filters:
+            branches:
+              only:
+                - main
+                - staging
+        
 
 jobs:
   validate-code:
@@ -206,3 +216,26 @@ jobs:
       # On test failures, the step in the Makefile to copy the reports to ci/ is not run, so store test results from build folder instead.
       - store_test_results:
           path: code/integration-tests/build/outputs/androidTest-results/connected
+
+build_sample_app:
+
+    executor:
+      name: android/android-docker
+      tag: 2024.01.1-node
+
+    steps:
+      - checkout
+
+      - android/restore-gradle-cache:
+          cache-prefix: << pipeline.parameters.gradle-cache-prefix >>
+      - android/restore-build-cache:
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>
+
+      - run:
+          name: Assemble App
+          command: make assemble-app
+
+      - android/save-gradle-cache:
+          cache-prefix: << pipeline.parameters.gradle-cache-prefix >>
+      - android/save-build-cache:
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>
