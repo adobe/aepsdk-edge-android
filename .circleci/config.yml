@@ -119,10 +119,6 @@ jobs:
           name: Assemble Phone
           command: make assemble-phone
 
-      - run:
-          name: Assemble App
-          command: make assemble-app
-
       - android/run-tests:
           test-command: make unit-test-coverage
 
@@ -217,7 +213,7 @@ jobs:
       - store_test_results:
           path: code/integration-tests/build/outputs/androidTest-results/connected
 
-build_sample_app:
+  build_sample_app:
 
     executor:
       name: android/android-docker
