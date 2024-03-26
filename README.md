@@ -41,7 +41,6 @@ make init
 | [Lifecycle for Edge Network](https://github.com/adobe/aepsdk-core-android)               | The Lifecycle for Edge Network extension helps collect application Lifecycle metrics and any additional context data provided by the application developer when using the Mobile SDK and the Edge Network extension. |
 | [Identity for Edge Network](https://github.com/adobe/aepsdk-edgeidentity-android)        | The Identity for Edge Network extension enables identity management from a mobile app when using the Edge Network extension. |
 | [Assurance extension](https://github.com/adobe/aepsdk-assurance-android)           | The Assurance extension enables validation workflows for your Mobile SDK implementation. |
-| [Adobe Experience Platform Android sample app](https://github.com/adobe/aepsdk-sample-app-android) | Contains Android sample app for the Mobile SDKs. |
 
 ## Documentation
 
