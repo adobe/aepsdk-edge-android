@@ -84,5 +84,7 @@ dependencies {
         exclude(group = "com.adobe.marketing.mobile", module = "core")
     }
 
+    implementation("androidx.constraintlayout:constraintlayout:2.0.4")
+
     implementation("com.google.code.gson:gson:2.8.9")
 }
