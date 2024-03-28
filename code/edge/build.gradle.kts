@@ -41,5 +41,9 @@ dependencies {
     testImplementation("com.fasterxml.jackson.core:jackson-databind:2.12.7")
 
     androidTestImplementation(project(":test-utils"))
-    androidTestImplementation("com.adobe.marketing.mobile:edgeconsent:2.0.0")
+    androidTestImplementation("com.adobe.marketing.mobile:edgeconsent:3.0.0-SNAPSHOT")
+    {
+        exclude(group = "com.adobe.marketing.mobile", module = "core")
+        exclude(group = "com.adobe.marketing.mobile", module = "edge")
+    }
 }

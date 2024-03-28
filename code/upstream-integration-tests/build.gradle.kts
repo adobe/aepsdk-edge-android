@@ -86,9 +86,10 @@ dependencies {
 
     implementation("androidx.core:core-ktx:1.9.0")
 
-    androidTestImplementation("com.adobe.marketing.mobile:core:2.6.2")
-    androidTestImplementation("com.adobe.marketing.mobile:edgeidentity:2.0.1")
-
+    androidTestImplementation("com.adobe.marketing.mobile:core:3.0.0-SNAPSHOT")
+    androidTestImplementation("com.adobe.marketing.mobile:edgeidentity:3.0.0-SNAPSHOT"){
+        exclude(group = "com.adobe.marketing.mobile", module = "core")
+    }
     androidTestImplementation("androidx.test.ext:junit:1.1.3")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.4.0")
     androidTestImplementation("androidx.test:runner:1.4.0")
