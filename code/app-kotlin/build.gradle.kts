@@ -33,7 +33,7 @@ android {
     namespace = "com.adobe.marketing.mobile.edge.testapp.kotlin"
 
     defaultConfig {
-        applicationId = "com.adobe.marketing.tester.app"
+        applicationId = "com.adobe.marketing.mobile.edge.testapp.kotlin"
         minSdk = BuildConstants.Versions.MIN_SDK_VERSION
         compileSdk = BuildConstants.Versions.COMPILE_SDK_VERSION
         targetSdk = BuildConstants.Versions.TARGET_SDK_VERSION

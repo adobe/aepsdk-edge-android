@@ -14,18 +14,20 @@ See [Configure the Edge Network extension in Data Collection UI](getting-started
 
 ## Run test application
 
-1. In the test app, set your `ENVIRONMENT_FILE_ID` in `TestApplication.java`.
-2. Select the `app` runnable with the desired emulator and run the program.
+1. In the test app, set your `ENVIRONMENT_FILE_ID` in `TestApplication.kt`.
+2. Select the `app-kotlin` runnable with the desired emulator and run the program.
 
 ## Validation with Assurance
 
 Configure a new Assurance session by setting the Base URL to `testapp://main` and launch Assurance in the test app by running the following command in your terminal:
 
 ```bash
-$ adb shell am start -W -a  android.intent.action.VIEW -d "testapp://main?adb_validation_sessionid=ADD_YOUR_SESSION_ID_HERE" com.adobe.marketing.mobile.edgetestapp
+$ adb shell am start -W -a  android.intent.action.VIEW -d "testapp://main?adb_validation_sessionid=ADD_YOUR_SESSION_ID_HERE" com.adobe.marketing.mobile.edge.testapp.kotlin
 ```
 
 > **Note**  
 > Replace `ADD_YOUR_SESSION_ID_HERE` with your Assurance session identifier.
 
 Once the connection is established and the events list starts getting populated, you can filter the Edge extension events by typing `Edge` in the `Search Events` search box.
+
+For mode debugging tips, see also the [Event Transactions view](https://experienceleague.adobe.com/en/docs/experience-platform/assurance/view/event-transactions) for Assurance.

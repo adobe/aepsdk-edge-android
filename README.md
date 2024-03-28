@@ -16,7 +16,7 @@ Integrate the Edge Network mobile extension into your app by following the [gett
 
 #### Open the project
 
-To open and run the project, open the `code/settings.gradle` file in Android Studio.
+To open and run the project, open the `code/settings.gradle.kts` file in Android Studio.
 
 #### Run the test application
 
