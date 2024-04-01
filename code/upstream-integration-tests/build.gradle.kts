@@ -18,6 +18,9 @@ plugins {
     id("com.diffplug.spotless")
 }
 
+val mavenCoreVersion: String by project
+val mavenEdgeIdentityVersion: String by project
+
 configure<com.diffplug.gradle.spotless.SpotlessExtension> {
     kotlin {
         target("src/*/java/**/*.kt")
@@ -86,10 +89,8 @@ dependencies {
 
     implementation("androidx.core:core-ktx:1.9.0")
 
-    androidTestImplementation("com.adobe.marketing.mobile:core:3.0.0-SNAPSHOT")
-    androidTestImplementation("com.adobe.marketing.mobile:edgeidentity:3.0.0-SNAPSHOT"){
-        exclude(group = "com.adobe.marketing.mobile", module = "core")
-    }
+    androidTestImplementation("com.adobe.marketing.mobile:core:$mavenCoreVersion")
+    androidTestImplementation("com.adobe.marketing.mobile:edgeidentity:$mavenEdgeIdentityVersion")
     androidTestImplementation("androidx.test.ext:junit:1.1.3")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.4.0")
     androidTestImplementation("androidx.test:runner:1.4.0")
