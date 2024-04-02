@@ -12,33 +12,37 @@
 
 version: 2.1
 orbs:
-  android: circleci/android@2.1.2
-  codecov: codecov/codecov@3.2.4
+  android: circleci/android@2.4.0
+  codecov: codecov/codecov@4.0.1
+
+# Define pipeline parameters available to all jobs
+parameters:
+  gradle-cache-prefix:
+    type: string
+    default: v1
+  build-cache-prefix:
+    type: string
+    default: v1
+  build-path:
+    type: string
+    default: code/edge/build
 
 # Workflows orchestrate a set of jobs to be run;
 workflows:
   version: 2
   build-test-deploy:
     jobs:
-      - validate-code:
-          gradle-cache-prefix: v1
-          build-cache-prefix: v1
+      - validate-code
 
       - build-and-unit-test:
-          gradle-cache-prefix: v1
-          build-cache-prefix: v1
           requires:
             - validate-code
 
       - functional-test:
-          gradle-cache-prefix: v1
-          build-cache-prefix: v1
           requires:
             - validate-code
-      
+
       - integration-test:
-          gradle-cache-prefix: v1
-          build-cache-prefix: v1
           requires:
             - validate-code
           filters:
@@ -46,123 +50,107 @@ workflows:
               only:
                 - main
                 - staging
+      
+      - build-test-app:
+          requires:
+            - validate-code
+          filters:
+            branches:
+              only:
+                - main
+                - staging
+        
 
 jobs:
   validate-code:
-    parameters:
-      gradle-cache-prefix:
-        type: string
-        default: v1
-      build-cache-prefix:
-        type: string
-        default: v1
 
     # List of available Android Docker images: https://circleci.com/developer/images/image/cimg/android#image-tags
     executor:
       name: android/android-docker
-      tag: 2022.09.2-node
+      tag: 2024.01.1-node
 
     steps:
       - checkout
 
       - android/restore-gradle-cache:
-          cache-prefix: << parameters.gradle-cache-prefix >>
+          cache-prefix: << pipeline.parameters.gradle-cache-prefix >>
       - android/restore-build-cache:
-          cache-prefix: << parameters.build-cache-prefix >>
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>
 
       - run:
-          name: Check Code Format
-          command: make format-check
+          name: Check Format
+          command: make checkformat
 
       - run:
-          name: Lint Code
-          command: make lint-check
+          name: Lint
+          command: make lint
 
       - android/save-gradle-cache:
-          cache-prefix: << parameters.gradle-cache-prefix >>
+          cache-prefix: << pipeline.parameters.gradle-cache-prefix >>
       - android/save-build-cache:
-          cache-prefix: << parameters.build-cache-prefix >>
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>
 
       # Store Lint report
       - store_artifacts:
-          path: code/edge/build/reports
+          path: << pipeline.parameters.build-path >>/reports
 
   build-and-unit-test:
-    parameters:
-      gradle-cache-prefix:
-        type: string
-        default: v1
-      build-cache-prefix:
-        type: string
-        default: v1
 
     # List of available Android Docker images: https://circleci.com/developer/images/image/cimg/android#image-tags
     executor:
       name: android/android-docker
-      tag: 2022.09.2-node
+      tag: 2024.01.1-node
 
     steps:
       - checkout
 
       - android/restore-gradle-cache:
-          cache-prefix: << parameters.gradle-cache-prefix >>
+          cache-prefix: << pipeline.parameters.gradle-cache-prefix >>
       - android/restore-build-cache:
-          cache-prefix: << parameters.build-cache-prefix >>
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>
 
       - run:
           name: Javadoc
-          command: make ci-javadoc
+          command: make javadoc
       - store_artifacts:
-          path: ci/javadoc/build/reports
+          path: << pipeline.parameters.build-path >>/dokka/javadoc
 
       - run:
-          name: Build
-          command: make ci-build
-
-      - run:
-          name: Build App
-          command: make ci-build-app
+          name: Assemble Phone
+          command: make assemble-phone
 
       - android/run-tests:
-          test-command: make ci-unit-test
+          test-command: make unit-test-coverage
 
       - android/save-gradle-cache:
-          cache-prefix: << parameters.gradle-cache-prefix >>
+          cache-prefix: << pipeline.parameters.gradle-cache-prefix >>
       - android/save-build-cache:
-          cache-prefix: << parameters.build-cache-prefix >>
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>
+
+      - store_artifacts:
+          path: << pipeline.parameters.build-path >>/reports/tests
+
+      - store_test_results:
+          path: << pipeline.parameters.build-path >>/test-results/testPhoneDebugUnitTest
 
       # Code coverage upload using Codecov
       # See options explanation here: https://docs.codecov.com/docs/codecov-uploader
       - codecov/upload:
-          file: ci/unit-test/build/reports/jacoco/platformUnitTestJacocoReport/platformUnitTestJacocoReport.xml
+          file: << pipeline.parameters.build-path >>/reports/coverage/test/phone/debug/report.xml
           flags: unit-tests
 
-      - store_artifacts:
-          path: ci/unit-test/build/reports
-
-      # On test failures, the step in the Makefile to copy the reports to ci/ is not run, so store test results from build folder instead.
-      - store_test_results:
-          path: code/edge/build/test-results
-
   functional-test:
-    parameters:
-      gradle-cache-prefix:
-        type: string
-        default: v1
-      build-cache-prefix:
-        type: string
-        default: v1
 
     # list of available Android machine images: https://circleci.com/developer/machine/image/android#image-tags
     executor:
       name: android/android-machine
       resource-class: large
-      tag: 2022.09.1
+      tag: 2024.01.1
     steps:
       - checkout
 
       - android/restore-build-cache:
-          cache-prefix: << parameters.build-cache-prefix >>
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>
 
       - run:
           name: List available emulator images
@@ -172,46 +160,38 @@ jobs:
           #   It should match the name seen in the "sdkmanager --list" output
           system-image: system-images;android-29;default;x86
           #   The command to be run, while waiting for emulator startup
-          post-emulator-launch-assemble-command: make ci-build
+          post-emulator-launch-assemble-command: make assemble-phone
           #   The test command
-          test-command: make ci-functional-test
-          restore-gradle-cache-prefix: << parameters.gradle-cache-prefix >>
+          test-command: make functional-test-coverage
+          restore-gradle-cache-prefix: << pipeline.parameters.gradle-cache-prefix >>
 
       - android/save-build-cache:
-          cache-prefix: << parameters.build-cache-prefix >>
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>
+
+      - store_artifacts:
+          path: << pipeline.parameters.build-path >>/reports/androidTests
+
+      - store_test_results:
+          path: << pipeline.parameters.build-path >>/outputs/androidTest-results
 
       # Code coverage upload using Codecov
       # See options explanation here: https://docs.codecov.com/docs/codecov-uploader
       - codecov/upload:
-          file: ci/functional-test/build/reports/coverage/androidTest/phone/debug/connected/report.xml
+          file: << pipeline.parameters.build-path >>/reports/coverage/androidTest/phone/debug/connected/report.xml
           flags: functional-tests
 
-      - store_artifacts:
-          path: ci/functional-test/build/reports
-
-      # On test failures, the step in the Makefile to copy the reports to ci/ is not run, so store test results from build folder instead.
-      - store_test_results:
-          path: code/edge/build/outputs/androidTest-results
-
   integration-test:
-    parameters:
-      gradle-cache-prefix:
-        type: string
-        default: v1
-      build-cache-prefix:
-        type: string
-        default: v1
 
     # list of available Android machine images: https://circleci.com/developer/machine/image/android#image-tags
     executor:
       name: android/android-machine
       resource-class: large
-      tag: 2022.09.1
+      tag: 2024.01.1
     steps:
       - checkout
 
       - android/restore-build-cache:
-          cache-prefix: << parameters.build-cache-prefix >>
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>
 
       - run:
           name: List available emulator images
@@ -221,14 +201,37 @@ jobs:
           #   It should match the name seen in the "sdkmanager --list" output
           system-image: system-images;android-29;default;x86
           #   The command to be run, while waiting for emulator startup
-          post-emulator-launch-assemble-command: make ci-build
+          post-emulator-launch-assemble-command: make assemble-phone
           #   The test command
-          test-command: make ci-upstream-integration-test
-          restore-gradle-cache-prefix: << parameters.gradle-cache-prefix >>
+          test-command: make upstream-integration-test
+          restore-gradle-cache-prefix: << pipeline.parameters.gradle-cache-prefix >>
 
       - android/save-build-cache:
-          cache-prefix: << parameters.build-cache-prefix >>
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>
 
       # On test failures, the step in the Makefile to copy the reports to ci/ is not run, so store test results from build folder instead.
       - store_test_results:
           path: code/integration-tests/build/outputs/androidTest-results/connected
+
+  build-test-app:
+
+    executor:
+      name: android/android-docker
+      tag: 2024.01.1-node
+
+    steps:
+      - checkout
+
+      - android/restore-gradle-cache:
+          cache-prefix: << pipeline.parameters.gradle-cache-prefix >>
+      - android/restore-build-cache:
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>
+
+      - run:
+          name: Assemble App
+          command: make assemble-app
+
+      - android/save-gradle-cache:
+          cache-prefix: << pipeline.parameters.gradle-cache-prefix >>
+      - android/save-build-cache:
+          cache-prefix: << pipeline.parameters.build-cache-prefix >>

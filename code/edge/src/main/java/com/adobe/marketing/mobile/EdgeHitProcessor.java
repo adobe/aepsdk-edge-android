@@ -24,6 +24,7 @@ import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.MapUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
+import com.adobe.marketing.mobile.util.UrlUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -151,6 +152,18 @@ class EdgeHitProcessor implements HitProcessing {
 			edgeHit.getRequestId()
 		);
 
+		if (!isValidUrl(url)) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Unable to send network request for entity (%s) as URL is malformed or scheme is not 'https', '%s'.",
+				entityId,
+				url
+			);
+
+			return true;
+		}
+
 		try {
 			Log.debug(
 				LOG_TAG,
@@ -194,6 +207,31 @@ class EdgeHitProcessor implements HitProcessing {
 
 			return false; // Hit failed to send, retry after interval
 		}
+	}
+
+	/**
+	 * Validates a given URL.
+	 * Checks that a URL is valid by ensuring:
+	 * <ul>
+	 *     <li>The URL is not null or empty.</li>
+	 *     <li>The URL is parsable by the {@link java.net.URL} class.</li>
+	 *     <li>The URL scheme is "HTTPS".</li>
+	 * </ul>
+	 * @param url the URL string to validate
+	 * @return true if the URL is valid, false otherwise.
+	 */
+	private boolean isValidUrl(final String url) {
+		if (!UrlUtils.isValidUrl(url)) {
+			Log.debug(LOG_TAG, LOG_SOURCE, "Request invalid, URL is malformed, '%s'.", url);
+			return false;
+		}
+
+		if (!url.startsWith("https")) {
+			Log.debug(LOG_TAG, LOG_SOURCE, "Request invalid, URL scheme must be 'https', '%s'.", url);
+			return false;
+		}
+
+		return true;
 	}
 
 	/**

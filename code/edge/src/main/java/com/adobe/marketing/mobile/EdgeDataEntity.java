@@ -92,8 +92,7 @@ final class EdgeDataEntity {
 	 * Serializes this to a {@code DataEntity}.
 	 * @return serialized {@code EdgeDataEntity} or null if it could not be serialized.
 	 */
-	@Nullable
-	DataEntity toDataEntity() {
+	@Nullable DataEntity toDataEntity() {
 		try {
 			JSONObject serializedEntity = new JSONObject();
 			serializedEntity.put(EVENT_KEY, new JSONObject(EventCoder.encode(this.event)));
@@ -122,8 +121,7 @@ final class EdgeDataEntity {
 	 * @return a deserialized {@code EdgeDataEntity} instance or null if it
 	 * could not be deserialized to an {@code EdgeDataEntity}
 	 */
-	@Nullable
-	static EdgeDataEntity fromDataEntity(@NotNull final DataEntity dataEntity) {
+	@Nullable static EdgeDataEntity fromDataEntity(@NotNull final DataEntity dataEntity) {
 		String entity = dataEntity.getData();
 		if (entity == null || entity.isEmpty()) {
 			return null;
