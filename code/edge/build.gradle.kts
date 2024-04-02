@@ -31,11 +31,8 @@ aepLibrary {
 }
 
 dependencies {
-    // Stop using SNAPSHOT after Core release.
-    implementation("com.adobe.marketing.mobile:core:$mavenCoreVersion-SNAPSHOT")
-    implementation("com.adobe.marketing.mobile:edgeidentity:$mavenEdgeIdentityVersion-SNAPSHOT") {
-        exclude(group = "com.adobe.marketing.mobile", module = "core")
-    }
+    implementation("com.adobe.marketing.mobile:core:$mavenCoreVersion")
+    implementation("com.adobe.marketing.mobile:edgeidentity:$mavenEdgeIdentityVersion")
 
     testImplementation(project(":test-utils"))
     testImplementation("com.fasterxml.jackson.core:jackson-databind:2.12.7")
@@ -43,7 +40,6 @@ dependencies {
     androidTestImplementation(project(":test-utils"))
     androidTestImplementation("com.adobe.marketing.mobile:edgeconsent:3.0.0-SNAPSHOT")
     {
-        exclude(group = "com.adobe.marketing.mobile", module = "core")
         exclude(group = "com.adobe.marketing.mobile", module = "edge")
     }
 }
