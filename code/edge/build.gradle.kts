@@ -34,10 +34,10 @@ dependencies {
     implementation("com.adobe.marketing.mobile:core:$mavenCoreVersion")
     implementation("com.adobe.marketing.mobile:edgeidentity:$mavenEdgeIdentityVersion")
 
-    testImplementation("com.github.adobe:aepsdk-testutils-android:5d8c71239d")
+    testImplementation("com.github.adobe:aepsdk-testutils-android:efa7766c7b")
     testImplementation("com.fasterxml.jackson.core:jackson-databind:2.12.7")
 
-    androidTestImplementation("com.github.adobe:aepsdk-testutils-android:5d8c71239d")
+    androidTestImplementation("com.github.adobe:aepsdk-testutils-android:efa7766c7b")
     androidTestImplementation("com.adobe.marketing.mobile:edgeconsent:3.0.0-SNAPSHOT")
     {
         exclude(group = "com.adobe.marketing.mobile", module = "edge")
