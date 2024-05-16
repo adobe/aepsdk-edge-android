@@ -27,8 +27,12 @@ import static org.mockito.Mockito.when;
 
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.HitQueuing;
+import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.JSONUtils;
+
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.json.JSONObject;
 import org.junit.Before;
@@ -470,8 +474,9 @@ public class EdgeExtensionTest {
 		assertEquals(EventSource.RESPONSE_IDENTITY, responseEvent.getSource());
 		assertEquals(getHintEvent.getUniqueIdentifier(), responseEvent.getResponseID()); // verifies in response to request event
 
-		assertTrue(responseEvent.getEventData().containsKey("locationHint"));
-		assertEquals("or2", (String) responseEvent.getEventData().get("locationHint"));
+		String expected = "{ \"locationHint\": \"or2\" }";
+
+		JSONAsserts.assertExactMatch(expected, responseEvent.getEventData());
 	}
 
 	@Test
@@ -485,9 +490,12 @@ public class EdgeExtensionTest {
 		assertEquals(EventType.EDGE, responseEvent.getType());
 		assertEquals(EventSource.RESPONSE_IDENTITY, responseEvent.getSource());
 
-		assertTrue(responseEvent.getEventData().containsKey("locationHint"));
-		assertNull(responseEvent.getEventData().get("locationHint")); // no hint set returns null
+		String expected = "{ \"locationHint\": null }";
+
+		JSONAsserts.assertExactMatch(expected, responseEvent.getEventData());
 	}
+
+
 
 	@Test
 	public void testHandleGetLocationHint_whenHintExpired_dispatchesResponseWithNullValue()
@@ -503,8 +511,9 @@ public class EdgeExtensionTest {
 		assertEquals(EventType.EDGE, responseEvent.getType());
 		assertEquals(EventSource.RESPONSE_IDENTITY, responseEvent.getSource());
 
-		assertTrue(responseEvent.getEventData().containsKey("locationHint"));
-		assertNull(responseEvent.getEventData().get("locationHint")); // expired hint returns null
+		String expected = "{ \"locationHint\": null }";
+
+		JSONAsserts.assertExactMatch(expected, responseEvent.getEventData());
 	}
 
 	@Test
