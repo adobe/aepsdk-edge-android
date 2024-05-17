@@ -29,10 +29,7 @@ import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.HitQueuing;
 import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.JSONUtils;
-
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.json.JSONObject;
 import org.junit.Before;
@@ -494,8 +491,6 @@ public class EdgeExtensionTest {
 
 		JSONAsserts.assertExactMatch(expected, responseEvent.getEventData());
 	}
-
-
 
 	@Test
 	public void testHandleGetLocationHint_whenHintExpired_dispatchesResponseWithNullValue()

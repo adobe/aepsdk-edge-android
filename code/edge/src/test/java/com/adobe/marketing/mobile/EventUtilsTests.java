@@ -14,7 +14,6 @@ package com.adobe.marketing.mobile;
 import static org.junit.Assert.assertEquals;
 
 import com.adobe.marketing.mobile.util.JSONAsserts;
-
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
@@ -35,7 +34,8 @@ public class EventUtilsTests {
 			}
 		);
 
-		String expected = "{\n" +
+		String expected =
+			"{\n" +
 			"  \"edge.configId\": \"123\",\n" +
 			"  \"edge.domain\": \"my.domain.com\",\n" +
 			"  \"edge.environment\": \"prod\"\n" +

@@ -16,11 +16,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import com.adobe.marketing.mobile.util.JSONAsserts;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -86,7 +81,8 @@ public class EdgeEventHandleTests {
 			}
 		};
 
-		String expected = "[\n" +
+		String expected =
+			"[\n" +
 			"    {\n" +
 			"        \"key1\": \"value1\",\n" +
 			"        \"key2\": 2,\n" +
@@ -136,12 +132,7 @@ public class EdgeEventHandleTests {
 			}
 		};
 
-		String expected = "[\n" +
-			"  {\n" +
-			"    \"key1\": \"value1\",\n" +
-			"    \"key2\": 2\n" +
-			"  }\n" +
-			"]\n";
+		String expected = "[{\"key1\": \"value1\", \"key2\": 2}]";
 
 		EdgeEventHandle handle = new EdgeEventHandle(handleJson);
 
@@ -178,12 +169,7 @@ public class EdgeEventHandleTests {
 			}
 		};
 
-		String expected = "[\n" +
-			"  {\n" +
-			"    \"key1\": \"value1\",\n" +
-			"    \"key2\": 2\n" +
-			"  }\n" +
-			"]\n";
+		String expected = "[{\"key1\": \"value1\", \"key2\": 2}]";
 
 		EdgeEventHandle handle = new EdgeEventHandle(handleJson);
 

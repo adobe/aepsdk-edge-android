@@ -15,7 +15,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -23,7 +22,6 @@ import static org.mockito.Mockito.times;
 
 import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.KeyMustBeAbsent;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -110,10 +108,7 @@ public class EdgePublicAPITests {
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.REQUEST_CONTENT, requestEvent.getSource());
 
-		String expected = "{\n" +
-			"  \"data\": {},\n" +
-			"  \"xdm\": {}\n" +
-			"}";
+		String expected = "{\"data\": {}, \"xdm\": {}}";
 		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData(), new KeyMustBeAbsent("datasetId"));
 	}
 
@@ -127,7 +122,7 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.UPDATE_IDENTITY, requestEvent.getSource());
-		String expected = "{ \"locationHint\": \"or2\" }";
+		String expected = "{\"locationHint\": \"or2\"}";
 		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 	}
 
@@ -141,7 +136,7 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.UPDATE_IDENTITY, requestEvent.getSource());
-		String expected = "{ \"locationHint\": null }";
+		String expected = "{\"locationHint\": null}";
 		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 	}
 
@@ -155,7 +150,7 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.UPDATE_IDENTITY, requestEvent.getSource());
-		String expected = "{ \"locationHint\": \"\" }";
+		String expected = "{\"locationHint\": \"\"}";
 		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 	}
 
@@ -196,7 +191,7 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
-		String expected = "{ \"locationHint\": true }";
+		String expected = "{\"locationHint\": true}";
 		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 
 		Event responseEvent = new Event.Builder(
@@ -252,7 +247,7 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
-		String expected = "{ \"locationHint\": true }";
+		String expected = "{\"locationHint\": true}";
 		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 
 		Event responseEvent = new Event.Builder(
@@ -307,7 +302,7 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
-		String expected = "{ \"locationHint\": true }";
+		String expected = "{\"locationHint\": true}";
 		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 
 		Event responseEvent = new Event.Builder(
@@ -362,7 +357,7 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
-		String expected = "{ \"locationHint\": true }";
+		String expected = "{\"locationHint\": true}";
 		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 
 		// todo:
@@ -404,7 +399,7 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
-		String expected = "{ \"locationHint\": true }";
+		String expected = "{\"locationHint\": true}";
 		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 
 		Event responseEvent = new Event.Builder(
@@ -453,7 +448,7 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
-		String expected = "{ \"locationHint\": true }";
+		String expected = "{\"locationHint\": true}";
 		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 
 		Event responseEvent = new Event.Builder(
@@ -508,7 +503,7 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
-		String expected = "{ \"locationHint\": true }";
+		String expected = "{\"locationHint\": true}";
 		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 
 		Event responseEvent = new Event.Builder(

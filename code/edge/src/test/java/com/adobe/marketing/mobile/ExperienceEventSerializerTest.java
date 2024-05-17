@@ -20,7 +20,6 @@ import com.adobe.marketing.mobile.util.CollectionEqualCount;
 import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.NodeConfig;
 import com.adobe.marketing.mobile.util.ValueTypeMatch;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -66,7 +65,8 @@ public class ExperienceEventSerializerTest {
 		ExperienceEvent event = new ExperienceEvent.Builder().setData(getEventData()).setXdmSchema(contextData).build();
 		Map<String, Object> result = event.toObjectMap();
 
-		String expected = "{\n" +
+		String expected =
+			"{\n" +
 			"  \"data\": {\n" +
 			"    \"key\": \"value\",\n" +
 			"    \"listExample\": [\n" +
@@ -84,7 +84,7 @@ public class ExperienceEventSerializerTest {
 			new CollectionEqualCount(), // Validates top level property count
 			new CollectionEqualCount(Collections.singletonList("data"), NodeConfig.Scope.Subtree)
 		);
-    }
+	}
 
 	@Test
 	public void testSerialize_returnsNull_whenEventWithoutRequiredParameters() {
@@ -122,10 +122,7 @@ public class ExperienceEventSerializerTest {
 		assertEquals(2, result.size());
 		assertTrue(result.containsKey(XDM));
 		assertTrue(result.containsKey(DATASETID));
-		String expected = "{\n" +
-			"  \"datasetId\": \"STRING_TYPE\",\n" +
-			"  \"xdm\": {}\n" +
-			"}";
+		String expected = "{ \"datasetId\": \"STRING_TYPE\", \"xdm\": {} }";
 		JSONAsserts.assertTypeMatch(
 			expected,
 			result,
@@ -139,7 +136,8 @@ public class ExperienceEventSerializerTest {
 		ExperienceEvent event = new ExperienceEvent.Builder().setData(getEventData()).setXdmSchema(contextData).build();
 		Map<String, Object> result = event.toObjectMap();
 
-		String expected = "{\n" +
+		String expected =
+			"{\n" +
 			"  \"data\": {\n" +
 			"    \"key\": \"value\",\n" +
 			"    \"listExample\": [\n" +
@@ -168,7 +166,8 @@ public class ExperienceEventSerializerTest {
 		ExperienceEvent event = new ExperienceEvent.Builder().setData(getEventData()).setXdmSchema(contextData).build();
 		Map<String, Object> result = event.toObjectMap();
 
-		String expected = "{\n" +
+		String expected =
+			"{\n" +
 			"  \"data\": {\n" +
 			"    \"key\": \"value\",\n" +
 			"    \"listExample\": [\n" +
@@ -200,7 +199,8 @@ public class ExperienceEventSerializerTest {
 
 		Map<String, Object> result = event.toObjectMap();
 
-		String expected = "{\n" +
+		String expected =
+			"{\n" +
 			"  \"data\": {\n" +
 			"    \"key\": \"value\",\n" +
 			"    \"listExample\": [\n" +
@@ -250,7 +250,8 @@ public class ExperienceEventSerializerTest {
 
 		Map<String, Object> result = event.toObjectMap();
 
-		String expected = "{\n" +
+		String expected =
+			"{\n" +
 			"  \"data\": {\n" +
 			"    \"key\": \"value\",\n" +
 			"    \"listExample\": [\n" +
@@ -277,11 +278,7 @@ public class ExperienceEventSerializerTest {
 			"    \"eventType\": \"test\"\n" +
 			"  }\n" +
 			"}";
-		JSONAsserts.assertExactMatch(
-			expected,
-			result,
-			new CollectionEqualCount(NodeConfig.Scope.Subtree)
-		);
+		JSONAsserts.assertExactMatch(expected, result, new CollectionEqualCount(NodeConfig.Scope.Subtree));
 	}
 
 	@Test
@@ -306,7 +303,8 @@ public class ExperienceEventSerializerTest {
 
 		Map<String, Object> result = event.toObjectMap();
 
-		String expected = "{\n" +
+		String expected =
+			"{\n" +
 			"  \"data\": {\n" +
 			"    \"key\": \"value\",\n" +
 			"    \"listExample\": [\n" +
@@ -319,11 +317,7 @@ public class ExperienceEventSerializerTest {
 			"    \"eventMergeId\": \"mergeid\"\n" +
 			"  }\n" +
 			"}";
-		JSONAsserts.assertExactMatch(
-			expected,
-			result,
-			new CollectionEqualCount(NodeConfig.Scope.Subtree)
-		);
+		JSONAsserts.assertExactMatch(expected, result, new CollectionEqualCount(NodeConfig.Scope.Subtree));
 	}
 
 	@Test
@@ -348,7 +342,8 @@ public class ExperienceEventSerializerTest {
 
 		Map<String, Object> result = event.toObjectMap();
 
-		String expected = "{\n" +
+		String expected =
+			"{\n" +
 			"  \"data\": {\n" +
 			"    \"key\": \"value\",\n" +
 			"    \"listExample\": [\n" +
@@ -385,30 +380,46 @@ public class ExperienceEventSerializerTest {
 	}
 
 	private Map<String, Object> getEventData() {
-		List<String> stringList = new ArrayList<String>();
-		stringList.add("elem1");
-		stringList.add("elem2");
-		Map<String, Object> eventData = new HashMap<String, Object>();
-		eventData.put("key", "value");
-		eventData.put("listExample", stringList);
-		return eventData;
+		return new HashMap<String, Object>() {
+			{
+				put("key", "value");
+				put(
+					"listExample",
+					Arrays.asList("elem1", "elem2")
+				);
+			}
+		};
 	}
 
 	private Map<String, Object> getCommerceData() {
-		return new HashMap<String, Object>() {{
-			put("purchases", Arrays.asList(
-				new HashMap<String, String>() {{
-					put("value", "3");
-				}},
-				new HashMap<String, String>() {{
-					put("value", "12");
-				}}
-			));
-			put("order", new HashMap<String, Object>() {{
-				put("purchaseID", "11124012-5436-4471-8de9-72ed94e90d95");
-				put("priceTotal", 105.23);
-				put("currencyCode", "RON");
-			}});
-		}};
+		return new HashMap<String, Object>() {
+			{
+				put(
+					"purchases",
+					Arrays.asList(
+						new HashMap<String, String>() {
+							{
+								put("value", "3");
+							}
+						},
+						new HashMap<String, String>() {
+							{
+								put("value", "12");
+							}
+						}
+					)
+				);
+				put(
+					"order",
+					new HashMap<String, Object>() {
+						{
+							put("purchaseID", "11124012-5436-4471-8de9-72ed94e90d95");
+							put("priceTotal", 105.23);
+							put("currencyCode", "RON");
+						}
+					}
+				);
+			}
+		};
 	}
 }
