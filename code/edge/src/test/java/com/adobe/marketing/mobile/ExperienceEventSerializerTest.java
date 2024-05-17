@@ -16,8 +16,14 @@ import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertNotNull;
 
+import com.adobe.marketing.mobile.util.CollectionEqualCount;
+import com.adobe.marketing.mobile.util.JSONAsserts;
+import com.adobe.marketing.mobile.util.NodeConfig;
+import com.adobe.marketing.mobile.util.ValueTypeMatch;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,15 +62,29 @@ public class ExperienceEventSerializerTest {
 
 	@Test
 	public void testSerialize_returnsValidMap_whenEventWithRequiredParametersOnly() {
-		Map<String, Object> eventData = getEventData();
 		TestExperienceEventSchema contextData = new TestExperienceEventSchema.Builder().setEventType("test").build();
-		ExperienceEvent event = new ExperienceEvent.Builder().setData(eventData).setXdmSchema(contextData).build();
+		ExperienceEvent event = new ExperienceEvent.Builder().setData(getEventData()).setXdmSchema(contextData).build();
 		Map<String, Object> result = event.toObjectMap();
-		assertEquals(3, result.size());
-		assertEquals(eventData, result.get(DATA));
-		assertTrue(result.containsKey(XDM));
-		assertTrue(result.containsKey(DATASETID));
-	}
+
+		String expected = "{\n" +
+			"  \"data\": {\n" +
+			"    \"key\": \"value\",\n" +
+			"    \"listExample\": [\n" +
+			"      \"elem1\",\n" +
+			"      \"elem2\"\n" +
+			"    ]\n" +
+			"  },\n" +
+			"  \"datasetId\": \"STRING_TYPE\",\n" +
+			"  \"xdm\": {}\n" +
+			"}";
+		JSONAsserts.assertExactMatch(
+			expected,
+			result,
+			new ValueTypeMatch("datasetId"),
+			new CollectionEqualCount(), // Validates top level property count
+			new CollectionEqualCount(Collections.singletonList("data"), NodeConfig.Scope.Subtree)
+		);
+    }
 
 	@Test
 	public void testSerialize_returnsNull_whenEventWithoutRequiredParameters() {
@@ -102,69 +122,126 @@ public class ExperienceEventSerializerTest {
 		assertEquals(2, result.size());
 		assertTrue(result.containsKey(XDM));
 		assertTrue(result.containsKey(DATASETID));
+		String expected = "{\n" +
+			"  \"datasetId\": \"STRING_TYPE\",\n" +
+			"  \"xdm\": {}\n" +
+			"}";
+		JSONAsserts.assertTypeMatch(
+			expected,
+			result,
+			new CollectionEqualCount() // Validates top level property count
+		);
 	}
 
 	@Test
 	public void testSerialize_returnsValidMap_whenEventWithNullParams() {
-		Map<String, Object> eventData = getEventData();
 		TestExperienceEventSchema contextData = new TestExperienceEventSchema.Builder().setEventType("test").build();
-		ExperienceEvent event = new ExperienceEvent.Builder().setData(eventData).setXdmSchema(contextData).build();
+		ExperienceEvent event = new ExperienceEvent.Builder().setData(getEventData()).setXdmSchema(contextData).build();
 		Map<String, Object> result = event.toObjectMap();
-		assertEquals(3, result.size());
-		assertEquals(eventData, result.get(DATA));
-		assertTrue(result.containsKey(XDM));
-		assertTrue(result.containsKey(DATASETID));
+
+		String expected = "{\n" +
+			"  \"data\": {\n" +
+			"    \"key\": \"value\",\n" +
+			"    \"listExample\": [\n" +
+			"      \"elem1\",\n" +
+			"      \"elem2\"\n" +
+			"    ]\n" +
+			"  },\n" +
+			"  \"datasetId\": \"STRING_TYPE\",\n" +
+			"  \"xdm\": {}\n" +
+			"}";
+		JSONAsserts.assertExactMatch(
+			expected,
+			result,
+			new ValueTypeMatch("datasetId"),
+			new CollectionEqualCount(), // Validates top level property count
+			new CollectionEqualCount(Collections.singletonList("data"), NodeConfig.Scope.Subtree)
+		);
 	}
 
 	@Test
 	public void testSerialize_returnsValidMap_whenEventWithNullCommerceData() {
-		Map<String, Object> eventData = getEventData();
 		TestExperienceEventSchema contextData = new TestExperienceEventSchema.Builder()
 			.setEventType("test")
 			.setCommerceData(null)
 			.build();
-		ExperienceEvent event = new ExperienceEvent.Builder().setData(eventData).setXdmSchema(contextData).build();
+		ExperienceEvent event = new ExperienceEvent.Builder().setData(getEventData()).setXdmSchema(contextData).build();
 		Map<String, Object> result = event.toObjectMap();
-		assertEquals(3, result.size());
-		assertEquals(eventData, result.get(DATA));
-		assertTrue(result.containsKey(DATASETID));
-		assertTrue(result.containsKey(XDM));
-		Map<String, Object> xdmResult = (Map) result.get(XDM);
-		assertEquals(1, xdmResult.size());
-		assertEquals("test", xdmResult.get(TYPE));
+
+		String expected = "{\n" +
+			"  \"data\": {\n" +
+			"    \"key\": \"value\",\n" +
+			"    \"listExample\": [\n" +
+			"      \"elem1\",\n" +
+			"      \"elem2\"\n" +
+			"    ]\n" +
+			"  },\n" +
+			"  \"datasetId\": \"STRING_TYPE\",\n" +
+			"  \"xdm\": {\n" +
+			"    \"eventType\": \"test\"\n" +
+			"  }\n" +
+			"}";
+		JSONAsserts.assertExactMatch(
+			expected,
+			result,
+			new ValueTypeMatch("datasetId"),
+			new CollectionEqualCount(NodeConfig.Scope.Subtree)
+		);
 	}
 
 	@Test
-	public void testSerialize_returnsValidMap_whenEventWithCommerceData() throws Exception {
+	public void testSerialize_returnsValidMap_whenEventWithCommerceData() {
 		Map<String, Object> eventData = getEventData();
-		ObjectMapper mapper = new ObjectMapper();
-		Map<String, Object> commerceMap = mapper.readValue(COMMERCE_JSON, Map.class);
-
 		TestExperienceEventSchema contextData = new TestExperienceEventSchema.Builder()
 			.setEventType("test")
-			.setCommerceData(commerceMap)
+			.setCommerceData(getCommerceData())
 			.build();
 		ExperienceEvent event = new ExperienceEvent.Builder().setData(eventData).setXdmSchema(contextData).build();
 
 		Map<String, Object> result = event.toObjectMap();
-		assertEquals(3, result.size());
-		assertEquals(eventData, result.get(DATA));
-		assertTrue(result.containsKey(DATASETID));
-		Map<String, Object> xdm = (Map) result.get(XDM);
-		assertEquals(2, xdm.size());
-		assertEquals("test", xdm.get(TYPE));
-		assertEquals(commerceMap, xdm.get(COMMERCE));
+
+		String expected = "{\n" +
+			"  \"data\": {\n" +
+			"    \"key\": \"value\",\n" +
+			"    \"listExample\": [\n" +
+			"      \"elem1\",\n" +
+			"      \"elem2\"\n" +
+			"    ]\n" +
+			"  },\n" +
+			"  \"datasetId\": \"STRING_TYPE\",\n" +
+			"  \"xdm\": {\n" +
+			"    \"commerce\": {\n" +
+			"      \"order\": {\n" +
+			"        \"currencyCode\": \"RON\",\n" +
+			"        \"priceTotal\": 105.23,\n" +
+			"        \"purchaseID\": \"11124012-5436-4471-8de9-72ed94e90d95\"\n" +
+			"      },\n" +
+			"      \"purchases\": [\n" +
+			"        {\n" +
+			"          \"value\": \"3\"\n" +
+			"        },\n" +
+			"        {\n" +
+			"          \"value\": \"12\"\n" +
+			"        }\n" +
+			"      ]\n" +
+			"    },\n" +
+			"    \"eventType\": \"test\"\n" +
+			"  }\n" +
+			"}";
+		JSONAsserts.assertExactMatch(
+			expected,
+			result,
+			new ValueTypeMatch("datasetId"),
+			new CollectionEqualCount(NodeConfig.Scope.Subtree)
+		);
 	}
 
 	@Test
-	public void testSerialize_returnsValidMap_whenEventWithCommerceDataAsMap() throws Exception {
+	public void testSerialize_returnsValidMap_whenEventWithCommerceDataAsMap() {
 		Map<String, Object> eventData = getEventData();
-		ObjectMapper mapper = new ObjectMapper();
-		Map<String, Object> commerceMap = mapper.readValue(COMMERCE_JSON, Map.class);
-
 		TestExperienceEventSchema contextData = new TestExperienceEventSchema.Builder()
 			.setEventType("test")
-			.setCommerceData(commerceMap)
+			.setCommerceData(getCommerceData())
 			.build();
 		ExperienceEvent event = new ExperienceEvent.Builder()
 			.setData(eventData)
@@ -172,24 +249,48 @@ public class ExperienceEventSerializerTest {
 			.build();
 
 		Map<String, Object> result = event.toObjectMap();
-		assertEquals(2, result.size());
-		assertEquals(eventData, result.get(DATA));
 
-		Map<String, Object> xdm = (Map) result.get(XDM);
-		assertEquals(2, xdm.size());
-		assertEquals("test", xdm.get(TYPE));
-		assertEquals(commerceMap, xdm.get(COMMERCE));
+		String expected = "{\n" +
+			"  \"data\": {\n" +
+			"    \"key\": \"value\",\n" +
+			"    \"listExample\": [\n" +
+			"      \"elem1\",\n" +
+			"      \"elem2\"\n" +
+			"    ]\n" +
+			"  },\n" +
+			"  \"xdm\": {\n" +
+			"    \"commerce\": {\n" +
+			"      \"order\": {\n" +
+			"        \"currencyCode\": \"RON\",\n" +
+			"        \"priceTotal\": 105.23,\n" +
+			"        \"purchaseID\": \"11124012-5436-4471-8de9-72ed94e90d95\"\n" +
+			"      },\n" +
+			"      \"purchases\": [\n" +
+			"        {\n" +
+			"          \"value\": \"3\"\n" +
+			"        },\n" +
+			"        {\n" +
+			"          \"value\": \"12\"\n" +
+			"        }\n" +
+			"      ]\n" +
+			"    },\n" +
+			"    \"eventType\": \"test\"\n" +
+			"  }\n" +
+			"}";
+		JSONAsserts.assertExactMatch(
+			expected,
+			result,
+			new CollectionEqualCount(NodeConfig.Scope.Subtree)
+		);
 	}
 
 	@Test
-	public void testSerialize_returnsMapOfLastXdmSchema_whenSchemaAddedAsSchemaThenMap() throws Exception {
+	public void testSerialize_returnsMapOfLastXdmSchema_whenSchemaAddedAsSchemaThenMap() {
 		Map<String, Object> eventData = getEventData();
-		ObjectMapper mapper = new ObjectMapper();
-		Map<String, Object> commerceMap = mapper.readValue(COMMERCE_JSON, Map.class);
 
 		TestExperienceEventSchema xdmSchema = new TestExperienceEventSchema.Builder()
 			.setEventType("test")
-			.setCommerceData(commerceMap)
+			.setCommerceData(getCommerceData())
 			.build();
 
 		TestExperienceEventSchema xdmMap = new TestExperienceEventSchema.Builder()
@@ -204,21 +305,30 @@ public class ExperienceEventSerializerTest {
 			.build();
 
 		Map<String, Object> result = event.toObjectMap();
-		assertEquals(2, result.size());
-		assertEquals(eventData, result.get(DATA));
 
-		Map<String, Object> xdm = (Map) result.get(XDM);
-		assertEquals(2, xdm.size());
-		assertEquals("test", xdm.get(TYPE));
-		assertEquals("mergeid", xdm.get(MERGE_ID));
-		assertNull(xdm.get(COMMERCE)); // does not exist
+		String expected = "{\n" +
+			"  \"data\": {\n" +
+			"    \"key\": \"value\",\n" +
+			"    \"listExample\": [\n" +
+			"      \"elem1\",\n" +
+			"      \"elem2\"\n" +
+			"    ]\n" +
+			"  },\n" +
+			"  \"xdm\": {\n" +
+			"    \"eventType\": \"test\",\n" +
+			"    \"eventMergeId\": \"mergeid\"\n" +
+			"  }\n" +
+			"}";
+		JSONAsserts.assertExactMatch(
+			expected,
+			result,
+			new CollectionEqualCount(NodeConfig.Scope.Subtree)
+		);
 	}
 
 	@Test
 	public void testSerialize_returnsMapOfLastXdmSchema_whenSchemaAddedAsMapThenSchema() throws Exception {
 		Map<String, Object> eventData = getEventData();
-		ObjectMapper mapper = new ObjectMapper();
-		Map<String, Object> commerceMap = mapper.readValue(COMMERCE_JSON, Map.class);
 
 		TestExperienceEventSchema xdmMap = new TestExperienceEventSchema.Builder()
 			.setEventType("test")
@@ -227,7 +337,7 @@ public class ExperienceEventSerializerTest {
 
 		TestExperienceEventSchema xdmSchema = new TestExperienceEventSchema.Builder()
 			.setEventType("test")
-			.setCommerceData(commerceMap)
+			.setCommerceData(getCommerceData())
 			.build();
 
 		ExperienceEvent event = new ExperienceEvent.Builder()
@@ -237,15 +347,41 @@ public class ExperienceEventSerializerTest {
 			.build();
 
 		Map<String, Object> result = event.toObjectMap();
-		assertEquals(3, result.size());
-		assertEquals(eventData, result.get(DATA));
-		assertTrue(result.containsKey(DATASETID));
 
-		Map<String, Object> xdm = (Map) result.get(XDM);
-		assertEquals(2, xdm.size());
-		assertEquals("test", xdm.get(TYPE));
-		assertEquals(commerceMap, xdm.get(COMMERCE));
-		assertNull(xdm.get(MERGE_ID)); // does not exist
+		String expected = "{\n" +
+			"  \"data\": {\n" +
+			"    \"key\": \"value\",\n" +
+			"    \"listExample\": [\n" +
+			"      \"elem1\",\n" +
+			"      \"elem2\"\n" +
+			"    ]\n" +
+			"  },\n" +
+			"  \"datasetId\": \"STRING_TYPE\",\n" +
+			"  \"xdm\": {\n" +
+			"    \"commerce\": {\n" +
+			"      \"order\": {\n" +
+			"        \"currencyCode\": \"RON\",\n" +
+			"        \"priceTotal\": 105.23,\n" +
+			"        \"purchaseID\": \"11124012-5436-4471-8de9-72ed94e90d95\"\n" +
+			"      },\n" +
+			"      \"purchases\": [\n" +
+			"        {\n" +
+			"          \"value\": \"3\"\n" +
+			"        },\n" +
+			"        {\n" +
+			"          \"value\": \"12\"\n" +
+			"        }\n" +
+			"      ]\n" +
+			"    },\n" +
+			"    \"eventType\": \"test\"\n" +
+			"  }\n" +
+			"}";
+		JSONAsserts.assertExactMatch(
+			expected,
+			result,
+			new ValueTypeMatch("datasetId"),
+			new CollectionEqualCount(NodeConfig.Scope.Subtree)
+		);
 	}
 
 	private Map<String, Object> getEventData() {
@@ -256,5 +392,23 @@ public class ExperienceEventSerializerTest {
 		eventData.put("key", "value");
 		eventData.put("listExample", stringList);
 		return eventData;
+	}
+
+	private Map<String, Object> getCommerceData() {
+		return new HashMap<String, Object>() {{
+			put("purchases", Arrays.asList(
+				new HashMap<String, String>() {{
+					put("value", "3");
+				}},
+				new HashMap<String, String>() {{
+					put("value", "12");
+				}}
+			));
+			put("order", new HashMap<String, Object>() {{
+				put("purchaseID", "11124012-5436-4471-8de9-72ed94e90d95");
+				put("priceTotal", 105.23);
+				put("currencyCode", "RON");
+			}});
+		}};
 	}
 }
