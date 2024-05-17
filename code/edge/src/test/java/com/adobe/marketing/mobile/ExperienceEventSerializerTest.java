@@ -20,11 +20,9 @@ import com.adobe.marketing.mobile.util.CollectionEqualCount;
 import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.NodeConfig;
 import com.adobe.marketing.mobile.util.ValueTypeMatch;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.junit.Test;
 
@@ -383,10 +381,7 @@ public class ExperienceEventSerializerTest {
 		return new HashMap<String, Object>() {
 			{
 				put("key", "value");
-				put(
-					"listExample",
-					Arrays.asList("elem1", "elem2")
-				);
+				put("listExample", Arrays.asList("elem1", "elem2"));
 			}
 		};
 	}
