@@ -216,7 +216,8 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnError(jsonError, "123");
 
 		// verify
-		String expectedEventData = "{\n" +
+		String expectedEventData =
+			"{\n" +
 			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
 			"  \"status\": 503,\n" +
 			"  \"title\": \"Failed due to unrecoverable system error: java.lang.IllegalStateException: Expected BEGIN_ARRAY but was BEGIN_OBJECT at path $.commerce.purchases\",\n" +
@@ -260,12 +261,15 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnError(jsonError, requestId);
 
 		// verify
-		String expectedEventData = "{\n" +
+		String expectedEventData =
+			"{\n" +
 			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
 			"  \"status\": 503,\n" +
 			"  \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\n" +
 			"  \"requestId\": \"123\",\n" +
-			"  \"requestEventId\": \"" + requestEvent1.getUniqueIdentifier() + "\"\n" +
+			"  \"requestEventId\": \"" +
+			requestEvent1.getUniqueIdentifier() +
+			"\"\n" +
 			"}";
 
 		assertResponseErrorEventWithData(expectedEventData);
@@ -302,7 +306,8 @@ public class NetworkResponseHandlerTest {
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT.equalsIgnoreCase(returnedEvent.getSource()));
 
-		String expectedEventData = "{\n" +
+		String expectedEventData =
+			"{\n" +
 			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0204-200\",\n" +
 			"  \"status\": 202,\n" +
 			"  \"title\": \"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request.\",\n" +
@@ -349,7 +354,8 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnError(jsonError, requestId);
 
 		// verify
-		String expectedEventData = "{\n" +
+		String expectedEventData =
+			"{\n" +
 			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
 			"  \"status\": 503,\n" +
 			"  \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\n" +
@@ -359,7 +365,9 @@ public class NetworkResponseHandlerTest {
 			"    \"errors\": [\"error1\", \"error2\"]\n" +
 			"  },\n" +
 			"  \"requestId\": \"123\",\n" +
-			"  \"requestEventId\": \"" + requestEvent1.getUniqueIdentifier() + "\"\n" +
+			"  \"requestEventId\": \"" +
+			requestEvent1.getUniqueIdentifier() +
+			"\"\n" +
 			"}";
 		assertResponseErrorEventWithData(expectedEventData);
 	}
@@ -399,7 +407,8 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnError(jsonError, requestId);
 
 		// verify
-		String expectedEventData = "{\n" +
+		String expectedEventData =
+			"{\n" +
 			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
 			"  \"status\": 503,\n" +
 			"  \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\n" +
@@ -483,7 +492,8 @@ public class NetworkResponseHandlerTest {
 		assertNotNull(returnedEvent);
 		assertEquals(EVENT_TYPE_EDGE, returnedEvent.getType());
 		assertEquals(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT, returnedEvent.getSource());
-		String expectedEventData = "{\n" +
+		String expectedEventData =
+			"{\n" +
 			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
 			"  \"status\": 503,\n" +
 			"  \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\n" +
@@ -495,7 +505,8 @@ public class NetworkResponseHandlerTest {
 		assertNotNull(returnedEvent);
 		assertEquals(EVENT_TYPE_EDGE, returnedEvent.getType());
 		assertEquals(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT, returnedEvent.getSource());
-		expectedEventData = "{\n" +
+		expectedEventData =
+			"{\n" +
 			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-502\",\n" +
 			"  \"status\": 502,\n" +
 			"  \"title\": \"The server encountered a temporary error and could not complete your request\",\n" +
@@ -557,7 +568,8 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
 		// verify
-		String expectedEventData = "{\n" +
+		String expectedEventData =
+			"{\n" +
 			"  \"type\": \"state:store\",\n" +
 			"  \"payload\": [\n" +
 			"    {\n" +
@@ -732,7 +744,8 @@ public class NetworkResponseHandlerTest {
 		assertNotNull(returnedEvent);
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue("state:store".equalsIgnoreCase(returnedEvent.getSource()));
-		String expectedEventData = "{\n" +
+		String expectedEventData =
+			"{\n" +
 			"  \"type\": \"state:store\",\n" +
 			"  \"payload\": [\n" +
 			"    {\n" +
@@ -750,7 +763,8 @@ public class NetworkResponseHandlerTest {
 		assertNotNull(returnedEvent);
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue("identity:persist".equalsIgnoreCase(returnedEvent.getSource()));
-		expectedEventData = "{\n" +
+		expectedEventData =
+			"{\n" +
 			"  \"type\": \"identity:persist\",\n" +
 			"  \"payload\": [\n" +
 			"    {\n" +
@@ -814,7 +828,8 @@ public class NetworkResponseHandlerTest {
 		assertNotNull(returnedEvent);
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue("state:store".equalsIgnoreCase(returnedEvent.getSource()));
-		String expectedEventData = "{\n" +
+		String expectedEventData =
+			"{\n" +
 			"  \"type\": \"state:store\",\n" +
 			"  \"payload\": [\n" +
 			"    {\n" +
@@ -824,7 +839,9 @@ public class NetworkResponseHandlerTest {
 			"    }\n" +
 			"  ],\n" +
 			"  \"requestId\": \"123\",\n" +
-			"  \"requestEventId\": \"" + requestEvent1.getUniqueIdentifier() + "\"\n" +
+			"  \"requestEventId\": \"" +
+			requestEvent1.getUniqueIdentifier() +
+			"\"\n" +
 			"}";
 		JSONAsserts.assertEquals(expectedEventData, returnedEvent.getEventData());
 
@@ -832,14 +849,17 @@ public class NetworkResponseHandlerTest {
 		assertNotNull(returnedEvent);
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue("pairedeventexample".equalsIgnoreCase(returnedEvent.getSource()));
-		expectedEventData = "{\n" +
+		expectedEventData =
+			"{\n" +
 			"  \"type\": \"pairedeventexample\",\n" +
 			"  \"payload\": [\n" +
 			"    {\n" +
 			"      \"id\": \"123612123812381\"\n" +
 			"    }\n" +
 			"  ],\n" +
-			"  \"requestEventId\": \"" + requestEvent2.getUniqueIdentifier() + "\",\n" +
+			"  \"requestEventId\": \"" +
+			requestEvent2.getUniqueIdentifier() +
+			"\",\n" +
 			"  \"requestId\": \"123\"\n" +
 			"}";
 		JSONAsserts.assertEquals(expectedEventData, returnedEvent.getEventData());
@@ -879,13 +899,16 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, requestId);
 
 		// verify
-		String expectedEventData = "{\n" +
+		String expectedEventData =
+			"{\n" +
 			"  \"payload\": [\n" +
 			"    {\n" +
 			"      \"id\": \"123612123812381\"\n" +
 			"    }\n" +
 			"  ],\n" +
-			"  \"requestId\": \"" + requestId + "\",\n" +
+			"  \"requestId\": \"" +
+			requestId +
+			"\",\n" +
 			"  \"type\": \"pairedeventexample\"\n" +
 			"}";
 		assertResponseContentEventWithData(expectedEventData, "pairedeventexample");
@@ -925,13 +948,16 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, requestId);
 
 		//verify
-		String expectedEventData = "{\n" +
+		String expectedEventData =
+			"{\n" +
 			"  \"payload\": [\n" +
 			"    {\n" +
 			"      \"id\": \"123612123812381\"\n" +
 			"    }\n" +
 			"  ],\n" +
-			"  \"requestId\": \"" + requestId + "\",\n" +
+			"  \"requestId\": \"" +
+			requestId +
+			"\",\n" +
 			"  \"type\": \"pairedeventexample\"\n" +
 			"}";
 		assertResponseContentEventWithData(expectedEventData, "pairedeventexample");
@@ -971,7 +997,8 @@ public class NetworkResponseHandlerTest {
 		assertNotNull(returnedEvent);
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue("state:store".equalsIgnoreCase(returnedEvent.getSource()));
-		String expectedEventData = "{\n" +
+		String expectedEventData =
+			"{\n" +
 			"  \"payload\": [\n" +
 			"    {\n" +
 			"      \"key\": \"s_ecid\",\n" +
@@ -988,7 +1015,8 @@ public class NetworkResponseHandlerTest {
 		assertNotNull(returnedEvent);
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT.equalsIgnoreCase(returnedEvent.getSource()));
-		expectedEventData = "{\n" +
+		expectedEventData =
+			"{\n" +
 			"  \"requestId\": \"123\",\n" +
 			"  \"status\": 503,\n" +
 			"  \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\n" +
@@ -1038,7 +1066,8 @@ public class NetworkResponseHandlerTest {
 		assertNotNull(returnedEvent);
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT.equalsIgnoreCase(returnedEvent.getSource()));
-		String expectedEventData = "{\n" +
+		String expectedEventData =
+			"{\n" +
 			"  \"requestId\": \"123\",\n" +
 			"  \"status\": 503,\n" +
 			"  \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\"\n" +
@@ -1049,7 +1078,8 @@ public class NetworkResponseHandlerTest {
 		assertNotNull(returnedEvent);
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT.equalsIgnoreCase(returnedEvent.getSource()));
-		expectedEventData = "{\n" +
+		expectedEventData =
+			"{\n" +
 			"  \"report\": {\n" +
 			"    \"cause\": {\n" +
 			"      \"code\": 202,\n" +
@@ -1084,7 +1114,8 @@ public class NetworkResponseHandlerTest {
 			"    }";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
-		String expectedEventData = "{\n" +
+		String expectedEventData =
+			"{\n" +
 			"  \"payload\": [\n" +
 			"    {\n" +
 			"      \"key\": \"s_ecid\",\n" +
@@ -1116,7 +1147,8 @@ public class NetworkResponseHandlerTest {
 			"    }";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
-		String expectedEventData = "{\n" +
+		String expectedEventData =
+			"{\n" +
 			"  \"payload\": [\n" +
 			"    {\n" +
 			"      \"key\": \"s_ecid\",\n" +
@@ -1204,7 +1236,8 @@ public class NetworkResponseHandlerTest {
 		latch.await(100, TimeUnit.MILLISECONDS);
 
 		assertEquals(1, receivedData1.size());
-		String expectedEventData1 = "{\n" +
+		String expectedEventData1 =
+			"{\n" +
 			"  \"payload\": [\n" +
 			"    {\n" +
 			"      \"key\": \"s_ecid\",\n" +
@@ -1217,7 +1250,8 @@ public class NetworkResponseHandlerTest {
 		JSONAsserts.assertEquals(expectedEventData1, receivedData1.get(0).toMap());
 
 		assertEquals(1, receivedData2.size());
-		String expectedEventData2 = "{\n" +
+		String expectedEventData2 =
+			"{\n" +
 			"  \"payload\": [\n" +
 			"    {\n" +
 			"      \"id\": \"123612123812381\"\n" +
@@ -1326,7 +1360,8 @@ public class NetworkResponseHandlerTest {
 		assertEquals(1, receivedData1.size());
 		assertTrue(receivedData2.isEmpty());
 		assertTrue(receivedData3.isEmpty());
-		String expectedEventData = "{\n" +
+		String expectedEventData =
+			"{\n" +
 			"  \"payload\": [\n" +
 			"    {\n" +
 			"      \"id\": \"123612123812381\"\n" +
@@ -1418,7 +1453,8 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "d81c93e5-7558-4996-a93c-489d550748b8");
 
 		// verify
-		String expectedEventData = "{\n" +
+		String expectedEventData =
+			"{\n" +
 			"  \"payload\": [\n" +
 			"    {\n" +
 			"      \"hint\": \"or2\",\n" +
@@ -1929,10 +1965,7 @@ public class NetworkResponseHandlerTest {
 		JSONAsserts.assertEquals(expectedEventData, returnedEvent.getEventData());
 	}
 
-	private void assertResponseContentEventWithData(
-		final Object expectedEventData,
-		final String eventSource
-	) {
+	private void assertResponseContentEventWithData(final Object expectedEventData, final String eventSource) {
 		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
 		mockCore.verify(() -> MobileCore.dispatchEvent(eventArgCaptor.capture()), times(1));
 
@@ -1947,10 +1980,7 @@ public class NetworkResponseHandlerTest {
 		JSONAsserts.assertEquals(expectedEventData, returnedEvent.getEventData());
 	}
 
-	private void assertResponseCompleteEventWithData(
-		final Object[] expectedEventDatas,
-		final String[] parentEventIds
-	) {
+	private void assertResponseCompleteEventWithData(final Object[] expectedEventDatas, final String[] parentEventIds) {
 		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
 		mockCore.verify(() -> MobileCore.dispatchEvent(eventArgCaptor.capture()), times(parentEventIds.length));
 
