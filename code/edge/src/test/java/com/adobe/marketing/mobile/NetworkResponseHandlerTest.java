@@ -28,10 +28,10 @@ import static org.mockito.Mockito.when;
 
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
+import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.JSONUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -216,14 +216,12 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnError(jsonError, "123");
 
 		// verify
-		Map<String, Object> expectedEventData = new HashMap<>();
-		expectedEventData.put("type", "https://ns.adobe.com/aep/errors/EXEG-0201-503");
-		expectedEventData.put("status", 503);
-		expectedEventData.put(
-			"title",
-			"Failed due to unrecoverable system error: java.lang.IllegalStateException: Expected BEGIN_ARRAY but was BEGIN_OBJECT at path $.commerce.purchases"
-		);
-		expectedEventData.put(REQUEST_ID, "123");
+		String expectedEventData = "{\n" +
+			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
+			"  \"status\": 503,\n" +
+			"  \"title\": \"Failed due to unrecoverable system error: java.lang.IllegalStateException: Expected BEGIN_ARRAY but was BEGIN_OBJECT at path $.commerce.purchases\",\n" +
+			"  \"requestId\": \"123\"\n" +
+			"}";
 		assertResponseErrorEventWithData(expectedEventData);
 	}
 
@@ -262,15 +260,14 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnError(jsonError, requestId);
 
 		// verify
-		Map<String, Object> expectedEventData = new HashMap<>();
-		expectedEventData.put("type", "https://ns.adobe.com/aep/errors/EXEG-0201-503");
-		expectedEventData.put("status", 503);
-		expectedEventData.put(
-			"title",
-			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later."
-		);
-		expectedEventData.put(REQUEST_ID, "123");
-		expectedEventData.put(REQUEST_EVENT_ID, requestEvent1.getUniqueIdentifier());
+		String expectedEventData = "{\n" +
+			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
+			"  \"status\": 503,\n" +
+			"  \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\n" +
+			"  \"requestId\": \"123\",\n" +
+			"  \"requestEventId\": \"" + requestEvent1.getUniqueIdentifier() + "\"\n" +
+			"}";
+
 		assertResponseErrorEventWithData(expectedEventData);
 	}
 
@@ -296,21 +293,22 @@ public class NetworkResponseHandlerTest {
 		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
 		mockCore.verify(() -> MobileCore.dispatchEvent(eventArgCaptor.capture()), times(1));
 
+		// Verify
 		List<Event> returnedEvents = eventArgCaptor.getAllValues();
 		assertEquals(1, returnedEvents.size());
-		Map<String, Object> expectedEventData = new HashMap<>();
 		Event returnedEvent = returnedEvents.get(0);
 		assertNotNull(returnedEvent);
+
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT.equalsIgnoreCase(returnedEvent.getSource()));
-		expectedEventData.put("type", "https://ns.adobe.com/aep/errors/EXEG-0204-200");
-		expectedEventData.put("status", 202);
-		expectedEventData.put(
-			"title",
-			"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request."
-		);
-		expectedEventData.put(REQUEST_ID, "123");
-		assertEquals(expectedEventData, returnedEvent.getEventData());
+
+		String expectedEventData = "{\n" +
+			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0204-200\",\n" +
+			"  \"status\": 202,\n" +
+			"  \"title\": \"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request.\",\n" +
+			"  \"requestId\": \"123\"\n" +
+			"}";
+		JSONAsserts.assertEquals(expectedEventData, returnedEvent.getEventData());
 	}
 
 	@Test
@@ -351,25 +349,18 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnError(jsonError, requestId);
 
 		// verify
-		Map<String, Object> expectedEventData = new HashMap<>();
-		expectedEventData.put("type", "https://ns.adobe.com/aep/errors/EXEG-0201-503");
-		expectedEventData.put("status", 503);
-		expectedEventData.put(
-			"title",
-			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later."
-		);
-		expectedEventData.put(
-			"report",
-			new HashMap<String, Object>() {
-				{
-					put("requestId", "d81c93e5-7558-4996-a93c-489d550748b8");
-					put("orgId", "1234@AdobeOrg");
-					put("errors", Arrays.asList("error1", "error2"));
-				}
-			}
-		);
-		expectedEventData.put(REQUEST_ID, "123");
-		expectedEventData.put(REQUEST_EVENT_ID, requestEvent1.getUniqueIdentifier());
+		String expectedEventData = "{\n" +
+			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
+			"  \"status\": 503,\n" +
+			"  \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\n" +
+			"  \"report\": {\n" +
+			"    \"requestId\": \"d81c93e5-7558-4996-a93c-489d550748b8\",\n" +
+			"    \"orgId\": \"1234@AdobeOrg\",\n" +
+			"    \"errors\": [\"error1\", \"error2\"]\n" +
+			"  },\n" +
+			"  \"requestId\": \"123\",\n" +
+			"  \"requestEventId\": \"" + requestEvent1.getUniqueIdentifier() + "\"\n" +
+			"}";
 		assertResponseErrorEventWithData(expectedEventData);
 	}
 
@@ -408,14 +399,12 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnError(jsonError, requestId);
 
 		// verify
-		Map<String, Object> expectedEventData = new HashMap<>();
-		expectedEventData.put("type", "https://ns.adobe.com/aep/errors/EXEG-0201-503");
-		expectedEventData.put("status", 503);
-		expectedEventData.put(
-			"title",
-			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later."
-		);
-		expectedEventData.put(REQUEST_ID, "123");
+		String expectedEventData = "{\n" +
+			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
+			"  \"status\": 503,\n" +
+			"  \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\n" +
+			"  \"requestId\": \"123\"\n" +
+			"}";
 		assertResponseErrorEventWithData(expectedEventData);
 	}
 
@@ -454,14 +443,13 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnError(jsonError, "567");
 
 		// verify
-		Map<String, Object> expectedEventData = new HashMap<>();
-		expectedEventData.put("type", "https://ns.adobe.com/aep/errors/EXEG-0201-503");
-		expectedEventData.put("status", 503);
-		expectedEventData.put(
-			"title",
-			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later."
-		);
-		expectedEventData.put(REQUEST_ID, "567");
+		String expectedEventData =
+			"{\n" +
+			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
+			"  \"status\": 503,\n" +
+			"  \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\n" +
+			"  \"requestId\": \"567\"\n" +
+			"}";
 		assertResponseErrorEventWithData(expectedEventData);
 	}
 
@@ -495,26 +483,25 @@ public class NetworkResponseHandlerTest {
 		assertNotNull(returnedEvent);
 		assertEquals(EVENT_TYPE_EDGE, returnedEvent.getType());
 		assertEquals(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT, returnedEvent.getSource());
-		Map<String, Object> expectedEventData = new HashMap<>();
-		expectedEventData.put("type", "https://ns.adobe.com/aep/errors/EXEG-0201-503");
-		expectedEventData.put("status", 503);
-		expectedEventData.put(
-			"title",
-			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later."
-		);
-		expectedEventData.put(REQUEST_ID, "123");
-		assertEquals(expectedEventData, returnedEvent.getEventData());
+		String expectedEventData = "{\n" +
+			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
+			"  \"status\": 503,\n" +
+			"  \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\n" +
+			"  \"requestId\": \"123\"\n" +
+			"}";
+		JSONAsserts.assertEquals(expectedEventData, returnedEvent.getEventData());
 
 		returnedEvent = returnedEvents.get(1);
 		assertNotNull(returnedEvent);
 		assertEquals(EVENT_TYPE_EDGE, returnedEvent.getType());
 		assertEquals(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT, returnedEvent.getSource());
-		expectedEventData = new HashMap<>();
-		expectedEventData.put("type", "https://ns.adobe.com/aep/errors/EXEG-0201-502");
-		expectedEventData.put("status", 502);
-		expectedEventData.put("title", "The server encountered a temporary error and could not complete your request");
-		expectedEventData.put(REQUEST_ID, "123");
-		assertEquals(expectedEventData, returnedEvent.getEventData());
+		expectedEventData = "{\n" +
+			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-502\",\n" +
+			"  \"status\": 502,\n" +
+			"  \"title\": \"The server encountered a temporary error and could not complete your request\",\n" +
+			"  \"requestId\": \"123\"\n" +
+			"}";
+		JSONAsserts.assertEquals(expectedEventData, returnedEvent.getEventData());
 	}
 
 	@Test
@@ -570,21 +557,17 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
 		// verify
-		final Map<String, Object> expectedPayload = new HashMap<>();
-		expectedPayload.put("key", "s_ecid");
-		expectedPayload.put("value", "MCMID|29068398647607325310376254630528178721");
-		expectedPayload.put("maxAge", 15552000);
-		Map<String, Object> expectedEventData = new HashMap<>();
-		expectedEventData.put("type", "state:store");
-		expectedEventData.put(
-			"payload",
-			new ArrayList<Object>() {
-				{
-					add(expectedPayload);
-				}
-			}
-		);
-		expectedEventData.put(REQUEST_ID, "123");
+		String expectedEventData = "{\n" +
+			"  \"type\": \"state:store\",\n" +
+			"  \"payload\": [\n" +
+			"    {\n" +
+			"      \"key\": \"s_ecid\",\n" +
+			"      \"value\": \"MCMID|29068398647607325310376254630528178721\",\n" +
+			"      \"maxAge\": 15552000\n" +
+			"    }\n" +
+			"  ],\n" +
+			"  \"requestId\": \"123\"\n" +
+			"}";
 		assertResponseContentEventWithData(expectedEventData, "state:store");
 	}
 
@@ -749,49 +732,37 @@ public class NetworkResponseHandlerTest {
 		assertNotNull(returnedEvent);
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue("state:store".equalsIgnoreCase(returnedEvent.getSource()));
-		final Map<String, Object> expectedPayload = new HashMap<>();
-		expectedPayload.put("key", "s_ecid");
-		expectedPayload.put("value", "MCMID|29068398647607325310376254630528178721");
-		expectedPayload.put("maxAge", 15552000);
-		Map<String, Object> expectedEventData = new HashMap<>();
-		expectedEventData.put("type", "state:store");
-		expectedEventData.put(
-			"payload",
-			new ArrayList<Object>() {
-				{
-					add(expectedPayload);
-				}
-			}
-		);
-		expectedEventData.put(REQUEST_ID, "123");
-		assertEquals(expectedEventData, returnedEvent.getEventData());
+		String expectedEventData = "{\n" +
+			"  \"type\": \"state:store\",\n" +
+			"  \"payload\": [\n" +
+			"    {\n" +
+			"      \"key\": \"s_ecid\",\n" +
+			"      \"value\": \"MCMID|29068398647607325310376254630528178721\",\n" +
+			"      \"maxAge\": 15552000\n" +
+			"    }\n" +
+			"  ],\n" +
+			"  \"requestId\": \"123\"\n" +
+			"}";
+
+		JSONAsserts.assertEquals(expectedEventData, returnedEvent.getEventData());
 
 		returnedEvent = returnedEvents.get(1);
 		assertNotNull(returnedEvent);
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue("identity:persist".equalsIgnoreCase(returnedEvent.getSource()));
-		expectedPayload.clear();
-		expectedPayload.put("id", "29068398647607325310376254630528178721");
-		expectedPayload.put(
-			"namespace",
-			new HashMap<String, String>() {
-				{
-					put("code", "ECID");
-				}
-			}
-		);
-		expectedEventData = new HashMap<>();
-		expectedEventData.put("type", "identity:persist");
-		expectedEventData.put(
-			"payload",
-			new ArrayList<Object>() {
-				{
-					add(expectedPayload);
-				}
-			}
-		);
-		expectedEventData.put(REQUEST_ID, "123");
-		assertEquals(expectedEventData, returnedEvent.getEventData());
+		expectedEventData = "{\n" +
+			"  \"type\": \"identity:persist\",\n" +
+			"  \"payload\": [\n" +
+			"    {\n" +
+			"      \"id\": \"29068398647607325310376254630528178721\",\n" +
+			"      \"namespace\": {\n" +
+			"        \"code\": \"ECID\"\n" +
+			"      }\n" +
+			"    }\n" +
+			"  ],\n" +
+			"  \"requestId\": \"123\"\n" +
+			"}";
+		JSONAsserts.assertEquals(expectedEventData, returnedEvent.getEventData());
 	}
 
 	@Test
@@ -843,44 +814,35 @@ public class NetworkResponseHandlerTest {
 		assertNotNull(returnedEvent);
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue("state:store".equalsIgnoreCase(returnedEvent.getSource()));
-		final Map<String, Object> expectedPayload = new HashMap<>();
-		expectedPayload.put("key", "s_ecid");
-		expectedPayload.put("value", "MCMID|29068398647607325310376254630528178721");
-		expectedPayload.put("maxAge", 15552000);
-		Map<String, Object> expectedEventData = new HashMap<>();
-		expectedEventData.put("type", "state:store");
-		expectedEventData.put(
-			"payload",
-			new ArrayList<Object>() {
-				{
-					add(expectedPayload);
-				}
-			}
-		);
-		expectedEventData.put(REQUEST_ID, "123");
-		expectedEventData.put(REQUEST_EVENT_ID, requestEvent1.getUniqueIdentifier());
-		assertEquals(expectedEventData, returnedEvent.getEventData());
+		String expectedEventData = "{\n" +
+			"  \"type\": \"state:store\",\n" +
+			"  \"payload\": [\n" +
+			"    {\n" +
+			"      \"key\": \"s_ecid\",\n" +
+			"      \"value\": \"MCMID|29068398647607325310376254630528178721\",\n" +
+			"      \"maxAge\": 15552000\n" +
+			"    }\n" +
+			"  ],\n" +
+			"  \"requestId\": \"123\",\n" +
+			"  \"requestEventId\": \"" + requestEvent1.getUniqueIdentifier() + "\"\n" +
+			"}";
+		JSONAsserts.assertEquals(expectedEventData, returnedEvent.getEventData());
 
 		returnedEvent = returnedEvents.get(1);
 		assertNotNull(returnedEvent);
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue("pairedeventexample".equalsIgnoreCase(returnedEvent.getSource()));
-		expectedPayload.clear();
-		expectedPayload.put("id", "123612123812381");
-		expectedEventData = new HashMap<>();
-		expectedEventData.put("type", "pairedeventexample");
-		expectedEventData.put(REQUEST_EVENT_ID, requestEvent2.getUniqueIdentifier());
-		expectedEventData.put(
-			"payload",
-			new ArrayList<Object>() {
-				{
-					add(expectedPayload);
-				}
-			}
-		);
-		expectedEventData.put(REQUEST_ID, "123");
-		expectedEventData.put(REQUEST_EVENT_ID, requestEvent2.getUniqueIdentifier());
-		assertEquals(expectedEventData, returnedEvent.getEventData());
+		expectedEventData = "{\n" +
+			"  \"type\": \"pairedeventexample\",\n" +
+			"  \"payload\": [\n" +
+			"    {\n" +
+			"      \"id\": \"123612123812381\"\n" +
+			"    }\n" +
+			"  ],\n" +
+			"  \"requestEventId\": \"" + requestEvent2.getUniqueIdentifier() + "\",\n" +
+			"  \"requestId\": \"123\"\n" +
+			"}";
+		JSONAsserts.assertEquals(expectedEventData, returnedEvent.getEventData());
 	}
 
 	@Test
@@ -917,20 +879,15 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, requestId);
 
 		// verify
-		final Map<String, Object> expectedPayload = new HashMap<>();
-		Map<String, Object> expectedEventData;
-		expectedPayload.put("id", "123612123812381");
-		expectedEventData = new HashMap<>();
-		expectedEventData.put("type", "pairedeventexample");
-		expectedEventData.put(
-			"payload",
-			new ArrayList<Object>() {
-				{
-					add(expectedPayload);
-				}
-			}
-		);
-		expectedEventData.put(REQUEST_ID, requestId);
+		String expectedEventData = "{\n" +
+			"  \"payload\": [\n" +
+			"    {\n" +
+			"      \"id\": \"123612123812381\"\n" +
+			"    }\n" +
+			"  ],\n" +
+			"  \"requestId\": \"" + requestId + "\",\n" +
+			"  \"type\": \"pairedeventexample\"\n" +
+			"}";
 		assertResponseContentEventWithData(expectedEventData, "pairedeventexample");
 	}
 
@@ -968,20 +925,15 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, requestId);
 
 		//verify
-		final Map<String, Object> expectedPayload = new HashMap<>();
-		Map<String, Object> expectedEventData = new HashMap<>();
-		expectedPayload.put("id", "123612123812381");
-		expectedEventData = new HashMap<>();
-		expectedEventData.put("type", "pairedeventexample");
-		expectedEventData.put(
-			"payload",
-			new ArrayList<Object>() {
-				{
-					add(expectedPayload);
-				}
-			}
-		);
-		expectedEventData.put(REQUEST_ID, requestId);
+		String expectedEventData = "{\n" +
+			"  \"payload\": [\n" +
+			"    {\n" +
+			"      \"id\": \"123612123812381\"\n" +
+			"    }\n" +
+			"  ],\n" +
+			"  \"requestId\": \"" + requestId + "\",\n" +
+			"  \"type\": \"pairedeventexample\"\n" +
+			"}";
 		assertResponseContentEventWithData(expectedEventData, "pairedeventexample");
 	}
 
@@ -1019,36 +971,30 @@ public class NetworkResponseHandlerTest {
 		assertNotNull(returnedEvent);
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue("state:store".equalsIgnoreCase(returnedEvent.getSource()));
-		final Map<String, Object> expectedPayload = new HashMap<>();
-		expectedPayload.put("key", "s_ecid");
-		expectedPayload.put("value", "MCMID|29068398647607325310376254630528178721");
-		expectedPayload.put("maxAge", 15552000);
-		Map<String, Object> expectedEventData = new HashMap<>();
-		expectedEventData.put("type", "state:store");
-		expectedEventData.put(
-			"payload",
-			new ArrayList<Object>() {
-				{
-					add(expectedPayload);
-				}
-			}
-		);
-		expectedEventData.put(REQUEST_ID, "123");
-		assertEquals(expectedEventData, returnedEvent.getEventData());
+		String expectedEventData = "{\n" +
+			"  \"payload\": [\n" +
+			"    {\n" +
+			"      \"key\": \"s_ecid\",\n" +
+			"      \"value\": \"MCMID|29068398647607325310376254630528178721\",\n" +
+			"      \"maxAge\": 15552000\n" +
+			"    }\n" +
+			"  ],\n" +
+			"  \"requestId\": \"123\",\n" +
+			"  \"type\": \"state:store\"\n" +
+			"}";
+		JSONAsserts.assertEquals(expectedEventData, returnedEvent.getEventData());
 
 		returnedEvent = returnedEvents.get(1);
 		assertNotNull(returnedEvent);
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT.equalsIgnoreCase(returnedEvent.getSource()));
-		expectedEventData = new HashMap<>();
-		expectedEventData.put("type", "https://ns.adobe.com/aep/errors/EXEG-0201-503");
-		expectedEventData.put("status", 503);
-		expectedEventData.put(
-			"title",
-			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later."
-		);
-		expectedEventData.put(REQUEST_ID, "123");
-		assertEquals(expectedEventData, returnedEvent.getEventData());
+		expectedEventData = "{\n" +
+			"  \"requestId\": \"123\",\n" +
+			"  \"status\": 503,\n" +
+			"  \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\",\n" +
+			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\"\n" +
+			"}";
+		JSONAsserts.assertEquals(expectedEventData, returnedEvent.getEventData());
 	}
 
 	@Test
@@ -1092,39 +1038,30 @@ public class NetworkResponseHandlerTest {
 		assertNotNull(returnedEvent);
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT.equalsIgnoreCase(returnedEvent.getSource()));
-
-		returnedEvent = returnedEvents.get(0);
-		assertNotNull(returnedEvent);
-		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
-		assertTrue(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT.equalsIgnoreCase(returnedEvent.getSource()));
-		Map<String, Object> expectedEventData = new HashMap<>();
-		expectedEventData.put("status", 503);
-		expectedEventData.put(
-			"title",
-			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later."
-		);
-		expectedEventData.put(REQUEST_ID, "123");
-		assertEquals(expectedEventData, returnedEvent.getEventData());
+		String expectedEventData = "{\n" +
+			"  \"requestId\": \"123\",\n" +
+			"  \"status\": 503,\n" +
+			"  \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\"\n" +
+			"}";
+		JSONAsserts.assertEquals(expectedEventData, returnedEvent.getEventData());
 
 		returnedEvent = returnedEvents.get(1);
 		assertNotNull(returnedEvent);
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT.equalsIgnoreCase(returnedEvent.getSource()));
-		expectedEventData.clear();
-		expectedEventData.put("type", "https://ns.adobe.com/aep/errors/EXEG-0204-200");
-		expectedEventData.put("status", 202);
-		expectedEventData.put(
-			"title",
-			"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request."
-		);
-		HashMap<String, Object> expectedReport = new HashMap<>();
-		HashMap<String, Object> expectedCause = new HashMap<>();
-		expectedCause.put("message", "Cannot read related customer for device id: ...");
-		expectedCause.put("code", 202);
-		expectedReport.put("cause", expectedCause);
-		expectedEventData.put("report", expectedReport);
-		expectedEventData.put(REQUEST_ID, "123");
-		assertEquals(expectedEventData, returnedEvent.getEventData());
+		expectedEventData = "{\n" +
+			"  \"report\": {\n" +
+			"    \"cause\": {\n" +
+			"      \"code\": 202,\n" +
+			"      \"message\": \"Cannot read related customer for device id: ...\"\n" +
+			"    }\n" +
+			"  },\n" +
+			"  \"requestId\": \"123\",\n" +
+			"  \"status\": 202,\n" +
+			"  \"title\": \"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request.\",\n" +
+			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0204-200\"\n" +
+			"}";
+		JSONAsserts.assertEquals(expectedEventData, returnedEvent.getEventData());
 	}
 
 	@Test
@@ -1147,24 +1084,16 @@ public class NetworkResponseHandlerTest {
 			"    }";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
-		Map<String, Object> expectedEventData = new HashMap<>();
-		expectedEventData.put(
-			"payload",
-			new ArrayList<Object>() {
-				{
-					add(
-						new HashMap<String, Object>() {
-							{
-								put("key", "s_ecid");
-								put("value", "MCMID|29068398647607325310376254630528178721");
-								put("maxAge", 15552000);
-							}
-						}
-					);
-				}
-			}
-		);
-		expectedEventData.put(REQUEST_ID, "123");
+		String expectedEventData = "{\n" +
+			"  \"payload\": [\n" +
+			"    {\n" +
+			"      \"key\": \"s_ecid\",\n" +
+			"      \"value\": \"MCMID|29068398647607325310376254630528178721\",\n" +
+			"      \"maxAge\": 15552000\n" +
+			"    }\n" +
+			"  ],\n" +
+			"  \"requestId\": \"123\"\n" +
+			"}";
 		assertResponseContentEventWithData(expectedEventData, EVENT_SOURCE_EXTENSION_RESPONSE_CONTENT);
 	}
 
@@ -1187,24 +1116,16 @@ public class NetworkResponseHandlerTest {
 			"    }";
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
 
-		Map<String, Object> expectedEventData = new HashMap<>();
-		expectedEventData.put(
-			"payload",
-			new ArrayList<Object>() {
-				{
-					add(
-						new HashMap<String, Object>() {
-							{
-								put("key", "s_ecid");
-								put("value", "MCMID|29068398647607325310376254630528178721");
-								put("maxAge", 15552000);
-							}
-						}
-					);
-				}
-			}
-		);
-		expectedEventData.put(REQUEST_ID, "123");
+		String expectedEventData = "{\n" +
+			"  \"payload\": [\n" +
+			"    {\n" +
+			"      \"key\": \"s_ecid\",\n" +
+			"      \"value\": \"MCMID|29068398647607325310376254630528178721\",\n" +
+			"      \"maxAge\": 15552000\n" +
+			"    }\n" +
+			"  ],\n" +
+			"  \"requestId\": \"123\"\n" +
+			"}";
 		assertResponseContentEventWithData(expectedEventData, EVENT_SOURCE_EXTENSION_RESPONSE_CONTENT);
 	}
 
@@ -1279,39 +1200,32 @@ public class NetworkResponseHandlerTest {
 		CompletionCallbacksManager.getInstance().unregisterCallback(requestEvent1.getUniqueIdentifier());
 		CompletionCallbacksManager.getInstance().unregisterCallback(requestEvent2.getUniqueIdentifier());
 
-		final Map<String, Object> expectedPayload1 = new HashMap<>();
-		expectedPayload1.put("key", "s_ecid");
-		expectedPayload1.put("value", "MCMID|29068398647607325310376254630528178721");
-		expectedPayload1.put("maxAge", 15552000);
-		Map<String, Object> expectedEventData1 = new HashMap<>();
-		expectedEventData1.put("type", "state:store");
-		expectedEventData1.put(
-			"payload",
-			new ArrayList<Object>() {
-				{
-					add(expectedPayload1);
-				}
-			}
-		);
+		latch.await(100, TimeUnit.MILLISECONDS);
 		latch.await(100, TimeUnit.MILLISECONDS);
 
-		final Map<String, Object> expectedPayload2 = new HashMap<>();
-		expectedPayload2.put("id", "123612123812381");
-		Map<String, Object> expectedEventData2 = new HashMap<>();
-		expectedEventData2.put("type", "pairedeventexample");
-		expectedEventData2.put(
-			"payload",
-			new ArrayList<Object>() {
-				{
-					add(expectedPayload2);
-				}
-			}
-		);
-		latch.await(100, TimeUnit.MILLISECONDS);
 		assertEquals(1, receivedData1.size());
-		assertEquals(expectedEventData1, receivedData1.get(0).toMap());
+		String expectedEventData1 = "{\n" +
+			"  \"payload\": [\n" +
+			"    {\n" +
+			"      \"key\": \"s_ecid\",\n" +
+			"      \"value\": \"MCMID|29068398647607325310376254630528178721\",\n" +
+			"      \"maxAge\": 15552000\n" +
+			"    }\n" +
+			"  ],\n" +
+			"  \"type\": \"state:store\"\n" +
+			"}";
+		JSONAsserts.assertEquals(expectedEventData1, receivedData1.get(0).toMap());
+
 		assertEquals(1, receivedData2.size());
-		assertEquals(expectedEventData2, receivedData2.get(0).toMap());
+		String expectedEventData2 = "{\n" +
+			"  \"payload\": [\n" +
+			"    {\n" +
+			"      \"id\": \"123612123812381\"\n" +
+			"    }\n" +
+			"  ],\n" +
+			"  \"type\": \"pairedeventexample\"\n" +
+			"}";
+		JSONAsserts.assertEquals(expectedEventData2, receivedData2.get(0).toMap());
 	}
 
 	@Test
@@ -1408,24 +1322,20 @@ public class NetworkResponseHandlerTest {
 		CompletionCallbacksManager.getInstance().unregisterCallback(requestEvent2.getUniqueIdentifier());
 		CompletionCallbacksManager.getInstance().unregisterCallback(requestEvent3.getUniqueIdentifier());
 
-		final Map<String, Object> expectedPayload = new HashMap<>();
-		expectedPayload.put("id", "123612123812381");
-		Map<String, Object> expectedEventData = new HashMap<>();
-		expectedEventData.put("type", "pairedeventexample");
-		expectedEventData.put(
-			"payload",
-			new ArrayList<Object>() {
-				{
-					add(expectedPayload);
-				}
-			}
-		);
-
 		latch.await(100, TimeUnit.MILLISECONDS);
 		assertEquals(1, receivedData1.size());
-		assertEquals(expectedEventData, receivedData1.get(0).toMap());
 		assertTrue(receivedData2.isEmpty());
 		assertTrue(receivedData3.isEmpty());
+		String expectedEventData = "{\n" +
+			"  \"payload\": [\n" +
+			"    {\n" +
+			"      \"id\": \"123612123812381\"\n" +
+			"    }\n" +
+			"  ],\n" +
+			"  \"type\": \"pairedeventexample\"\n" +
+			"}";
+
+		JSONAsserts.assertEquals(expectedEventData, receivedData1.get(0).toMap());
 	}
 
 	@Test
@@ -1508,26 +1418,23 @@ public class NetworkResponseHandlerTest {
 		networkResponseHandler.processResponseOnSuccess(jsonResponse, "d81c93e5-7558-4996-a93c-489d550748b8");
 
 		// verify
-		final Map<String, Object> expectedPayload1 = new HashMap<>();
-		expectedPayload1.put("scope", "EdgeNetwork");
-		expectedPayload1.put("hint", "or2");
-		expectedPayload1.put("ttlSeconds", 1800);
-		final Map<String, Object> expectedPayload2 = new HashMap<>();
-		expectedPayload2.put("scope", "Target");
-		expectedPayload2.put("hint", "edge34");
-		expectedPayload2.put("ttlSeconds", 600);
-		Map<String, Object> expectedEventData = new HashMap<>();
-		expectedEventData.put("type", "locationHint:result");
-		expectedEventData.put(
-			"payload",
-			new ArrayList<Object>() {
-				{
-					add(expectedPayload1);
-					add(expectedPayload2);
-				}
-			}
-		);
-		expectedEventData.put(REQUEST_ID, "d81c93e5-7558-4996-a93c-489d550748b8");
+		String expectedEventData = "{\n" +
+			"  \"payload\": [\n" +
+			"    {\n" +
+			"      \"hint\": \"or2\",\n" +
+			"      \"scope\": \"EdgeNetwork\",\n" +
+			"      \"ttlSeconds\": 1800\n" +
+			"    },\n" +
+			"    {\n" +
+			"      \"hint\": \"edge34\",\n" +
+			"      \"scope\": \"Target\",\n" +
+			"      \"ttlSeconds\": 600\n" +
+			"    }\n" +
+			"  ],\n" +
+			"  \"requestId\": \"d81c93e5-7558-4996-a93c-489d550748b8\",\n" +
+			"  \"type\": \"locationHint:result\"\n" +
+			"}";
+
 		assertResponseContentEventWithData(expectedEventData, "locationHint:result");
 	}
 
@@ -1694,14 +1601,10 @@ public class NetworkResponseHandlerTest {
 
 		networkResponseHandler.processResponseOnComplete(requestId);
 
-		final Map<String, Object> expectedEventData = new HashMap<String, Object>() {
-			{
-				put("requestId", requestId);
-			}
-		};
+		String expectedEventData = "{\"requestId\": \"" + requestId + "\"}";
 
 		assertResponseCompleteEventWithData(
-			new Map[] { expectedEventData },
+			new Object[] { expectedEventData },
 			new String[] { requestEvent1.getUniqueIdentifier() }
 		);
 	}
@@ -1729,14 +1632,10 @@ public class NetworkResponseHandlerTest {
 
 		networkResponseHandler.processResponseOnComplete(requestId);
 
-		final Map<String, Object> expectedEventData = new HashMap<String, Object>() {
-			{
-				put("requestId", requestId);
-			}
-		};
+		String expectedEventData = "{\"requestId\": \"" + requestId + "\"}";
 
 		assertResponseCompleteEventWithData(
-			new Map[] { expectedEventData, expectedEventData },
+			new Object[] { expectedEventData, expectedEventData },
 			new String[] { requestEvent1.getUniqueIdentifier(), requestEvent2.getUniqueIdentifier() }
 		);
 	}
@@ -1764,15 +1663,10 @@ public class NetworkResponseHandlerTest {
 
 		networkResponseHandler.processResponseOnComplete(requestId);
 
-		final Map<String, Object> expectedEventData = new HashMap<String, Object>() {
-			{
-				put("requestId", requestId);
-			}
-		};
-
+		String expectedEventData = "{\"requestId\": \"" + requestId + "\"}";
 		// Assert complete event only dispatched for requestEvent2
 		assertResponseCompleteEventWithData(
-			new Map[] { expectedEventData },
+			new Object[] { expectedEventData },
 			new String[] { requestEvent2.getUniqueIdentifier() }
 		);
 	}
@@ -2022,7 +1916,7 @@ public class NetworkResponseHandlerTest {
 		}
 	}
 
-	private void assertResponseErrorEventWithData(final Map<String, Object> expectedEventData) {
+	private void assertResponseErrorEventWithData(final Object expectedEventData) {
 		ArgumentCaptor<Event> eventArgCaptor;
 		eventArgCaptor = ArgumentCaptor.forClass(Event.class);
 		mockCore.verify(() -> MobileCore.dispatchEvent(eventArgCaptor.capture()), times(1));
@@ -2032,11 +1926,11 @@ public class NetworkResponseHandlerTest {
 		assertEquals(EVENT_NAME_ERROR_RESPONSE, returnedEvent.getName());
 		assertEquals(EVENT_TYPE_EDGE, returnedEvent.getType());
 		assertEquals(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT, returnedEvent.getSource());
-		assertEquals(expectedEventData, returnedEvent.getEventData());
+		JSONAsserts.assertEquals(expectedEventData, returnedEvent.getEventData());
 	}
 
 	private void assertResponseContentEventWithData(
-		final Map<String, Object> expectedEventData,
+		final Object expectedEventData,
 		final String eventSource
 	) {
 		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
@@ -2050,11 +1944,11 @@ public class NetworkResponseHandlerTest {
 			? EVENT_SOURCE_EXTENSION_RESPONSE_CONTENT
 			: eventSource;
 		assertEquals(expectedEventSource, returnedEvent.getSource());
-		assertEquals(expectedEventData, returnedEvent.getEventData());
+		JSONAsserts.assertEquals(expectedEventData, returnedEvent.getEventData());
 	}
 
 	private void assertResponseCompleteEventWithData(
-		final Map<String, Object>[] expectedEventDatas,
+		final Object[] expectedEventDatas,
 		final String[] parentEventIds
 	) {
 		ArgumentCaptor<Event> eventArgCaptor = ArgumentCaptor.forClass(Event.class);
@@ -2068,7 +1962,7 @@ public class NetworkResponseHandlerTest {
 			assertEquals(EVENT_NAME_CONTENT_COMPLETE, returnedEvent.getName());
 			assertEquals(EVENT_TYPE_EDGE, returnedEvent.getType());
 			assertEquals(EVENT_SOURCE_CONTENT_COMPLETE, returnedEvent.getSource());
-			assertEquals(expectedEventDatas[i], returnedEvent.getEventData());
+			JSONAsserts.assertEquals(expectedEventDatas[i], returnedEvent.getEventData());
 			assertEquals(parentEventIds[i], returnedEvent.getParentID());
 			assertEquals(parentEventIds[i], returnedEvent.getResponseID());
 		}
