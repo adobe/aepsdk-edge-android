@@ -28,6 +28,7 @@ import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.JSONUtils;
 import com.adobe.marketing.mobile.util.KeyMustBeAbsent;
 import com.adobe.marketing.mobile.util.NodeConfig;
+import com.adobe.marketing.mobile.util.TimeUtils;
 import com.adobe.marketing.mobile.util.ValueTypeMatch;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -88,19 +89,19 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		String expected = "{\n" +
-			"  \"events\": [\n" +
-			"    {\n" +
-			"      \"data\": {\n" +
-			"        \"key\": \"value\"\n" +
-			"      },\n" +
-			"      \"xdm\": {\n" +
-			"        \"_id\": \"" + events.get(0).getUniqueIdentifier() + "\",\n" +
-			"        \"timestamp\": \"" + formatTimestamp(events.get(0).getTimestamp()) + "\"\n" +
-			"      }\n" +
-			"    }\n" +
-			"  ]\n" +
-			"}\n";
+		String expected = "{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"data\": {" +
+			"        \"key\": \"value\"" +
+			"      }," +
+			"      \"xdm\": {" +
+			"        \"_id\": \"" + events.get(0).getUniqueIdentifier() + "\"," +
+			"        \"timestamp\": \"" + formatTimestamp(events.get(0).getTimestamp()) + "\"" +
+			"      }" +
+			"    }" +
+			"  ]" +
+			"}";
 		JSONAsserts.assertExactMatch(expected, payload);
 	}
 
@@ -112,16 +113,16 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		String expected = "{\n" +
-			"  \"events\": [\n" +
-			"    {\n" +
-			"      \"xdm\": {\n" +
-			"        \"_id\": \"" + events.get(0).getUniqueIdentifier() + "\",\n" +
-			"        \"timestamp\": \"" + formatTimestamp(events.get(0).getTimestamp()) + "\"\n" +
-			"      }\n" +
-			"    }\n" +
-			"  ]\n" +
-			"}\n";
+		String expected = "{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"xdm\": {" +
+			"        \"_id\": \"" + events.get(0).getUniqueIdentifier() + "\"," +
+			"        \"timestamp\": \"" + formatTimestamp(events.get(0).getTimestamp()) + "\"" +
+			"      }" +
+			"    }" +
+			"  ]" +
+			"}";
 		JSONAsserts.assertExactMatch(expected, payload);
 	}
 
@@ -135,15 +136,15 @@ public class RequestBuilderTest {
 		assertNumberOfEvents(payload, 1);
 
 		assertNotSame(testTimestamp, formatTimestamp(events.get(0).getTimestamp()));
-		String expected = "{\n" +
-			"  \"events\": [\n" +
-			"    {\n" +
-			"      \"xdm\": {\n" +
-			"        \"timestamp\": \"" + testTimestamp + "\"\n" +
-			"      }\n" +
-			"    }\n" +
-			"  ]\n" +
-			"}\n";
+		String expected = "{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"xdm\": {" +
+			"        \"timestamp\": \"" + testTimestamp + "\"" +
+			"      }" +
+			"    }" +
+			"  ]" +
+			"}";
 		JSONAsserts.assertExactMatch(expected, payload);
 	}
 
@@ -158,15 +159,15 @@ public class RequestBuilderTest {
 		assertNumberOfEvents(payload, 1);
 
 		assertNotSame(testTimestamp, formatTimestamp(events.get(0).getTimestamp()));
-		String expected = "{\n" +
-			"  \"events\": [\n" +
-			"    {\n" +
-			"      \"xdm\": {\n" +
-			"        \"timestamp\": \"" + testTimestamp + "\"\n" +
-			"      }\n" +
-			"    }\n" +
-			"  ]\n" +
-			"}\n";
+		String expected = "{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"xdm\": {" +
+			"        \"timestamp\": \"" + testTimestamp + "\"" +
+			"      }" +
+			"    }" +
+			"  ]" +
+			"}";
 		JSONAsserts.assertExactMatch(expected, payload);
 	}
 
@@ -179,15 +180,15 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		String expected = "{\n" +
-			"  \"events\": [\n" +
-			"    {\n" +
-			"      \"xdm\": {\n" +
-			"        \"timestamp\": \"" + formatTimestamp(events.get(0).getTimestamp()) + "\"\n" +
-			"      }\n" +
-			"    }\n" +
-			"  ]\n" +
-			"}\n";
+		String expected = "{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"xdm\": {" +
+			"        \"timestamp\": \"" + formatTimestamp(events.get(0).getTimestamp()) + "\"" +
+			"      }" +
+			"    }" +
+			"  ]" +
+			"}";
 		JSONAsserts.assertExactMatch(expected, payload);
 	}
 
@@ -199,17 +200,17 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		String expected = "{\n" +
-			"  \"events\": [\n" +
-			"    {\n" +
-			"      \"meta\": {\n" +
-			"        \"collect\": {\n" +
-			"          \"datasetId\": \"5dd603781b95cc18a83d42ce\"\n" +
-			"        }\n" +
-			"      }\n" +
-			"    }\n" +
-			"  ]\n" +
-			"}\n";
+		String expected = "{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"meta\": {" +
+			"        \"collect\": {" +
+			"          \"datasetId\": \"5dd603781b95cc18a83d42ce\"" +
+			"        }" +
+			"      }" +
+			"    }" +
+			"  ]" +
+			"}";
 		// Verify internal key is removed
 		JSONAsserts.assertExactMatch(expected, payload, new KeyMustBeAbsent("events[0].datasetId"));
 	}
@@ -223,17 +224,17 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		String expected = "{\n" +
-			"  \"events\": [\n" +
-			"    {\n" +
-			"      \"meta\": {\n" +
-			"        \"collect\": {\n" +
-			"          \"datasetId\": \"5dd603781b95cc18a83d42ce\"\n" +
-			"        }\n" +
-			"      }\n" +
-			"    }\n" +
-			"  ]\n" +
-			"}\n";
+		String expected = "{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"meta\": {" +
+			"        \"collect\": {" +
+			"          \"datasetId\": \"5dd603781b95cc18a83d42ce\"" +
+			"        }" +
+			"      }" +
+			"    }" +
+			"  ]" +
+			"}";
 		// Verify internal key is removed
 		JSONAsserts.assertExactMatch(expected, payload, new KeyMustBeAbsent("events[0].datasetId"));
 	}
@@ -281,19 +282,19 @@ public class RequestBuilderTest {
 
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
-		
-		String expected = "{\n" +
-			"  \"events\": [\n" +
-			"    {\n" +
-			"      \"meta\": {\n" +
-			"        \"collect\": {}\n" +
-			"      },\n" +
-			"      \"xdm\": {\n" +
-			"        \"_id\": \"" + events.get(0).getUniqueIdentifier() + "\",\n" +
-			"        \"timestamp\": \"" + formatTimestamp(events.get(0).getTimestamp()) + "\"\n" +
-			"      }\n" +
-			"    }\n" +
-			"  ]\n" +
+
+		String expected = "{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"meta\": {" +
+			"        \"collect\": {}" +
+			"      }," +
+			"      \"xdm\": {" +
+			"        \"_id\": \"" + events.get(0).getUniqueIdentifier() + "\"," +
+			"        \"timestamp\": \"" + formatTimestamp(events.get(0).getTimestamp()) + "\"" +
+			"      }" +
+			"    }" +
+			"  ]" +
 			"}";
 		JSONAsserts.assertExactMatch(expected, payload, new KeyMustBeAbsent("events[0].datasetId"), new CollectionEqualCount(Subtree, "events[0].meta"));
 	}
@@ -311,27 +312,27 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 2);
 
-		String expected = "{\n" +
-			"  \"events\": [\n" +
-			"    {\n" +
-			"      \"data\": {\n" +
-			"        \"key\": \"one\"\n" +
-			"      },\n" +
-			"      \"xdm\": {\n" +
-			"        \"_id\": \"" + events.get(0).getUniqueIdentifier() + "\",\n" +
-			"        \"timestamp\": \"" + formatTimestamp(events.get(0).getTimestamp()) + "\"\n" +
-			"      }\n" +
-			"    },\n" +
-			"    {\n" +
-			"      \"data\": {\n" +
-			"        \"key\": \"two\"\n" +
-			"      },\n" +
-			"      \"xdm\": {\n" +
-			"        \"_id\": \"" + events.get(1).getUniqueIdentifier() + "\",\n" +
-			"        \"timestamp\": \"" + formatTimestamp(events.get(1).getTimestamp()) + "\"\n" +
-			"      }\n" +
-			"    }\n" +
-			"  ]\n" +
+		String expected = "{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"data\": {" +
+			"        \"key\": \"one\"" +
+			"      }," +
+			"      \"xdm\": {" +
+			"        \"_id\": \"" + events.get(0).getUniqueIdentifier() + "\"," +
+			"        \"timestamp\": \"" + formatTimestamp(events.get(0).getTimestamp()) + "\"" +
+			"      }" +
+			"    }," +
+			"    {" +
+			"      \"data\": {" +
+			"        \"key\": \"two\"" +
+			"      }," +
+			"      \"xdm\": {" +
+			"        \"_id\": \"" + events.get(1).getUniqueIdentifier() + "\"," +
+			"        \"timestamp\": \"" + formatTimestamp(events.get(1).getTimestamp()) + "\"" +
+			"      }" +
+			"    }" +
+			"  ]" +
 			"}";
 		JSONAsserts.assertExactMatch(expected, payload, new KeyMustBeAbsent("events[*].meta"));
 	}
@@ -349,38 +350,38 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 2);
 
-		String expected = "{\n" +
-			"  \"events\": [\n" +
-			"    {\n" +
-			"      \"data\": {\n" +
-			"        \"key\": \"one\"\n" +
-			"      },\n" +
-			"      \"xdm\": {\n" +
-			"        \"_id\": \"" + events.get(0).getUniqueIdentifier() + "\",\n" +
-			"        \"timestamp\": \"" + formatTimestamp(events.get(0).getTimestamp()) + "\"\n" +
-			"      },\n" +
-			"      \"meta\": {\n" +
-			"        \"collect\": {\n" +
-			"          \"datasetId\": \"abc\"\n" +
-			"        }\n" +
-			"      }\n" +
-			"    },\n" +
-			"    {\n" +
-			"      \"data\": {\n" +
-			"        \"key\": \"two\"\n" +
-			"      },\n" +
-			"      \"xdm\": {\n" +
-			"        \"_id\": \"" + events.get(1).getUniqueIdentifier() + "\",\n" +
-			"        \"timestamp\": \"" + formatTimestamp(events.get(1).getTimestamp()) + "\"\n" +
-			"      },\n" +
-			"      \"meta\": {\n" +
-			"        \"collect\": {\n" +
-			"          \"datasetId\": \"123\"\n" +
-			"        }\n" +
-			"      }\n" +
-			"    }\n" +
-			"  ]\n" +
-			"}\n";
+		String expected = "{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"data\": {" +
+			"        \"key\": \"one\"" +
+			"      }," +
+			"      \"xdm\": {" +
+			"        \"_id\": \"" + events.get(0).getUniqueIdentifier() + "\"," +
+			"        \"timestamp\": \"" + formatTimestamp(events.get(0).getTimestamp()) + "\"" +
+			"      }," +
+			"      \"meta\": {" +
+			"        \"collect\": {" +
+			"          \"datasetId\": \"abc\"" +
+			"        }" +
+			"      }" +
+			"    }," +
+			"    {" +
+			"      \"data\": {" +
+			"        \"key\": \"two\"" +
+			"      }," +
+			"      \"xdm\": {" +
+			"        \"_id\": \"" + events.get(1).getUniqueIdentifier() + "\"," +
+			"        \"timestamp\": \"" + formatTimestamp(events.get(1).getTimestamp()) + "\"" +
+			"      }," +
+			"      \"meta\": {" +
+			"        \"collect\": {" +
+			"          \"datasetId\": \"123\"" +
+			"        }" +
+			"      }" +
+			"    }" +
+			"  ]" +
+			"}";
 		JSONAsserts.assertExactMatch(expected, payload, new KeyMustBeAbsent("events[*].datasetId"));
 	}
 
@@ -394,12 +395,18 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("true", payloadMap.get("meta.konductorConfig.streaming.enabled"));
-		assertEquals("\u0000", payloadMap.get("meta.konductorConfig.streaming.recordSeparator"));
-		assertEquals("\n", payloadMap.get("meta.konductorConfig.streaming.lineFeed"));
+		String expected = "{" +
+			"  \"meta\": {" +
+			"    \"konductorConfig\": {" +
+			"      \"streaming\": {" +
+			"        \"enabled\": true," +
+			"        \"recordSeparator\": \"\\u0000\"," +
+			"        \"lineFeed\": \"\\n\"" +
+			"      }" +
+			"    }" +
+			"  }" +
+			"}";
+		JSONAsserts.assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -411,10 +418,16 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("OriginalDatastreamId", payloadMap.get("meta.sdkConfig.datastream.original"));
+		String expected = "{" +
+			"  \"meta\": {" +
+			"    \"sdkConfig\": {" +
+			"      \"datastream\": {" +
+			"        \"original\": \"OriginalDatastreamId\"" +
+			"      }" +
+			"    }" +
+			"  }" +
+			"}";
+		JSONAsserts.assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -432,10 +445,14 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("val", payloadMap.get("meta.configOverrides.key"));
+		String expected = "{" +
+			"  \"meta\": {" +
+			"    \"configOverrides\": {" +
+			"      \"key\": \"val\"" +
+			"    }" +
+			"  }" +
+			"}";
+		JSONAsserts.assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -448,10 +465,7 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertNull(payloadMap.get("meta.configOverrides"));
+		JSONAsserts.assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.configOverrides"));
 	}
 
 	@Test
@@ -464,29 +478,24 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertNull(payloadMap.get("meta.configOverrides"));
+		JSONAsserts.assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.configOverrides"));
 	}
 
 	@Test
 	public void getPayloadWithExperienceEvents_addsIdentityMap_whenEcidGiven() throws Exception {
 		List<Event> events = getSingleEvent(getExperienceEventData("value"));
 		final String jsonStr =
-			"{\n" +
-			"      \"identityMap\": {\n" +
-			"        \"ECID\": [\n" +
-			"          {\n" +
-			"            \"id\":" +
-			"myECID" +
-			",\n" +
-			"            \"authenticatedState\": \"ambiguous\",\n" +
-			"            \"primary\": false\n" +
-			"          }\n" +
-			"        ]\n" +
-			"      }\n" +
-			"}";
+			"{" +
+				"      \"identityMap\": {" +
+				"        \"ECID\": [" +
+				"          {" +
+				"            \"id\": \"myECID\"," +
+				"            \"authenticatedState\": \"ambiguous\"," +
+				"            \"primary\": false" +
+				"          }" +
+				"        ]" +
+				"      }" +
+				"}";
 
 		final JSONObject jsonObject = new JSONObject(jsonStr);
 		final Map<String, Object> identityState = JSONUtils.toMap(jsonObject);
@@ -496,10 +505,18 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("myECID", payloadMap.get("xdm.identityMap.ECID[0].id"));
+		String expected = "{" +
+			"  \"xdm\": {" +
+			"    \"identityMap\": {" +
+			"      \"ECID\": [" +
+			"        {" +
+			"          \"id\": \"myECID\"" +
+			"        }" +
+			"      ]" +
+			"    }" +
+			"  }" +
+			"}";
+		JSONAsserts.assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -511,19 +528,25 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("kndctr_3E2A28175B8ED3720A495E23_AdobeOrg_optout", payloadMap.get("meta.state.entries[0].key"));
-		assertEquals("", payloadMap.get("meta.state.entries[0].value"));
-		assertEquals("7200", payloadMap.get("meta.state.entries[0].maxAge"));
-
-		assertEquals("kndctr_3E2A28175B8ED3720A495E23_AdobeOrg_identity", payloadMap.get("meta.state.entries[1].key"));
-		assertEquals(
-			"Cg8KBnN5bmNlZBIBMRiA9SQKMwoERUNJRBImNjA5MjY2MDcwMDIxMDI0NzMyNDYwNDgzMTg3MjA0MDkxMDQ3NjQYgIGjEBCFwbjv_i0=",
-			payloadMap.get("meta.state.entries[1].value")
-		);
-		assertEquals("34128000", payloadMap.get("meta.state.entries[1].maxAge"));
+		String expected = "{" +
+			"  \"meta\": {" +
+			"    \"state\": {" +
+			"      \"entries\": [" +
+			"        {" +
+			"          \"key\": \"kndctr_3E2A28175B8ED3720A495E23_AdobeOrg_optout\"," +
+			"          \"value\": \"\"," +
+			"          \"maxAge\": 7200" +
+			"        }," +
+			"        {" +
+			"          \"key\": \"kndctr_3E2A28175B8ED3720A495E23_AdobeOrg_identity\"," +
+			"          \"value\": \"Cg8KBnN5bmNlZBIBMRiA9SQKMwoERUNJRBImNjA5MjY2MDcwMDIxMDI0NzMyNDYwNDgzMTg3MjA0MDkxMDQ3NjQYgIGjEBCFwbjv_i0=\"," +
+			"          \"maxAge\": 34128000" +
+			"        }" +
+			"      ]" +
+			"    }" +
+			"  }" +
+			"}";
+		JSONAsserts.assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -534,10 +557,7 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertNull(payloadMap.get("meta.state"));
+		JSONAsserts.assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.state"));
 	}
 
 	@Test
@@ -548,9 +568,8 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-		assertNull(payloadMap.get("meta.state")); // StateMetadata not added if empty
+		// StateMetadata not added if empty
+		JSONAsserts.assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.state"));
 	}
 
 	// getConsentPayload tests
@@ -624,12 +643,32 @@ public class RequestBuilderTest {
 		);
 		assertNotNull(payload);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-		assertEquals(5, payloadMap.size()); // 4 from standard fields, 1 from collect value
-		assertStandardFieldsInConsentUpdatesPayload(payload);
-		// assert consent value provided in the consent event
-		assertEquals("y", payloadMap.get("consent[0].value.collect.val"));
+		String expected = "{" +
+			"  \"consent\": [" +
+			"    {" +
+			"      \"standard\": \"Adobe\"," +
+			"      \"value\": {" +
+			"        \"collect\": {" +
+			"          \"val\": \"y\"" +
+			"        }" +
+			"      }," +
+			"      \"version\": \"2.0\"" +
+			"    }" +
+			"  ]," +
+			"  \"meta\": {" +
+			"    \"konductorConfig\": {" +
+			"      \"streaming\": {" +
+			"        \"enabled\": false" +
+			"      }" +
+			"    }" +
+			"  }," +
+			"  \"query\": {" +
+			"    \"consent\": {" +
+			"      \"operation\": \"update\"" +
+			"    }" +
+			"  }" +
+			"}";
+		JSONAsserts.assertEquals(expected, payload);
 	}
 
 	@Test
@@ -662,27 +701,24 @@ public class RequestBuilderTest {
 		);
 		assertStandardFieldsInConsentUpdatesPayload(payload);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-		assertNull(payloadMap.get("meta.state")); // StateMetadata not added to consent requests
+		// StateMetadata not added to consent requests
+		JSONAsserts.assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.state"));
 	}
 
 	@Test
 	public void getConsentPayload_addsIdentityMap() throws Exception {
 		final String jsonStr =
-			"{\n" +
-			"      \"identityMap\": {\n" +
-			"        \"ECID\": [\n" +
-			"          {\n" +
-			"            \"id\":" +
-			"1234" +
-			",\n" +
-			"            \"authenticatedState\": \"ambiguous\",\n" +
-			"            \"primary\": false\n" +
-			"          }\n" +
-			"        ]\n" +
-			"      }\n" +
-			"}";
+			"{" +
+				"      \"identityMap\": {" +
+				"        \"ECID\": [" +
+				"          {" +
+				"            \"id\": 1234," +
+				"            \"authenticatedState\": \"ambiguous\"," +
+				"            \"primary\": false" +
+				"          }" +
+				"        ]" +
+				"      }" +
+				"}";
 
 		final JSONObject jsonObject = new JSONObject(jsonStr);
 		final Map<String, Object> identityState = JSONUtils.toMap(jsonObject);
@@ -787,29 +823,41 @@ public class RequestBuilderTest {
 
 		assertStandardFieldsInConsentUpdatesPayload(payload);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("true", payloadMap.get("meta.konductorConfig.streaming.enabled"));
-		assertEquals("\u0000", payloadMap.get("meta.konductorConfig.streaming.recordSeparator"));
-		assertEquals("\n", payloadMap.get("meta.konductorConfig.streaming.lineFeed"));
+		String expected = "{" +
+			"  \"meta\": {" +
+			"    \"konductorConfig\": {" +
+			"      \"streaming\": {" +
+			"        \"enabled\": true," +
+			"        \"recordSeparator\": \"\\u0000\"," +
+			"        \"lineFeed\": \"\\n\"" +
+			"      }" +
+			"    }" +
+			"  }" +
+			"}";
+		JSONAsserts.assertExactMatch(expected, payload);
 	}
 
 	// assert on standard fields included in the payload of all consent requests
 	private void assertStandardFieldsInConsentUpdatesPayload(final JSONObject payload) throws Exception {
-		assertNotNull(payload);
-		JSONObject query = payload.getJSONObject("query");
-		assertNotNull(query);
-		JSONObject consentQuery = query.getJSONObject("consent");
-		assertNotNull(consentQuery);
-		assertEquals(1, consentQuery.length());
-		assertEquals("update", consentQuery.getString("operation"));
-
-		JSONArray consent = payload.optJSONArray("consent");
-		assertNotNull(consent);
-		assertEquals(1, consent.length());
-		assertEquals("Adobe", consent.getJSONObject(0).getString("standard"));
-		assertEquals("2.0", consent.getJSONObject(0).getString("version"));
+		String expected = "{" +
+			"  \"consent\": [" +
+			"    {" +
+			"      \"standard\": \"Adobe\"," +
+			"      \"version\": \"2.0\"" +
+			"    }" +
+			"  ]," +
+			"  \"query\": {" +
+			"    \"consent\": {" +
+			"      \"operation\": \"update\"" +
+			"    }" +
+			"  }" +
+			"}";
+		JSONAsserts.assertExactMatch(
+			expected,
+			payload,
+			new CollectionEqualCount("consent"), // Validates that `consent` array only has 1 element
+			new CollectionEqualCount(Subtree, "query") // Validates that `query` onwards has same number of elements
+		);
 	}
 
 	private void assertNumberOfEvents(final JSONObject payload, final int expectedEventCount) {
@@ -913,10 +961,7 @@ public class RequestBuilderTest {
 	}
 
 	private String formatTimestamp(final long timestamp) {
-		final String TIMESTAMP_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-		SimpleDateFormat simpleDateFormat = new SimpleDateFormat(TIMESTAMP_FORMAT);
-		simpleDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-		return simpleDateFormat.format(new Date(timestamp));
+		return TimeUtils.getISO8601UTCDateWithMilliseconds(new Date(timestamp));
 	}
 
 	private void setupMockStoreMetadataNullDatastoreKey() {
@@ -941,41 +986,5 @@ public class RequestBuilderTest {
 		HashMap<String, String> payloads = new HashMap<>();
 
 		when(mockNamedCollection.getMap(EdgeConstants.DataStoreKeys.STORE_PAYLOADS)).thenReturn(payloads);
-	}
-
-	/**
-	 * Deserialize {@code JsonNode} and flatten to provided {@code map}.
-	 * For example, a JSON such as "{xdm: {stitchId: myID, eventType: myType}}" is flattened
-	 * to two map elements "xdm.stitchId" = "myID" and "xdm.eventType" = "myType".
-	 *
-	 * Method is called recursively. To use, call with an empty path such as
-	 * {@code addKeys("", new ObjectMapper().readTree(JsonNodeAsString), map);}
-	 *
-	 * @param currentPath the path in {@code JsonNode} to process
-	 * @param jsonNode {@link JsonNode} to deserialize
-	 * @param map {@code Map<String, String>} instance to store flattened JSON result
-	 *
-	 * @see <a href="https://stackoverflow.com/a/24150263">Stack Overflow post</a>
-	 */
-	private void addKeys(String currentPath, JsonNode jsonNode, Map<String, String> map) {
-		if (jsonNode.isObject()) {
-			ObjectNode objectNode = (ObjectNode) jsonNode;
-			Iterator<Map.Entry<String, JsonNode>> iter = objectNode.fields();
-			String pathPrefix = currentPath.isEmpty() ? "" : currentPath + ".";
-
-			while (iter.hasNext()) {
-				Map.Entry<String, JsonNode> entry = iter.next();
-				addKeys(pathPrefix + entry.getKey(), entry.getValue(), map);
-			}
-		} else if (jsonNode.isArray()) {
-			ArrayNode arrayNode = (ArrayNode) jsonNode;
-
-			for (int i = 0; i < arrayNode.size(); i++) {
-				addKeys(currentPath + "[" + i + "]", arrayNode.get(i), map);
-			}
-		} else if (jsonNode.isValueNode()) {
-			ValueNode valueNode = (ValueNode) jsonNode;
-			map.put(currentPath, valueNode.asText());
-		}
 	}
 }
