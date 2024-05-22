@@ -29,8 +29,6 @@ import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.JSONUtils;
 import com.adobe.marketing.mobile.util.KeyMustBeAbsent;
 import com.adobe.marketing.mobile.util.TimeUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -73,7 +71,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_doesNotFail_whenDataStoreIsNull() throws Exception {
+	public void getPayloadWithExperienceEvents_doesNotFail_whenDataStoreIsNull() {
 		RequestBuilder requestBuilder = new RequestBuilder(null);
 		List<Event> events = getSingleEvent(getExperienceEventData("value"));
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
@@ -103,7 +101,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_setsEventTimestampAndEventId_whenEventsListIsValid() throws Exception {
+	public void getPayloadWithExperienceEvents_setsEventTimestampAndEventId_whenEventsListIsValid() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value"));
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
 
@@ -129,7 +127,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_doesNotOverwriteTimestamp_whenValidTimestampPresent() throws Exception {
+	public void getPayloadWithExperienceEvents_doesNotOverwriteTimestamp_whenValidTimestampPresent() {
 		String testTimestamp = "2021-06-03T00:00:20Z";
 		List<Event> events = getSingleEvent(getExperienceEventData("value", null, testTimestamp));
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
@@ -154,8 +152,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_doesNotOverwriteTimestamp_whenInvalidTimestampPresent()
-		throws Exception {
+	public void getPayloadWithExperienceEvents_doesNotOverwriteTimestamp_whenInvalidTimestampPresent() {
 		String testTimestamp = "invalidTimestamp";
 		List<Event> events = getSingleEvent(getExperienceEventData("value", null, testTimestamp));
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
@@ -180,7 +177,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_setsEventTimestamp_whenProvidedTimestampIsEmpty() throws Exception {
+	public void getPayloadWithExperienceEvents_setsEventTimestamp_whenProvidedTimestampIsEmpty() {
 		String testTimestamp = "";
 		List<Event> events = getSingleEvent(getExperienceEventData("value", null, testTimestamp));
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
@@ -204,7 +201,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_setsCollectMeta_whenEventContainsDatasetId() throws Exception {
+	public void getPayloadWithExperienceEvents_setsCollectMeta_whenEventContainsDatasetId() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value", "5dd603781b95cc18a83d42ce"));
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
 
@@ -228,8 +225,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_setsCollectMeta_whenEventContainsDatasetIdWithWhitespace()
-		throws Exception {
+	public void getPayloadWithExperienceEvents_setsCollectMeta_whenEventContainsDatasetIdWithWhitespace() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value", "   5dd603781b95cc18a83d42ce   "));
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
 
@@ -253,8 +249,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_doesNotSetCollectMeta_whenEventDoesNotContainDatasetId()
-		throws Exception {
+	public void getPayloadWithExperienceEvents_doesNotSetCollectMeta_whenEventDoesNotContainDatasetId() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value"));
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
 
@@ -266,7 +261,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_doesNotCollectMeta_whenEventContainsEmptyDatasetId() throws Exception {
+	public void getPayloadWithExperienceEvents_doesNotCollectMeta_whenEventContainsEmptyDatasetId() {
 		List<Map<String, Object>> eventsData = new ArrayList<>();
 		eventsData.add(getExperienceEventData("one", ""));
 		eventsData.add(getExperienceEventData("two", "   "));
@@ -281,7 +276,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_doesNotCollectMeta_whenEventContainsNullDatasetId() throws Exception {
+	public void getPayloadWithExperienceEvents_doesNotCollectMeta_whenEventContainsNullDatasetId() {
 		Map<String, Object> collectMeta = new HashMap<>();
 		collectMeta.put(EdgeJson.Event.Metadata.DATASET_ID, null);
 		Map<String, Object> eventMeta = new HashMap<>();
@@ -323,8 +318,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_addsMultipleEvents_whenEventsListContainsMultipleEvents()
-		throws Exception {
+	public void getPayloadWithExperienceEvents_addsMultipleEvents_whenEventsListContainsMultipleEvents() {
 		List<Map<String, Object>> eventsData = new ArrayList<>();
 		eventsData.add(getExperienceEventData("one"));
 		eventsData.add(getExperienceEventData("two"));
@@ -370,8 +364,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_addsMultipleEventsWithDatasetId_whenEventsListContainsMultipleEventsWithDatasetId()
-		throws Exception {
+	public void getPayloadWithExperienceEvents_addsMultipleEventsWithDatasetId_whenEventsListContainsMultipleEventsWithDatasetId() {
 		List<Map<String, Object>> eventsData = new ArrayList<>();
 		eventsData.add(getExperienceEventData("one", "abc"));
 		eventsData.add(getExperienceEventData("two", "123"));
@@ -427,8 +420,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_addsKonductorConfigWithStreaming_whenStreamingEnabled()
-		throws Exception {
+	public void getPayloadWithExperienceEvents_addsKonductorConfigWithStreaming_whenStreamingEnabled() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value"));
 		requestBuilder.enableResponseStreaming("\u0000", "\n");
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
@@ -452,7 +444,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_setsSdkConfigMeta_whenSdkConfigPresent() throws Exception {
+	public void getPayloadWithExperienceEvents_setsSdkConfigMeta_whenSdkConfigPresent() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value", null));
 		requestBuilder.addSdkConfig(new SDKConfig(new Datastream("OriginalDatastreamId")));
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
@@ -474,7 +466,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_setsConfigOverridesMeta_whenConfigOverridesPresent() throws Exception {
+	public void getPayloadWithExperienceEvents_setsConfigOverridesMeta_whenConfigOverridesPresent() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value", "5dd603781b95cc18a83d42ce"));
 		requestBuilder.addConfigOverrides(
 			new HashMap() {
@@ -494,8 +486,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_doesNotSetConfigOverridesMeta_whenConfigOverridesEmpty()
-		throws Exception {
+	public void getPayloadWithExperienceEvents_doesNotSetConfigOverridesMeta_whenConfigOverridesEmpty() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value", "5dd603781b95cc18a83d42ce"));
 		requestBuilder.addConfigOverrides(new HashMap() {});
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
@@ -507,8 +498,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_doesNotSetConfigOverridesMeta_whenConfigOverridesNull()
-		throws Exception {
+	public void getPayloadWithExperienceEvents_doesNotSetConfigOverridesMeta_whenConfigOverridesNull() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value", "5dd603781b95cc18a83d42ce"));
 		requestBuilder.addConfigOverrides(null);
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
@@ -559,8 +549,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_addsStoreMetadataWithPayloads_whenPayloadsInDataStore()
-		throws Exception {
+	public void getPayloadWithExperienceEvents_addsStoreMetadataWithPayloads_whenPayloadsInDataStore() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value"));
 		setupMockStoreMetadata();
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
@@ -590,7 +579,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_NoAddStoreMetadata_whenNullPayloadInDataStore() throws Exception {
+	public void getPayloadWithExperienceEvents_NoAddStoreMetadata_whenNullPayloadInDataStore() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value"));
 		setupMockStoreMetadataNullDatastoreKey();
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
@@ -601,7 +590,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_doesNotAddStoreMetadata_whenDatastoreIsEmpty() throws Exception {
+	public void getPayloadWithExperienceEvents_doesNotAddStoreMetadata_whenDatastoreIsEmpty() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value"));
 		setupMockStoreMetadataEmpty();
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
@@ -660,7 +649,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getConsentPayload_happy() throws Exception {
+	public void getConsentPayload_happy() {
 		final Map<String, Object> collectConsent = new HashMap<String, Object>() {
 			{
 				put(
@@ -880,7 +869,7 @@ public class RequestBuilderTest {
 	}
 
 	// assert on standard fields included in the payload of all consent requests
-	private void assertStandardFieldsInConsentUpdatesPayload(final JSONObject payload) throws Exception {
+	private void assertStandardFieldsInConsentUpdatesPayload(final JSONObject payload) {
 		String expected =
 			"{" +
 			"  \"consent\": [" +
@@ -948,58 +937,46 @@ public class RequestBuilderTest {
 		return events;
 	}
 
-	private Map<String, Object> getExperienceEventData(final String value, final String datasetId) throws IOException {
+	private Map<String, Object> getExperienceEventData(final String value, final String datasetId) {
 		return getExperienceEventData(value, datasetId, null);
 	}
 
-	@SuppressWarnings("unchecked")
 	private Map<String, Object> getExperienceEventData(
 		final String value,
 		final String datasetId,
 		final String timestamp
-	) throws IOException {
-		final String spaces = "    ";
-		StringBuilder builder = new StringBuilder();
-		builder.append("{\n");
-		builder.append(spaces).append("\"xdm\": {\n");
-		builder.append(spaces).append(spaces).append("\"stitch\": \"abc_stitch\",\n");
-		builder.append(spaces).append(spaces).append("\"eventType\": \"view:load\"\n");
+	) {
+		// Initialize the main map and nested maps
+		Map<String, Object> experienceEventData = new HashMap<>();
+		Map<String, Object> xdmMap = new HashMap<>();
+
+		// Populate the xdm map
+		xdmMap.put("stitch", "abc_stitch");
+		xdmMap.put("eventType", "view:load");
 
 		if (timestamp != null) {
-			builder.append(spaces).append(spaces).append(",\"timestamp\": \"").append(timestamp).append("\"\n");
+			xdmMap.put("timestamp", timestamp);
 		}
 
-		builder.append(spaces).append("}");
+		// Add xdm map to the main map
+		experienceEventData.put("xdm", xdmMap);
 
-		if (value != null || datasetId != null) {
-			builder.append(",\n");
-		} else {
-			builder.append("\n");
-		}
-
+		// Optionally add the data map
 		if (value != null) {
-			builder.append(spaces).append("\"data\": {\n");
-			builder.append(spaces).append(spaces).append("\"key\": \"").append(value).append("\"\n");
-			builder.append(spaces).append("}");
-
-			if (datasetId != null) {
-				builder.append(",\n");
-			} else {
-				builder.append("\n");
-			}
+			Map<String, Object> dataMap = new HashMap<>();
+			dataMap.put("key", value);
+			experienceEventData.put("data", dataMap);
 		}
 
+		// Optionally add the datasetId
 		if (datasetId != null) {
-			builder.append(spaces).append("\"datasetId\": \"").append(datasetId).append("\"\n");
+			experienceEventData.put("datasetId", datasetId);
 		}
 
-		builder.append("}");
-
-		ObjectMapper mapper = new ObjectMapper();
-		return mapper.readValue(builder.toString(), Map.class);
+		return experienceEventData;
 	}
 
-	private Map<String, Object> getExperienceEventData(final String value) throws IOException {
+	private Map<String, Object> getExperienceEventData(final String value) {
 		return getExperienceEventData(value, null);
 	}
 
