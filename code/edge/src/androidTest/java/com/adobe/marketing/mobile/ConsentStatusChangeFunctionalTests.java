@@ -12,28 +12,33 @@
 package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
+import static com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch;
+import static com.adobe.marketing.mobile.util.NodeConfig.Scope.Subtree;
 import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
 import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.edge.consent.Consent;
 import com.adobe.marketing.mobile.edge.identity.Identity;
+import com.adobe.marketing.mobile.services.NetworkRequest;
 import com.adobe.marketing.mobile.services.ServiceProvider;
-import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.ADBCountDownLatch;
+import com.adobe.marketing.mobile.util.CollectionEqualCount;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.MonitorExtension;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
+import com.adobe.marketing.mobile.util.ValueTypeMatch;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -98,7 +103,7 @@ public class ConsentStatusChangeFunctionalTests {
 		fireManyEvents();
 
 		// verify
-		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			1000
@@ -129,7 +134,7 @@ public class ConsentStatusChangeFunctionalTests {
 		fireManyEvents();
 
 		//verify
-		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			1000
@@ -157,7 +162,7 @@ public class ConsentStatusChangeFunctionalTests {
 		getConsentsSync();
 
 		// verify
-		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			1000
@@ -178,7 +183,7 @@ public class ConsentStatusChangeFunctionalTests {
 		getConsentsSync();
 
 		// verify
-		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			1000
@@ -198,7 +203,7 @@ public class ConsentStatusChangeFunctionalTests {
 		updateCollectConsent(ConsentStatus.NO);
 
 		// verify
-		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			1000
@@ -233,31 +238,65 @@ public class ConsentStatusChangeFunctionalTests {
 
 		// verify
 		mockNetworkService.assertAllNetworkRequestExpectations();
-		List<TestableNetworkRequest> interactRequests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> interactRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			1000
 		);
 		assertEquals(0, interactRequests.size());
-		List<TestableNetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_CONSENT_URL_STRING,
 			POST,
 			1000
 		);
 		assertEquals(POST, consentRequests.get(0).getMethod());
-		Map<String, String> requestBody = mockNetworkService.getFlattenedNetworkRequestBody(consentRequests.get(0));
-		assertEquals(11, requestBody.size());
-		assertEquals("update", requestBody.get("query.consent.operation"));
-		assertNotNull(requestBody.get("identityMap.ECID[0].id"));
-		assertEquals("ambiguous", requestBody.get("identityMap.ECID[0].authenticatedState"));
-		assertEquals(false, Boolean.valueOf(requestBody.get("identityMap.ECID[0].primary")));
-		assertEquals("Adobe", requestBody.get("consent[0].standard"));
-		assertEquals("2.0", requestBody.get("consent[0].version"));
-		assertEquals("n", requestBody.get("consent[0].value.collect.val"));
-		assertNotNull(requestBody.get("consent[0].value.metadata.time"));
-		assertEquals(true, Boolean.valueOf(requestBody.get("meta.konductorConfig.streaming.enabled")));
-		assertEquals("\n", requestBody.get("meta.konductorConfig.streaming.lineFeed"));
-		assertEquals("\u0000", requestBody.get("meta.konductorConfig.streaming.recordSeparator"));
+
+		String expected =
+			"{" +
+			"  \"query\": {" +
+			"    \"consent\": {" +
+			"      \"operation\": \"update\"" +
+			"    }" +
+			"  }," +
+			"  \"identityMap\": {" +
+			"    \"ECID\": [" +
+			"      {" +
+			"        \"id\": \"STRING_TYPE\"," +
+			"        \"authenticatedState\": \"ambiguous\"," +
+			"        \"primary\": false" +
+			"      }" +
+			"    ]" +
+			"  }," +
+			"  \"consent\": [" +
+			"    {" +
+			"      \"standard\": \"Adobe\"," +
+			"      \"version\": \"2.0\"," +
+			"      \"value\": {" +
+			"        \"collect\": {" +
+			"          \"val\": \"n\"" +
+			"        }," +
+			"        \"metadata\": {" +
+			"          \"time\": \"STRING_TYPE\"" +
+			"        }" +
+			"      }" +
+			"    }" +
+			"  ]," +
+			"  \"meta\": {" +
+			"    \"konductorConfig\": {" +
+			"      \"streaming\": {" +
+			"        \"enabled\": true," +
+			"        \"lineFeed\": \"\\n\"," +
+			"        \"recordSeparator\": \"\\u0000\"" +
+			"      }" +
+			"    }" +
+			"  }" +
+			"}";
+		assertExactMatch(
+			expected,
+			getPayloadJson(consentRequests.get(0)),
+			new ValueTypeMatch("identityMap.ECID[0].id", "consent[0].value.metadata.time"),
+			new CollectionEqualCount(Subtree)
+		);
 	}
 
 	@Test
@@ -269,31 +308,65 @@ public class ConsentStatusChangeFunctionalTests {
 
 		// verify
 		mockNetworkService.assertAllNetworkRequestExpectations();
-		List<TestableNetworkRequest> interactRequests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> interactRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			1000
 		);
 		assertEquals(0, interactRequests.size());
-		List<TestableNetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_CONSENT_URL_STRING,
 			POST,
 			1000
 		);
 		assertEquals(POST, consentRequests.get(0).getMethod());
-		Map<String, String> requestBody = mockNetworkService.getFlattenedNetworkRequestBody(consentRequests.get(0));
-		assertEquals(11, requestBody.size());
-		assertEquals("update", requestBody.get("query.consent.operation"));
-		assertNotNull(requestBody.get("identityMap.ECID[0].id"));
-		assertEquals("ambiguous", requestBody.get("identityMap.ECID[0].authenticatedState"));
-		assertEquals(false, Boolean.valueOf(requestBody.get("identityMap.ECID[0].primary")));
-		assertEquals("Adobe", requestBody.get("consent[0].standard"));
-		assertEquals("2.0", requestBody.get("consent[0].version"));
-		assertEquals("y", requestBody.get("consent[0].value.collect.val"));
-		assertNotNull(requestBody.get("consent[0].value.metadata.time"));
-		assertEquals(true, Boolean.valueOf(requestBody.get("meta.konductorConfig.streaming.enabled")));
-		assertEquals("\n", requestBody.get("meta.konductorConfig.streaming.lineFeed"));
-		assertEquals("\u0000", requestBody.get("meta.konductorConfig.streaming.recordSeparator"));
+
+		String expected =
+			"{" +
+			"  \"query\": {" +
+			"    \"consent\": {" +
+			"      \"operation\": \"update\"" +
+			"    }" +
+			"  }," +
+			"  \"identityMap\": {" +
+			"    \"ECID\": [" +
+			"      {" +
+			"        \"id\": \"STRING_TYPE\"," +
+			"        \"authenticatedState\": \"ambiguous\"," +
+			"        \"primary\": false" +
+			"      }" +
+			"    ]" +
+			"  }," +
+			"  \"consent\": [" +
+			"    {" +
+			"      \"standard\": \"Adobe\"," +
+			"      \"version\": \"2.0\"," +
+			"      \"value\": {" +
+			"        \"collect\": {" +
+			"          \"val\": \"y\"" +
+			"        }," +
+			"        \"metadata\": {" +
+			"          \"time\": \"STRING_TYPE\"" +
+			"        }" +
+			"      }" +
+			"    }" +
+			"  ]," +
+			"  \"meta\": {" +
+			"    \"konductorConfig\": {" +
+			"      \"streaming\": {" +
+			"        \"enabled\": true," +
+			"        \"lineFeed\": \"\\n\"," +
+			"        \"recordSeparator\": \"\\u0000\"" +
+			"      }" +
+			"    }" +
+			"  }" +
+			"}";
+		assertExactMatch(
+			expected,
+			getPayloadJson(consentRequests.get(0)),
+			new ValueTypeMatch("identityMap.ECID[0].id", "consent[0].value.metadata.time"),
+			new CollectionEqualCount(Subtree)
+		);
 	}
 
 	@Test
@@ -304,13 +377,13 @@ public class ConsentStatusChangeFunctionalTests {
 		updateCollectConsent("some value");
 
 		// verify
-		List<TestableNetworkRequest> interactRequests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> interactRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			1000
 		);
 		assertEquals(0, interactRequests.size());
-		List<TestableNetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_CONSENT_URL_STRING,
 			POST,
 			1000
@@ -327,7 +400,7 @@ public class ConsentStatusChangeFunctionalTests {
 
 		// verify
 		mockNetworkService.assertAllNetworkRequestExpectations();
-		List<TestableNetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
 			TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING,
 			POST,
 			1000
@@ -354,7 +427,7 @@ public class ConsentStatusChangeFunctionalTests {
 
 		// verify
 		mockNetworkService.assertAllNetworkRequestExpectations();
-		List<TestableNetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
 			TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING,
 			POST,
 			1000
@@ -381,7 +454,7 @@ public class ConsentStatusChangeFunctionalTests {
 
 		// verify
 		mockNetworkService.assertAllNetworkRequestExpectations();
-		List<TestableNetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
 			TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING,
 			POST,
 			1000
@@ -412,7 +485,7 @@ public class ConsentStatusChangeFunctionalTests {
 
 		// verify
 		mockNetworkService.assertAllNetworkRequestExpectations();
-		List<TestableNetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
 			TestConstants.Defaults.EXEDGE_CONSENT_PRE_PROD_URL_STRING,
 			POST,
 			1000
@@ -445,7 +518,7 @@ public class ConsentStatusChangeFunctionalTests {
 
 		// verify
 		mockNetworkService.assertAllNetworkRequestExpectations();
-		List<TestableNetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> consentRequests = mockNetworkService.getNetworkRequestsWith(
 			TestConstants.Defaults.EXEDGE_CONSENT_INT_URL_STRING,
 			POST,
 			1000
@@ -523,5 +596,19 @@ public class ConsentStatusChangeFunctionalTests {
 		MobileCore.getPrivacyStatus(mobilePrivacyStatus -> latch.countDown());
 
 		assertTrue(latch.await(2, TimeUnit.SECONDS));
+	}
+
+	private JSONObject getPayloadJson(NetworkRequest networkRequest) {
+		if (networkRequest == null || networkRequest.getBody() == null) {
+			return null;
+		}
+
+		String payload = new String(networkRequest.getBody());
+		try {
+			return new JSONObject(payload);
+		} catch (Exception e) {
+			fail("Failed to create JSONObject from payload: " + e.getMessage());
+			return null;
+		}
 	}
 }

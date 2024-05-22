@@ -127,12 +127,12 @@ public class CompletionHandlerFunctionalTests {
 		assertEquals(1, resultNetworkRequests.size());
 		assertEquals(1, receivedHandles.size());
 
-
 		EdgeEventHandle edgeEventHandle = receivedHandles.get(0);
 		assertEquals("personalization:decisions", edgeEventHandle.getType());
 		assertEquals(1, edgeEventHandle.getPayload().size());
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"id\": \"AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9\"," +
 			"  \"items\": [" +
 			"    {" +
