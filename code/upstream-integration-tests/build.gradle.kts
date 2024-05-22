@@ -85,7 +85,7 @@ android {
 
 dependencies {
     implementation(project(":edge"))
-    implementation(project(":test-utils"))
+    implementation("com.github.adobe:aepsdk-testutils-android:a9182db238")
 
     implementation("androidx.core:core-ktx:1.9.0")
 
