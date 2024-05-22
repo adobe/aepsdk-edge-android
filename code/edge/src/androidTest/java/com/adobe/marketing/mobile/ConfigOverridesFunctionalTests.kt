@@ -14,9 +14,11 @@ package com.adobe.marketing.mobile
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.adobe.marketing.mobile.edge.identity.Identity
 import com.adobe.marketing.mobile.services.HttpMethod
+import com.adobe.marketing.mobile.services.NetworkRequest
 import com.adobe.marketing.mobile.services.ServiceProvider
 import com.adobe.marketing.mobile.services.TestableNetworkRequest
 import com.adobe.marketing.mobile.util.JSONAsserts
+import com.adobe.marketing.mobile.util.KeyMustBeAbsent
 import com.adobe.marketing.mobile.util.MockNetworkService
 import com.adobe.marketing.mobile.util.MonitorExtension
 import com.adobe.marketing.mobile.util.TestConstants
@@ -24,8 +26,6 @@ import com.adobe.marketing.mobile.util.TestHelper
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -98,58 +98,6 @@ class ConfigOverridesFunctionalTests {
             1
         )
 
-        val expectedXdmDataString = """
-            { "xdm" : 
-                {
-                    "testXdmKey": "testXdmValue"
-                }
-            }
-        """.trim()
-
-        val expectedCustomDataString = """
-            { "data" : 
-                {
-                    "testCustomKey": "testCustomValue"
-                }
-            }
-        """.trim()
-
-        val expectedConfigOverridesString = """
-        {
-            "configOverrides" :{
-                "com_adobe_experience_platform": {
-                    "datasets": {
-                        "event": {
-                            "datasetId": "eventDatasetIdOverride"
-                        },
-                        "profile": {
-                            "datasetId": "profileDatasetIdOverride"
-                        }
-                    }
-                },
-                "com_adobe_analytics": {
-                    "reportSuites": [
-                        "rsid1",
-                        "rsid2",
-                        "rsid3"
-                    ]
-                },
-                "com_adobe_identity": {
-                    "idSyncContainerId": "1234567"
-                },
-                "com_adobe_target": {
-                    "propertyToken": "samplePropertyToken"
-                }
-            }
-        }
-        """.trim()
-
-        val expectedConfigOverridesMap = JSONObject(expectedConfigOverridesString)
-        val expectedXdmDataMap = JSONObject(expectedXdmDataString)
-        val expectedCustomDataMap = JSONObject(expectedCustomDataString)
-
-        val xdmData = mapOf("testXdmKey" to "testXdmValue")
-        val customData = mapOf("testCustomKey" to "testCustomValue")
         val configOverrides: Map<String, Any> = mapOf(
             "com_adobe_experience_platform" to mapOf(
                 "datasets" to mapOf(
@@ -169,8 +117,8 @@ class ConfigOverridesFunctionalTests {
         )
 
         val experienceEvent = ExperienceEvent.Builder()
-            .setXdmSchema(xdmData)
-            .setData(customData)
+            .setXdmSchema(mapOf("testXdmKey" to "testXdmValue"))
+            .setData(mapOf("testCustomKey" to "testCustomValue"))
             .setDatastreamConfigOverride(configOverrides)
             .build()
         Edge.sendEvent(experienceEvent, null)
@@ -184,13 +132,48 @@ class ConfigOverridesFunctionalTests {
         )
         assertEquals(1, resultRequests.size.toLong())
 
-        val payloadJSONData = getPayloadJson(resultRequests[0])
-        val eventJSONData = payloadJSONData.getJSONArray("events").getJSONObject(0)
-        val metaJSONData = payloadJSONData.getJSONObject("meta")
-
-        JSONAsserts.assertExactMatch(expectedXdmDataMap, eventJSONData)
-        JSONAsserts.assertExactMatch(expectedCustomDataMap, eventJSONData)
-        JSONAsserts.assertExactMatch(expectedConfigOverridesMap, metaJSONData)
+        val expected = """
+        {
+          "events": [
+            {
+              "data": {
+                "testCustomKey": "testCustomValue"
+              },
+              "xdm": {
+                "testXdmKey": "testXdmValue"
+              }
+            }
+          ],
+          "meta": {
+            "configOverrides": {
+              "com_adobe_analytics": {
+                "reportSuites": [
+                  "rsid1",
+                  "rsid2",
+                  "rsid3"
+                ]
+              },
+              "com_adobe_experience_platform": {
+                "datasets": {
+                  "event": {
+                    "datasetId": "eventDatasetIdOverride"
+                  },
+                  "profile": {
+                    "datasetId": "profileDatasetIdOverride"
+                  }
+                }
+              },
+              "com_adobe_identity": {
+                "idSyncContainerId": "1234567"
+              },
+              "com_adobe_target": {
+                "propertyToken": "samplePropertyToken"
+              }
+            }
+          }
+        }
+        """
+        JSONAsserts.assertExactMatch(expected, getPayloadJson(resultRequests[0]))
     }
 
     @Test
@@ -211,20 +194,8 @@ class ConfigOverridesFunctionalTests {
             1
         )
 
-        val expectedXdmDataString = """
-            { "xdm" : 
-                {
-                    "testXdmKey": "testXdmValue"
-                }
-            }
-        """.trim()
-
-        val expectedXdmDataMap = JSONObject(expectedXdmDataString)
-
-        val xdmData = mapOf("testXdmKey" to "testXdmValue")
-
         val experienceEvent = ExperienceEvent.Builder()
-            .setXdmSchema(xdmData)
+            .setXdmSchema(mapOf("testXdmKey" to "testXdmValue"))
             .setDatastreamConfigOverride(mapOf())
             .build()
         Edge.sendEvent(experienceEvent, null)
@@ -238,14 +209,22 @@ class ConfigOverridesFunctionalTests {
         )
         assertEquals(1, resultRequests.size.toLong())
 
-        val payloadJSONData = getPayloadJson(resultRequests[0])
-        val eventJSONData = payloadJSONData.getJSONArray("events").getJSONObject(0)
-        val metaJSONData = payloadJSONData.getJSONObject("meta")
-
-        assertNotNull(metaJSONData.opt("konductorConfig"))
-        assertNull(metaJSONData.opt("configOverrides"))
-
-        JSONAsserts.assertExactMatch(expectedXdmDataMap, eventJSONData)
+        val expected = """
+        {
+          "events": [
+            {
+              "xdm": {
+                "testXdmKey": "testXdmValue"
+              }
+            }
+          ],
+          "meta": {
+            "konductorConfig": {}
+          }
+        }
+        """
+        // Verify that configOverrides is not present in the meta data
+        JSONAsserts.assertExactMatch(expected, getPayloadJson(resultRequests[0]), KeyMustBeAbsent("meta.configOverrides"))
     }
 
     @Test
@@ -266,20 +245,8 @@ class ConfigOverridesFunctionalTests {
             1
         )
 
-        val expectedXdmDataString = """
-            { "xdm" : 
-                {
-                    "testXdmKey": "testXdmValue"
-                }
-            }
-        """.trim()
-
-        val expectedXdmDataMap = JSONObject(expectedXdmDataString)
-
-        val xdmData = mapOf("testXdmKey" to "testXdmValue")
-
         val experienceEvent = ExperienceEvent.Builder()
-            .setXdmSchema(xdmData)
+            .setXdmSchema(mapOf("testXdmKey" to "testXdmValue"))
             .setDatastreamConfigOverride(null)
             .build()
 
@@ -294,15 +261,22 @@ class ConfigOverridesFunctionalTests {
         )
         assertEquals(1, resultRequests.size.toLong())
 
-        val payloadJSONData = getPayloadJson(resultRequests[0])
-        val eventJSONData = payloadJSONData.getJSONArray("events").getJSONObject(0)
-        val metaJSONData = payloadJSONData.getJSONObject("meta")
-
-        assertNotNull(metaJSONData.opt("konductorConfig"))
-        // verify that configOverrides is not present in the meta data
-        assertNull(metaJSONData.opt("configOverrides"))
-
-        JSONAsserts.assertExactMatch(expectedXdmDataMap, eventJSONData)
+        val expected = """
+        {
+          "events": [
+            {
+              "xdm": {
+                "testXdmKey": "testXdmValue"
+              }
+            }
+          ],
+          "meta": {
+            "konductorConfig": {}
+          }
+        }
+        """
+        // Verify that configOverrides is not present in the meta data
+        JSONAsserts.assertExactMatch(expected, getPayloadJson(resultRequests[0]), KeyMustBeAbsent("meta.configOverrides"))
     }
 
     @Test
@@ -323,41 +297,9 @@ class ConfigOverridesFunctionalTests {
             1
         )
 
-        val expectedXdmDataString = """
-            { "xdm" : 
-                {
-                    "testXdmKey": "testXdmValue"
-                }
-            }
-        """.trim()
-
-        val expectedCustomDataString = """
-            { "data" : 
-                {
-                    "testCustomKey": "testCustomValue"
-                }
-            }
-        """.trim()
-
-        val expectedSdkConfigString = """
-            {
-                "sdkConfig" :{
-                    "datastream": {
-                        "original": "1234abcd-abcd-1234-5678-123456abcdef"
-                    } 
-                }
-             }
-        """.trim()
-        val expectedSdkConfigMap = JSONObject(expectedSdkConfigString)
-        val expectedXdmDataMap = JSONObject(expectedXdmDataString)
-        val expectedCustomDataMap = JSONObject(expectedCustomDataString)
-
-        val xdmData = mapOf("testXdmKey" to "testXdmValue")
-        val customData = mapOf("testCustomKey" to "testCustomValue")
-
         val experienceEvent = ExperienceEvent.Builder()
-            .setXdmSchema(xdmData)
-            .setData(customData)
+            .setXdmSchema(mapOf("testXdmKey" to "testXdmValue"))
+            .setData(mapOf("testCustomKey" to "testCustomValue"))
             .setDatastreamIdOverride("5678abcd-abcd-1234-5678-123456abcdef")
             .build()
 
@@ -373,15 +315,30 @@ class ConfigOverridesFunctionalTests {
         assertEquals(1, resultRequests.size.toLong())
 
         // Assert that provided datastreamIdOverride value is in the URL query param for configId
-        assertEquals("5678abcd-abcd-1234-5678-123456abcdef", resultRequests[0]!!.queryParam("configId"))
+        assertEquals("5678abcd-abcd-1234-5678-123456abcdef", TestableNetworkRequest(resultRequests[0]).queryParam("configId"))
 
-        val payloadJSONData = getPayloadJson(resultRequests[0])
-        val eventJSONData = payloadJSONData.getJSONArray("events").getJSONObject(0)
-        val metaJSONData = payloadJSONData.getJSONObject("meta")
-
-        JSONAsserts.assertExactMatch(expectedXdmDataMap, eventJSONData)
-        JSONAsserts.assertExactMatch(expectedCustomDataMap, eventJSONData)
-        JSONAsserts.assertExactMatch(expectedSdkConfigMap, metaJSONData)
+        val expected = """
+        {
+          "events": [
+            {
+              "data": {
+                "testCustomKey": "testCustomValue"
+              },
+              "xdm": {
+                "testXdmKey": "testXdmValue"
+              }
+            }
+          ],
+          "meta": {
+            "sdkConfig": {
+              "datastream": {
+                "original": "1234abcd-abcd-1234-5678-123456abcdef"
+              }
+            }
+          }
+        }
+        """
+        JSONAsserts.assertExactMatch(expected, getPayloadJson(resultRequests[0]))
     }
 
     @Test
@@ -402,20 +359,8 @@ class ConfigOverridesFunctionalTests {
             1
         )
 
-        val expectedXdmDataString = """
-            { "xdm" : 
-                {
-                    "testXdmKey": "testXdmValue"
-                }
-            }
-        """.trim()
-
-        val expectedXdmDataMap = JSONObject(expectedXdmDataString)
-
-        val xdmData = mapOf("testXdmKey" to "testXdmValue")
-
         val experienceEvent = ExperienceEvent.Builder()
-            .setXdmSchema(xdmData)
+            .setXdmSchema(mapOf("testXdmKey" to "testXdmValue"))
             .setDatastreamIdOverride("")
             .build()
 
@@ -431,15 +376,21 @@ class ConfigOverridesFunctionalTests {
         assertEquals(1, resultRequests.size.toLong())
 
         // Assert that default datastream ID value is in the URL query param for configId
-        assertEquals(CONFIG_ID, resultRequests[0]!!.queryParam("configId"))
+        assertEquals(CONFIG_ID, TestableNetworkRequest(resultRequests[0]).queryParam("configId"))
 
-        val payloadJSONData = getPayloadJson(resultRequests[0])
-        val eventJSONData = payloadJSONData.getJSONArray("events").getJSONObject(0)
-        val metaJSONData = payloadJSONData.getJSONObject("meta")
-
-        JSONAsserts.assertExactMatch(expectedXdmDataMap, eventJSONData)
-        // verify that sdkConfig is not present in the meta data
-        assertNull(metaJSONData.opt("sdkConfig"))
+        val expected = """
+        {
+          "events": [
+            {
+              "xdm": {
+                "testXdmKey": "testXdmValue"
+              }
+            }
+          ]
+        }
+        """
+        // Verify that sdkConfig is not present in the meta data
+        JSONAsserts.assertExactMatch(expected, getPayloadJson(resultRequests[0]), KeyMustBeAbsent("meta.sdkConfig"))
     }
 
     @Test
@@ -460,20 +411,8 @@ class ConfigOverridesFunctionalTests {
             1
         )
 
-        val expectedXdmDataString = """
-            { "xdm" : 
-                {
-                    "testXdmKey": "testXdmValue"
-                }
-            }
-        """.trim()
-
-        val expectedXdmDataMap = JSONObject(expectedXdmDataString)
-
-        val xdmData = mapOf("testXdmKey" to "testXdmValue")
-
         val experienceEvent = ExperienceEvent.Builder()
-            .setXdmSchema(xdmData)
+            .setXdmSchema(mapOf("testXdmKey" to "testXdmValue"))
             .setDatastreamIdOverride(null)
             .build()
 
@@ -489,15 +428,21 @@ class ConfigOverridesFunctionalTests {
         assertEquals(1, resultRequests.size.toLong())
 
         // Assert that default datastream ID value is in the URL query param for configId
-        assertEquals(CONFIG_ID, resultRequests[0]!!.queryParam("configId"))
+        assertEquals(CONFIG_ID, TestableNetworkRequest(resultRequests[0]).queryParam("configId"))
 
-        val payloadJSONData = getPayloadJson(resultRequests[0])
-        val eventJSONData = payloadJSONData.getJSONArray("events").getJSONObject(0)
-        val metaJSONData = payloadJSONData.getJSONObject("meta")
-
-        JSONAsserts.assertExactMatch(expectedXdmDataMap, eventJSONData)
-        // verify that sdkConfig is not present in the meta data
-        assertNull(metaJSONData.opt("sdkConfig"))
+        val expected = """
+        {
+          "events": [
+            {
+              "xdm": {
+                "testXdmKey": "testXdmValue"
+              }
+            }
+          ]
+        }
+        """
+        // Verify that sdkConfig is not present in the meta data
+        JSONAsserts.assertExactMatch(expected, getPayloadJson(resultRequests[0]), KeyMustBeAbsent("meta.sdkConfig"))
     }
 
     @Test
@@ -518,71 +463,7 @@ class ConfigOverridesFunctionalTests {
             1
         )
 
-        // Expected data
-        val expectedXdmDataString = """
-            { "xdm" : 
-                {
-                    "testXdmKey": "testXdmValue"
-                }
-            }
-        """.trim()
-
-        val expectedCustomDataString = """
-            { "data" : 
-                {
-                    "testCustomKey": "testCustomValue"
-                }
-            }
-        """.trim()
-
-        val expectedConfigOverridesString = """
-        {
-            "configOverrides" :{
-                "com_adobe_experience_platform": {
-                    "datasets": {
-                        "event": {
-                            "datasetId": "eventDatasetIdOverride"
-                        },
-                        "profile": {
-                            "datasetId": "profileDatasetIdOverride"
-                        }
-                    }
-                },
-                "com_adobe_analytics": {
-                    "reportSuites": [
-                        "rsid1",
-                        "rsid2",
-                        "rsid3"
-                    ]
-                },
-                "com_adobe_identity": {
-                    "idSyncContainerId": "1234567"
-                },
-                "com_adobe_target": {
-                    "propertyToken": "samplePropertyToken"
-                }
-            }
-        }
-        """.trim()
-
-        val expectedSdkConfigString = """
-            {
-                "sdkConfig" :{
-                    "datastream": {
-                        "original": "1234abcd-abcd-1234-5678-123456abcdef"
-                    } 
-                }
-             }
-        """.trim()
-
-        val expectedSdkConfigMap = JSONObject(expectedSdkConfigString)
-        val expectedConfigOverridesMap = JSONObject(expectedConfigOverridesString)
-        val expectedXdmDataMap = JSONObject(expectedXdmDataString)
-        val expectedCustomDataMap = JSONObject(expectedCustomDataString)
-
         // Actual data
-        val xdmData = mapOf("testXdmKey" to "testXdmValue")
-        val customData = mapOf("testCustomKey" to "testCustomValue")
         val configOverrides: Map<String, Any> = mapOf(
             "com_adobe_experience_platform" to mapOf(
                 "datasets" to mapOf(
@@ -602,8 +483,8 @@ class ConfigOverridesFunctionalTests {
         )
 
         val experienceEvent = ExperienceEvent.Builder()
-            .setXdmSchema(xdmData)
-            .setData(customData)
+            .setXdmSchema(mapOf("testXdmKey" to "testXdmValue"))
+            .setData(mapOf("testCustomKey" to "testCustomValue"))
             .setDatastreamConfigOverride(configOverrides)
             .setDatastreamIdOverride("5678abcd-abcd-1234-5678-123456abcdef")
             .build()
@@ -620,21 +501,60 @@ class ConfigOverridesFunctionalTests {
         assertEquals(1, resultRequests.size.toLong())
 
         // Assert that provided datastreamIdOverride value is in the URL query param for configId
-        assertEquals("5678abcd-abcd-1234-5678-123456abcdef", resultRequests[0]!!.queryParam("configId"))
+        assertEquals("5678abcd-abcd-1234-5678-123456abcdef", TestableNetworkRequest(resultRequests[0]).queryParam("configId"))
 
-        val payloadJSONData = getPayloadJson(resultRequests[0])
-        val eventJSONData = payloadJSONData.getJSONArray("events").getJSONObject(0)
-        val metaJSONData = payloadJSONData.getJSONObject("meta")
-
-        JSONAsserts.assertExactMatch(expectedXdmDataMap, eventJSONData)
-        JSONAsserts.assertExactMatch(expectedCustomDataMap, eventJSONData)
-        JSONAsserts.assertExactMatch(expectedSdkConfigMap, metaJSONData)
-        JSONAsserts.assertExactMatch(expectedConfigOverridesMap, metaJSONData)
+        val expected = """
+        {
+          "events": [
+            {
+              "data": {
+                "testCustomKey": "testCustomValue"
+              },
+              "xdm": {
+                "testXdmKey": "testXdmValue"
+              }
+            }
+          ],
+          "meta": {
+            "configOverrides": {
+              "com_adobe_analytics": {
+                "reportSuites": [
+                  "rsid1",
+                  "rsid2",
+                  "rsid3"
+                ]
+              },
+              "com_adobe_experience_platform": {
+                "datasets": {
+                  "event": {
+                    "datasetId": "eventDatasetIdOverride"
+                  },
+                  "profile": {
+                    "datasetId": "profileDatasetIdOverride"
+                  }
+                }
+              },
+              "com_adobe_identity": {
+                "idSyncContainerId": "1234567"
+              },
+              "com_adobe_target": {
+                "propertyToken": "samplePropertyToken"
+              }
+            },
+            "sdkConfig": {
+              "datastream": {
+                "original": "1234abcd-abcd-1234-5678-123456abcdef"
+              }
+            }
+          }
+        }            
+        """
+        JSONAsserts.assertExactMatch(expected, getPayloadJson(resultRequests[0]))
     }
 
-    private fun getPayloadJson(networkRequest: TestableNetworkRequest?): JSONObject {
+    private fun getPayloadJson(networkRequest: NetworkRequest?): JSONObject? {
         val payload = networkRequest?.body?.let { String(it) }
-        return JSONObject(payload)
+        return payload?.let { JSONObject(it) }
     }
 
     /**
