@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile;
 
+import static com.adobe.marketing.mobile.util.NodeConfig.Scope.Subtree;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertNotNull;
@@ -22,7 +23,12 @@ import static org.mockito.Mockito.when;
 import com.adobe.marketing.mobile.edge.Datastream;
 import com.adobe.marketing.mobile.edge.SDKConfig;
 import com.adobe.marketing.mobile.services.NamedCollection;
+import com.adobe.marketing.mobile.util.CollectionEqualCount;
+import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.JSONUtils;
+import com.adobe.marketing.mobile.util.KeyMustBeAbsent;
+import com.adobe.marketing.mobile.util.NodeConfig;
+import com.adobe.marketing.mobile.util.ValueTypeMatch;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -82,12 +88,20 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("value", payloadMap.get("events[0].data.key"));
-		assertEquals(events.get(0).getUniqueIdentifier(), payloadMap.get("events[0].xdm._id"));
-		assertEquals(formatTimestamp(events.get(0).getTimestamp()), payloadMap.get("events[0].xdm.timestamp"));
+		String expected = "{\n" +
+			"  \"events\": [\n" +
+			"    {\n" +
+			"      \"data\": {\n" +
+			"        \"key\": \"value\"\n" +
+			"      },\n" +
+			"      \"xdm\": {\n" +
+			"        \"_id\": \"" + events.get(0).getUniqueIdentifier() + "\",\n" +
+			"        \"timestamp\": \"" + formatTimestamp(events.get(0).getTimestamp()) + "\"\n" +
+			"      }\n" +
+			"    }\n" +
+			"  ]\n" +
+			"}\n";
+		JSONAsserts.assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -98,11 +112,17 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals(events.get(0).getUniqueIdentifier(), payloadMap.get("events[0].xdm._id"));
-		assertEquals(formatTimestamp(events.get(0).getTimestamp()), payloadMap.get("events[0].xdm.timestamp"));
+		String expected = "{\n" +
+			"  \"events\": [\n" +
+			"    {\n" +
+			"      \"xdm\": {\n" +
+			"        \"_id\": \"" + events.get(0).getUniqueIdentifier() + "\",\n" +
+			"        \"timestamp\": \"" + formatTimestamp(events.get(0).getTimestamp()) + "\"\n" +
+			"      }\n" +
+			"    }\n" +
+			"  ]\n" +
+			"}\n";
+		JSONAsserts.assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -114,10 +134,17 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-		assertNotSame(formatTimestamp(events.get(0).getTimestamp()), payloadMap.get("events[0].xdm.timestamp"));
-		assertEquals(testTimestamp, payloadMap.get("events[0].xdm.timestamp"));
+		assertNotSame(testTimestamp, formatTimestamp(events.get(0).getTimestamp()));
+		String expected = "{\n" +
+			"  \"events\": [\n" +
+			"    {\n" +
+			"      \"xdm\": {\n" +
+			"        \"timestamp\": \"" + testTimestamp + "\"\n" +
+			"      }\n" +
+			"    }\n" +
+			"  ]\n" +
+			"}\n";
+		JSONAsserts.assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -130,10 +157,17 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-		assertNotSame(formatTimestamp(events.get(0).getTimestamp()), payloadMap.get("events[0].xdm.timestamp"));
-		assertEquals(testTimestamp, payloadMap.get("events[0].xdm.timestamp"));
+		assertNotSame(testTimestamp, formatTimestamp(events.get(0).getTimestamp()));
+		String expected = "{\n" +
+			"  \"events\": [\n" +
+			"    {\n" +
+			"      \"xdm\": {\n" +
+			"        \"timestamp\": \"" + testTimestamp + "\"\n" +
+			"      }\n" +
+			"    }\n" +
+			"  ]\n" +
+			"}\n";
+		JSONAsserts.assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -145,9 +179,16 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-		assertEquals(formatTimestamp(events.get(0).getTimestamp()), payloadMap.get("events[0].xdm.timestamp"));
+		String expected = "{\n" +
+			"  \"events\": [\n" +
+			"    {\n" +
+			"      \"xdm\": {\n" +
+			"        \"timestamp\": \"" + formatTimestamp(events.get(0).getTimestamp()) + "\"\n" +
+			"      }\n" +
+			"    }\n" +
+			"  ]\n" +
+			"}\n";
+		JSONAsserts.assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -158,11 +199,19 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("5dd603781b95cc18a83d42ce", payloadMap.get("events[0].meta.collect.datasetId"));
-		assertFalse(payloadMap.containsKey("events[0].datasetId")); // verify internal key is removed
+		String expected = "{\n" +
+			"  \"events\": [\n" +
+			"    {\n" +
+			"      \"meta\": {\n" +
+			"        \"collect\": {\n" +
+			"          \"datasetId\": \"5dd603781b95cc18a83d42ce\"\n" +
+			"        }\n" +
+			"      }\n" +
+			"    }\n" +
+			"  ]\n" +
+			"}\n";
+		// Verify internal key is removed
+		JSONAsserts.assertExactMatch(expected, payload, new KeyMustBeAbsent("events[0].datasetId"));
 	}
 
 	@Test
@@ -174,11 +223,19 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("5dd603781b95cc18a83d42ce", payloadMap.get("events[0].meta.collect.datasetId"));
-		assertFalse(payloadMap.containsKey("events[0].datasetId")); // verify internal key is removed
+		String expected = "{\n" +
+			"  \"events\": [\n" +
+			"    {\n" +
+			"      \"meta\": {\n" +
+			"        \"collect\": {\n" +
+			"          \"datasetId\": \"5dd603781b95cc18a83d42ce\"\n" +
+			"        }\n" +
+			"      }\n" +
+			"    }\n" +
+			"  ]\n" +
+			"}\n";
+		// Verify internal key is removed
+		JSONAsserts.assertExactMatch(expected, payload, new KeyMustBeAbsent("events[0].datasetId"));
 	}
 
 	@Test
@@ -190,11 +247,8 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertFalse(payloadMap.containsKey("events[0].meta"));
-		assertFalse(payloadMap.containsKey("events[0].datasetId")); // verify internal key is removed
+		// Verify internal key is removed
+		JSONAsserts.assertExactMatch("{}", payload, new KeyMustBeAbsent("events[0].datasetId", "events[0].meta"));
 	}
 
 	@Test
@@ -209,13 +263,7 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 2);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertFalse(payloadMap.containsKey("events[0].meta"));
-		assertFalse(payloadMap.containsKey("events[0].datasetId")); // verify internal key not set
-		assertFalse(payloadMap.containsKey("events[1].meta"));
-		assertFalse(payloadMap.containsKey("events[1].datasetId")); // verify internal key not set
+		JSONAsserts.assertExactMatch("{}", payload, new KeyMustBeAbsent("events[*].datasetId", "events[*].meta"));
 	}
 
 	@Test
@@ -233,14 +281,21 @@ public class RequestBuilderTest {
 
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
-
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals(events.get(0).getUniqueIdentifier(), payloadMap.get("events[0].xdm._id"));
-		assertEquals(formatTimestamp(events.get(0).getTimestamp()), payloadMap.get("events[0].xdm.timestamp"));
-		assertFalse(payloadMap.containsKey("events[0].meta"));
-		assertFalse(payloadMap.containsKey("events[0].datasetId")); // verify internal key not set
+		
+		String expected = "{\n" +
+			"  \"events\": [\n" +
+			"    {\n" +
+			"      \"meta\": {\n" +
+			"        \"collect\": {}\n" +
+			"      },\n" +
+			"      \"xdm\": {\n" +
+			"        \"_id\": \"" + events.get(0).getUniqueIdentifier() + "\",\n" +
+			"        \"timestamp\": \"" + formatTimestamp(events.get(0).getTimestamp()) + "\"\n" +
+			"      }\n" +
+			"    }\n" +
+			"  ]\n" +
+			"}";
+		JSONAsserts.assertExactMatch(expected, payload, new KeyMustBeAbsent("events[0].datasetId"), new CollectionEqualCount(Subtree, "events[0].meta"));
 	}
 
 	@Test
@@ -256,18 +311,29 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 2);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("one", payloadMap.get("events[0].data.key"));
-		assertEquals(events.get(0).getUniqueIdentifier(), payloadMap.get("events[0].xdm._id"));
-		assertEquals(formatTimestamp(events.get(0).getTimestamp()), payloadMap.get("events[0].xdm.timestamp"));
-		assertFalse(payloadMap.containsKey("events[0].meta"));
-
-		assertEquals("two", payloadMap.get("events[1].data.key"));
-		assertEquals(events.get(1).getUniqueIdentifier(), payloadMap.get("events[1].xdm._id"));
-		assertEquals(formatTimestamp(events.get(1).getTimestamp()), payloadMap.get("events[1].xdm.timestamp"));
-		assertFalse(payloadMap.containsKey("events[1].meta"));
+		String expected = "{\n" +
+			"  \"events\": [\n" +
+			"    {\n" +
+			"      \"data\": {\n" +
+			"        \"key\": \"one\"\n" +
+			"      },\n" +
+			"      \"xdm\": {\n" +
+			"        \"_id\": \"" + events.get(0).getUniqueIdentifier() + "\",\n" +
+			"        \"timestamp\": \"" + formatTimestamp(events.get(0).getTimestamp()) + "\"\n" +
+			"      }\n" +
+			"    },\n" +
+			"    {\n" +
+			"      \"data\": {\n" +
+			"        \"key\": \"two\"\n" +
+			"      },\n" +
+			"      \"xdm\": {\n" +
+			"        \"_id\": \"" + events.get(1).getUniqueIdentifier() + "\",\n" +
+			"        \"timestamp\": \"" + formatTimestamp(events.get(1).getTimestamp()) + "\"\n" +
+			"      }\n" +
+			"    }\n" +
+			"  ]\n" +
+			"}";
+		JSONAsserts.assertExactMatch(expected, payload, new KeyMustBeAbsent("events[*].meta"));
 	}
 
 	@Test
@@ -283,20 +349,39 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 2);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("one", payloadMap.get("events[0].data.key"));
-		assertEquals(events.get(0).getUniqueIdentifier(), payloadMap.get("events[0].xdm._id"));
-		assertEquals(formatTimestamp(events.get(0).getTimestamp()), payloadMap.get("events[0].xdm.timestamp"));
-		assertEquals("abc", payloadMap.get("events[0].meta.collect.datasetId"));
-		assertFalse(payloadMap.containsKey("events[0].datasetId")); // verify internal key is removed
-
-		assertEquals("two", payloadMap.get("events[1].data.key"));
-		assertEquals(events.get(1).getUniqueIdentifier(), payloadMap.get("events[1].xdm._id"));
-		assertEquals(formatTimestamp(events.get(1).getTimestamp()), payloadMap.get("events[1].xdm.timestamp"));
-		assertEquals("123", payloadMap.get("events[1].meta.collect.datasetId"));
-		assertFalse(payloadMap.containsKey("events[1].datasetId")); // verify internal key is removed
+		String expected = "{\n" +
+			"  \"events\": [\n" +
+			"    {\n" +
+			"      \"data\": {\n" +
+			"        \"key\": \"one\"\n" +
+			"      },\n" +
+			"      \"xdm\": {\n" +
+			"        \"_id\": \"" + events.get(0).getUniqueIdentifier() + "\",\n" +
+			"        \"timestamp\": \"" + formatTimestamp(events.get(0).getTimestamp()) + "\"\n" +
+			"      },\n" +
+			"      \"meta\": {\n" +
+			"        \"collect\": {\n" +
+			"          \"datasetId\": \"abc\"\n" +
+			"        }\n" +
+			"      }\n" +
+			"    },\n" +
+			"    {\n" +
+			"      \"data\": {\n" +
+			"        \"key\": \"two\"\n" +
+			"      },\n" +
+			"      \"xdm\": {\n" +
+			"        \"_id\": \"" + events.get(1).getUniqueIdentifier() + "\",\n" +
+			"        \"timestamp\": \"" + formatTimestamp(events.get(1).getTimestamp()) + "\"\n" +
+			"      },\n" +
+			"      \"meta\": {\n" +
+			"        \"collect\": {\n" +
+			"          \"datasetId\": \"123\"\n" +
+			"        }\n" +
+			"      }\n" +
+			"    }\n" +
+			"  ]\n" +
+			"}\n";
+		JSONAsserts.assertExactMatch(expected, payload, new KeyMustBeAbsent("events[*].datasetId"));
 	}
 
 	@Test
