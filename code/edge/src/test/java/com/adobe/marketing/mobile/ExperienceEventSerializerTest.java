@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile;
 
+import static com.adobe.marketing.mobile.util.NodeConfig.Scope.Subtree;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
@@ -18,10 +19,8 @@ import static org.junit.Assert.assertNotNull;
 
 import com.adobe.marketing.mobile.util.CollectionEqualCount;
 import com.adobe.marketing.mobile.util.JSONAsserts;
-import com.adobe.marketing.mobile.util.NodeConfig;
 import com.adobe.marketing.mobile.util.ValueTypeMatch;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
@@ -80,7 +79,7 @@ public class ExperienceEventSerializerTest {
 			result,
 			new ValueTypeMatch("datasetId"),
 			new CollectionEqualCount(), // Validates top level property count
-			new CollectionEqualCount(Collections.singletonList("data"), NodeConfig.Scope.Subtree)
+			new CollectionEqualCount(Subtree, "data")
 		);
 	}
 
@@ -151,7 +150,7 @@ public class ExperienceEventSerializerTest {
 			result,
 			new ValueTypeMatch("datasetId"),
 			new CollectionEqualCount(), // Validates top level property count
-			new CollectionEqualCount(Collections.singletonList("data"), NodeConfig.Scope.Subtree)
+			new CollectionEqualCount(Subtree, "data")
 		);
 	}
 
@@ -182,7 +181,7 @@ public class ExperienceEventSerializerTest {
 			expected,
 			result,
 			new ValueTypeMatch("datasetId"),
-			new CollectionEqualCount(NodeConfig.Scope.Subtree)
+			new CollectionEqualCount(Subtree)
 		);
 	}
 
@@ -230,7 +229,7 @@ public class ExperienceEventSerializerTest {
 			expected,
 			result,
 			new ValueTypeMatch("datasetId"),
-			new CollectionEqualCount(NodeConfig.Scope.Subtree)
+			new CollectionEqualCount(Subtree)
 		);
 	}
 
@@ -276,7 +275,7 @@ public class ExperienceEventSerializerTest {
 			"    \"eventType\": \"test\"\n" +
 			"  }\n" +
 			"}";
-		JSONAsserts.assertExactMatch(expected, result, new CollectionEqualCount(NodeConfig.Scope.Subtree));
+		JSONAsserts.assertExactMatch(expected, result, new CollectionEqualCount(Subtree));
 	}
 
 	@Test
@@ -315,7 +314,7 @@ public class ExperienceEventSerializerTest {
 			"    \"eventMergeId\": \"mergeid\"\n" +
 			"  }\n" +
 			"}";
-		JSONAsserts.assertExactMatch(expected, result, new CollectionEqualCount(NodeConfig.Scope.Subtree));
+		JSONAsserts.assertExactMatch(expected, result, new CollectionEqualCount(Subtree));
 	}
 
 	@Test
@@ -373,7 +372,7 @@ public class ExperienceEventSerializerTest {
 			expected,
 			result,
 			new ValueTypeMatch("datasetId"),
-			new CollectionEqualCount(NodeConfig.Scope.Subtree)
+			new CollectionEqualCount(Subtree)
 		);
 	}
 
