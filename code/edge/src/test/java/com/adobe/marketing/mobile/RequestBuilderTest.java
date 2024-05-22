@@ -11,6 +11,7 @@
 
 package com.adobe.marketing.mobile;
 
+import static com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch;
 import static com.adobe.marketing.mobile.util.NodeConfig.Scope.Subtree;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
@@ -98,7 +99,7 @@ public class RequestBuilderTest {
 			"    }" +
 			"  ]" +
 			"}";
-		JSONAsserts.assertExactMatch(expected, payload);
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -124,7 +125,7 @@ public class RequestBuilderTest {
 			"    }" +
 			"  ]" +
 			"}";
-		JSONAsserts.assertExactMatch(expected, payload);
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -149,7 +150,7 @@ public class RequestBuilderTest {
 			"    }" +
 			"  ]" +
 			"}";
-		JSONAsserts.assertExactMatch(expected, payload);
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -175,7 +176,7 @@ public class RequestBuilderTest {
 			"    }" +
 			"  ]" +
 			"}";
-		JSONAsserts.assertExactMatch(expected, payload);
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -199,7 +200,7 @@ public class RequestBuilderTest {
 			"    }" +
 			"  ]" +
 			"}";
-		JSONAsserts.assertExactMatch(expected, payload);
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -223,7 +224,7 @@ public class RequestBuilderTest {
 			"  ]" +
 			"}";
 		// Verify internal key is removed
-		JSONAsserts.assertExactMatch(expected, payload, new KeyMustBeAbsent("events[0].datasetId"));
+		assertExactMatch(expected, payload, new KeyMustBeAbsent("events[0].datasetId"));
 	}
 
 	@Test
@@ -248,7 +249,7 @@ public class RequestBuilderTest {
 			"  ]" +
 			"}";
 		// Verify internal key is removed
-		JSONAsserts.assertExactMatch(expected, payload, new KeyMustBeAbsent("events[0].datasetId"));
+		assertExactMatch(expected, payload, new KeyMustBeAbsent("events[0].datasetId"));
 	}
 
 	@Test
@@ -261,7 +262,7 @@ public class RequestBuilderTest {
 		assertNumberOfEvents(payload, 1);
 
 		// Verify internal key is removed
-		JSONAsserts.assertExactMatch("{}", payload, new KeyMustBeAbsent("events[0].datasetId", "events[0].meta"));
+		assertExactMatch("{}", payload, new KeyMustBeAbsent("events[0].datasetId", "events[0].meta"));
 	}
 
 	@Test
@@ -276,7 +277,7 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 2);
 
-		JSONAsserts.assertExactMatch("{}", payload, new KeyMustBeAbsent("events[*].datasetId", "events[*].meta"));
+		assertExactMatch("{}", payload, new KeyMustBeAbsent("events[*].datasetId", "events[*].meta"));
 	}
 
 	@Test
@@ -313,7 +314,7 @@ public class RequestBuilderTest {
 			"    }" +
 			"  ]" +
 			"}";
-		JSONAsserts.assertExactMatch(
+		assertExactMatch(
 			expected,
 			payload,
 			new KeyMustBeAbsent("events[0].datasetId"),
@@ -365,7 +366,7 @@ public class RequestBuilderTest {
 			"    }" +
 			"  ]" +
 			"}";
-		JSONAsserts.assertExactMatch(expected, payload, new KeyMustBeAbsent("events[*].meta"));
+		assertExactMatch(expected, payload, new KeyMustBeAbsent("events[*].meta"));
 	}
 
 	@Test
@@ -422,7 +423,7 @@ public class RequestBuilderTest {
 			"    }" +
 			"  ]" +
 			"}";
-		JSONAsserts.assertExactMatch(expected, payload, new KeyMustBeAbsent("events[*].datasetId"));
+		assertExactMatch(expected, payload, new KeyMustBeAbsent("events[*].datasetId"));
 	}
 
 	@Test
@@ -447,7 +448,7 @@ public class RequestBuilderTest {
 			"    }" +
 			"  }" +
 			"}";
-		JSONAsserts.assertExactMatch(expected, payload);
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -469,7 +470,7 @@ public class RequestBuilderTest {
 			"    }" +
 			"  }" +
 			"}";
-		JSONAsserts.assertExactMatch(expected, payload);
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -489,7 +490,7 @@ public class RequestBuilderTest {
 
 		String expected =
 			"{" + "  \"meta\": {" + "    \"configOverrides\": {" + "      \"key\": \"val\"" + "    }" + "  }" + "}";
-		JSONAsserts.assertExactMatch(expected, payload);
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -502,7 +503,7 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		JSONAsserts.assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.configOverrides"));
+		assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.configOverrides"));
 	}
 
 	@Test
@@ -515,7 +516,7 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		JSONAsserts.assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.configOverrides"));
+		assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.configOverrides"));
 	}
 
 	@Test
@@ -554,7 +555,7 @@ public class RequestBuilderTest {
 			"    }" +
 			"  }" +
 			"}";
-		JSONAsserts.assertExactMatch(expected, payload);
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -585,7 +586,7 @@ public class RequestBuilderTest {
 			"    }" +
 			"  }" +
 			"}";
-		JSONAsserts.assertExactMatch(expected, payload);
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
@@ -596,7 +597,7 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		JSONAsserts.assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.state"));
+		assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.state"));
 	}
 
 	@Test
@@ -608,7 +609,7 @@ public class RequestBuilderTest {
 		assertNumberOfEvents(payload, 1);
 
 		// StateMetadata not added if empty
-		JSONAsserts.assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.state"));
+		assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.state"));
 	}
 
 	// getConsentPayload tests
@@ -742,7 +743,7 @@ public class RequestBuilderTest {
 		assertStandardFieldsInConsentUpdatesPayload(payload);
 
 		// StateMetadata not added to consent requests
-		JSONAsserts.assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.state"));
+		assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.state"));
 	}
 
 	@Test
@@ -875,7 +876,7 @@ public class RequestBuilderTest {
 			"    }" +
 			"  }" +
 			"}";
-		JSONAsserts.assertExactMatch(expected, payload);
+		assertExactMatch(expected, payload);
 	}
 
 	// assert on standard fields included in the payload of all consent requests
@@ -894,7 +895,7 @@ public class RequestBuilderTest {
 			"    }" +
 			"  }" +
 			"}";
-		JSONAsserts.assertExactMatch(
+		assertExactMatch(
 			expected,
 			payload,
 			new CollectionEqualCount("consent"), // Validates that `consent` array only has 1 element
