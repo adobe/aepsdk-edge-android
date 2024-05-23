@@ -17,7 +17,7 @@ import com.adobe.marketing.mobile.services.HttpMethod
 import com.adobe.marketing.mobile.services.NetworkRequest
 import com.adobe.marketing.mobile.services.ServiceProvider
 import com.adobe.marketing.mobile.services.TestableNetworkRequest
-import com.adobe.marketing.mobile.util.JSONAsserts
+import com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch
 import com.adobe.marketing.mobile.util.KeyMustBeAbsent
 import com.adobe.marketing.mobile.util.MockNetworkService
 import com.adobe.marketing.mobile.util.MonitorExtension
@@ -173,7 +173,7 @@ class ConfigOverridesFunctionalTests {
           }
         }
         """
-        JSONAsserts.assertExactMatch(expected, getPayloadJson(resultRequests[0]))
+        assertExactMatch(expected, getPayloadJson(resultRequests[0]))
     }
 
     @Test
@@ -224,7 +224,7 @@ class ConfigOverridesFunctionalTests {
         }
         """
         // Verify that configOverrides is not present in the meta data
-        JSONAsserts.assertExactMatch(expected, getPayloadJson(resultRequests[0]), KeyMustBeAbsent("meta.configOverrides"))
+        assertExactMatch(expected, getPayloadJson(resultRequests[0]), KeyMustBeAbsent("meta.configOverrides"))
     }
 
     @Test
@@ -276,7 +276,7 @@ class ConfigOverridesFunctionalTests {
         }
         """
         // Verify that configOverrides is not present in the meta data
-        JSONAsserts.assertExactMatch(expected, getPayloadJson(resultRequests[0]), KeyMustBeAbsent("meta.configOverrides"))
+        assertExactMatch(expected, getPayloadJson(resultRequests[0]), KeyMustBeAbsent("meta.configOverrides"))
     }
 
     @Test
@@ -338,7 +338,7 @@ class ConfigOverridesFunctionalTests {
           }
         }
         """
-        JSONAsserts.assertExactMatch(expected, getPayloadJson(resultRequests[0]))
+        assertExactMatch(expected, getPayloadJson(resultRequests[0]))
     }
 
     @Test
@@ -390,7 +390,7 @@ class ConfigOverridesFunctionalTests {
         }
         """
         // Verify that sdkConfig is not present in the meta data
-        JSONAsserts.assertExactMatch(expected, getPayloadJson(resultRequests[0]), KeyMustBeAbsent("meta.sdkConfig"))
+        assertExactMatch(expected, getPayloadJson(resultRequests[0]), KeyMustBeAbsent("meta.sdkConfig"))
     }
 
     @Test
@@ -442,7 +442,7 @@ class ConfigOverridesFunctionalTests {
         }
         """
         // Verify that sdkConfig is not present in the meta data
-        JSONAsserts.assertExactMatch(expected, getPayloadJson(resultRequests[0]), KeyMustBeAbsent("meta.sdkConfig"))
+        assertExactMatch(expected, getPayloadJson(resultRequests[0]), KeyMustBeAbsent("meta.sdkConfig"))
     }
 
     @Test
@@ -549,7 +549,7 @@ class ConfigOverridesFunctionalTests {
           }
         }            
         """
-        JSONAsserts.assertExactMatch(expected, getPayloadJson(resultRequests[0]))
+        assertExactMatch(expected, getPayloadJson(resultRequests[0]))
     }
 
     private fun getPayloadJson(networkRequest: NetworkRequest?): JSONObject? {
