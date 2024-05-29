@@ -12,9 +12,7 @@
 package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.util.NodeConfig.Scope.Subtree;
-import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNull;
-import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertNotNull;
 
 import com.adobe.marketing.mobile.util.CollectionEqualCount;
