@@ -116,9 +116,6 @@ public class ExperienceEventSerializerTest {
 		ExperienceEvent event = new ExperienceEvent.Builder().setXdmSchema(contextData).build();
 		assertNotNull(event);
 		Map<String, Object> result = event.toObjectMap();
-		assertEquals(2, result.size());
-		assertTrue(result.containsKey(XDM));
-		assertTrue(result.containsKey(DATASETID));
 		String expected = "{ \"datasetId\": \"STRING_TYPE\", \"xdm\": {} }";
 		JSONAsserts.assertTypeMatch(
 			expected,
