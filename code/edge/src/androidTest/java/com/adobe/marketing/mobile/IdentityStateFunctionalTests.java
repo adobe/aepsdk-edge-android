@@ -12,21 +12,23 @@
 package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
+import static com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch;
 import static com.adobe.marketing.mobile.util.TestHelper.LogOnErrorRule;
 import static com.adobe.marketing.mobile.util.TestHelper.SetupCoreRule;
 import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
 import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
 import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.ServiceProvider;
-import com.adobe.marketing.mobile.services.TestableNetworkRequest;
+import com.adobe.marketing.mobile.services.NetworkRequest;
 import com.adobe.marketing.mobile.util.FakeIdentity;
 import com.adobe.marketing.mobile.util.JSONUtils;
+import com.adobe.marketing.mobile.util.KeyMustBeAbsent;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.MonitorExtension;
 import com.adobe.marketing.mobile.util.TestConstants;
@@ -98,7 +100,7 @@ public class IdentityStateFunctionalTests {
 			.build();
 		Edge.sendEvent(experienceEvent, null);
 
-		List<TestableNetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST
 		);
@@ -119,7 +121,7 @@ public class IdentityStateFunctionalTests {
 			.build();
 		Edge.sendEvent(experienceEvent, null);
 
-		List<TestableNetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			2000
@@ -134,18 +136,16 @@ public class IdentityStateFunctionalTests {
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 
 		final String jsonStr =
-			"{\n" +
-			"      \"identityMap\": {\n" +
-			"        \"ECID\": [\n" +
-			"          {\n" +
-			"            \"id\":" +
-			"1234" +
-			",\n" +
-			"            \"authenticatedState\": \"ambiguous\",\n" +
-			"            \"primary\": false\n" +
-			"          }\n" +
-			"        ]\n" +
-			"      }\n" +
+			"{ " +
+			"  \"identityMap\": { " +
+			"    \"ECID\": [ " +
+			"      { " +
+			"        \"id\": 1234, " +
+			"        \"authenticatedState\": \"ambiguous\", " +
+			"        \"primary\": false " +
+			"      } " +
+			"    ] " +
+			"  } " +
 			"}";
 
 		final JSONObject jsonObject = new JSONObject(jsonStr);
@@ -158,25 +158,33 @@ public class IdentityStateFunctionalTests {
 
 		requests = mockNetworkService.getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST);
 		assertEquals(1, requests.size());
-		Map<String, String> flattenedRequestBody = mockNetworkService.getFlattenedNetworkRequestBody(requests.get(0));
-		assertEquals("1234", flattenedRequestBody.get("xdm.identityMap.ECID[0].id"));
+		String expected = "{" +
+			"  \"xdm\": {" +
+			"    \"identityMap\": {" +
+			"      \"ECID\": [" +
+			"        {" +
+			"          \"id\": 1234" +
+			"        }" +
+			"      ]" +
+			"    }" +
+			"  }" +
+			"}";
+		assertExactMatch(expected, getPayloadJson(requests.get(0)));
 	}
 
 	@Test
 	public void testSendEvent_withNoECIDInIdentityState_requestSentWithoutECID() throws Exception {
 		final String jsonStr =
-			"{\n" +
-			"      \"identityMap\": {\n" +
-			"        \"USERID\": [\n" +
-			"          {\n" +
-			"            \"id\":" +
-			"someUserID" +
-			",\n" +
-			"            \"authenticatedState\": \"authenticated\",\n" +
-			"            \"primary\": false\n" +
-			"          }\n" +
-			"        ]\n" +
-			"      }\n" +
+			"{" +
+			"  \"identityMap\": {" +
+			"    \"USERID\": [" +
+			"      {" +
+			"        \"id\": someUserID," +
+			"        \"authenticatedState\": \"authenticated\"," +
+			"        \"primary\": false" +
+			"      }" +
+			"    ]" +
+			"  }" +
 			"}";
 
 		final JSONObject jsonObject = new JSONObject(jsonStr);
@@ -204,12 +212,25 @@ public class IdentityStateFunctionalTests {
 		mockNetworkService.assertAllNetworkRequestExpectations();
 
 		// Assert network request does not contain an ECID
-		List<TestableNetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST
 		);
 		assertEquals(1, requests.size());
-		Map<String, String> flattenedRequestBody = mockNetworkService.getFlattenedNetworkRequestBody(requests.get(0));
-		assertNull(flattenedRequestBody.get("xdm.identityMap.ECID[0].id"));
+		assertExactMatch("{}", getPayloadJson(requests.get(0)), new KeyMustBeAbsent("xdm.identityMap.ECID[0].id"));
+	}
+
+	private JSONObject getPayloadJson(NetworkRequest networkRequest) {
+		if (networkRequest == null || networkRequest.getBody() == null) {
+			return null;
+		}
+
+		String payload = new String(networkRequest.getBody());
+		try {
+			return new JSONObject(payload);
+		} catch (Exception e) {
+			fail("Failed to create JSONObject from payload: " + e.getMessage());
+			return null;
+		}
 	}
 }
