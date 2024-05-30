@@ -25,8 +25,8 @@ import static org.junit.Assert.fail;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
-import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.NetworkRequest;
+import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.CollectionEqualCount;
 import com.adobe.marketing.mobile.util.MockNetworkService;
@@ -34,14 +34,11 @@ import com.adobe.marketing.mobile.util.MonitorExtension;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
 import com.adobe.marketing.mobile.util.ValueTypeMatch;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -158,7 +155,8 @@ public class EdgePathOverwriteTests {
 		);
 		assertEquals(1, resultRequests.size());
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"events\": [" +
 			"    {" +
 			"      \"xdm\": {" +
@@ -196,8 +194,14 @@ public class EdgePathOverwriteTests {
 			"    }," +
 			"    \"implementationDetails\": {" +
 			"      \"environment\": \"app\"," +
-			"      \"name\": \"" + EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE + "\"," +
-			"      \"version\": \"" + MobileCore.extensionVersion() + "+" + Edge.extensionVersion() + "\"" +
+			"      \"name\": \"" +
+			EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE +
+			"\"," +
+			"      \"version\": \"" +
+			MobileCore.extensionVersion() +
+			"+" +
+			Edge.extensionVersion() +
+			"\"" +
 			"    }" +
 			"  }" +
 			"}";
@@ -279,7 +283,8 @@ public class EdgePathOverwriteTests {
 		);
 		assertEquals(1, resultRequests.size());
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"events\": [" +
 			"    {" +
 			"      \"xdm\": {" +
@@ -317,8 +322,14 @@ public class EdgePathOverwriteTests {
 			"    }," +
 			"    \"implementationDetails\": {" +
 			"      \"environment\": \"app\"," +
-			"      \"name\": \"" + EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE + "\"," +
-			"      \"version\": \"" + MobileCore.extensionVersion() + "+" + Edge.extensionVersion() + "\"" +
+			"      \"name\": \"" +
+			EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE +
+			"\"," +
+			"      \"version\": \"" +
+			MobileCore.extensionVersion() +
+			"+" +
+			Edge.extensionVersion() +
+			"\"" +
 			"    }" +
 			"  }" +
 			"}";
