@@ -43,7 +43,6 @@ public class ExperienceEventTests {
 
 	private Map<String, Object> generateEventData() {
 		String dataToSend = "testCustomText";
-		float orderTotal = 110.10f;
 		List<String> valuesList = new ArrayList<String>();
 		valuesList.add("val1");
 		valuesList.add("val2");

@@ -15,10 +15,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.adobe.marketing.mobile.util.JSONAsserts;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -84,46 +81,28 @@ public class EdgeEventHandleTests {
 			}
 		};
 
-		List<Map<String, Object>> expectedPayload = new ArrayList<>();
-		expectedPayload.add(
-			new HashMap<String, Object>() {
-				{
-					put("key1", "value1");
-					put("key2", 2);
-					put("key3", true);
-					put("key4", 13.66);
-					put(
-						"key5",
-						new ArrayList<Object>() {
-							{
-								add("abc");
-								add("def");
-							}
-						}
-					);
-				}
-			}
-		);
-		expectedPayload.add(
-			new HashMap<String, Object>() {
-				{
-					put(
-						"key6",
-						new HashMap<String, Object>() {
-							{
-								put("multilevel", "payload");
-							}
-						}
-					);
-				}
-			}
-		);
+		String expected =
+			"[\n" +
+			"    {\n" +
+			"        \"key1\": \"value1\",\n" +
+			"        \"key2\": 2,\n" +
+			"        \"key3\": true,\n" +
+			"        \"key4\": 13.66,\n" +
+			"        \"key5\": [\"abc\", \"def\"]\n" +
+			"    },\n" +
+			"    {\n" +
+			"        \"key6\": {\n" +
+			"            \"multilevel\": \"payload\"\n" +
+			"        }\n" +
+			"    }\n" +
+			"]\n";
+
 		EdgeEventHandle handle = new EdgeEventHandle(handleJson);
 
 		assertNotNull(handle);
 		assertEquals("testType", handle.getType());
 		assertEquals(10, handle.getEventIndex());
-		assertEquals(expectedPayload, handle.getPayload());
+		JSONAsserts.assertEquals(expected, handle.getPayload());
 	}
 
 	@Test
@@ -153,21 +132,14 @@ public class EdgeEventHandleTests {
 			}
 		};
 
-		List<Map<String, Object>> expectedPayload = new ArrayList<>();
-		expectedPayload.add(
-			new HashMap<String, Object>() {
-				{
-					put("key1", "value1");
-					put("key2", 2);
-				}
-			}
-		);
+		String expected = "[{\"key1\": \"value1\", \"key2\": 2}]";
+
 		EdgeEventHandle handle = new EdgeEventHandle(handleJson);
 
 		assertNotNull(handle);
 		assertNull(handle.getType());
 		assertEquals(10, handle.getEventIndex());
-		assertEquals(expectedPayload, handle.getPayload());
+		JSONAsserts.assertEquals(expected, handle.getPayload());
 	}
 
 	@Test
@@ -197,21 +169,14 @@ public class EdgeEventHandleTests {
 			}
 		};
 
-		List<Map<String, Object>> expectedPayload = new ArrayList<>();
-		expectedPayload.add(
-			new HashMap<String, Object>() {
-				{
-					put("key1", "value1");
-					put("key2", 2);
-				}
-			}
-		);
+		String expected = "[{\"key1\": \"value1\", \"key2\": 2}]";
+
 		EdgeEventHandle handle = new EdgeEventHandle(handleJson);
 
 		assertNotNull(handle);
 		assertEquals("testType", handle.getType());
 		assertEquals(0, handle.getEventIndex());
-		assertEquals(expectedPayload, handle.getPayload());
+		JSONAsserts.assertEquals(expected, handle.getPayload());
 	}
 
 	@Test
