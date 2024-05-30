@@ -47,7 +47,6 @@ import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
 import com.adobe.marketing.mobile.util.TestXDMSchema;
 import com.adobe.marketing.mobile.util.ValueTypeMatch;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -57,7 +56,6 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.After;
@@ -167,7 +165,8 @@ public class EdgeFunctionalTests {
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
 		assertEquals(1, resultEvents.size());
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"xdm\": {" +
 			"    \"testString\": \"xdm\"," +
 			"    \"testInt\": 10," +
@@ -232,7 +231,8 @@ public class EdgeFunctionalTests {
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
 		assertEquals(1, resultEvents.size());
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"xdm\": {" +
 			"    \"testString\": \"xdm\"" +
 			"  }," +
@@ -274,11 +274,7 @@ public class EdgeFunctionalTests {
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
 		assertEquals(1, resultEvents.size());
 
-		String expected = "{" +
-			"  \"xdm\": {" +
-			"    \"testString\": \"xdm\"" +
-			"  }" +
-			"}";
+		String expected = "{" + "  \"xdm\": {" + "    \"testString\": \"xdm\"" + "  }" + "}";
 		JSONAsserts.assertEquals(expected, resultEvents.get(0).getEventData());
 	}
 
@@ -422,7 +418,8 @@ public class EdgeFunctionalTests {
 		assertEquals(CONFIG_ID, testableNetworkRequest.queryParam("configId"));
 		assertNotNull(testableNetworkRequest.queryParam("requestId"));
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"events\": [" +
 			"    {" +
 			"      \"xdm\": {" +
@@ -460,13 +457,24 @@ public class EdgeFunctionalTests {
 			"    }," +
 			"    \"implementationDetails\": {" +
 			"      \"environment\": \"app\"," +
-			"      \"name\": \"" + EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE + "\"," +
-			"      \"version\": \"" + MobileCore.extensionVersion() + "+" + Edge.extensionVersion() + "\"" +
+			"      \"name\": \"" +
+			EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE +
+			"\"," +
+			"      \"version\": \"" +
+			MobileCore.extensionVersion() +
+			"+" +
+			Edge.extensionVersion() +
+			"\"" +
 			"    }" +
 			"  }" +
 			"}";
 
-		assertExactMatch(expected, getPayloadJson(resultRequests.get(0)), new CollectionEqualCount(Subtree), new ValueTypeMatch("xdm.identityMap.ECID[0].id", "events[0].xdm._id", "events[0].xdm.timestamp"));
+		assertExactMatch(
+			expected,
+			getPayloadJson(resultRequests.get(0)),
+			new CollectionEqualCount(Subtree),
+			new ValueTypeMatch("xdm.identityMap.ECID[0].id", "events[0].xdm._id", "events[0].xdm.timestamp")
+		);
 	}
 
 	@Test
@@ -527,7 +535,8 @@ public class EdgeFunctionalTests {
 		assertEquals(CONFIG_ID, testableNetworkRequest.queryParam("configId"));
 		assertNotNull(testableNetworkRequest.queryParam("requestId"));
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"events\": [" +
 			"    {" +
 			"      \"data\": {" +
@@ -568,12 +577,23 @@ public class EdgeFunctionalTests {
 			"    }," +
 			"    \"implementationDetails\": {" +
 			"      \"environment\": \"app\"," +
-			"      \"name\": \"" + EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE + "\"," +
-			"      \"version\": \"" + MobileCore.extensionVersion() + "+" + Edge.extensionVersion() + "\"" +
+			"      \"name\": \"" +
+			EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE +
+			"\"," +
+			"      \"version\": \"" +
+			MobileCore.extensionVersion() +
+			"+" +
+			Edge.extensionVersion() +
+			"\"" +
 			"    }" +
 			"  }" +
 			"}";
-		assertExactMatch(expected, getPayloadJson(resultRequests.get(0)), new CollectionEqualCount(Subtree), new ValueTypeMatch("xdm.identityMap.ECID[0].id", "events[0].xdm._id", "events[0].xdm.timestamp"));
+		assertExactMatch(
+			expected,
+			getPayloadJson(resultRequests.get(0)),
+			new CollectionEqualCount(Subtree),
+			new ValueTypeMatch("xdm.identityMap.ECID[0].id", "events[0].xdm._id", "events[0].xdm.timestamp")
+		);
 	}
 
 	@Test
@@ -608,7 +628,8 @@ public class EdgeFunctionalTests {
 		assertEquals(CONFIG_ID, testableNetworkRequest.queryParam("configId"));
 		assertNotNull(testableNetworkRequest.queryParam("requestId"));
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"events\": [" +
 			"    {" +
 			"      \"meta\": {" +
@@ -650,12 +671,23 @@ public class EdgeFunctionalTests {
 			"    }," +
 			"    \"implementationDetails\": {" +
 			"      \"environment\": \"app\"," +
-			"      \"name\": \"" + EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE + "\"," +
-			"      \"version\": \"" + MobileCore.extensionVersion() + "+" + Edge.extensionVersion() + "\"" +
+			"      \"name\": \"" +
+			EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE +
+			"\"," +
+			"      \"version\": \"" +
+			MobileCore.extensionVersion() +
+			"+" +
+			Edge.extensionVersion() +
+			"\"" +
 			"    }" +
 			"  }" +
 			"}";
-		assertExactMatch(expected, getPayloadJson(resultRequests.get(0)), new CollectionEqualCount(Subtree), new ValueTypeMatch("xdm.identityMap.ECID[0].id", "events[0].xdm._id", "events[0].xdm.timestamp"));
+		assertExactMatch(
+			expected,
+			getPayloadJson(resultRequests.get(0)),
+			new CollectionEqualCount(Subtree),
+			new ValueTypeMatch("xdm.identityMap.ECID[0].id", "events[0].xdm._id", "events[0].xdm.timestamp")
+		);
 	}
 
 	@Test
@@ -870,7 +902,8 @@ public class EdgeFunctionalTests {
 	// --------------------------------------------------------------------------------------------
 
 	@Test
-	public void testSendEvent_twoConsecutiveCalls_appendsReceivedClientSideStore() throws InterruptedException, JSONException {
+	public void testSendEvent_twoConsecutiveCalls_appendsReceivedClientSideStore()
+		throws InterruptedException, JSONException {
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 
 		final String storeResponseBody =
@@ -907,7 +940,8 @@ public class EdgeFunctionalTests {
 		assertEquals(CONFIG_ID, testableNetworkRequest.queryParam("configId"));
 		assertNotNull(testableNetworkRequest.queryParam("requestId"));
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"meta\": {" +
 			"      \"state\": {" +
 			"        \"entries\": [" +
@@ -982,7 +1016,8 @@ public class EdgeFunctionalTests {
 		assertEquals(CONFIG_ID, testableNetworkRequest.queryParam("configId"));
 		assertNotNull(testableNetworkRequest.queryParam("requestId"));
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"meta\": {" +
 			"      \"state\": {" +
 			"        \"entries\": [" +
@@ -1093,7 +1128,8 @@ public class EdgeFunctionalTests {
 		List<Event> responseEvents = getDispatchedEventsWith(EventType.EDGE, "personalization:decisions");
 		assertEquals(1, responseEvents.size());
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"payload\": [" +
 			"    {" +
 			"      \"id\": \"AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9\"," +
@@ -1110,8 +1146,12 @@ public class EdgeFunctionalTests {
 			"      \"scope\": \"buttonColor\"" +
 			"    }" +
 			"  ]," +
-			"  \"requestEventId\": \"" + requestEventUuid + "\"," +
-			"  \"requestId\": \"" + requestId + "\"," +
+			"  \"requestEventId\": \"" +
+			requestEventUuid +
+			"\"," +
+			"  \"requestId\": \"" +
+			requestId +
+			"\"," +
 			"  \"type\": \"personalization:decisions\"" +
 			"}";
 		JSONAsserts.assertEquals(expected, responseEvents.get(0).getEventData());
@@ -1161,11 +1201,16 @@ public class EdgeFunctionalTests {
 		List<Event> errorResponseEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, errorResponseEvents.size());
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"code\": \"personalization:0\"," +
 			"  \"message\": \"Failed due to unrecoverable system error\"," +
-			"  \"requestEventId\": \"" + requestEventUuid + "\"," +
-			"  \"requestId\": \"" + requestId + "\"" +
+			"  \"requestEventId\": \"" +
+			requestEventUuid +
+			"\"," +
+			"  \"requestId\": \"" +
+			requestId +
+			"\"" +
 			"}";
 		JSONAsserts.assertEquals(expected, errorResponseEvents.get(0).getEventData());
 		assertEquals(requestEventUuid, errorResponseEvents.get(0).getParentID());
@@ -1643,8 +1688,11 @@ public class EdgeFunctionalTests {
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(2, resultEvents.size());
 
-		String expectedEventData1 = "{" +
-			"  \"requestEventId\": \"" + requestEvents.get(0).getUniqueIdentifier() + "\"," +
+		String expectedEventData1 =
+			"{" +
+			"  \"requestEventId\": \"" +
+			requestEvents.get(0).getUniqueIdentifier() +
+			"\"," +
 			"  \"status\": 504," +
 			"  \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\"," +
 			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-504\"" +
@@ -1652,14 +1700,17 @@ public class EdgeFunctionalTests {
 		assertExactMatch(expectedEventData1, resultEvents.get(0).getEventData(), new ElementCount(5, Subtree));
 		assertEquals(requestEvents.get(0).getUniqueIdentifier(), resultEvents.get(0).getParentID());
 
-		String expectedEventData2 = "{" +
+		String expectedEventData2 =
+			"{" +
 			"  \"report\": {" +
 			"    \"cause\": {" +
 			"      \"code\": 202," +
 			"      \"message\": \"Cannot read related customer for device id: ...\"" +
 			"    }" +
 			"  }," +
-			"  \"requestEventId\": \"" + requestEvents.get(0).getUniqueIdentifier() + "\"," +
+			"  \"requestEventId\": \"" +
+			requestEvents.get(0).getUniqueIdentifier() +
+			"\"," +
 			"  \"status\": 200," +
 			"  \"title\": \"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request.\"," +
 			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0204-200\"" +
@@ -1712,7 +1763,8 @@ public class EdgeFunctionalTests {
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, resultEvents.size());
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"detail\": \"Invalid request (report attached). Please check your input and try again.\"," +
 			"  \"report\": {" +
 			"    \"errors\": [" +
@@ -1723,7 +1775,9 @@ public class EdgeFunctionalTests {
 			"    \"orgId\": \"test@AdobeOrg\"," +
 			"    \"requestId\": \"0f8821e5-ed1a-4301-b445-5f336fb50ee8\"" +
 			"  }," +
-			"  \"requestEventId\": \"" + requestEvents.get(0).getUniqueIdentifier() + "\"," +
+			"  \"requestEventId\": \"" +
+			requestEvents.get(0).getUniqueIdentifier() +
+			"\"," +
 			"  \"status\": 422," +
 			"  \"title\": \"Unprocessable Entity\"," +
 			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0104-422\"" +
