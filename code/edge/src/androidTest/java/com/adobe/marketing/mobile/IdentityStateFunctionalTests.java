@@ -24,8 +24,8 @@ import static org.junit.Assert.fail;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.services.HttpConnecting;
-import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.NetworkRequest;
+import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.util.FakeIdentity;
 import com.adobe.marketing.mobile.util.JSONUtils;
 import com.adobe.marketing.mobile.util.KeyMustBeAbsent;
@@ -100,10 +100,7 @@ public class IdentityStateFunctionalTests {
 			.build();
 		Edge.sendEvent(experienceEvent, null);
 
-		List<NetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
-			EXEDGE_INTERACT_URL_STRING,
-			POST
-		);
+		List<NetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST);
 		assertTrue(requests.isEmpty());
 	}
 
@@ -158,7 +155,8 @@ public class IdentityStateFunctionalTests {
 
 		requests = mockNetworkService.getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST);
 		assertEquals(1, requests.size());
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"xdm\": {" +
 			"    \"identityMap\": {" +
 			"      \"ECID\": [" +
@@ -212,10 +210,7 @@ public class IdentityStateFunctionalTests {
 		mockNetworkService.assertAllNetworkRequestExpectations();
 
 		// Assert network request does not contain an ECID
-		List<NetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
-			EXEDGE_INTERACT_URL_STRING,
-			POST
-		);
+		List<NetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST);
 		assertEquals(1, requests.size());
 		assertExactMatch("{}", getPayloadJson(requests.get(0)), new KeyMustBeAbsent("xdm.identityMap.ECID[0].id"));
 	}
