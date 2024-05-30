@@ -113,7 +113,7 @@ public class EdgePublicAPITests {
 	}
 
 	@Test
-	public void testSetLocationHint_whenHintIsValue_dispatchesEdgeUpdateIdentity() throws InterruptedException {
+	public void testSetLocationHint_whenHintIsValue_dispatchesEdgeUpdateIdentity() {
 		Edge.setLocationHint("or2");
 
 		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
@@ -127,7 +127,7 @@ public class EdgePublicAPITests {
 	}
 
 	@Test
-	public void testSetLocationHint_whenHintIsNull_dispatchesEdgeUpdateIdentity() throws InterruptedException {
+	public void testSetLocationHint_whenHintIsNull_dispatchesEdgeUpdateIdentity() {
 		Edge.setLocationHint(null);
 
 		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
@@ -141,7 +141,7 @@ public class EdgePublicAPITests {
 	}
 
 	@Test
-	public void testSetLocationHint_whenHintIsEmpty_dispatchesEdgeUpdateIdentity() throws InterruptedException {
+	public void testSetLocationHint_whenHintIsEmpty_dispatchesEdgeUpdateIdentity() {
 		Edge.setLocationHint("");
 
 		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
