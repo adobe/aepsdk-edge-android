@@ -20,8 +20,8 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
+import com.adobe.marketing.mobile.util.CollectionEqualCount;
 import com.adobe.marketing.mobile.util.JSONAsserts;
-import com.adobe.marketing.mobile.util.KeyMustBeAbsent;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -109,7 +109,7 @@ public class EdgePublicAPITests {
 		assertEquals(EventSource.REQUEST_CONTENT, requestEvent.getSource());
 
 		String expected = "{\"data\": {}, \"xdm\": {}}";
-		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData(), new KeyMustBeAbsent("datasetId"));
+		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData(), new CollectionEqualCount());
 	}
 
 	@Test
