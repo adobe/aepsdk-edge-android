@@ -20,8 +20,8 @@ import static org.junit.Assert.fail;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
-import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.NetworkRequest;
+import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.util.ElementCount;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.MonitorExtension;
@@ -32,7 +32,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -205,13 +204,11 @@ public class SampleFunctionalTests {
 			.build();
 		Edge.sendEvent(experienceEvent, null);
 
-		List<NetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
-			exEdgeInteractUrlString,
-			POST
-		);
+		List<NetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(exEdgeInteractUrlString, POST);
 		assertEquals(1, requests.size());
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"events\": [" +
 			"    {" +
 			"      \"xdm\": {" +
