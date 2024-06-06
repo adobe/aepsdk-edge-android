@@ -23,8 +23,8 @@ import static org.junit.Assert.assertTrue;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.HttpMethod;
-import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.NetworkRequest;
+import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.util.FakeIdentity;
 import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.JSONUtils;
@@ -32,7 +32,6 @@ import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.MonitorExtension;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
-import com.adobe.marketing.mobile.util.TestUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -203,7 +202,8 @@ public class NoConfigFunctionalTests {
 		assertEquals("personalization:decisions", receivedHandles.get(0).getType());
 		assertEquals(1, receivedHandles.get(0).getPayload().size());
 
-		String expectedHandle1 = "{" +
+		String expectedHandle1 =
+			"{" +
 			"  \"id\": \"AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9\"," +
 			"  \"items\": [" +
 			"    {" +
@@ -223,7 +223,8 @@ public class NoConfigFunctionalTests {
 		assertEquals("identity:exchange", receivedHandles.get(1).getType());
 		assertEquals(1, receivedHandles.get(1).getPayload().size());
 
-		String expectedHandle2 = "{" +
+		String expectedHandle2 =
+			"{" +
 			"  \"id\": 411," +
 			"  \"spec\": {" +
 			"    \"hideReferrer\": false," +
