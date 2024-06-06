@@ -24,8 +24,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.services.ServiceProvider;
-import com.adobe.marketing.mobile.services.TestableNetworkRequest;
+import com.adobe.marketing.mobile.services.NetworkRequest;
 import com.adobe.marketing.mobile.util.FakeIdentity;
+import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.JSONUtils;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.MonitorExtension;
@@ -94,9 +95,7 @@ public class NoConfigFunctionalTests {
 			"      \"identityMap\": {\n" +
 			"        \"ECID\": [\n" +
 			"          {\n" +
-			"            \"id\":" +
-			"1234" +
-			",\n" +
+			"            \"id\": 1234,\n" +
 			"            \"authenticatedState\": \"ambiguous\",\n" +
 			"            \"primary\": false\n" +
 			"          }\n" +
@@ -125,7 +124,7 @@ public class NoConfigFunctionalTests {
 		assertExpectedEvents(false);
 
 		// verify the network request was not sent
-		List<TestableNetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			HttpMethod.POST
 		);
@@ -147,9 +146,7 @@ public class NoConfigFunctionalTests {
 			"      \"identityMap\": {\n" +
 			"        \"ECID\": [\n" +
 			"          {\n" +
-			"            \"id\":" +
-			"1234" +
-			",\n" +
+			"            \"id\": 1234,\n" +
 			"            \"authenticatedState\": \"ambiguous\",\n" +
 			"            \"primary\": false\n" +
 			"          }\n" +
@@ -182,7 +179,7 @@ public class NoConfigFunctionalTests {
 			}
 		);
 
-		List<TestableNetworkRequest> resultNetworkRequests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> resultNetworkRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			HttpMethod.POST
 		);
@@ -206,26 +203,36 @@ public class NoConfigFunctionalTests {
 		assertEquals("personalization:decisions", receivedHandles.get(0).getType());
 		assertEquals(1, receivedHandles.get(0).getPayload().size());
 
-		Map<String, String> handle1 = TestUtils.flattenMap(receivedHandles.get(0).getPayload().get(0));
-
-		assertEquals(4, handle1.size());
-		assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9", handle1.get("id"));
-		assertEquals("#D41DBA", handle1.get("items[0].data.content.value"));
-		assertEquals("https://ns.adobe.com/personalization/json-content-item", handle1.get("items[0].schema"));
-		assertEquals("buttonColor", handle1.get("scope"));
+		String expectedHandle1 = "{" +
+			"  \"id\": \"AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9\"," +
+			"  \"items\": [" +
+			"    {" +
+			"      \"data\": {" +
+			"        \"content\": {" +
+			"          \"value\": \"#D41DBA\"" +
+			"        }" +
+			"      }," +
+			"      \"schema\": \"https://ns.adobe.com/personalization/json-content-item\"" +
+			"    }" +
+			"  ]," +
+			"  \"scope\": \"buttonColor\"" +
+			"}";
+		JSONAsserts.assertEquals(expectedHandle1, receivedHandles.get(0).getPayload().get(0));
 
 		// verify handle 2
 		assertEquals("identity:exchange", receivedHandles.get(1).getType());
 		assertEquals(1, receivedHandles.get(1).getPayload().size());
 
-		Map<String, String> handle2 = TestUtils.flattenMap(receivedHandles.get(1).getPayload().get(0));
-
-		assertEquals(5, handle2.size());
-		assertEquals("411", handle2.get("id"));
-		assertEquals("url", handle2.get("type"));
-		assertEquals("//example.url?d_uuid=9876", handle2.get("spec.url"));
-		assertEquals("false", handle2.get("spec.hideReferrer"));
-		assertEquals("10080", handle2.get("spec.ttlMinutes"));
+		String expectedHandle2 = "{" +
+			"  \"id\": 411," +
+			"  \"spec\": {" +
+			"    \"hideReferrer\": false," +
+			"    \"ttlMinutes\": 10080," +
+			"    \"url\": \"//example.url?d_uuid=9876\"" +
+			"  }," +
+			"  \"type\": \"url\"" +
+			"}";
+		JSONAsserts.assertEquals(expectedHandle2, receivedHandles.get(1).getPayload().get(0));
 	}
 
 	/**
