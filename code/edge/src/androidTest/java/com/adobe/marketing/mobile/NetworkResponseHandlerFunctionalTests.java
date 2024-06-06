@@ -11,8 +11,6 @@
 
 package com.adobe.marketing.mobile;
 
-import static com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch;
-import static com.adobe.marketing.mobile.util.NodeConfig.Scope.Subtree;
 import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
 import static com.adobe.marketing.mobile.util.TestHelper.getDispatchedEventsWith;
 import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
@@ -25,13 +23,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.MockDataStoreService;
 import com.adobe.marketing.mobile.services.NamedCollection;
-import com.adobe.marketing.mobile.util.CollectionEqualCount;
 import com.adobe.marketing.mobile.util.JSONAsserts;
-import com.adobe.marketing.mobile.util.KeyMustBeAbsent;
 import com.adobe.marketing.mobile.util.MonitorExtension;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
-import com.adobe.marketing.mobile.util.TestUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -165,7 +160,8 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 5000);
 		assertEquals(1, dispatchEvents.size());
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"requestId\": \"123\"," +
 			"  \"title\": \"Request to Data platform failed with an unknown exception\"," +
 			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\"" +
@@ -188,8 +184,11 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 5000);
 		assertEquals(1, dispatchEvents.size());
 
-		String expected = "{" +
-			"  \"requestEventId\": \"" + event1.getUniqueIdentifier() + "\"," +
+		String expected =
+			"{" +
+			"  \"requestEventId\": \"" +
+			event1.getUniqueIdentifier() +
+			"\"," +
 			"  \"requestId\": \"123\"," +
 			"  \"title\": \"Request to Data platform failed with an unknown exception\"," +
 			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\"" +
@@ -217,7 +216,8 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, dispatchEvents.size());
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"requestId\": \"123\"," +
 			"  \"status\": 500," +
 			"  \"title\": \"Failed due to unrecoverable system error: java.lang.IllegalStateException: Expected BEGIN_ARRAY but was BEGIN_OBJECT at path $.commerce.purchases\"," +
@@ -277,9 +277,14 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, dispatchEvents.size());
 
-		String expected = "{" +
-			"  \"requestEventId\": \"" + event2.getUniqueIdentifier() + "\"," +
-			"  \"requestId\": \"" + requestId + "\"," +
+		String expected =
+			"{" +
+			"  \"requestEventId\": \"" +
+			event2.getUniqueIdentifier() +
+			"\"," +
+			"  \"requestId\": \"" +
+			requestId +
+			"\"," +
 			"  \"status\": 100," +
 			"  \"title\": \"Button color not found\"," +
 			"  \"type\": \"personalization\"" +
@@ -321,8 +326,11 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, dispatchEvents.size());
 
-		String expected = "{" +
-			"  \"requestId\": \"" + requestId + "\"," +
+		String expected =
+			"{" +
+			"  \"requestId\": \"" +
+			requestId +
+			"\"," +
 			"  \"status\": 100," +
 			"  \"title\": \"Button color not found\"," +
 			"  \"type\": \"personalization\"" +
@@ -363,7 +371,8 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, dispatchEvents.size());
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"requestId\": \"567\"," +
 			"  \"status\": 100," +
 			"  \"title\": \"Button color not found\"," +
@@ -399,9 +408,14 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(2, dispatchEvents.size());
 
-		String expectedEventData1 = "{" +
-			"  \"requestEventId\": \"" + event1.getUniqueIdentifier() + "\"," +
-			"  \"requestId\": \"" + requestId + "\"," +
+		String expectedEventData1 =
+			"{" +
+			"  \"requestEventId\": \"" +
+			event1.getUniqueIdentifier() +
+			"\"," +
+			"  \"requestId\": \"" +
+			requestId +
+			"\"," +
 			"  \"status\": 0," +
 			"  \"title\": \"Failed due to unrecoverable system error: java.lang.IllegalStateException: Expected BEGIN_ARRAY but was BEGIN_OBJECT at path $.commerce.purchases\"," +
 			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\"" +
@@ -409,9 +423,14 @@ public class NetworkResponseHandlerFunctionalTests {
 		JSONAsserts.assertEquals(expectedEventData1, dispatchEvents.get(0).getEventData());
 		assertEquals(event1.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
 
-		String expectedEventData2 = "{" +
-			"  \"requestEventId\": \"" + event1.getUniqueIdentifier() + "\"," +
-			"  \"requestId\": \"" + requestId + "\"," +
+		String expectedEventData2 =
+			"{" +
+			"  \"requestEventId\": \"" +
+			event1.getUniqueIdentifier() +
+			"\"," +
+			"  \"requestId\": \"" +
+			requestId +
+			"\"," +
 			"  \"status\": 2003," +
 			"  \"title\": \"Failed to process personalization event\"," +
 			"  \"type\": \"personalization\"" +
@@ -475,7 +494,8 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "state:store");
 		assertEquals(1, dispatchEvents.size());
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"payload\": [" +
 			"    {" +
 			"      \"key\": \"s_ecid\"," +
@@ -483,7 +503,9 @@ public class NetworkResponseHandlerFunctionalTests {
 			"      \"value\": \"MCMID|29068398647607325310376254630528178721\"" +
 			"    }" +
 			"  ]," +
-			"  \"requestEventId\": \"" + event1.getUniqueIdentifier() + "\"," +
+			"  \"requestEventId\": \"" +
+			event1.getUniqueIdentifier() +
+			"\"," +
 			"  \"requestId\": \"123\"," +
 			"  \"type\": \"state:store\"" +
 			"}";
@@ -516,7 +538,8 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.RESPONSE_CONTENT);
 		assertEquals(1, dispatchEvents.size());
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"payload\": [" +
 			"    {" +
 			"      \"key\": \"s_ecid\"," +
@@ -553,7 +576,8 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.RESPONSE_CONTENT);
 		assertEquals(1, dispatchEvents.size());
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"payload\": [" +
 			"    {" +
 			"      \"key\": \"s_ecid\"," +
@@ -602,7 +626,8 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals(2, dispatchEvents.size());
 
 		// verify event 1
-		String expectedEventData1 = "{" +
+		String expectedEventData1 =
+			"{" +
 			"  \"payload\": [" +
 			"    {" +
 			"      \"key\": \"s_ecid\"," +
@@ -617,7 +642,8 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertNull(dispatchEvents.get(0).getParentID());
 
 		// verify event 2
-		String expectedEventData2 = "{" +
+		String expectedEventData2 =
+			"{" +
 			"  \"payload\": [" +
 			"    {" +
 			"      \"id\": \"29068398647607325310376254630528178721\"," +
@@ -678,7 +704,8 @@ public class NetworkResponseHandlerFunctionalTests {
 		dispatchEvents.addAll(getDispatchedEventsWith(EventType.EDGE, "pairedeventexample"));
 		assertEquals(2, dispatchEvents.size());
 
-		String expectedEventData1 = "{" +
+		String expectedEventData1 =
+			"{" +
 			"  \"payload\": [" +
 			"    {" +
 			"      \"key\": \"s_ecid\"," +
@@ -686,7 +713,9 @@ public class NetworkResponseHandlerFunctionalTests {
 			"      \"value\": \"MCMID|29068398647607325310376254630528178721\"" +
 			"    }" +
 			"  ]," +
-			"  \"requestEventId\": \"" + event1.getUniqueIdentifier() + "\"," +
+			"  \"requestEventId\": \"" +
+			event1.getUniqueIdentifier() +
+			"\"," +
 			"  \"requestId\": \"123\"," +
 			"  \"type\": \"state:store\"" +
 			"}";
@@ -694,13 +723,16 @@ public class NetworkResponseHandlerFunctionalTests {
 		assertEquals(event1.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
 
 		// verify event 2
-		String expectedEventData2 = "{" +
+		String expectedEventData2 =
+			"{" +
 			"  \"payload\": [" +
 			"    {" +
 			"      \"id\": \"123612123812381\"" +
 			"    }" +
 			"  ]," +
-			"  \"requestEventId\": \"" + event2.getUniqueIdentifier() + "\"," +
+			"  \"requestEventId\": \"" +
+			event2.getUniqueIdentifier() +
+			"\"," +
 			"  \"requestId\": \"123\"," +
 			"  \"type\": \"pairedeventexample\"" +
 			"}";
@@ -743,7 +775,8 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "pairedeventexample");
 		assertEquals(1, dispatchEvents.size());
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"payload\": [" +
 			"    {" +
 			"      \"id\": \"123612123812381\"" +
@@ -790,7 +823,8 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "pairedeventexample");
 		assertEquals(1, dispatchEvents.size());
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"payload\": [" +
 			"    {" +
 			"      \"id\": \"123612123812381\"" +
@@ -840,7 +874,8 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "state:store");
 		assertEquals(1, dispatchEvents.size());
 
-		String expectedEventData1 = "{" +
+		String expectedEventData1 =
+			"{" +
 			"  \"payload\": [" +
 			"    {" +
 			"      \"key\": \"s_ecid\"," +
@@ -848,7 +883,9 @@ public class NetworkResponseHandlerFunctionalTests {
 			"      \"value\": \"MCMID|29068398647607325310376254630528178721\"" +
 			"    }" +
 			"  ]," +
-			"  \"requestEventId\": \"" + event1.getUniqueIdentifier() + "\"," +
+			"  \"requestEventId\": \"" +
+			event1.getUniqueIdentifier() +
+			"\"," +
 			"  \"requestId\": \"123\"," +
 			"  \"type\": \"state:store\"" +
 			"}";
@@ -859,8 +896,11 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchErrorEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, dispatchErrorEvents.size());
 
-		String expectedEventData2 = "{" +
-			"  \"requestEventId\": \"" + event1.getUniqueIdentifier() + "\"," +
+		String expectedEventData2 =
+			"{" +
+			"  \"requestEventId\": \"" +
+			event1.getUniqueIdentifier() +
+			"\"," +
 			"  \"requestId\": \"123\"," +
 			"  \"status\": 2003," +
 			"  \"title\": \"Failed to process personalization event\"," +
@@ -909,8 +949,11 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(2, dispatchEvents.size());
 
-		String expectedEventData1 = "{" +
-			"  \"requestEventId\": \"" + event2.getUniqueIdentifier() + "\"," +
+		String expectedEventData1 =
+			"{" +
+			"  \"requestEventId\": \"" +
+			event2.getUniqueIdentifier() +
+			"\"," +
 			"  \"requestId\": \"123\"," +
 			"  \"status\": 2003," +
 			"  \"title\": \"Failed to process personalization event\"" +
@@ -918,14 +961,17 @@ public class NetworkResponseHandlerFunctionalTests {
 		JSONAsserts.assertEquals(expectedEventData1, dispatchEvents.get(0).getEventData());
 		assertEquals(event2.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
 
-		String expectedEventData2 = "{" +
+		String expectedEventData2 =
+			"{" +
 			"  \"report\": {" +
 			"    \"cause\": {" +
 			"      \"code\": 202," +
 			"      \"message\": \"Some Informative stuff here\"" +
 			"    }" +
 			"  }," +
-			"  \"requestEventId\": \"" + event1.getUniqueIdentifier() + "\"," +
+			"  \"requestEventId\": \"" +
+			event1.getUniqueIdentifier() +
+			"\"," +
 			"  \"requestId\": \"123\"," +
 			"  \"status\": 98," +
 			"  \"title\": \"Some Informative stuff here\"," +
@@ -969,7 +1015,8 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "locationHint:result");
 		assertEquals(1, dispatchEvents.size());
 
-		String expected = "{" +
+		String expected =
+			"{" +
 			"  \"payload\": [" +
 			"    {" +
 			"      \"hint\": \"or2\"," +
@@ -982,7 +1029,9 @@ public class NetworkResponseHandlerFunctionalTests {
 			"      \"ttlSeconds\": 600" +
 			"    }" +
 			"  ]," +
-			"  \"requestEventId\": \"" + event1.getUniqueIdentifier() + "\"," +
+			"  \"requestEventId\": \"" +
+			event1.getUniqueIdentifier() +
+			"\"," +
 			"  \"requestId\": \"123\"," +
 			"  \"type\": \"locationHint:result\"" +
 			"}";
