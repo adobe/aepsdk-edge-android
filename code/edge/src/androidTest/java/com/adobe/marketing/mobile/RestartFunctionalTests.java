@@ -21,7 +21,7 @@ import com.adobe.marketing.mobile.edge.consent.Consent;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.ServiceProvider;
-import com.adobe.marketing.mobile.services.TestableNetworkRequest;
+import com.adobe.marketing.mobile.services.NetworkRequest;
 import com.adobe.marketing.mobile.util.ADBCountDownLatch;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.MonitorExtension;
@@ -64,7 +64,7 @@ public class RestartFunctionalTests {
 		fireManyEvents();
 
 		//verify
-		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			2000
@@ -96,7 +96,7 @@ public class RestartFunctionalTests {
 		fireManyEvents();
 
 		//verify
-		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			2000
