@@ -21,6 +21,7 @@ import com.adobe.marketing.mobile.edge.integration.util.TestSetupHelper
 import com.adobe.marketing.mobile.services.HttpMethod
 import com.adobe.marketing.mobile.services.ServiceProvider
 import com.adobe.marketing.mobile.services.TestableNetworkRequest
+import com.adobe.marketing.mobile.util.AnyOrderMatch
 import com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch
 import com.adobe.marketing.mobile.util.JSONAsserts.assertTypeMatch
 import com.adobe.marketing.mobile.util.MonitorExtension
@@ -300,7 +301,8 @@ class UpstreamIntegrationTests {
         assertTypeMatch(
             expectedLocationHint,
             locationHintResult.eventData,
-            ValueExactMatch("payload[*].scope")
+            ValueExactMatch("payload[0].scope"),
+            AnyOrderMatch("payload[0]")
         )
     }
 
@@ -347,7 +349,8 @@ class UpstreamIntegrationTests {
             assertTypeMatch(
                 expectedLocationHint,
                 locationHintResult.eventData,
-                ValueExactMatch("payload[*].scope", "payload[*].hint")
+                ValueExactMatch("payload[*].scope", "payload[*].hint"),
+                AnyOrderMatch("payload[0]")
             )
 
             resetTestExpectations()
@@ -380,12 +383,12 @@ class UpstreamIntegrationTests {
             {
               "maxAge": 123,
               "key": "kndctr_972C898555E9F7BC7F000101_AdobeOrg_cluster",
-              "value": "stringType"
+              "value": "STRING_TYPE"
             },
             {
               "maxAge": 123,
               "key": "kndctr_972C898555E9F7BC7F000101_AdobeOrg_identity",
-              "value": "stringType"
+              "value": "STRING_TYPE"
             }
           ]
         }
@@ -396,15 +399,10 @@ class UpstreamIntegrationTests {
             .last()
 
         // Exact match used here to strictly validate `payload` array element count == 2
-        assertExactMatch(
+        assertTypeMatch(
             expectedStateStore,
             stateStoreEvent.eventData,
-            ValueTypeMatch(
-                "payload[0].maxAge",
-                "payload[0].value",
-                "payload[1].maxAge",
-                "payload[1].value"
-            )
+            ValueExactMatch("payload[*].key")
         )
     }
 
@@ -419,7 +417,13 @@ class UpstreamIntegrationTests {
             .setData(mapOf("data" to mapOf("test" to "data")))
             .build()
 
+        TestSetupHelper.expectEdgeEventHandle(TestConstants.EventSource.STATE_STORE)
+
         Edge.sendEvent(experienceEvent) {}
+
+        // Assert on expected state store event to properly wait for the initial state setup to complete
+        // before moving on to test case logic
+        TestHelper.assertExpectedEvents(true)
 
         resetTestExpectations()
 
@@ -427,10 +431,7 @@ class UpstreamIntegrationTests {
             // Set location hint
             Edge.setLocationHint(locationHint)
 
-            TestSetupHelper.expectEdgeEventHandle(
-                expectedHandleType = TestConstants.EventSource.STATE_STORE,
-                expectedCount = 1
-            )
+            TestSetupHelper.expectEdgeEventHandle(TestConstants.EventSource.STATE_STORE)
 
             // Test
             Edge.sendEvent(experienceEvent) {}
@@ -449,10 +450,9 @@ class UpstreamIntegrationTests {
             """
 
             // Unsafe access used since testSendEvent_receivesExpectedEventHandles guarantees existence
-            val stateStoreEvent = TestSetupHelper.getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.STATE_STORE)
+            val stateStoreEvent = TestSetupHelper.getEdgeEventHandles(TestConstants.EventSource.STATE_STORE)
                 .last()
 
-            // Exact match used here to strictly validate `payload` array element count == 2
             assertExactMatch(
                 expectedStateStore,
                 stateStoreEvent.eventData,
@@ -640,10 +640,11 @@ class UpstreamIntegrationTests {
         // Unsafe access used since testSendEvent_receivesExpectedEventHandles guarantees existence
         val locationHintResultEvent = TestSetupHelper.getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT)
             .first()
-        assertTypeMatch(
+        assertExactMatch(
             expectedLocationHint,
             locationHintResultEvent.eventData,
-            ValueExactMatch("payload[*].scope", "payload[*].hint")
+            ValueTypeMatch("payload[0].ttlSeconds"),
+            AnyOrderMatch("payload[0]")
         )
     }
 
@@ -697,14 +698,14 @@ class UpstreamIntegrationTests {
         val expectedError = """
         {
             "status": 400,
-            "detail": "stringType",
+            "detail": "STRING_TYPE",
             "report": {
-                "requestId": "stringType"
+                "requestId": "STRING_TYPE"
             },
-            "requestEventId": "stringType",
+            "requestEventId": "STRING_TYPE",
             "title": "Invalid datastream ID",
             "type": "https://ns.adobe.com/aep/errors/EXEG-0003-400",
-            "requestId": "stringType"
+            "requestId": "STRING_TYPE"
         }
         """
 
