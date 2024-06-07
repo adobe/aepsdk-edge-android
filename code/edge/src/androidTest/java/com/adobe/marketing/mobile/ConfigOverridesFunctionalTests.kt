@@ -14,16 +14,13 @@ package com.adobe.marketing.mobile
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.adobe.marketing.mobile.edge.identity.Identity
 import com.adobe.marketing.mobile.services.HttpMethod
-import com.adobe.marketing.mobile.services.NetworkRequest
 import com.adobe.marketing.mobile.services.ServiceProvider
-import com.adobe.marketing.mobile.services.TestableNetworkRequest
 import com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch
 import com.adobe.marketing.mobile.util.KeyMustBeAbsent
 import com.adobe.marketing.mobile.util.MockNetworkService
 import com.adobe.marketing.mobile.util.MonitorExtension
 import com.adobe.marketing.mobile.util.TestConstants
 import com.adobe.marketing.mobile.util.TestHelper
-import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -173,7 +170,7 @@ class ConfigOverridesFunctionalTests {
           }
         }
         """
-        assertExactMatch(expected, getPayloadJson(resultRequests[0]))
+        assertExactMatch(expected, resultRequests.getOrNull(0)?.getBodyJson())
     }
 
     @Test
@@ -224,7 +221,7 @@ class ConfigOverridesFunctionalTests {
         }
         """
         // Verify that configOverrides is not present in the meta data
-        assertExactMatch(expected, getPayloadJson(resultRequests[0]), KeyMustBeAbsent("meta.configOverrides"))
+        assertExactMatch(expected, resultRequests.getOrNull(0)?.getBodyJson(), KeyMustBeAbsent("meta.configOverrides"))
     }
 
     @Test
@@ -276,7 +273,7 @@ class ConfigOverridesFunctionalTests {
         }
         """
         // Verify that configOverrides is not present in the meta data
-        assertExactMatch(expected, getPayloadJson(resultRequests[0]), KeyMustBeAbsent("meta.configOverrides"))
+        assertExactMatch(expected, resultRequests.getOrNull(0)?.getBodyJson(), KeyMustBeAbsent("meta.configOverrides"))
     }
 
     @Test
@@ -315,7 +312,7 @@ class ConfigOverridesFunctionalTests {
         assertEquals(1, resultRequests.size.toLong())
 
         // Assert that provided datastreamIdOverride value is in the URL query param for configId
-        assertEquals("5678abcd-abcd-1234-5678-123456abcdef", TestableNetworkRequest(resultRequests[0]).queryParam("configId"))
+        assertEquals("5678abcd-abcd-1234-5678-123456abcdef", resultRequests.getOrNull(0)?.queryParam("configId"))
 
         val expected = """
         {
@@ -338,7 +335,7 @@ class ConfigOverridesFunctionalTests {
           }
         }
         """
-        assertExactMatch(expected, getPayloadJson(resultRequests[0]))
+        assertExactMatch(expected, resultRequests.getOrNull(0)?.getBodyJson())
     }
 
     @Test
@@ -376,7 +373,7 @@ class ConfigOverridesFunctionalTests {
         assertEquals(1, resultRequests.size.toLong())
 
         // Assert that default datastream ID value is in the URL query param for configId
-        assertEquals(CONFIG_ID, TestableNetworkRequest(resultRequests[0]).queryParam("configId"))
+        assertEquals(CONFIG_ID, resultRequests.getOrNull(0)?.queryParam("configId"))
 
         val expected = """
         {
@@ -390,7 +387,7 @@ class ConfigOverridesFunctionalTests {
         }
         """
         // Verify that sdkConfig is not present in the meta data
-        assertExactMatch(expected, getPayloadJson(resultRequests[0]), KeyMustBeAbsent("meta.sdkConfig"))
+        assertExactMatch(expected, resultRequests.getOrNull(0)?.getBodyJson(), KeyMustBeAbsent("meta.sdkConfig"))
     }
 
     @Test
@@ -428,7 +425,7 @@ class ConfigOverridesFunctionalTests {
         assertEquals(1, resultRequests.size.toLong())
 
         // Assert that default datastream ID value is in the URL query param for configId
-        assertEquals(CONFIG_ID, TestableNetworkRequest(resultRequests[0]).queryParam("configId"))
+        assertEquals(CONFIG_ID, resultRequests.getOrNull(0)?.queryParam("configId"))
 
         val expected = """
         {
@@ -442,7 +439,7 @@ class ConfigOverridesFunctionalTests {
         }
         """
         // Verify that sdkConfig is not present in the meta data
-        assertExactMatch(expected, getPayloadJson(resultRequests[0]), KeyMustBeAbsent("meta.sdkConfig"))
+        assertExactMatch(expected, resultRequests.getOrNull(0)?.getBodyJson(), KeyMustBeAbsent("meta.sdkConfig"))
     }
 
     @Test
@@ -501,7 +498,7 @@ class ConfigOverridesFunctionalTests {
         assertEquals(1, resultRequests.size.toLong())
 
         // Assert that provided datastreamIdOverride value is in the URL query param for configId
-        assertEquals("5678abcd-abcd-1234-5678-123456abcdef", TestableNetworkRequest(resultRequests[0]).queryParam("configId"))
+        assertEquals("5678abcd-abcd-1234-5678-123456abcdef", resultRequests.getOrNull(0)?.queryParam("configId"))
 
         val expected = """
         {
@@ -549,12 +546,7 @@ class ConfigOverridesFunctionalTests {
           }
         }            
         """
-        assertExactMatch(expected, getPayloadJson(resultRequests[0]))
-    }
-
-    private fun getPayloadJson(networkRequest: NetworkRequest?): JSONObject? {
-        val payload = networkRequest?.body?.let { String(it) }
-        return payload?.let { JSONObject(it) }
+        assertExactMatch(expected, resultRequests.getOrNull(0)?.getBodyJson())
     }
 
     /**
