@@ -21,12 +21,14 @@ import com.adobe.marketing.mobile.edge.integration.util.TestSetupHelper
 import com.adobe.marketing.mobile.services.HttpMethod
 import com.adobe.marketing.mobile.services.ServiceProvider
 import com.adobe.marketing.mobile.services.TestableNetworkRequest
-import com.adobe.marketing.mobile.util.JSONAsserts
+import com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch
+import com.adobe.marketing.mobile.util.JSONAsserts.assertTypeMatch
 import com.adobe.marketing.mobile.util.MonitorExtension
 import com.adobe.marketing.mobile.util.RealNetworkService
 import com.adobe.marketing.mobile.util.TestConstants
 import com.adobe.marketing.mobile.util.TestHelper
-import org.json.JSONObject
+import com.adobe.marketing.mobile.util.ValueExactMatch
+import com.adobe.marketing.mobile.util.ValueTypeMatch
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
@@ -279,26 +281,26 @@ class UpstreamIntegrationTests {
         Edge.sendEvent(experienceEvent) {}
 
         // Verify
-        val expectedLocationHintJSON = """
+        val expectedLocationHint = """
         {
           "payload": [
             {
               "ttlSeconds" : 123,
               "scope" : "EdgeNetwork",
-              "hint" : "stringType"
+              "hint" : "STRING_TYPE"
             }
           ]
         }
-        """.trimIndent()
+        """
 
         // Unsafe access used since testSendEvent_receivesExpectedEventHandles guarantees existence
         val locationHintResult = TestSetupHelper.getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT)
             .first()
 
-        JSONAsserts.assertTypeMatch(
-            expected = JSONObject(expectedLocationHintJSON),
-            actual = JSONObject(locationHintResult.eventData),
-            exactMatchPaths = listOf("payload[*].scope")
+        assertTypeMatch(
+            expectedLocationHint,
+            locationHintResult.eventData,
+            ValueExactMatch("payload[*].scope")
         )
     }
 
@@ -327,7 +329,7 @@ class UpstreamIntegrationTests {
             Edge.sendEvent(experienceEvent) {}
 
             // Verify
-            val expectedLocationHintJSON = """
+            val expectedLocationHint = """
             {
               "payload": [
                 {
@@ -337,15 +339,15 @@ class UpstreamIntegrationTests {
                 }
               ]
             }
-            """.trimIndent()
+            """
 
             // Unsafe access used since testSendEvent_receivesExpectedEventHandles guarantees existence
             val locationHintResult = TestSetupHelper.getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT)
                 .first()
-            JSONAsserts.assertTypeMatch(
-                expected = JSONObject(expectedLocationHintJSON),
-                actual = JSONObject(locationHintResult.eventData),
-                exactMatchPaths = listOf("payload[*].scope", "payload[*].hint")
+            assertTypeMatch(
+                expectedLocationHint,
+                locationHintResult.eventData,
+                ValueExactMatch("payload[*].scope", "payload[*].hint")
             )
 
             resetTestExpectations()
@@ -372,7 +374,7 @@ class UpstreamIntegrationTests {
         Edge.sendEvent(experienceEvent) {}
 
         // Verify
-        val expectedStateStoreJSON = """
+        val expectedStateStore = """
         {
           "payload": [
             {
@@ -387,17 +389,17 @@ class UpstreamIntegrationTests {
             }
           ]
         }
-        """.trimIndent()
+        """
 
         // Unsafe access used since testSendEvent_receivesExpectedEventHandles guarantees existence
         val stateStoreEvent = TestSetupHelper.getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.STATE_STORE)
             .last()
 
         // Exact match used here to strictly validate `payload` array element count == 2
-        JSONAsserts.assertExactMatch(
-            expected = JSONObject(expectedStateStoreJSON),
-            actual = JSONObject(stateStoreEvent.eventData),
-            typeMatchPaths = listOf(
+        assertExactMatch(
+            expectedStateStore,
+            stateStoreEvent.eventData,
+            ValueTypeMatch(
                 "payload[0].maxAge",
                 "payload[0].value",
                 "payload[1].maxAge",
@@ -434,7 +436,7 @@ class UpstreamIntegrationTests {
             Edge.sendEvent(experienceEvent) {}
 
             // Verify
-            val expectedStateStoreJSON = """
+            val expectedStateStore = """
             {
               "payload": [
                 {
@@ -444,17 +446,17 @@ class UpstreamIntegrationTests {
                 }
               ]
             }
-            """.trimIndent()
+            """
 
             // Unsafe access used since testSendEvent_receivesExpectedEventHandles guarantees existence
             val stateStoreEvent = TestSetupHelper.getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.STATE_STORE)
                 .last()
 
             // Exact match used here to strictly validate `payload` array element count == 2
-            JSONAsserts.assertExactMatch(
-                expected = JSONObject(expectedStateStoreJSON),
-                actual = JSONObject(stateStoreEvent.eventData),
-                typeMatchPaths = listOf("payload[0].maxAge")
+            assertExactMatch(
+                expectedStateStore,
+                stateStoreEvent.eventData,
+                ValueTypeMatch("payload[0].maxAge")
             )
 
             resetTestExpectations()
@@ -623,7 +625,7 @@ class UpstreamIntegrationTests {
         }
 
         // Verify location hint consistency between 1st and 2nd event handles
-        val expectedLocationHintJSON = """
+        val expectedLocationHint = """
         {
           "payload": [
             {
@@ -633,15 +635,15 @@ class UpstreamIntegrationTests {
             }
           ]
         }
-        """.trimIndent()
+        """
 
         // Unsafe access used since testSendEvent_receivesExpectedEventHandles guarantees existence
         val locationHintResultEvent = TestSetupHelper.getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT)
             .first()
-        JSONAsserts.assertTypeMatch(
-            expected = JSONObject(expectedLocationHintJSON),
-            actual = JSONObject(locationHintResultEvent.eventData),
-            exactMatchPaths = listOf("payload[*].scope", "payload[*].hint")
+        assertTypeMatch(
+            expectedLocationHint,
+            locationHintResultEvent.eventData,
+            ValueExactMatch("payload[*].scope", "payload[*].hint")
         )
     }
 
@@ -692,7 +694,7 @@ class UpstreamIntegrationTests {
         Assert.assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
 
         // Event assertions
-        val expectedErrorJSON = """
+        val expectedError = """
         {
             "status": 400,
             "detail": "stringType",
@@ -704,17 +706,17 @@ class UpstreamIntegrationTests {
             "type": "https://ns.adobe.com/aep/errors/EXEG-0003-400",
             "requestId": "stringType"
         }
-        """.trimIndent()
+        """
 
         val errorEvents = TestSetupHelper.getEdgeResponseErrors()
 
         Assert.assertEquals(1, errorEvents.size)
 
         val errorEvent = errorEvents.first()
-        JSONAsserts.assertTypeMatch(
-            expected = JSONObject(expectedErrorJSON),
-            actual = JSONObject(errorEvent.eventData),
-            exactMatchPaths = listOf("status", "title", "type")
+        assertTypeMatch(
+            expectedError,
+            errorEvent.eventData,
+            ValueExactMatch("status", "title", "type")
         )
     }
 
@@ -747,7 +749,7 @@ class UpstreamIntegrationTests {
         // Verify
         // Network response assertions
         realNetworkService.assertAllNetworkRequestExpectations()
-        val matchingResponses = realNetworkService.getResponsesFor(networkRequest = invalidNetworkRequest)
+        val matchingResponses = realNetworkService.getResponsesFor(invalidNetworkRequest)
 
         Assert.assertEquals(1, matchingResponses?.size)
         // Convenience to assert directly on the first element in the rest of the test case
