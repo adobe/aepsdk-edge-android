@@ -148,7 +148,7 @@ public class EdgePathOverwriteTests {
 
 		// verify
 		mockNetworkService.assertAllNetworkRequestExpectations();
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_MEDIA_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
@@ -208,15 +208,15 @@ public class EdgePathOverwriteTests {
 
 		assertExactMatch(
 			expected,
-			getPayloadJson(resultRequests.get(0)),
+			resultRequests.get(0).getBodyJson(),
 			new CollectionEqualCount(Subtree),
 			new ValueTypeMatch("xdm.identityMap.ECID[0].id", "events[0].xdm._id", "events[0].xdm.timestamp")
 		);
 
-		TestableNetworkRequest testableNetworkRequest = new TestableNetworkRequest(resultRequests.get(0));
-		assertTrue(testableNetworkRequest.getUrl().startsWith(EXEDGE_MEDIA_URL_STRING));
-		assertEquals(CONFIG_ID, testableNetworkRequest.queryParam("configId"));
-		assertNotNull(testableNetworkRequest.queryParam("requestId"));
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(EXEDGE_MEDIA_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 	}
 
 	@Test
@@ -276,7 +276,7 @@ public class EdgePathOverwriteTests {
 
 		// verify
 		mockNetworkService.assertAllNetworkRequestExpectations();
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_MEDIA_OR2_LOC_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
@@ -336,28 +336,14 @@ public class EdgePathOverwriteTests {
 
 		assertExactMatch(
 			expected,
-			getPayloadJson(resultRequests.get(0)),
+			resultRequests.get(0).getBodyJson(),
 			new CollectionEqualCount(Subtree),
 			new ValueTypeMatch("xdm.identityMap.ECID[0].id", "events[0].xdm._id", "events[0].xdm.timestamp")
 		);
 
-		TestableNetworkRequest testableNetworkRequest = new TestableNetworkRequest(resultRequests.get(0));
-		assertTrue(testableNetworkRequest.getUrl().startsWith(EXEDGE_MEDIA_OR2_LOC_URL_STRING));
-		assertEquals(CONFIG_ID, testableNetworkRequest.queryParam("configId"));
-		assertNotNull(testableNetworkRequest.queryParam("requestId"));
-	}
-
-	private JSONObject getPayloadJson(NetworkRequest networkRequest) {
-		if (networkRequest == null || networkRequest.getBody() == null) {
-			return null;
-		}
-
-		String payload = new String(networkRequest.getBody());
-		try {
-			return new JSONObject(payload);
-		} catch (Exception e) {
-			fail("Failed to create JSONObject from payload: " + e.getMessage());
-			return null;
-		}
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(EXEDGE_MEDIA_OR2_LOC_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 	}
 }
