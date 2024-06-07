@@ -27,13 +27,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.NamedCollection;
-import com.adobe.marketing.mobile.services.NetworkRequest;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.AnyOrderMatch;
@@ -406,17 +404,17 @@ public class EdgeFunctionalTests {
 
 		// verify
 		mockNetworkService.assertAllNetworkRequestExpectations();
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
 
-		TestableNetworkRequest testableNetworkRequest = new TestableNetworkRequest(resultRequests.get(0));
-		assertTrue(testableNetworkRequest.getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
-		assertEquals(CONFIG_ID, testableNetworkRequest.queryParam("configId"));
-		assertNotNull(testableNetworkRequest.queryParam("requestId"));
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 
 		String expected =
 			"{" +
@@ -471,7 +469,7 @@ public class EdgeFunctionalTests {
 
 		assertExactMatch(
 			expected,
-			getPayloadJson(resultRequests.get(0)),
+			networkRequest.getBodyJson(),
 			new CollectionEqualCount(Subtree),
 			new ValueTypeMatch("xdm.identityMap.ECID[0].id", "events[0].xdm._id", "events[0].xdm.timestamp")
 		);
@@ -523,17 +521,17 @@ public class EdgeFunctionalTests {
 
 		// verify
 		mockNetworkService.assertAllNetworkRequestExpectations();
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
 
-		TestableNetworkRequest testableNetworkRequest = new TestableNetworkRequest(resultRequests.get(0));
-		assertTrue(testableNetworkRequest.getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
-		assertEquals(CONFIG_ID, testableNetworkRequest.queryParam("configId"));
-		assertNotNull(testableNetworkRequest.queryParam("requestId"));
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 
 		String expected =
 			"{" +
@@ -590,7 +588,7 @@ public class EdgeFunctionalTests {
 			"}";
 		assertExactMatch(
 			expected,
-			getPayloadJson(resultRequests.get(0)),
+			networkRequest.getBodyJson(),
 			new CollectionEqualCount(Subtree),
 			new ValueTypeMatch("xdm.identityMap.ECID[0].id", "events[0].xdm._id", "events[0].xdm.timestamp")
 		);
@@ -616,17 +614,17 @@ public class EdgeFunctionalTests {
 
 		// verify
 		mockNetworkService.assertAllNetworkRequestExpectations();
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
 
-		TestableNetworkRequest testableNetworkRequest = new TestableNetworkRequest(resultRequests.get(0));
-		assertTrue(testableNetworkRequest.getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
-		assertEquals(CONFIG_ID, testableNetworkRequest.queryParam("configId"));
-		assertNotNull(testableNetworkRequest.queryParam("requestId"));
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 
 		String expected =
 			"{" +
@@ -684,7 +682,7 @@ public class EdgeFunctionalTests {
 			"}";
 		assertExactMatch(
 			expected,
-			getPayloadJson(resultRequests.get(0)),
+			networkRequest.getBodyJson(),
 			new CollectionEqualCount(Subtree),
 			new ValueTypeMatch("xdm.identityMap.ECID[0].id", "events[0].xdm._id", "events[0].xdm.timestamp")
 		);
@@ -698,7 +696,7 @@ public class EdgeFunctionalTests {
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder().setXdmSchema(new TestXDMSchema()).build();
 		Edge.sendEvent(experienceEvent, null);
 
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST
 		);
@@ -717,7 +715,7 @@ public class EdgeFunctionalTests {
 			.build();
 		Edge.sendEvent(experienceEvent, null);
 
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST
 		);
@@ -736,7 +734,7 @@ public class EdgeFunctionalTests {
 			.build();
 		Edge.sendEvent(experienceEvent, null);
 
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST
 		);
@@ -755,17 +753,17 @@ public class EdgeFunctionalTests {
 
 		// verify
 		mockNetworkService.assertAllNetworkRequestExpectations();
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
 
-		TestableNetworkRequest testableNetworkRequest = new TestableNetworkRequest(resultRequests.get(0));
-		assertTrue(testableNetworkRequest.getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING));
-		assertEquals(CONFIG_ID, testableNetworkRequest.queryParam("configId"));
-		assertNotNull(testableNetworkRequest.queryParam("requestId"));
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 	}
 
 	@Test
@@ -784,17 +782,17 @@ public class EdgeFunctionalTests {
 
 		// verify
 		mockNetworkService.assertAllNetworkRequestExpectations();
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
 
-		TestableNetworkRequest testableNetworkRequest = new TestableNetworkRequest(resultRequests.get(0));
-		assertTrue(testableNetworkRequest.getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING));
-		assertEquals(CONFIG_ID, testableNetworkRequest.queryParam("configId"));
-		assertNotNull(testableNetworkRequest.queryParam("requestId"));
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 	}
 
 	@Test
@@ -814,17 +812,17 @@ public class EdgeFunctionalTests {
 
 		// verify
 		mockNetworkService.assertAllNetworkRequestExpectations();
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
 
-		TestableNetworkRequest testableNetworkRequest = new TestableNetworkRequest(resultRequests.get(0));
-		assertTrue(testableNetworkRequest.getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING));
-		assertEquals(CONFIG_ID, testableNetworkRequest.queryParam("configId"));
-		assertNotNull(testableNetworkRequest.queryParam("requestId"));
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 	}
 
 	@Test
@@ -848,19 +846,19 @@ public class EdgeFunctionalTests {
 
 		// verify
 		mockNetworkService.assertAllNetworkRequestExpectations();
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			TestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
 
-		TestableNetworkRequest testableNetworkRequest = new TestableNetworkRequest(resultRequests.get(0));
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
 		assertTrue(
-			testableNetworkRequest.getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING)
+			networkRequest.getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING)
 		);
-		assertEquals(CONFIG_ID, testableNetworkRequest.queryParam("configId"));
-		assertNotNull(testableNetworkRequest.queryParam("requestId"));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 	}
 
 	@Test
@@ -884,17 +882,17 @@ public class EdgeFunctionalTests {
 
 		// verify
 		mockNetworkService.assertAllNetworkRequestExpectations();
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			TestConstants.Defaults.EXEDGE_INTERACT_INT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
 
-		TestableNetworkRequest testableNetworkRequest = new TestableNetworkRequest(resultRequests.get(0));
-		assertTrue(testableNetworkRequest.getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_INT_URL_STRING));
-		assertEquals(CONFIG_ID, testableNetworkRequest.queryParam("configId"));
-		assertNotNull(testableNetworkRequest.queryParam("requestId"));
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_INT_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 	}
 
 	// --------------------------------------------------------------------------------------------
@@ -915,13 +913,13 @@ public class EdgeFunctionalTests {
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		// first network call, no stored data
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
-		assertTypeMatch("{}", getPayloadJson(resultRequests.get(0)), new ElementCount(12, Subtree));
+		assertTypeMatch("{}", resultRequests.get(0).getBodyJson(), new ElementCount(12, Subtree));
 
 		assertExpectedEvents(true);
 		resetTestExpectations();
@@ -935,10 +933,10 @@ public class EdgeFunctionalTests {
 		resultRequests = mockNetworkService.getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, TIMEOUT_MILLIS);
 		assertEquals(1, resultRequests.size());
 
-		TestableNetworkRequest testableNetworkRequest = new TestableNetworkRequest(resultRequests.get(0));
-		assertTrue(testableNetworkRequest.getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
-		assertEquals(CONFIG_ID, testableNetworkRequest.queryParam("configId"));
-		assertNotNull(testableNetworkRequest.queryParam("requestId"));
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 
 		String expected =
 			"{" +
@@ -961,7 +959,7 @@ public class EdgeFunctionalTests {
 			"}";
 		assertExactMatch(
 			expected,
-			getPayloadJson(resultRequests.get(0)),
+			networkRequest.getBodyJson(),
 			new CollectionEqualCount(Subtree, "meta.state.entries"),
 			new AnyOrderMatch("meta.state.entries"),
 			new ElementCount(18, Subtree)
@@ -989,13 +987,13 @@ public class EdgeFunctionalTests {
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		// first network call, no stored data
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
-		assertTypeMatch("{}", getPayloadJson(resultRequests.get(0)), new ElementCount(12, Subtree));
+		assertTypeMatch("{}", resultRequests.get(0).getBodyJson(), new ElementCount(12, Subtree));
 
 		assertExpectedEvents(true);
 		resetTestExpectations();
@@ -1011,10 +1009,10 @@ public class EdgeFunctionalTests {
 		assertEquals(1, resultRequests.size());
 
 		// Validate network request query params
-		TestableNetworkRequest testableNetworkRequest = new TestableNetworkRequest(resultRequests.get(0));
-		assertTrue(testableNetworkRequest.getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
-		assertEquals(CONFIG_ID, testableNetworkRequest.queryParam("configId"));
-		assertNotNull(testableNetworkRequest.queryParam("requestId"));
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 
 		String expected =
 			"{" +
@@ -1037,7 +1035,7 @@ public class EdgeFunctionalTests {
 			"}";
 		assertExactMatch(
 			expected,
-			getPayloadJson(resultRequests.get(0)),
+			networkRequest.getBodyJson(),
 			new CollectionEqualCount(Subtree, "meta.state.entries"),
 			new AnyOrderMatch("meta.state.entries"),
 			new ElementCount(18, Subtree)
@@ -1059,13 +1057,13 @@ public class EdgeFunctionalTests {
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		// first network call, no stored data
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
-		assertTypeMatch("{}", getPayloadJson(resultRequests.get(0)), new ElementCount(12, Subtree));
+		assertTypeMatch("{}", resultRequests.get(0).getBodyJson(), new ElementCount(12, Subtree));
 
 		assertExpectedEvents(true);
 		resetTestExpectations();
@@ -1085,7 +1083,7 @@ public class EdgeFunctionalTests {
 		assertEquals(1, resultRequests.size());
 		assertExactMatch(
 			"{}",
-			getPayloadJson(resultRequests.get(0)),
+			resultRequests.get(0).getBodyJson(),
 			new ElementCount(12, Subtree),
 			new KeyMustBeAbsent("meta.state.entries[0].key")
 		);
@@ -1112,14 +1110,14 @@ public class EdgeFunctionalTests {
 		mockNetworkService.assertAllNetworkRequestExpectations();
 		assertExpectedEvents(true);
 
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
-		TestableNetworkRequest testableNetworkRequest = new TestableNetworkRequest(resultRequests.get(0));
-		String requestId = testableNetworkRequest.queryParam("requestId");
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		String requestId = networkRequest.queryParam("requestId");
 
 		List<Event> requestEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
 		assertEquals(1, requestEvents.size());
@@ -1154,8 +1152,9 @@ public class EdgeFunctionalTests {
 			"\"," +
 			"  \"type\": \"personalization:decisions\"" +
 			"}";
-		JSONAsserts.assertEquals(expected, responseEvents.get(0).getEventData());
-		assertEquals(requestEventUuid, responseEvents.get(0).getParentID());
+		Event event = responseEvents.get(0);
+		JSONAsserts.assertEquals(expected, event.getEventData());
+		assertEquals(requestEventUuid, event.getParentID());
 	}
 
 	@Test
@@ -1185,14 +1184,14 @@ public class EdgeFunctionalTests {
 		mockNetworkService.assertAllNetworkRequestExpectations();
 		assertExpectedEvents(false);
 
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
-		TestableNetworkRequest testableNetworkRequest = new TestableNetworkRequest(resultRequests.get(0));
-		String requestId = testableNetworkRequest.queryParam("requestId");
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		String requestId = networkRequest.queryParam("requestId");
 
 		List<Event> requestEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
 		assertEquals(1, requestEvents.size());
@@ -1212,8 +1211,9 @@ public class EdgeFunctionalTests {
 			requestId +
 			"\"" +
 			"}";
-		JSONAsserts.assertEquals(expected, errorResponseEvents.get(0).getEventData());
-		assertEquals(requestEventUuid, errorResponseEvents.get(0).getParentID());
+		Event errorEvent = errorResponseEvents.get(0);
+		JSONAsserts.assertEquals(expected, errorEvent.getEventData());
+		assertEquals(requestEventUuid, errorEvent.getParentID());
 	}
 
 	// --------------------------------------------------------------------------------------------
@@ -1237,7 +1237,7 @@ public class EdgeFunctionalTests {
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		// first network call, no location hint
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
@@ -1270,7 +1270,7 @@ public class EdgeFunctionalTests {
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
 		// all network calls, no location hint
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
@@ -1374,7 +1374,7 @@ public class EdgeFunctionalTests {
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null); // send event
 
 		// verify send event request includes set location hint
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_OR2_LOC_URL_STRING,
 			POST,
 			TIMEOUT_MILLIS
@@ -1396,7 +1396,7 @@ public class EdgeFunctionalTests {
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null); // send event
 
 		// verify send event request includes set location hint
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			"https://edge.adobedc.net/ee/incorrect location hint/v1/interact",
 			POST,
 			TIMEOUT_MILLIS
@@ -1418,7 +1418,7 @@ public class EdgeFunctionalTests {
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null); // send event
 
 		// verify send event request includes set location hint
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			"https://edge.adobedc.net/ee/{\"example\":\"incorrect\"}/v1/interact",
 			POST,
 			TIMEOUT_MILLIS
@@ -1440,7 +1440,7 @@ public class EdgeFunctionalTests {
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null); // send event
 
 		// verify send event request includes set location hint
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			"https://edge.adobedc.net/ee/\u0048\u0065\u006C\u006C\u006F/v1/interact",
 			POST,
 			TIMEOUT_MILLIS
@@ -1800,19 +1800,5 @@ public class EdgeFunctionalTests {
 		MobileCore.getPrivacyStatus(mobilePrivacyStatus -> latch.countDown());
 
 		assertTrue(latch.await(2, TimeUnit.SECONDS));
-	}
-
-	private JSONObject getPayloadJson(NetworkRequest networkRequest) {
-		if (networkRequest == null || networkRequest.getBody() == null) {
-			return null;
-		}
-
-		String payload = new String(networkRequest.getBody());
-		try {
-			return new JSONObject(payload);
-		} catch (Exception e) {
-			fail("Failed to create JSONObject from payload: " + e.getMessage());
-			return null;
-		}
 	}
 }
