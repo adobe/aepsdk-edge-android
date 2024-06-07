@@ -127,7 +127,7 @@ class ConfigOverridesFunctionalTests {
             HttpMethod.POST,
             TIMEOUT_MILLIS
         )
-        assertEquals(1, resultRequests.size.toLong())
+        assertEquals(1, resultRequests.size)
 
         val expected = """
         {
@@ -204,7 +204,7 @@ class ConfigOverridesFunctionalTests {
             HttpMethod.POST,
             TIMEOUT_MILLIS
         )
-        assertEquals(1, resultRequests.size.toLong())
+        assertEquals(1, resultRequests.size)
 
         val expected = """
         {
@@ -256,7 +256,7 @@ class ConfigOverridesFunctionalTests {
             HttpMethod.POST,
             TIMEOUT_MILLIS
         )
-        assertEquals(1, resultRequests.size.toLong())
+        assertEquals(1, resultRequests.size)
 
         val expected = """
         {
@@ -309,7 +309,7 @@ class ConfigOverridesFunctionalTests {
             HttpMethod.POST,
             TIMEOUT_MILLIS
         )
-        assertEquals(1, resultRequests.size.toLong())
+        assertEquals(1, resultRequests.size)
 
         // Assert that provided datastreamIdOverride value is in the URL query param for configId
         assertEquals("5678abcd-abcd-1234-5678-123456abcdef", resultRequests.getOrNull(0)?.queryParam("configId"))
@@ -370,7 +370,7 @@ class ConfigOverridesFunctionalTests {
             HttpMethod.POST,
             TIMEOUT_MILLIS
         )
-        assertEquals(1, resultRequests.size.toLong())
+        assertEquals(1, resultRequests.size)
 
         // Assert that default datastream ID value is in the URL query param for configId
         assertEquals(CONFIG_ID, resultRequests.getOrNull(0)?.queryParam("configId"))
@@ -422,7 +422,7 @@ class ConfigOverridesFunctionalTests {
             HttpMethod.POST,
             TIMEOUT_MILLIS
         )
-        assertEquals(1, resultRequests.size.toLong())
+        assertEquals(1, resultRequests.size)
 
         // Assert that default datastream ID value is in the URL query param for configId
         assertEquals(CONFIG_ID, resultRequests.getOrNull(0)?.queryParam("configId"))
@@ -495,7 +495,7 @@ class ConfigOverridesFunctionalTests {
             HttpMethod.POST,
             TIMEOUT_MILLIS
         )
-        assertEquals(1, resultRequests.size.toLong())
+        assertEquals(1, resultRequests.size)
 
         // Assert that provided datastreamIdOverride value is in the URL query param for configId
         assertEquals("5678abcd-abcd-1234-5678-123456abcdef", resultRequests.getOrNull(0)?.queryParam("configId"))
