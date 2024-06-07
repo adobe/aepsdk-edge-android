@@ -247,6 +247,7 @@ public class ConsentStatusChangeFunctionalTests {
 			POST,
 			1000
 		);
+		assertEquals(1, consentRequests.size());
 		assertEquals(POST, consentRequests.get(0).getMethod());
 
 		String expected =
@@ -317,6 +318,7 @@ public class ConsentStatusChangeFunctionalTests {
 			POST,
 			1000
 		);
+		assertEquals(1, consentRequests.size());
 		assertEquals(POST, consentRequests.get(0).getMethod());
 
 		String expected =
@@ -403,6 +405,7 @@ public class ConsentStatusChangeFunctionalTests {
 			POST,
 			1000
 		);
+		assertEquals(1, consentRequests.size());
 		assertEquals(POST, consentRequests.get(0).getMethod());
 		assertTrue(consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING));
 	}
@@ -430,6 +433,7 @@ public class ConsentStatusChangeFunctionalTests {
 			POST,
 			1000
 		);
+		assertEquals(1, consentRequests.size());
 		assertEquals(POST, consentRequests.get(0).getMethod());
 		assertTrue(consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING));
 	}
@@ -457,6 +461,7 @@ public class ConsentStatusChangeFunctionalTests {
 			POST,
 			1000
 		);
+		assertEquals(1, consentRequests.size());
 		assertEquals(POST, consentRequests.get(0).getMethod());
 		assertTrue(consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING));
 	}
@@ -488,6 +493,7 @@ public class ConsentStatusChangeFunctionalTests {
 			POST,
 			1000
 		);
+		assertEquals(1, consentRequests.size());
 		assertEquals(POST, consentRequests.get(0).getMethod());
 		assertTrue(
 			consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_PRE_PROD_URL_STRING)
@@ -521,6 +527,7 @@ public class ConsentStatusChangeFunctionalTests {
 			POST,
 			1000
 		);
+		assertEquals(1, consentRequests.size());
 		assertEquals(POST, consentRequests.get(0).getMethod());
 		assertTrue(consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_INT_URL_STRING));
 	}
