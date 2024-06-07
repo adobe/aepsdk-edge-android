@@ -24,16 +24,15 @@ import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
+import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.MonitorExtension;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
-import com.adobe.marketing.mobile.util.TestUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
@@ -128,16 +127,26 @@ public class CompletionHandlerFunctionalTests {
 		assertEquals(1, resultNetworkRequests.size());
 		assertEquals(1, receivedHandles.size());
 
-		assertEquals("personalization:decisions", receivedHandles.get(0).getType());
-		assertEquals(1, receivedHandles.get(0).getPayload().size());
+		EdgeEventHandle edgeEventHandle = receivedHandles.get(0);
+		assertEquals("personalization:decisions", edgeEventHandle.getType());
+		assertEquals(1, edgeEventHandle.getPayload().size());
 
-		Map<String, String> data = TestUtils.flattenMap(receivedHandles.get(0).getPayload().get(0));
-
-		assertEquals(4, data.size());
-		assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9", data.get("id"));
-		assertEquals("#D41DBA", data.get("items[0].data.content.value"));
-		assertEquals("https://ns.adobe.com/personalization/json-content-item", data.get("items[0].schema"));
-		assertEquals("buttonColor", data.get("scope"));
+		String expected =
+			"{" +
+			"  \"id\": \"AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9\"," +
+			"  \"items\": [" +
+			"    {" +
+			"      \"data\": {" +
+			"        \"content\": {" +
+			"          \"value\": \"#D41DBA\"" +
+			"        }" +
+			"      }," +
+			"      \"schema\": \"https://ns.adobe.com/personalization/json-content-item\"" +
+			"    }" +
+			"  ]," +
+			"  \"scope\": \"buttonColor\"" +
+			"}";
+		JSONAsserts.assertEquals(expected, edgeEventHandle.getPayload().get(0));
 	}
 
 	@Test

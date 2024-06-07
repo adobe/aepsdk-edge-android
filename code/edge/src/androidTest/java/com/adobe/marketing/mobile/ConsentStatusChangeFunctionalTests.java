@@ -12,10 +12,11 @@
 package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
+import static com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch;
+import static com.adobe.marketing.mobile.util.NodeConfig.Scope.Subtree;
 import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
 import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -24,10 +25,12 @@ import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.ADBCountDownLatch;
+import com.adobe.marketing.mobile.util.CollectionEqualCount;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.MonitorExtension;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
+import com.adobe.marketing.mobile.util.ValueTypeMatch;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -244,20 +247,55 @@ public class ConsentStatusChangeFunctionalTests {
 			POST,
 			1000
 		);
+		assertEquals(1, consentRequests.size());
 		assertEquals(POST, consentRequests.get(0).getMethod());
-		Map<String, String> requestBody = mockNetworkService.getFlattenedNetworkRequestBody(consentRequests.get(0));
-		assertEquals(11, requestBody.size());
-		assertEquals("update", requestBody.get("query.consent.operation"));
-		assertNotNull(requestBody.get("identityMap.ECID[0].id"));
-		assertEquals("ambiguous", requestBody.get("identityMap.ECID[0].authenticatedState"));
-		assertEquals(false, Boolean.valueOf(requestBody.get("identityMap.ECID[0].primary")));
-		assertEquals("Adobe", requestBody.get("consent[0].standard"));
-		assertEquals("2.0", requestBody.get("consent[0].version"));
-		assertEquals("n", requestBody.get("consent[0].value.collect.val"));
-		assertNotNull(requestBody.get("consent[0].value.metadata.time"));
-		assertEquals(true, Boolean.valueOf(requestBody.get("meta.konductorConfig.streaming.enabled")));
-		assertEquals("\n", requestBody.get("meta.konductorConfig.streaming.lineFeed"));
-		assertEquals("\u0000", requestBody.get("meta.konductorConfig.streaming.recordSeparator"));
+
+		String expected =
+			"{" +
+			"  \"query\": {" +
+			"    \"consent\": {" +
+			"      \"operation\": \"update\"" +
+			"    }" +
+			"  }," +
+			"  \"identityMap\": {" +
+			"    \"ECID\": [" +
+			"      {" +
+			"        \"id\": \"STRING_TYPE\"," +
+			"        \"authenticatedState\": \"ambiguous\"," +
+			"        \"primary\": false" +
+			"      }" +
+			"    ]" +
+			"  }," +
+			"  \"consent\": [" +
+			"    {" +
+			"      \"standard\": \"Adobe\"," +
+			"      \"version\": \"2.0\"," +
+			"      \"value\": {" +
+			"        \"collect\": {" +
+			"          \"val\": \"n\"" +
+			"        }," +
+			"        \"metadata\": {" +
+			"          \"time\": \"STRING_TYPE\"" +
+			"        }" +
+			"      }" +
+			"    }" +
+			"  ]," +
+			"  \"meta\": {" +
+			"    \"konductorConfig\": {" +
+			"      \"streaming\": {" +
+			"        \"enabled\": true," +
+			"        \"lineFeed\": \"\\n\"," +
+			"        \"recordSeparator\": \"\\u0000\"" +
+			"      }" +
+			"    }" +
+			"  }" +
+			"}";
+		assertExactMatch(
+			expected,
+			consentRequests.get(0).getBodyJson(),
+			new ValueTypeMatch("identityMap.ECID[0].id", "consent[0].value.metadata.time"),
+			new CollectionEqualCount(Subtree)
+		);
 	}
 
 	@Test
@@ -280,20 +318,55 @@ public class ConsentStatusChangeFunctionalTests {
 			POST,
 			1000
 		);
+		assertEquals(1, consentRequests.size());
 		assertEquals(POST, consentRequests.get(0).getMethod());
-		Map<String, String> requestBody = mockNetworkService.getFlattenedNetworkRequestBody(consentRequests.get(0));
-		assertEquals(11, requestBody.size());
-		assertEquals("update", requestBody.get("query.consent.operation"));
-		assertNotNull(requestBody.get("identityMap.ECID[0].id"));
-		assertEquals("ambiguous", requestBody.get("identityMap.ECID[0].authenticatedState"));
-		assertEquals(false, Boolean.valueOf(requestBody.get("identityMap.ECID[0].primary")));
-		assertEquals("Adobe", requestBody.get("consent[0].standard"));
-		assertEquals("2.0", requestBody.get("consent[0].version"));
-		assertEquals("y", requestBody.get("consent[0].value.collect.val"));
-		assertNotNull(requestBody.get("consent[0].value.metadata.time"));
-		assertEquals(true, Boolean.valueOf(requestBody.get("meta.konductorConfig.streaming.enabled")));
-		assertEquals("\n", requestBody.get("meta.konductorConfig.streaming.lineFeed"));
-		assertEquals("\u0000", requestBody.get("meta.konductorConfig.streaming.recordSeparator"));
+
+		String expected =
+			"{" +
+			"  \"query\": {" +
+			"    \"consent\": {" +
+			"      \"operation\": \"update\"" +
+			"    }" +
+			"  }," +
+			"  \"identityMap\": {" +
+			"    \"ECID\": [" +
+			"      {" +
+			"        \"id\": \"STRING_TYPE\"," +
+			"        \"authenticatedState\": \"ambiguous\"," +
+			"        \"primary\": false" +
+			"      }" +
+			"    ]" +
+			"  }," +
+			"  \"consent\": [" +
+			"    {" +
+			"      \"standard\": \"Adobe\"," +
+			"      \"version\": \"2.0\"," +
+			"      \"value\": {" +
+			"        \"collect\": {" +
+			"          \"val\": \"y\"" +
+			"        }," +
+			"        \"metadata\": {" +
+			"          \"time\": \"STRING_TYPE\"" +
+			"        }" +
+			"      }" +
+			"    }" +
+			"  ]," +
+			"  \"meta\": {" +
+			"    \"konductorConfig\": {" +
+			"      \"streaming\": {" +
+			"        \"enabled\": true," +
+			"        \"lineFeed\": \"\\n\"," +
+			"        \"recordSeparator\": \"\\u0000\"" +
+			"      }" +
+			"    }" +
+			"  }" +
+			"}";
+		assertExactMatch(
+			expected,
+			consentRequests.get(0).getBodyJson(),
+			new ValueTypeMatch("identityMap.ECID[0].id", "consent[0].value.metadata.time"),
+			new CollectionEqualCount(Subtree)
+		);
 	}
 
 	@Test
@@ -332,6 +405,7 @@ public class ConsentStatusChangeFunctionalTests {
 			POST,
 			1000
 		);
+		assertEquals(1, consentRequests.size());
 		assertEquals(POST, consentRequests.get(0).getMethod());
 		assertTrue(consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING));
 	}
@@ -359,6 +433,7 @@ public class ConsentStatusChangeFunctionalTests {
 			POST,
 			1000
 		);
+		assertEquals(1, consentRequests.size());
 		assertEquals(POST, consentRequests.get(0).getMethod());
 		assertTrue(consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING));
 	}
@@ -386,6 +461,7 @@ public class ConsentStatusChangeFunctionalTests {
 			POST,
 			1000
 		);
+		assertEquals(1, consentRequests.size());
 		assertEquals(POST, consentRequests.get(0).getMethod());
 		assertTrue(consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_URL_STRING));
 	}
@@ -417,6 +493,7 @@ public class ConsentStatusChangeFunctionalTests {
 			POST,
 			1000
 		);
+		assertEquals(1, consentRequests.size());
 		assertEquals(POST, consentRequests.get(0).getMethod());
 		assertTrue(
 			consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_PRE_PROD_URL_STRING)
@@ -450,6 +527,7 @@ public class ConsentStatusChangeFunctionalTests {
 			POST,
 			1000
 		);
+		assertEquals(1, consentRequests.size());
 		assertEquals(POST, consentRequests.get(0).getMethod());
 		assertTrue(consentRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_CONSENT_INT_URL_STRING));
 	}
