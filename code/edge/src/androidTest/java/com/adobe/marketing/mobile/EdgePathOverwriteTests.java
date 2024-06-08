@@ -104,7 +104,7 @@ public class EdgePathOverwriteTests {
 							"xdm",
 							new HashMap<String, Object>() {
 								{
-									put("testString", "xdmValue");
+									put("testString", "stringValue");
 									put("testInt", 10);
 									put("testBool", false);
 									put("testDouble", 12.89);
@@ -165,7 +165,7 @@ public class EdgePathOverwriteTests {
 			"        \"testMap\": {" +
 			"          \"key\": \"value\"" +
 			"        }," +
-			"        \"testString\": \"xdmValue\"," +
+			"        \"testString\": \"stringValue\"," +
 			"        \"timestamp\": \"STRING_TYPE\"" +
 			"      }" +
 			"    }" +
@@ -232,7 +232,7 @@ public class EdgePathOverwriteTests {
 							"xdm",
 							new HashMap<String, Object>() {
 								{
-									put("testString", "xdmValue");
+									put("testString", "stringValue");
 									put("testInt", 10);
 									put("testBool", false);
 									put("testDouble", 12.89);
@@ -293,7 +293,7 @@ public class EdgePathOverwriteTests {
 			"        \"testMap\": {" +
 			"          \"key\": \"value\"" +
 			"        }," +
-			"        \"testString\": \"xdmValue\"," +
+			"        \"testString\": \"stringValue\"," +
 			"        \"timestamp\": \"STRING_TYPE\"" +
 			"      }" +
 			"    }" +

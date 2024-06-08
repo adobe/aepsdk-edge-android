@@ -130,7 +130,7 @@ public class EdgeFunctionalTests {
 			.setXdmSchema(
 				new HashMap<String, Object>() {
 					{
-						put("testString", "xdm");
+						put("testString", "stringValue");
 						put("testInt", 10);
 						put("testBool", false);
 						put("testDouble", 12.89);
@@ -165,7 +165,7 @@ public class EdgeFunctionalTests {
 		String expected =
 			"{" +
 			"  \"xdm\": {" +
-			"    \"testString\": \"xdm\"," +
+			"    \"testString\": \"stringValue\"," +
 			"    \"testInt\": 10," +
 			"    \"testBool\": false," +
 			"    \"testDouble\": 12.89," +
@@ -189,7 +189,7 @@ public class EdgeFunctionalTests {
 			.setXdmSchema(
 				new HashMap<String, Object>() {
 					{
-						put("testString", "xdm");
+						put("testString", "stringValue");
 					}
 				}
 			)
@@ -231,7 +231,7 @@ public class EdgeFunctionalTests {
 		String expected =
 			"{" +
 			"  \"xdm\": {" +
-			"    \"testString\": \"xdm\"" +
+			"    \"testString\": \"stringValue\"" +
 			"  }," +
 			"  \"data\": {" +
 			"    \"testString\": \"stringValue\"," +
@@ -258,7 +258,7 @@ public class EdgeFunctionalTests {
 			.setXdmSchema(
 				new HashMap<String, Object>() {
 					{
-						put("testString", "testValue");
+						put("testString", "stringValue");
 					}
 				}
 			)
@@ -271,7 +271,7 @@ public class EdgeFunctionalTests {
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
 		assertEquals(1, resultEvents.size());
 
-		String expected = "{\"xdm\": {\"testString\": \"testValue\"}}";
+		String expected = "{\"xdm\": {\"testString\": \"stringValue\"}}";
 		JSONAsserts.assertEquals(expected, resultEvents.get(0).getEventData());
 	}
 
@@ -374,7 +374,7 @@ public class EdgeFunctionalTests {
 			.setXdmSchema(
 				new HashMap<String, Object>() {
 					{
-						put("testString", "xdmValue");
+						put("testString", "stringValue");
 						put("testInt", 10);
 						put("testBool", false);
 						put("testDouble", 12.89);
@@ -428,7 +428,7 @@ public class EdgeFunctionalTests {
 			"        \"testMap\": {" +
 			"          \"key\": \"value\"" +
 			"        }," +
-			"        \"testString\": \"xdmValue\"," +
+			"        \"testString\": \"stringValue\"," +
 			"        \"timestamp\": \"STRING_TYPE\"" +
 			"      }" +
 			"    }" +
