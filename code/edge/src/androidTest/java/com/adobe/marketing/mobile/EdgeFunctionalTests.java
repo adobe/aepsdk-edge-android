@@ -55,7 +55,6 @@ import java.util.TimeZone;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.json.JSONException;
-import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -854,9 +853,7 @@ public class EdgeFunctionalTests {
 		assertEquals(1, resultRequests.size());
 
 		TestableNetworkRequest networkRequest = resultRequests.get(0);
-		assertTrue(
-			networkRequest.getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING)
-		);
+		assertTrue(networkRequest.getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING));
 		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
 		assertNotNull(networkRequest.queryParam("requestId"));
 	}
