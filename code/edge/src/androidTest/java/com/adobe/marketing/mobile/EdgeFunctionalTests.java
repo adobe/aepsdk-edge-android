@@ -259,7 +259,7 @@ public class EdgeFunctionalTests {
 			.setXdmSchema(
 				new HashMap<String, Object>() {
 					{
-						put("testString", "xdm");
+						put("testString", "testValue");
 					}
 				}
 			)
@@ -272,7 +272,7 @@ public class EdgeFunctionalTests {
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
 		assertEquals(1, resultEvents.size());
 
-		String expected = "{" + "  \"xdm\": {" + "    \"testString\": \"xdm\"" + "  }" + "}";
+		String expected = "{\"xdm\": {\"testString\": \"testValue\"}}";
 		JSONAsserts.assertEquals(expected, resultEvents.get(0).getEventData());
 	}
 
