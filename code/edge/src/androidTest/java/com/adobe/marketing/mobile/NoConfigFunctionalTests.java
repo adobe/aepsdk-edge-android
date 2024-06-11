@@ -104,6 +104,7 @@ public class NoConfigFunctionalTests {
 
 		final JSONObject jsonObject = new JSONObject(jsonStr);
 		final Map<String, Object> identityMap = JSONUtils.toMap(jsonObject);
+		FakeIdentity.setXDMSharedState(identityMap, FakeIdentity.EVENT_TYPE);
 
 		resetTestExpectations(); // reset received events
 		setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 1);
