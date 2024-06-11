@@ -602,11 +602,11 @@ public class EdgeFunctionalTests {
 		TestXDMSchema.TestXDMObject xdmObject = new TestXDMSchema.TestXDMObject();
 		xdmObject.innerKey = "testInnerObject";
 		TestXDMSchema xdmSchema = new TestXDMSchema();
-		xdmSchema.boolObject = true;
-		xdmSchema.intObject = 100;
-		xdmSchema.stringObject = "testWithXdmSchema";
-		xdmSchema.doubleObject = 3.42;
-		xdmSchema.xdmObject = xdmObject;
+		xdmSchema.testBool = true;
+		xdmSchema.testInt = 100;
+		xdmSchema.testString = "testWithXdmSchema";
+		xdmSchema.testDouble = 3.42;
+		xdmSchema.testXDMObject = xdmObject;
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder().setXdmSchema(xdmSchema).build();
 		Edge.sendEvent(experienceEvent, null);
@@ -636,12 +636,12 @@ public class EdgeFunctionalTests {
 			"      }," +
 			"      \"xdm\": {" +
 			"        \"_id\": \"STRING_TYPE\"," +
-			"        \"boolObject\": true," +
-			"        \"doubleObject\": 3.42," +
-			"        \"intObject\": 100," +
-			"        \"stringObject\": \"testWithXdmSchema\"," +
+			"        \"testBool\": true," +
+			"        \"testDouble\": 3.42," +
+			"        \"testInt\": 100," +
+			"        \"testString\": \"testWithXdmSchema\"," +
 			"        \"timestamp\": \"STRING_TYPE\"," +
-			"        \"xdmObject\": {" +
+			"        \"testXDMObject\": {" +
 			"          \"innerKey\": \"testInnerObject\"" +
 			"        }" +
 			"      }" +
@@ -916,6 +916,7 @@ public class EdgeFunctionalTests {
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
+		// Asserting body has 12 total key value elements
 		assertTypeMatch("{}", resultRequests.get(0).getBodyJson(), new ElementCount(12, Subtree));
 
 		assertExpectedEvents(true);
@@ -959,7 +960,7 @@ public class EdgeFunctionalTests {
 			networkRequest.getBodyJson(),
 			new CollectionEqualCount(Subtree, "meta.state.entries"),
 			new AnyOrderMatch("meta.state.entries"),
-			new ElementCount(18, Subtree)
+			new ElementCount(18, Subtree) // Asserting body has 18 total key value elements
 		);
 
 		assertExpectedEvents(true);
@@ -990,6 +991,7 @@ public class EdgeFunctionalTests {
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
+		// Asserting body has 12 total key value elements
 		assertTypeMatch("{}", resultRequests.get(0).getBodyJson(), new ElementCount(12, Subtree));
 
 		assertExpectedEvents(true);
@@ -1035,7 +1037,7 @@ public class EdgeFunctionalTests {
 			networkRequest.getBodyJson(),
 			new CollectionEqualCount(Subtree, "meta.state.entries"),
 			new AnyOrderMatch("meta.state.entries"),
-			new ElementCount(18, Subtree)
+			new ElementCount(18, Subtree) // Asserting body has 18 total key value elements
 		);
 
 		assertExpectedEvents(true);
@@ -1060,6 +1062,7 @@ public class EdgeFunctionalTests {
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
+		// Asserting body has 12 total key value elements
 		assertTypeMatch("{}", resultRequests.get(0).getBodyJson(), new ElementCount(12, Subtree));
 
 		assertExpectedEvents(true);
@@ -1081,7 +1084,7 @@ public class EdgeFunctionalTests {
 		assertExactMatch(
 			"{}",
 			resultRequests.get(0).getBodyJson(),
-			new ElementCount(12, Subtree),
+			new ElementCount(12, Subtree), // Asserting body has 12 total key value elements
 			new KeyMustBeAbsent("meta.state.entries[0].key")
 		);
 	}
@@ -1694,6 +1697,7 @@ public class EdgeFunctionalTests {
 			"  \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\"," +
 			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-504\"" +
 			"}";
+		// Asserting body has 5 total key value elements
 		assertExactMatch(expectedEventData1, resultEvents.get(0).getEventData(), new ElementCount(5, Subtree));
 		assertEquals(requestEvents.get(0).getUniqueIdentifier(), resultEvents.get(0).getParentID());
 
@@ -1712,6 +1716,7 @@ public class EdgeFunctionalTests {
 			"  \"title\": \"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request.\"," +
 			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0204-200\"" +
 			"}";
+		// Asserting body has 7 total key value elements
 		assertExactMatch(expectedEventData2, resultEvents.get(1).getEventData(), new ElementCount(7, Subtree));
 		assertEquals(requestEvents.get(0).getUniqueIdentifier(), resultEvents.get(1).getParentID());
 	}
@@ -1779,6 +1784,7 @@ public class EdgeFunctionalTests {
 			"  \"title\": \"Unprocessable Entity\"," +
 			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0104-422\"" +
 			"}";
+		// Asserting body has 11 total key value elements
 		assertExactMatch(expected, resultEvents.get(0).getEventData(), new ElementCount(11, Subtree));
 		assertEquals(requestEvents.get(0).getUniqueIdentifier(), resultEvents.get(0).getParentID());
 	}
