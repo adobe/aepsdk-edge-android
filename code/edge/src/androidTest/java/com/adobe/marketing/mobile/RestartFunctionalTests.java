@@ -20,8 +20,8 @@ import static org.junit.Assert.assertTrue;
 import com.adobe.marketing.mobile.edge.consent.Consent;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
-import com.adobe.marketing.mobile.services.NetworkRequest;
 import com.adobe.marketing.mobile.services.ServiceProvider;
+import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.ADBCountDownLatch;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.MonitorExtension;
@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -56,6 +57,11 @@ public class RestartFunctionalTests {
 		resetTestExpectations();
 	}
 
+	@After
+	public void tearDown() {
+		mockNetworkService.reset();
+	}
+
 	@Test
 	public void testAddEventsToPendingQueue_restartSDK_verifyEventsDispatched_whenConsentYes() throws Exception {
 		// initial pending
@@ -64,7 +70,7 @@ public class RestartFunctionalTests {
 		fireManyEvents();
 
 		//verify
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			2000
@@ -96,7 +102,7 @@ public class RestartFunctionalTests {
 		fireManyEvents();
 
 		//verify
-		List<NetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			POST,
 			2000

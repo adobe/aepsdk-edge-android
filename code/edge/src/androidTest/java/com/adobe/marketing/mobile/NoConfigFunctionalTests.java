@@ -23,8 +23,8 @@ import static org.junit.Assert.assertTrue;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.HttpMethod;
-import com.adobe.marketing.mobile.services.NetworkRequest;
 import com.adobe.marketing.mobile.services.ServiceProvider;
+import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.FakeIdentity;
 import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.JSONUtils;
@@ -123,7 +123,7 @@ public class NoConfigFunctionalTests {
 		assertExpectedEvents(false);
 
 		// verify the network request was not sent
-		List<NetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			HttpMethod.POST
 		);
@@ -178,7 +178,7 @@ public class NoConfigFunctionalTests {
 			}
 		);
 
-		List<NetworkRequest> resultNetworkRequests = mockNetworkService.getNetworkRequestsWith(
+		List<TestableNetworkRequest> resultNetworkRequests = mockNetworkService.getNetworkRequestsWith(
 			EXEDGE_INTERACT_URL_STRING,
 			HttpMethod.POST
 		);

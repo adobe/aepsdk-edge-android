@@ -15,13 +15,12 @@ import static com.adobe.marketing.mobile.services.HttpMethod.POST;
 import static com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch;
 import static com.adobe.marketing.mobile.util.NodeConfig.Scope.Subtree;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
-import com.adobe.marketing.mobile.services.NetworkRequest;
 import com.adobe.marketing.mobile.services.ServiceProvider;
+import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.ElementCount;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.MonitorExtension;
@@ -32,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -204,7 +202,10 @@ public class SampleFunctionalTests {
 			.build();
 		Edge.sendEvent(experienceEvent, null);
 
-		List<NetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(exEdgeInteractUrlString, POST);
+		List<TestableNetworkRequest> requests = mockNetworkService.getNetworkRequestsWith(
+			exEdgeInteractUrlString,
+			POST
+		);
 		assertEquals(1, requests.size());
 
 		String expected =
@@ -217,21 +218,7 @@ public class SampleFunctionalTests {
 			"    }" +
 			"  ]" +
 			"}";
-		assertExactMatch(expected, getPayloadJson(requests.get(0)));
+		assertExactMatch(expected, requests.get(0).getBodyJson());
 		TestHelper.assertExpectedEvents(true);
-	}
-
-	private JSONObject getPayloadJson(NetworkRequest networkRequest) {
-		if (networkRequest == null || networkRequest.getBody() == null) {
-			return null;
-		}
-
-		String payload = new String(networkRequest.getBody());
-		try {
-			return new JSONObject(payload);
-		} catch (Exception e) {
-			fail("Failed to create JSONObject from payload: " + e.getMessage());
-			return null;
-		}
 	}
 }
