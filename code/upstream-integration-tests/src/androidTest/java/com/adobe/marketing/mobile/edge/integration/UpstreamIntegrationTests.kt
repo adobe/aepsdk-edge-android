@@ -88,7 +88,7 @@ class UpstreamIntegrationTests {
 
     @After
     fun tearDown() {
-        realNetworkService.reset()
+        resetTestExpectations()
         // Clear any updated configuration
         MobileCore.clearUpdatedConfiguration()
     }
@@ -750,6 +750,7 @@ class UpstreamIntegrationTests {
         // Verify
         // Network response assertions
         realNetworkService.assertAllNetworkRequestExpectations()
+
         val matchingResponses = realNetworkService.getResponsesFor(invalidNetworkRequest)
 
         Assert.assertEquals(1, matchingResponses?.size)
