@@ -21,6 +21,7 @@ import com.adobe.marketing.mobile.services.HttpMethod
 import com.adobe.marketing.mobile.services.ServiceProvider
 import com.adobe.marketing.mobile.services.TestableNetworkRequest
 import com.adobe.marketing.mobile.util.JSONAsserts
+import com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch
 import com.adobe.marketing.mobile.util.MonitorExtension
 import com.adobe.marketing.mobile.util.RealNetworkService
 import com.adobe.marketing.mobile.util.TestConstants
@@ -153,7 +154,7 @@ class ConfigOverridesIntegrationTests {
         assertEquals(1, errorEvents.size)
 
         val errorEvent = errorEvents.first()
-        JSONAsserts.assertEquals(expectedErrorJSON, errorEvent.eventData)
+        assertExactMatch(expectedErrorJSON, errorEvent.eventData)
     }
 
     @Test
