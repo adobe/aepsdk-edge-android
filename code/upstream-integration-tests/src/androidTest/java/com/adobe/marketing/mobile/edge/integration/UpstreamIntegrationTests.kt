@@ -654,10 +654,6 @@ class UpstreamIntegrationTests {
     @Test
     fun testSendEvent_withInvalidDatastreamID_receivesExpectedError() {
         // Setup
-        // Waiting for configuration response content event solves the potential race condition of
-        // configuration's shared state not reaching Edge before it starts processing the sendEvent event
-        // 1st: from remote config download(?)
-        // 2nd: from updateConfiguration
         TestHelper.setExpectationEvent(
             TestConstants.EventType.CONFIGURATION,
             TestConstants.EventSource.RESPONSE_CONTENT,
@@ -721,10 +717,11 @@ class UpstreamIntegrationTests {
         )
     }
 
+    /**
+     * Validates that an invalid location hint returns the expected error with 0 byte data body.
+     */
     @Test
     fun testSendEvent_withInvalidLocationHint_receivesExpectedError() {
-        // Tests that an invalid location hint returns the expected error with 0 byte data body
-
         // Setup
         val invalidNetworkRequest = TestableNetworkRequest(
             TestSetupHelper.createInteractURL(locationHint = "invalid"),
@@ -748,7 +745,6 @@ class UpstreamIntegrationTests {
         Edge.sendEvent(experienceEvent) {}
 
         // Verify
-        // Network response assertions
         realNetworkService.assertAllNetworkRequestExpectations()
 
         val matchingResponses = realNetworkService.getResponsesFor(invalidNetworkRequest)
