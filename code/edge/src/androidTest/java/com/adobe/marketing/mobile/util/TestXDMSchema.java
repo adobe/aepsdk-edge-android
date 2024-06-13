@@ -19,11 +19,11 @@ import java.util.Map;
 
 public class TestXDMSchema implements Schema {
 
-	public String stringObject;
-	public Integer intObject;
-	public Boolean boolObject;
-	public Double doubleObject;
-	public TestXDMObject xdmObject;
+	public String testString;
+	public Integer testInt;
+	public Boolean testBool;
+	public Double testDouble;
+	public TestXDMObject testXDMObject;
 	public Date timestamp;
 
 	@Override
@@ -45,24 +45,24 @@ public class TestXDMSchema implements Schema {
 	public Map<String, Object> serializeToXdm() {
 		Map<String, Object> map = new HashMap<>();
 
-		if (this.stringObject != null) {
-			map.put("stringObject", this.stringObject);
+		if (this.testString != null) {
+			map.put("testString", this.testString);
 		}
 
-		if (this.intObject != null) {
-			map.put("intObject", this.intObject);
+		if (this.testInt != null) {
+			map.put("testInt", this.testInt);
 		}
 
-		if (this.boolObject != null) {
-			map.put("boolObject", this.boolObject);
+		if (this.testBool != null) {
+			map.put("testBool", this.testBool);
 		}
 
-		if (this.doubleObject != null) {
-			map.put("doubleObject", this.doubleObject);
+		if (this.testDouble != null) {
+			map.put("testDouble", this.testDouble);
 		}
 
-		if (this.xdmObject != null) {
-			map.put("xdmObject", this.xdmObject.serializeToXdm());
+		if (this.testXDMObject != null) {
+			map.put("testXDMObject", this.testXDMObject.serializeToXdm());
 		}
 
 		if (this.timestamp != null) {

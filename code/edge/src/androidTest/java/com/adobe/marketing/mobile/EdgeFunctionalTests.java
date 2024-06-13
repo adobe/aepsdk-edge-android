@@ -12,6 +12,9 @@
 package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
+import static com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch;
+import static com.adobe.marketing.mobile.util.JSONAsserts.assertTypeMatch;
+import static com.adobe.marketing.mobile.util.NodeConfig.Scope.Subtree;
 import static com.adobe.marketing.mobile.util.TestHelper.LogOnErrorRule;
 import static com.adobe.marketing.mobile.util.TestHelper.SetupCoreRule;
 import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
@@ -31,12 +34,17 @@ import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
+import com.adobe.marketing.mobile.util.AnyOrderMatch;
+import com.adobe.marketing.mobile.util.CollectionEqualCount;
+import com.adobe.marketing.mobile.util.ElementCount;
+import com.adobe.marketing.mobile.util.JSONAsserts;
+import com.adobe.marketing.mobile.util.KeyMustBeAbsent;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.MonitorExtension;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
-import com.adobe.marketing.mobile.util.TestUtils;
 import com.adobe.marketing.mobile.util.TestXDMSchema;
+import com.adobe.marketing.mobile.util.ValueTypeMatch;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -46,6 +54,7 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.json.JSONException;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -121,7 +130,7 @@ public class EdgeFunctionalTests {
 			.setXdmSchema(
 				new HashMap<String, Object>() {
 					{
-						put("testString", "xdm");
+						put("testString", "stringValue");
 						put("testInt", 10);
 						put("testBool", false);
 						put("testDouble", 12.89);
@@ -152,18 +161,24 @@ public class EdgeFunctionalTests {
 		assertExpectedEvents(false);
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
 		assertEquals(1, resultEvents.size());
-		Map<String, Object> eventData = resultEvents.get(0).getEventData();
-		assertNotNull(eventData);
 
-		Map<String, String> flattenedData = TestUtils.flattenMap(eventData);
-		assertEquals(7, flattenedData.size());
-		assertEquals("xdm", flattenedData.get("xdm.testString"));
-		assertEquals("10", flattenedData.get("xdm.testInt"));
-		assertEquals("false", flattenedData.get("xdm.testBool"));
-		assertEquals("12.89", flattenedData.get("xdm.testDouble"));
-		assertEquals("elem1", flattenedData.get("xdm.testArray[0]"));
-		assertEquals("elem2", flattenedData.get("xdm.testArray[1]"));
-		assertEquals("value", flattenedData.get("xdm.testMap.key"));
+		String expected =
+			"{" +
+			"  \"xdm\": {" +
+			"    \"testString\": \"stringValue\"," +
+			"    \"testInt\": 10," +
+			"    \"testBool\": false," +
+			"    \"testDouble\": 12.89," +
+			"    \"testArray\": [" +
+			"      \"elem1\"," +
+			"      \"elem2\"" +
+			"    ]," +
+			"    \"testMap\": {" +
+			"      \"key\": \"value\"" +
+			"    }" +
+			"  }" +
+			"}";
+		JSONAsserts.assertEquals(expected, resultEvents.get(0).getEventData());
 	}
 
 	@Test
@@ -174,7 +189,7 @@ public class EdgeFunctionalTests {
 			.setXdmSchema(
 				new HashMap<String, Object>() {
 					{
-						put("testString", "xdm");
+						put("testString", "stringValue");
 					}
 				}
 			)
@@ -212,19 +227,27 @@ public class EdgeFunctionalTests {
 		assertExpectedEvents(false);
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
 		assertEquals(1, resultEvents.size());
-		Map<String, Object> eventData = resultEvents.get(0).getEventData();
-		assertNotNull(eventData);
 
-		Map<String, String> flattenedData = TestUtils.flattenMap(eventData);
-		assertEquals(8, flattenedData.size());
-		assertEquals("xdm", flattenedData.get("xdm.testString"));
-		assertEquals("stringValue", flattenedData.get("data.testString"));
-		assertEquals("101", flattenedData.get("data.testInt"));
-		assertEquals("true", flattenedData.get("data.testBool"));
-		assertEquals("13.66", flattenedData.get("data.testDouble"));
-		assertEquals("elem1", flattenedData.get("data.testArray[0]"));
-		assertEquals("elem2", flattenedData.get("data.testArray[1]"));
-		assertEquals("value", flattenedData.get("data.testMap.key"));
+		String expected =
+			"{" +
+			"  \"xdm\": {" +
+			"    \"testString\": \"stringValue\"" +
+			"  }," +
+			"  \"data\": {" +
+			"    \"testString\": \"stringValue\"," +
+			"    \"testInt\": 101," +
+			"    \"testBool\": true," +
+			"    \"testDouble\": 13.66," +
+			"    \"testArray\": [" +
+			"      \"elem1\"," +
+			"      \"elem2\"" +
+			"    ]," +
+			"    \"testMap\": {" +
+			"      \"key\": \"value\"" +
+			"    }" +
+			"  }" +
+			"}";
+		JSONAsserts.assertEquals(expected, resultEvents.get(0).getEventData());
 	}
 
 	@Test
@@ -235,7 +258,7 @@ public class EdgeFunctionalTests {
 			.setXdmSchema(
 				new HashMap<String, Object>() {
 					{
-						put("testString", "xdm");
+						put("testString", "stringValue");
 					}
 				}
 			)
@@ -247,12 +270,9 @@ public class EdgeFunctionalTests {
 		assertExpectedEvents(false);
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
 		assertEquals(1, resultEvents.size());
-		Map<String, Object> eventData = resultEvents.get(0).getEventData();
-		assertNotNull(eventData);
 
-		Map<String, String> flattenedData = TestUtils.flattenMap(eventData);
-		assertEquals(1, flattenedData.size());
-		assertEquals("xdm", flattenedData.get("xdm.testString"));
+		String expected = "{\"xdm\": {\"testString\": \"stringValue\"}}";
+		JSONAsserts.assertEquals(expected, resultEvents.get(0).getEventData());
 	}
 
 	@Test
@@ -329,11 +349,9 @@ public class EdgeFunctionalTests {
 					assertEquals(EventSource.CONTENT_COMPLETE, event.getSource());
 					assertEquals(edgeEvent.getUniqueIdentifier(), event.getParentID());
 					assertEquals(edgeEvent.getUniqueIdentifier(), event.getResponseID());
-					assertNotNull(event.getEventData());
 
-					Map<String, String> flattenedData = TestUtils.flattenMap(event.getEventData());
-					assertEquals(1, flattenedData.size());
-					assertNotNull(flattenedData.get("requestId"));
+					String expected = "{  \"requestId\": \"STRING_TYPE\" }";
+					assertTypeMatch(expected, event.getEventData(), new CollectionEqualCount(Subtree));
 					latch.countDown();
 				}
 			}
@@ -356,7 +374,7 @@ public class EdgeFunctionalTests {
 			.setXdmSchema(
 				new HashMap<String, Object>() {
 					{
-						put("testString", "xdmValue");
+						put("testString", "stringValue");
 						put("testInt", 10);
 						put("testBool", false);
 						put("testDouble", 12.89);
@@ -392,36 +410,67 @@ public class EdgeFunctionalTests {
 		);
 		assertEquals(1, resultRequests.size());
 
-		Map<String, String> resultPayload = mockNetworkService.getFlattenedNetworkRequestBody(resultRequests.get(0));
-		assertEquals(18, resultPayload.size());
-		assertEquals("true", resultPayload.get("meta.konductorConfig.streaming.enabled"));
-		assertEquals("\u0000", resultPayload.get("meta.konductorConfig.streaming.recordSeparator"));
-		assertEquals("\n", resultPayload.get("meta.konductorConfig.streaming.lineFeed"));
-		assertNotNull(resultPayload.get("xdm.identityMap.ECID[0].id"));
-		assertEquals("false", resultPayload.get("xdm.identityMap.ECID[0].primary"));
-		assertEquals("ambiguous", resultPayload.get("xdm.identityMap.ECID[0].authenticatedState"));
-		assertNotNull(resultPayload.get("events[0].xdm._id"));
-		assertNotNull(resultPayload.get("events[0].xdm.timestamp"));
-		assertEquals("xdmValue", resultPayload.get("events[0].xdm.testString"));
-		assertEquals("10", resultPayload.get("events[0].xdm.testInt"));
-		assertEquals("false", resultPayload.get("events[0].xdm.testBool"));
-		assertEquals("12.89", resultPayload.get("events[0].xdm.testDouble"));
-		assertEquals("elem1", resultPayload.get("events[0].xdm.testArray[0]"));
-		assertEquals("elem2", resultPayload.get("events[0].xdm.testArray[1]"));
-		assertEquals("value", resultPayload.get("events[0].xdm.testMap.key"));
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 
-		assertTrue(resultRequests.get(0).getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
-		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
-		assertNotNull(resultRequests.get(0).queryParam("requestId"));
+		String expected =
+			"{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"xdm\": {" +
+			"        \"_id\": \"STRING_TYPE\"," +
+			"        \"testArray\": [\"elem1\", \"elem2\"]," +
+			"        \"testBool\": false," +
+			"        \"testDouble\": 12.89," +
+			"        \"testInt\": 10," +
+			"        \"testMap\": {" +
+			"          \"key\": \"value\"" +
+			"        }," +
+			"        \"testString\": \"stringValue\"," +
+			"        \"timestamp\": \"STRING_TYPE\"" +
+			"      }" +
+			"    }" +
+			"  ]," +
+			"  \"meta\": {" +
+			"    \"konductorConfig\": {" +
+			"      \"streaming\": {" +
+			"        \"enabled\": true," +
+			"        \"lineFeed\": \"\\n\"," +
+			"        \"recordSeparator\": \"\\u0000\"" +
+			"      }" +
+			"    }" +
+			"  }," +
+			"  \"xdm\": {" +
+			"    \"identityMap\": {" +
+			"      \"ECID\": [" +
+			"        {" +
+			"          \"authenticatedState\": \"ambiguous\"," +
+			"          \"id\": \"STRING_TYPE\"," +
+			"          \"primary\": false" +
+			"        }" +
+			"      ]" +
+			"    }," +
+			"    \"implementationDetails\": {" +
+			"      \"environment\": \"app\"," +
+			"      \"name\": \"" +
+			EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE +
+			"\"," +
+			"      \"version\": \"" +
+			MobileCore.extensionVersion() +
+			"+" +
+			Edge.extensionVersion() +
+			"\"" +
+			"    }" +
+			"  }" +
+			"}";
 
-		assertEquals("app", resultPayload.get("xdm.implementationDetails.environment"));
-		assertEquals(
-			EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE,
-			resultPayload.get("xdm.implementationDetails.name")
-		);
-		assertEquals(
-			MobileCore.extensionVersion() + "+" + Edge.extensionVersion(),
-			resultPayload.get("xdm.implementationDetails.version")
+		assertExactMatch(
+			expected,
+			networkRequest.getBodyJson(),
+			new CollectionEqualCount(Subtree),
+			new ValueTypeMatch("xdm.identityMap.ECID[0].id", "events[0].xdm._id", "events[0].xdm.timestamp")
 		);
 	}
 
@@ -478,37 +527,70 @@ public class EdgeFunctionalTests {
 		);
 		assertEquals(1, resultRequests.size());
 
-		Map<String, String> resultPayload = mockNetworkService.getFlattenedNetworkRequestBody(resultRequests.get(0));
-		assertEquals(19, resultPayload.size());
-		assertEquals("true", resultPayload.get("meta.konductorConfig.streaming.enabled"));
-		assertEquals("\u0000", resultPayload.get("meta.konductorConfig.streaming.recordSeparator"));
-		assertEquals("\n", resultPayload.get("meta.konductorConfig.streaming.lineFeed"));
-		assertNotNull(resultPayload.get("xdm.identityMap.ECID[0].id"));
-		assertEquals("false", resultPayload.get("xdm.identityMap.ECID[0].primary"));
-		assertEquals("ambiguous", resultPayload.get("xdm.identityMap.ECID[0].authenticatedState"));
-		assertNotNull(resultPayload.get("events[0].xdm._id"));
-		assertNotNull(resultPayload.get("events[0].xdm.timestamp"));
-		assertEquals("xdmValue", resultPayload.get("events[0].xdm.testString"));
-		assertEquals("stringValue", resultPayload.get("events[0].data.testString"));
-		assertEquals("101", resultPayload.get("events[0].data.testInt"));
-		assertEquals("true", resultPayload.get("events[0].data.testBool"));
-		assertEquals("13.66", resultPayload.get("events[0].data.testDouble"));
-		assertEquals("elem1", resultPayload.get("events[0].data.testArray[0]"));
-		assertEquals("elem2", resultPayload.get("events[0].data.testArray[1]"));
-		assertEquals("value", resultPayload.get("events[0].data.testMap.key"));
-		assertEquals("app", resultPayload.get("xdm.implementationDetails.environment"));
-		assertEquals(
-			EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE,
-			resultPayload.get("xdm.implementationDetails.name")
-		);
-		assertEquals(
-			MobileCore.extensionVersion() + "+" + Edge.extensionVersion(),
-			resultPayload.get("xdm.implementationDetails.version")
-		);
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 
-		assertTrue(resultRequests.get(0).getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
-		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
-		assertNotNull(resultRequests.get(0).queryParam("requestId"));
+		String expected =
+			"{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"data\": {" +
+			"        \"testArray\": [\"elem1\", \"elem2\"]," +
+			"        \"testBool\": true," +
+			"        \"testDouble\": 13.66," +
+			"        \"testInt\": 101," +
+			"        \"testMap\": {" +
+			"          \"key\": \"value\"" +
+			"        }," +
+			"        \"testString\": \"stringValue\"" +
+			"      }," +
+			"      \"xdm\": {" +
+			"        \"_id\": \"STRING_TYPE\"," +
+			"        \"testString\": \"xdmValue\"," +
+			"        \"timestamp\": \"STRING_TYPE\"" +
+			"      }" +
+			"    }" +
+			"  ]," +
+			"  \"meta\": {" +
+			"    \"konductorConfig\": {" +
+			"      \"streaming\": {" +
+			"        \"enabled\": true," +
+			"        \"lineFeed\": \"\\n\"," +
+			"        \"recordSeparator\": \"\\u0000\"" +
+			"      }" +
+			"    }" +
+			"  }," +
+			"  \"xdm\": {" +
+			"    \"identityMap\": {" +
+			"      \"ECID\": [" +
+			"        {" +
+			"          \"authenticatedState\": \"ambiguous\"," +
+			"          \"id\": \"STRING_TYPE\"," +
+			"          \"primary\": false" +
+			"        }" +
+			"      ]" +
+			"    }," +
+			"    \"implementationDetails\": {" +
+			"      \"environment\": \"app\"," +
+			"      \"name\": \"" +
+			EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE +
+			"\"," +
+			"      \"version\": \"" +
+			MobileCore.extensionVersion() +
+			"+" +
+			Edge.extensionVersion() +
+			"\"" +
+			"    }" +
+			"  }" +
+			"}";
+		assertExactMatch(
+			expected,
+			networkRequest.getBodyJson(),
+			new CollectionEqualCount(Subtree),
+			new ValueTypeMatch("xdm.identityMap.ECID[0].id", "events[0].xdm._id", "events[0].xdm.timestamp")
+		);
 	}
 
 	@Test
@@ -520,11 +602,11 @@ public class EdgeFunctionalTests {
 		TestXDMSchema.TestXDMObject xdmObject = new TestXDMSchema.TestXDMObject();
 		xdmObject.innerKey = "testInnerObject";
 		TestXDMSchema xdmSchema = new TestXDMSchema();
-		xdmSchema.boolObject = true;
-		xdmSchema.intObject = 100;
-		xdmSchema.stringObject = "testWithXdmSchema";
-		xdmSchema.doubleObject = 3.42;
-		xdmSchema.xdmObject = xdmObject;
+		xdmSchema.testBool = true;
+		xdmSchema.testInt = 100;
+		xdmSchema.testString = "testWithXdmSchema";
+		xdmSchema.testDouble = 3.42;
+		xdmSchema.testXDMObject = xdmObject;
 
 		ExperienceEvent experienceEvent = new ExperienceEvent.Builder().setXdmSchema(xdmSchema).build();
 		Edge.sendEvent(experienceEvent, null);
@@ -537,37 +619,71 @@ public class EdgeFunctionalTests {
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
-		Map<String, String> resultPayload = mockNetworkService.getFlattenedNetworkRequestBody(resultRequests.get(0));
-		assertEquals(17, resultPayload.size());
 
-		assertEquals("true", resultPayload.get("meta.konductorConfig.streaming.enabled"));
-		assertEquals("\u0000", resultPayload.get("meta.konductorConfig.streaming.recordSeparator"));
-		assertEquals("\n", resultPayload.get("meta.konductorConfig.streaming.lineFeed"));
-		assertNotNull(resultPayload.get("xdm.identityMap.ECID[0].id"));
-		assertEquals("false", resultPayload.get("xdm.identityMap.ECID[0].primary"));
-		assertEquals("ambiguous", resultPayload.get("xdm.identityMap.ECID[0].authenticatedState"));
-		assertNotNull(resultPayload.get("events[0].xdm._id"));
-		assertNotNull(resultPayload.get("events[0].xdm.timestamp"));
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 
-		assertEquals("testWithXdmSchema", resultPayload.get("events[0].xdm.stringObject"));
-		assertEquals("100", resultPayload.get("events[0].xdm.intObject"));
-		assertEquals("true", resultPayload.get("events[0].xdm.boolObject"));
-		assertEquals("3.42", resultPayload.get("events[0].xdm.doubleObject"));
-		assertEquals("testInnerObject", resultPayload.get("events[0].xdm.xdmObject.innerKey"));
-		assertEquals("abc123def", resultPayload.get("events[0].meta.collect.datasetId"));
-
-		assertTrue(resultRequests.get(0).getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
-		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
-		assertNotNull(resultRequests.get(0).queryParam("requestId"));
-
-		assertEquals("app", resultPayload.get("xdm.implementationDetails.environment"));
-		assertEquals(
-			EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE,
-			resultPayload.get("xdm.implementationDetails.name")
-		);
-		assertEquals(
-			MobileCore.extensionVersion() + "+" + Edge.extensionVersion(),
-			resultPayload.get("xdm.implementationDetails.version")
+		String expected =
+			"{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"meta\": {" +
+			"        \"collect\": {" +
+			"          \"datasetId\": \"abc123def\"" +
+			"        }" +
+			"      }," +
+			"      \"xdm\": {" +
+			"        \"_id\": \"STRING_TYPE\"," +
+			"        \"testBool\": true," +
+			"        \"testDouble\": 3.42," +
+			"        \"testInt\": 100," +
+			"        \"testString\": \"testWithXdmSchema\"," +
+			"        \"timestamp\": \"STRING_TYPE\"," +
+			"        \"testXDMObject\": {" +
+			"          \"innerKey\": \"testInnerObject\"" +
+			"        }" +
+			"      }" +
+			"    }" +
+			"  ]," +
+			"  \"meta\": {" +
+			"    \"konductorConfig\": {" +
+			"      \"streaming\": {" +
+			"        \"enabled\": true," +
+			"        \"lineFeed\": \"\\n\"," +
+			"        \"recordSeparator\": \"\\u0000\"" +
+			"      }" +
+			"    }" +
+			"  }," +
+			"  \"xdm\": {" +
+			"    \"identityMap\": {" +
+			"      \"ECID\": [" +
+			"        {" +
+			"          \"authenticatedState\": \"ambiguous\"," +
+			"          \"id\": \"STRING_TYPE\"," +
+			"          \"primary\": false" +
+			"        }" +
+			"      ]" +
+			"    }," +
+			"    \"implementationDetails\": {" +
+			"      \"environment\": \"app\"," +
+			"      \"name\": \"" +
+			EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE +
+			"\"," +
+			"      \"version\": \"" +
+			MobileCore.extensionVersion() +
+			"+" +
+			Edge.extensionVersion() +
+			"\"" +
+			"    }" +
+			"  }" +
+			"}";
+		assertExactMatch(
+			expected,
+			networkRequest.getBodyJson(),
+			new CollectionEqualCount(Subtree),
+			new ValueTypeMatch("xdm.identityMap.ECID[0].id", "events[0].xdm._id", "events[0].xdm.timestamp")
 		);
 	}
 
@@ -643,9 +759,10 @@ public class EdgeFunctionalTests {
 		);
 		assertEquals(1, resultRequests.size());
 
-		assertTrue(resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING));
-		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
-		assertNotNull(resultRequests.get(0).queryParam("requestId"));
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 	}
 
 	@Test
@@ -671,9 +788,10 @@ public class EdgeFunctionalTests {
 		);
 		assertEquals(1, resultRequests.size());
 
-		assertTrue(resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING));
-		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
-		assertNotNull(resultRequests.get(0).queryParam("requestId"));
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 	}
 
 	@Test
@@ -700,9 +818,10 @@ public class EdgeFunctionalTests {
 		);
 		assertEquals(1, resultRequests.size());
 
-		assertTrue(resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING));
-		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
-		assertNotNull(resultRequests.get(0).queryParam("requestId"));
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 	}
 
 	@Test
@@ -733,11 +852,10 @@ public class EdgeFunctionalTests {
 		);
 		assertEquals(1, resultRequests.size());
 
-		assertTrue(
-			resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING)
-		);
-		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
-		assertNotNull(resultRequests.get(0).queryParam("requestId"));
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_PRE_PROD_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 	}
 
 	@Test
@@ -768,9 +886,10 @@ public class EdgeFunctionalTests {
 		);
 		assertEquals(1, resultRequests.size());
 
-		assertTrue(resultRequests.get(0).getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_INT_URL_STRING));
-		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
-		assertNotNull(resultRequests.get(0).queryParam("requestId"));
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(TestConstants.Defaults.EXEDGE_INTERACT_INT_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 	}
 
 	// --------------------------------------------------------------------------------------------
@@ -778,7 +897,8 @@ public class EdgeFunctionalTests {
 	// --------------------------------------------------------------------------------------------
 
 	@Test
-	public void testSendEvent_twoConsecutiveCalls_appendsReceivedClientSideStore() throws InterruptedException {
+	public void testSendEvent_twoConsecutiveCalls_appendsReceivedClientSideStore()
+		throws InterruptedException, JSONException {
 		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
 
 		final String storeResponseBody =
@@ -796,8 +916,8 @@ public class EdgeFunctionalTests {
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
-		Map<String, String> requestBody = mockNetworkService.getFlattenedNetworkRequestBody(resultRequests.get(0));
-		assertEquals("Expected request body with 12 elements, but found: " + requestBody, 12, requestBody.size());
+		// Asserting body has 12 total key value elements
+		assertTypeMatch("{}", resultRequests.get(0).getBodyJson(), new ElementCount(12, Subtree));
 
 		assertExpectedEvents(true);
 		resetTestExpectations();
@@ -810,31 +930,38 @@ public class EdgeFunctionalTests {
 
 		resultRequests = mockNetworkService.getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, TIMEOUT_MILLIS);
 		assertEquals(1, resultRequests.size());
-		requestBody = mockNetworkService.getFlattenedNetworkRequestBody(resultRequests.get(0));
-		assertEquals("Expected request body with 18 elements, but found: " + requestBody, 18, requestBody.size());
 
-		String firstStore = requestBody.get("meta.state.entries[0].key");
-		assertNotNull("client-side store not found", firstStore);
-		int identityIndex = firstStore.equals("kndctr_testOrg_AdobeOrg_identity") ? 0 : 1;
-		int consentIndex = firstStore.equals("kndctr_testOrg_AdobeOrg_identity") ? 1 : 0;
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 
-		assertEquals(
-			"kndctr_testOrg_AdobeOrg_identity",
-			requestBody.get("meta.state.entries[" + identityIndex + "].key")
+		String expected =
+			"{" +
+			"  \"meta\": {" +
+			"      \"state\": {" +
+			"        \"entries\": [" +
+			"          {" +
+			"            \"key\": \"kndctr_testOrg_AdobeOrg_identity\"," +
+			"            \"maxAge\": 34128000," +
+			"            \"value\": \"hashed_value\"" +
+			"          }," +
+			"          {" +
+			"            \"key\": \"kndctr_testOrg_AdobeOrg_consent_check\"," +
+			"            \"maxAge\": 7200," +
+			"            \"value\": \"1\"" +
+			"          }" +
+			"        ]" +
+			"      }" +
+			"  }" +
+			"}";
+		assertExactMatch(
+			expected,
+			networkRequest.getBodyJson(),
+			new CollectionEqualCount(Subtree, "meta.state.entries"),
+			new AnyOrderMatch("meta.state.entries"),
+			new ElementCount(18, Subtree)
 		);
-		assertEquals("hashed_value", requestBody.get("meta.state.entries[" + identityIndex + "].value"));
-		assertEquals("34128000", requestBody.get("meta.state.entries[" + identityIndex + "].maxAge"));
-
-		assertEquals(
-			"kndctr_testOrg_AdobeOrg_consent_check",
-			requestBody.get("meta.state.entries[" + consentIndex + "].key")
-		);
-		assertEquals("1", requestBody.get("meta.state.entries[" + consentIndex + "].value"));
-		assertEquals("7200", requestBody.get("meta.state.entries[" + consentIndex + "].maxAge"));
-
-		assertTrue(resultRequests.get(0).getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
-		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
-		assertNotNull(resultRequests.get(0).queryParam("requestId"));
 
 		assertExpectedEvents(true);
 	}
@@ -864,8 +991,8 @@ public class EdgeFunctionalTests {
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
-		Map<String, String> requestBody = mockNetworkService.getFlattenedNetworkRequestBody(resultRequests.get(0));
-		assertEquals("Expected request body with 12 elements, but found: " + requestBody, 12, requestBody.size());
+		// Asserting body has 12 total key value elements
+		assertTypeMatch("{}", resultRequests.get(0).getBodyJson(), new ElementCount(12, Subtree));
 
 		assertExpectedEvents(true);
 		resetTestExpectations();
@@ -876,33 +1003,42 @@ public class EdgeFunctionalTests {
 		setExpectationEvent(EventType.EDGE, "state:store", 1);
 		Edge.sendEvent(XDM_EXPERIENCE_EVENT, null);
 
+		// Validate
 		resultRequests = mockNetworkService.getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, TIMEOUT_MILLIS);
 		assertEquals(1, resultRequests.size());
-		requestBody = mockNetworkService.getFlattenedNetworkRequestBody(resultRequests.get(0));
-		assertEquals("Expected request body with 18 elements, but found: " + requestBody, 18, requestBody.size());
 
-		String firstStore = requestBody.get("meta.state.entries[0].key");
-		assertNotNull("client-side store not found", firstStore);
-		int identityIndex = firstStore.equals("kndctr_testOrg_AdobeOrg_identity") ? 0 : 1;
-		int consentIndex = firstStore.equals("kndctr_testOrg_AdobeOrg_identity") ? 1 : 0;
+		// Validate network request query params
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 
-		assertEquals(
-			"kndctr_testOrg_AdobeOrg_identity",
-			requestBody.get("meta.state.entries[" + identityIndex + "].key")
+		String expected =
+			"{" +
+			"  \"meta\": {" +
+			"      \"state\": {" +
+			"        \"entries\": [" +
+			"          {" +
+			"            \"key\": \"kndctr_testOrg_AdobeOrg_identity\"," +
+			"            \"maxAge\": 34128000," +
+			"            \"value\": \"hashed_value\"" +
+			"          }," +
+			"          {" +
+			"            \"key\": \"kndctr_testOrg_AdobeOrg_consent_check\"," +
+			"            \"maxAge\": 7200," +
+			"            \"value\": \"1\"" +
+			"          }" +
+			"        ]" +
+			"      }" +
+			"  }" +
+			"}";
+		assertExactMatch(
+			expected,
+			networkRequest.getBodyJson(),
+			new CollectionEqualCount(Subtree, "meta.state.entries"),
+			new AnyOrderMatch("meta.state.entries"),
+			new ElementCount(18, Subtree)
 		);
-		assertEquals("hashed_value", requestBody.get("meta.state.entries[" + identityIndex + "].value"));
-		assertEquals("34128000", requestBody.get("meta.state.entries[" + identityIndex + "].maxAge"));
-
-		assertEquals(
-			"kndctr_testOrg_AdobeOrg_consent_check",
-			requestBody.get("meta.state.entries[" + consentIndex + "].key")
-		);
-		assertEquals("1", requestBody.get("meta.state.entries[" + consentIndex + "].value"));
-		assertEquals("7200", requestBody.get("meta.state.entries[" + consentIndex + "].maxAge"));
-
-		assertTrue(resultRequests.get(0).getUrl().startsWith(EXEDGE_INTERACT_URL_STRING));
-		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
-		assertNotNull(resultRequests.get(0).queryParam("requestId"));
 
 		assertExpectedEvents(true);
 	}
@@ -926,8 +1062,8 @@ public class EdgeFunctionalTests {
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
-		Map<String, String> requestBody = mockNetworkService.getFlattenedNetworkRequestBody(resultRequests.get(0));
-		assertEquals("Expected request body with 12 elements, but found: " + requestBody, 12, requestBody.size());
+		// Asserting body has 12 total key value elements
+		assertTypeMatch("{}", resultRequests.get(0).getBodyJson(), new ElementCount(12, Subtree));
 
 		assertExpectedEvents(true);
 		resetTestExpectations();
@@ -945,11 +1081,14 @@ public class EdgeFunctionalTests {
 
 		resultRequests = mockNetworkService.getNetworkRequestsWith(EXEDGE_INTERACT_URL_STRING, POST, TIMEOUT_MILLIS);
 		assertEquals(1, resultRequests.size());
-		requestBody = mockNetworkService.getFlattenedNetworkRequestBody(resultRequests.get(0));
-		assertEquals("Expected request body with 12 elements, but found: " + requestBody, 12, requestBody.size());
-
-		String firstStore = requestBody.get("meta.state.entries[0].key");
-		assertNull("client-side store was found", firstStore);
+		// Asserting body has 12 total key value elements and that "key" is not present in the first
+		// element of "entries"
+		assertExactMatch(
+			"{}",
+			resultRequests.get(0).getBodyJson(),
+			new ElementCount(12, Subtree),
+			new KeyMustBeAbsent("meta.state.entries[0].key")
+		);
 	}
 
 	// --------------------------------------------------------------------------------------------
@@ -979,7 +1118,8 @@ public class EdgeFunctionalTests {
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
-		String requestId = resultRequests.get(0).queryParam("requestId");
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		String requestId = networkRequest.queryParam("requestId");
 
 		List<Event> requestEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
 		assertEquals(1, requestEvents.size());
@@ -987,25 +1127,36 @@ public class EdgeFunctionalTests {
 
 		List<Event> responseEvents = getDispatchedEventsWith(EventType.EDGE, "personalization:decisions");
 		assertEquals(1, responseEvents.size());
-		Map<String, Object> responseEventData = responseEvents.get(0).getEventData();
-		assertNotNull(responseEventData);
 
-		Map<String, String> flattenedEventData = TestUtils.flattenMap(responseEventData);
-		assertEquals(7, flattenedEventData.size());
-		assertEquals("personalization:decisions", flattenedEventData.get("type"));
-		assertEquals(
-			"AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9",
-			flattenedEventData.get("payload[0].id")
-		);
-		assertEquals("#D41DBA", flattenedEventData.get("payload[0].items[0].data.content.value"));
-		assertEquals(
-			"https://ns.adobe.com/personalization/json-content-item",
-			flattenedEventData.get("payload[0].items[0].schema")
-		);
-		assertEquals("buttonColor", flattenedEventData.get("payload[0].scope"));
-		assertEquals(requestId, flattenedEventData.get("requestId"));
-		assertEquals(requestEventUuid, flattenedEventData.get("requestEventId"));
-		assertEquals(requestEventUuid, responseEvents.get(0).getParentID());
+		String expected =
+			"{" +
+			"  \"payload\": [" +
+			"    {" +
+			"      \"id\": \"AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9\"," +
+			"      \"items\": [" +
+			"        {" +
+			"          \"data\": {" +
+			"            \"content\": {" +
+			"              \"value\": \"#D41DBA\"" +
+			"            }" +
+			"          }," +
+			"          \"schema\": \"https://ns.adobe.com/personalization/json-content-item\"" +
+			"        }" +
+			"      ]," +
+			"      \"scope\": \"buttonColor\"" +
+			"    }" +
+			"  ]," +
+			"  \"requestEventId\": \"" +
+			requestEventUuid +
+			"\"," +
+			"  \"requestId\": \"" +
+			requestId +
+			"\"," +
+			"  \"type\": \"personalization:decisions\"" +
+			"}";
+		Event event = responseEvents.get(0);
+		JSONAsserts.assertEquals(expected, event.getEventData());
+		assertEquals(requestEventUuid, event.getParentID());
 	}
 
 	@Test
@@ -1041,7 +1192,8 @@ public class EdgeFunctionalTests {
 			TIMEOUT_MILLIS
 		);
 		assertEquals(1, resultRequests.size());
-		String requestId = resultRequests.get(0).queryParam("requestId");
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		String requestId = networkRequest.queryParam("requestId");
 
 		List<Event> requestEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.REQUEST_CONTENT);
 		assertEquals(1, requestEvents.size());
@@ -1049,16 +1201,21 @@ public class EdgeFunctionalTests {
 
 		List<Event> errorResponseEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, errorResponseEvents.size());
-		Map<String, Object> responseEventData = errorResponseEvents.get(0).getEventData();
-		assertNotNull(responseEventData);
 
-		Map<String, String> flattenedEventData = TestUtils.flattenMap(responseEventData);
-		assertEquals(4, flattenedEventData.size());
-		assertEquals("personalization:0", flattenedEventData.get("code"));
-		assertEquals("Failed due to unrecoverable system error", flattenedEventData.get("message"));
-		assertEquals(requestId, flattenedEventData.get("requestId"));
-		assertEquals(requestEventUuid, flattenedEventData.get("requestEventId"));
-		assertEquals(requestEventUuid, errorResponseEvents.get(0).getParentID());
+		String expected =
+			"{" +
+			"  \"code\": \"personalization:0\"," +
+			"  \"message\": \"Failed due to unrecoverable system error\"," +
+			"  \"requestEventId\": \"" +
+			requestEventUuid +
+			"\"," +
+			"  \"requestId\": \"" +
+			requestId +
+			"\"" +
+			"}";
+		Event errorEvent = errorResponseEvents.get(0);
+		JSONAsserts.assertEquals(expected, errorEvent.getEventData());
+		assertEquals(requestEventUuid, errorEvent.getParentID());
 	}
 
 	// --------------------------------------------------------------------------------------------
@@ -1420,7 +1577,8 @@ public class EdgeFunctionalTests {
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
 
-		mockNetworkService.assertAllNetworkRequestExpectations();
+		// Edge retry interval is 5 sec
+		mockNetworkService.assertAllNetworkRequestExpectations(true, true, 6000);
 		assertExpectedEvents(true);
 	}
 
@@ -1503,7 +1661,8 @@ public class EdgeFunctionalTests {
 		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
 		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 2);
 
-		mockNetworkService.assertAllNetworkRequestExpectations();
+		// Edge retry interval is 5 sec
+		mockNetworkService.assertAllNetworkRequestExpectations(true, true, 6000);
 		assertExpectedEvents(false);
 	}
 
@@ -1531,28 +1690,34 @@ public class EdgeFunctionalTests {
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(2, resultEvents.size());
 
-		Map<String, String> eventData1 = TestUtils.flattenMap(resultEvents.get(0).getEventData());
-		assertEquals(5, eventData1.size());
-		assertEquals("504", eventData1.get("status"));
-		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0201-504", eventData1.get("type"));
-		assertEquals(
-			"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.",
-			eventData1.get("title")
-		);
-		assertEquals(requestEvents.get(0).getUniqueIdentifier(), eventData1.get("requestEventId"));
+		String expectedEventData1 =
+			"{" +
+			"  \"requestEventId\": \"" +
+			requestEvents.get(0).getUniqueIdentifier() +
+			"\"," +
+			"  \"status\": 504," +
+			"  \"title\": \"The 'com.adobe.experience.platform.ode' service is temporarily unable to serve this request. Please try again later.\"," +
+			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-504\"" +
+			"}";
+		assertExactMatch(expectedEventData1, resultEvents.get(0).getEventData(), new ElementCount(5, Subtree));
 		assertEquals(requestEvents.get(0).getUniqueIdentifier(), resultEvents.get(0).getParentID());
 
-		Map<String, String> eventData2 = TestUtils.flattenMap(resultEvents.get(1).getEventData());
-		assertEquals(7, eventData2.size());
-		assertEquals("200", eventData2.get("status"));
-		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0204-200", eventData2.get("type"));
-		assertEquals(
-			"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request.",
-			eventData2.get("title")
-		);
-		assertEquals("Cannot read related customer for device id: ...", eventData2.get("report.cause.message"));
-		assertEquals("202", eventData2.get("report.cause.code"));
-		assertEquals(requestEvents.get(0).getUniqueIdentifier(), eventData2.get("requestEventId"));
+		String expectedEventData2 =
+			"{" +
+			"  \"report\": {" +
+			"    \"cause\": {" +
+			"      \"code\": 202," +
+			"      \"message\": \"Cannot read related customer for device id: ...\"" +
+			"    }" +
+			"  }," +
+			"  \"requestEventId\": \"" +
+			requestEvents.get(0).getUniqueIdentifier() +
+			"\"," +
+			"  \"status\": 200," +
+			"  \"title\": \"A warning occurred while calling the 'com.adobe.audiencemanager' service for this request.\"," +
+			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0204-200\"" +
+			"}";
+		assertExactMatch(expectedEventData2, resultEvents.get(1).getEventData(), new ElementCount(7, Subtree));
 		assertEquals(requestEvents.get(0).getUniqueIdentifier(), resultEvents.get(1).getParentID());
 	}
 
@@ -1600,25 +1765,26 @@ public class EdgeFunctionalTests {
 		List<Event> resultEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(1, resultEvents.size());
 
-		Map<String, String> eventData = TestUtils.flattenMap(resultEvents.get(0).getEventData());
-
-		assertEquals(11, eventData.size());
-		assertEquals("422", eventData.get("status"));
-		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0104-422", eventData.get("type"));
-		assertEquals("Unprocessable Entity", eventData.get("title"));
-		assertEquals(
-			"Invalid request (report attached). Please check your input and try again.",
-			eventData.get("detail")
-		);
-		assertEquals("Allowed Adobe version is 1.0 for standard 'Adobe' at index 0", eventData.get("report.errors[0]"));
-		assertEquals("Allowed IAB version is 2.0 for standard 'IAB TCF' at index 1", eventData.get("report.errors[1]"));
-		assertEquals(
-			"IAB consent string value must not be empty for standard 'IAB TCF' at index 1",
-			eventData.get("report.errors[2]")
-		);
-		assertEquals("0f8821e5-ed1a-4301-b445-5f336fb50ee8", eventData.get("report.requestId"));
-		assertEquals("test@AdobeOrg", eventData.get("report.orgId"));
-		assertEquals(requestEvents.get(0).getUniqueIdentifier(), eventData.get("requestEventId"));
+		String expected =
+			"{" +
+			"  \"detail\": \"Invalid request (report attached). Please check your input and try again.\"," +
+			"  \"report\": {" +
+			"    \"errors\": [" +
+			"      \"Allowed Adobe version is 1.0 for standard 'Adobe' at index 0\"," +
+			"      \"Allowed IAB version is 2.0 for standard 'IAB TCF' at index 1\"," +
+			"      \"IAB consent string value must not be empty for standard 'IAB TCF' at index 1\"" +
+			"    ]," +
+			"    \"orgId\": \"test@AdobeOrg\"," +
+			"    \"requestId\": \"0f8821e5-ed1a-4301-b445-5f336fb50ee8\"" +
+			"  }," +
+			"  \"requestEventId\": \"" +
+			requestEvents.get(0).getUniqueIdentifier() +
+			"\"," +
+			"  \"status\": 422," +
+			"  \"title\": \"Unprocessable Entity\"," +
+			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0104-422\"" +
+			"}";
+		assertExactMatch(expected, resultEvents.get(0).getEventData(), new ElementCount(11, Subtree));
 		assertEquals(requestEvents.get(0).getUniqueIdentifier(), resultEvents.get(0).getParentID());
 	}
 
