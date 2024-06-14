@@ -95,7 +95,7 @@ public class NoConfigFunctionalTests {
 			"    ]" +
 			"  }" +
 			"}";
-		
+
 		final JSONObject jsonObject = new JSONObject(jsonStr);
 		final Map<String, Object> identityMap = JSONUtils.toMap(jsonObject);
 
