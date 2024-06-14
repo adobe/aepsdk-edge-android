@@ -346,10 +346,10 @@ class UpstreamIntegrationTests {
             // Unsafe access used since testSendEvent_receivesExpectedEventHandles guarantees existence
             val locationHintResult = TestSetupHelper.getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.LOCATION_HINT_RESULT)
                 .first()
-            assertTypeMatch(
+            assertExactMatch(
                 expectedLocationHint,
                 locationHintResult.eventData,
-                ValueExactMatch("payload[*].scope", "payload[*].hint"),
+                ValueTypeMatch("payload[*].ttlSeconds"),
                 AnyOrderMatch("payload[0]")
             )
 
