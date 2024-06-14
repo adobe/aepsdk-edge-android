@@ -82,29 +82,32 @@ public class NoConfigFunctionalTests {
 	@Test
 	public void testHandleExperienceEventRequest_withPendingConfigurationState_expectEventsQueueIsBlocked()
 		throws Exception {
+		// Set "fake" ECID
+		final String jsonStr =
+			"{" +
+			"  \"identityMap\": {" +
+			"    \"ECID\": [" +
+			"      {" +
+			"        \"id\": 1234," +
+			"        \"authenticatedState\": \"ambiguous\"," +
+			"        \"primary\": false" +
+			"      }" +
+			"    ]" +
+			"  }" +
+			"}";
+		
+		final JSONObject jsonObject = new JSONObject(jsonStr);
+		final Map<String, Object> identityMap = JSONUtils.toMap(jsonObject);
+
+		setExpectationEvent(FakeIdentity.EVENT_TYPE, "com.adobe.eventSource.response", 1);
+		FakeIdentity.setXDMSharedState(identityMap, FakeIdentity.EVENT_TYPE);
+		assertExpectedEvents(true);
+
 		Map<String, Object> configState = getSharedStateFor(
 			TestConstants.SharedState.CONFIGURATION,
 			TestConstants.Defaults.WAIT_SHARED_STATE_TIMEOUT_MS
 		);
 		assertNull(configState); // verify Configuration state is pending
-
-		// Set "fake" ECID
-		final String jsonStr =
-			"{\n" +
-			"      \"identityMap\": {\n" +
-			"        \"ECID\": [\n" +
-			"          {\n" +
-			"            \"id\": 1234,\n" +
-			"            \"authenticatedState\": \"ambiguous\",\n" +
-			"            \"primary\": false\n" +
-			"          }\n" +
-			"        ]\n" +
-			"      }\n" +
-			"}";
-
-		final JSONObject jsonObject = new JSONObject(jsonStr);
-		final Map<String, Object> identityMap = JSONUtils.toMap(jsonObject);
-		FakeIdentity.setXDMSharedState(identityMap, FakeIdentity.EVENT_TYPE);
 
 		resetTestExpectations(); // reset received events
 		setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 1);
