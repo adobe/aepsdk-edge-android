@@ -960,7 +960,7 @@ public class EdgeFunctionalTests {
 			networkRequest.getBodyJson(),
 			new CollectionEqualCount(Subtree, "meta.state.entries"),
 			new AnyOrderMatch("meta.state.entries"),
-			new ElementCount(18, Subtree)
+			new ElementCount(18, Subtree) // Asserting body has 18 total key value elements
 		);
 
 		assertExpectedEvents(true);
@@ -1037,7 +1037,7 @@ public class EdgeFunctionalTests {
 			networkRequest.getBodyJson(),
 			new CollectionEqualCount(Subtree, "meta.state.entries"),
 			new AnyOrderMatch("meta.state.entries"),
-			new ElementCount(18, Subtree)
+			new ElementCount(18, Subtree) // Asserting body has 18 total key value elements
 		);
 
 		assertExpectedEvents(true);
