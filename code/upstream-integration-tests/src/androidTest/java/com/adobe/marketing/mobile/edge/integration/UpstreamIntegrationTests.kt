@@ -22,9 +22,11 @@ import com.adobe.marketing.mobile.services.HttpMethod
 import com.adobe.marketing.mobile.services.ServiceProvider
 import com.adobe.marketing.mobile.services.TestableNetworkRequest
 import com.adobe.marketing.mobile.util.AnyOrderMatch
+import com.adobe.marketing.mobile.util.CollectionEqualCount
 import com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch
 import com.adobe.marketing.mobile.util.JSONAsserts.assertTypeMatch
 import com.adobe.marketing.mobile.util.MonitorExtension
+import com.adobe.marketing.mobile.util.NodeConfig.Scope.Subtree
 import com.adobe.marketing.mobile.util.RealNetworkService
 import com.adobe.marketing.mobile.util.TestConstants
 import com.adobe.marketing.mobile.util.TestHelper
@@ -398,11 +400,12 @@ class UpstreamIntegrationTests {
         val stateStoreEvent = TestSetupHelper.getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.STATE_STORE)
             .last()
 
-        // Exact match used here to strictly validate `payload` array element count == 2
         assertTypeMatch(
             expectedStateStore,
             stateStoreEvent.eventData,
-            ValueExactMatch("payload[*].key")
+            ValueExactMatch("payload[*].key"),
+            // Used to strictly validate `payload` and elements under it have same count as expected
+            CollectionEqualCount(Subtree, "payload") 
         )
     }
 
