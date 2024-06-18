@@ -33,7 +33,9 @@ import com.adobe.marketing.mobile.util.TestHelper
 import com.adobe.marketing.mobile.util.ValueExactMatch
 import com.adobe.marketing.mobile.util.ValueTypeMatch
 import org.junit.After
-import org.junit.Assert
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -117,8 +119,8 @@ class UpstreamIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        Assert.assertEquals(1, matchingResponses?.size)
-        Assert.assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
+        assertEquals(1, matchingResponses?.size)
+        assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
     }
 
     /**
@@ -160,8 +162,8 @@ class UpstreamIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        Assert.assertEquals(1, matchingResponses?.size)
-        Assert.assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
+        assertEquals(1, matchingResponses?.size)
+        assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
     }
 
     /**
@@ -198,8 +200,8 @@ class UpstreamIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        Assert.assertEquals(1, matchingResponses?.size)
-        Assert.assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
+        assertEquals(1, matchingResponses?.size)
+        assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
     }
 
     /**
@@ -257,7 +259,7 @@ class UpstreamIntegrationTests {
 
         val errorEvents =
             TestSetupHelper.getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.ERROR_RESPONSE_CONTENT)
-        Assert.assertEquals(0, errorEvents.size)
+        assertEquals(0, errorEvents.size)
     }
 
     /**
@@ -488,13 +490,13 @@ class UpstreamIntegrationTests {
         val locationHintResult = TestSetupHelper.getLastLocationHintResultValue()
 
         if (locationHintResult.isNullOrEmpty()) {
-            Assert.fail("Unable to extract valid location hint from location hint result event handle.")
+            fail("Unable to extract valid location hint from location hint result event handle.")
         }
 
         // If there is a location hint preset for the test suite, check consistency between it and the
         // value from the Edge Network
         if (edgeLocationHint.isNotEmpty()) {
-            Assert.assertEquals(edgeLocationHint, locationHintResult)
+            assertEquals(edgeLocationHint, locationHintResult)
         }
 
         // Wait on all expectations to finish processing before clearing expectations
@@ -521,8 +523,8 @@ class UpstreamIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(locationHintNetworkRequest)
 
-        Assert.assertEquals(1, matchingResponses?.size)
-        Assert.assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
+        assertEquals(1, matchingResponses?.size)
+        assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
     }
 
     /**
@@ -582,7 +584,7 @@ class UpstreamIntegrationTests {
 
         val errorEvents =
             TestSetupHelper.getEdgeEventHandles(expectedHandleType = TestConstants.EventSource.ERROR_RESPONSE_CONTENT)
-        Assert.assertEquals(0, errorEvents.size)
+        assertEquals(0, errorEvents.size)
     }
 
     /**
@@ -604,7 +606,7 @@ class UpstreamIntegrationTests {
         // Extract location hint from Edge Network location hint response event
         val locationHintResult = TestSetupHelper.getLastLocationHintResultValue()
         if (locationHintResult.isNullOrEmpty()) {
-            Assert.fail("Unable to extract valid location hint from location hint result event handle.")
+            fail("Unable to extract valid location hint from location hint result event handle.")
         }
 
         // Reset all test expectations
@@ -624,7 +626,7 @@ class UpstreamIntegrationTests {
         // If there is a location hint preset for the test suite, check consistency between it and the
         // value from the Edge Network
         if (edgeLocationHint.isNotEmpty()) {
-            Assert.assertEquals(edgeLocationHint, locationHintResult)
+            assertEquals(edgeLocationHint, locationHintResult)
         }
 
         // Verify location hint consistency between 1st and 2nd event handles
@@ -690,8 +692,8 @@ class UpstreamIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        Assert.assertEquals(1, matchingResponses?.size)
-        Assert.assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
+        assertEquals(1, matchingResponses?.size)
+        assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
 
         // Event assertions
         val expectedError = """
@@ -710,7 +712,7 @@ class UpstreamIntegrationTests {
 
         val errorEvents = TestSetupHelper.getEdgeResponseErrors()
 
-        Assert.assertEquals(1, errorEvents.size)
+        assertEquals(1, errorEvents.size)
 
         val errorEvent = errorEvents.first()
         assertTypeMatch(
@@ -752,24 +754,24 @@ class UpstreamIntegrationTests {
 
         val matchingResponses = realNetworkService.getResponsesFor(invalidNetworkRequest)
 
-        Assert.assertEquals(1, matchingResponses?.size)
+        assertEquals(1, matchingResponses?.size)
         // Convenience to assert directly on the first element in the rest of the test case
         val matchingResponse = matchingResponses?.firstOrNull()
-        Assert.assertEquals(404, matchingResponse?.responseCode)
+        assertEquals(404, matchingResponse?.responseCode)
 
         val contentLengthHeader = matchingResponse?.getResponsePropertyValue("Content-Length")
         val contentLength = contentLengthHeader?.toIntOrNull()
 
         if (contentLength != null) {
             println("Content-Length: $contentLength")
-            Assert.assertEquals(0, contentLength)
+            assertEquals(0, contentLength)
         } else {
             println("Content-Length header not found or not a valid integer")
         }
 
         // Should be null when there is no response body from the server
         val responseBodySize = matchingResponse?.inputStream?.readBytes()?.size
-        Assert.assertNull(responseBodySize)
+        assertNull(responseBodySize)
 
         // Error event assertions
         TestHelper.assertExpectedEvents(true)
