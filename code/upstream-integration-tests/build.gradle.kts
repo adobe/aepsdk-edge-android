@@ -85,10 +85,10 @@ android {
 
 dependencies {
     implementation(project(":edge"))
-    implementation(project(":test-utils"))
 
     implementation("androidx.core:core-ktx:1.9.0")
 
+    androidTestImplementation("com.github.adobe:aepsdk-testutils-android:a4991045da")
     androidTestImplementation("com.adobe.marketing.mobile:core:$mavenCoreVersion")
     androidTestImplementation("com.adobe.marketing.mobile:edgeidentity:$mavenEdgeIdentityVersion")
     androidTestImplementation("androidx.test.ext:junit:1.1.3")
