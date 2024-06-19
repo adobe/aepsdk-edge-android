@@ -21,13 +21,13 @@ import com.adobe.marketing.mobile.services.HttpMethod
 import com.adobe.marketing.mobile.services.ServiceProvider
 import com.adobe.marketing.mobile.services.TestableNetworkRequest
 import com.adobe.marketing.mobile.util.JSONAsserts
+import com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch
 import com.adobe.marketing.mobile.util.MonitorExtension
 import com.adobe.marketing.mobile.util.RealNetworkService
 import com.adobe.marketing.mobile.util.TestConstants
 import com.adobe.marketing.mobile.util.TestHelper
-import org.json.JSONObject
 import org.junit.After
-import org.junit.Assert
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Rule
@@ -113,8 +113,8 @@ class ConfigOverridesIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        Assert.assertEquals(1, matchingResponses?.size)
-        Assert.assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
+        assertEquals(1, matchingResponses?.size)
+        assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
     }
 
     @Test
@@ -138,8 +138,8 @@ class ConfigOverridesIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        Assert.assertEquals(1, matchingResponses?.size)
-        Assert.assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
+        assertEquals(1, matchingResponses?.size)
+        assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
 
         val expectedErrorJSON = """
         {
@@ -151,13 +151,10 @@ class ConfigOverridesIntegrationTests {
 
         val errorEvents = TestSetupHelper.getEdgeResponseErrors()
 
-        Assert.assertEquals(1, errorEvents.size)
+        assertEquals(1, errorEvents.size)
 
         val errorEvent = errorEvents.first()
-        JSONAsserts.assertExactMatch(
-            expected = JSONObject(expectedErrorJSON),
-            actual = JSONObject(errorEvent.eventData)
-        )
+        assertExactMatch(expectedErrorJSON, errorEvent.eventData)
     }
 
     @Test
@@ -195,8 +192,8 @@ class ConfigOverridesIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        Assert.assertEquals(1, matchingResponses?.size)
-        Assert.assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
+        assertEquals(1, matchingResponses?.size)
+        assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
     }
 
     // TODO: Enable after PDCL-11131 issue is fixed
@@ -238,8 +235,8 @@ class ConfigOverridesIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        Assert.assertEquals(1, matchingResponses?.size)
-        Assert.assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
+        assertEquals(1, matchingResponses?.size)
+        assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
 
         val expectedErrorJSON = """
         {
@@ -251,13 +248,10 @@ class ConfigOverridesIntegrationTests {
 
         val errorEvents = TestSetupHelper.getEdgeResponseErrors()
 
-        Assert.assertEquals(1, errorEvents.size)
+        assertEquals(1, errorEvents.size)
 
         val errorEvent = errorEvents.first()
-        JSONAsserts.assertExactMatch(
-            expected = JSONObject(expectedErrorJSON),
-            actual = JSONObject(errorEvent.eventData)
-        )
+        JSONAsserts.assertEquals(expectedErrorJSON, errorEvent.eventData)
     }
 
     // TODO: Enable after PDCL-11131 issue is fixed
@@ -298,8 +292,8 @@ class ConfigOverridesIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        Assert.assertEquals(1, matchingResponses?.size)
-        Assert.assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
+        assertEquals(1, matchingResponses?.size)
+        assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
 
         val expectedErrorJSON = """
         {
@@ -311,13 +305,10 @@ class ConfigOverridesIntegrationTests {
 
         val errorEvents = TestSetupHelper.getEdgeResponseErrors()
 
-        Assert.assertEquals(1, errorEvents.size)
+        assertEquals(1, errorEvents.size)
 
         val errorEvent = errorEvents.first()
-        JSONAsserts.assertExactMatch(
-            expected = JSONObject(expectedErrorJSON),
-            actual = JSONObject(errorEvent.eventData)
-        )
+        JSONAsserts.assertEquals(expectedErrorJSON, errorEvent.eventData)
     }
 
     // TODO: Enable after PDCL-11131 issue is fixed
@@ -359,8 +350,8 @@ class ConfigOverridesIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        Assert.assertEquals(1, matchingResponses?.size)
-        Assert.assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
+        assertEquals(1, matchingResponses?.size)
+        assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
 
         val expectedErrorJSON = """
         {
@@ -372,13 +363,10 @@ class ConfigOverridesIntegrationTests {
 
         val errorEvents = TestSetupHelper.getEdgeResponseErrors()
 
-        Assert.assertEquals(1, errorEvents.size)
+        assertEquals(1, errorEvents.size)
 
         val errorEvent = errorEvents.first()
-        JSONAsserts.assertExactMatch(
-            expected = JSONObject(expectedErrorJSON),
-            actual = JSONObject(errorEvent.eventData)
-        )
+        JSONAsserts.assertEquals(expectedErrorJSON, errorEvent.eventData)
     }
 
     /**
