@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -53,6 +54,11 @@ public class RestartFunctionalTests {
 	public void setup() throws Exception {
 		ServiceProvider.getInstance().setNetworkService(mockNetworkService);
 		setupCore(false);
+		resetTestExpectations();
+	}
+
+	@After
+	public void tearDown() {
 		resetTestExpectations();
 	}
 
