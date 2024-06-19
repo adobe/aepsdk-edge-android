@@ -59,7 +59,7 @@ public class RestartFunctionalTests {
 
 	@After
 	public void tearDown() {
-		mockNetworkService.reset();
+		resetTestExpectations();
 	}
 
 	@Test
