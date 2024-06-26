@@ -32,6 +32,5 @@ include (":edge",
         ":app",
         ":app-kotlin",
         ":app-util-xdm",
-        ":test-utils",
         ":upstream-integration-tests"
         )
