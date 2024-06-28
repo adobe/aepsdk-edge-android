@@ -86,7 +86,7 @@ public class EdgePathOverwriteTests {
 
 	@After
 	public void tearDown() {
-		mockNetworkService.reset();
+		resetTestExpectations();
 	}
 
 	@Test
@@ -342,5 +342,10 @@ public class EdgePathOverwriteTests {
 		assertTrue(networkRequest.getUrl().startsWith(EXEDGE_MEDIA_OR2_LOC_URL_STRING));
 		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
 		assertNotNull(networkRequest.queryParam("requestId"));
+	}
+
+	private void resetTestExpectations() {
+		mockNetworkService.reset();
+		TestHelper.resetTestExpectations();
 	}
 }

@@ -115,7 +115,7 @@ public class EdgeFunctionalTests {
 
 	@After
 	public void tearDown() {
-		mockNetworkService.reset();
+		resetTestExpectations();
 	}
 
 	// --------------------------------------------------------------------------------------------

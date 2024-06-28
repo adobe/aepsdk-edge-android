@@ -14,6 +14,8 @@ package com.adobe.marketing.mobile;
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
 import static com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch;
 import static com.adobe.marketing.mobile.util.NodeConfig.Scope.Subtree;
+import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
+import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
 import static org.junit.Assert.assertEquals;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -90,15 +92,13 @@ public class SampleFunctionalTests {
 		);
 		latch.await();
 
-		// Wait for and verify all expected events are received
-		TestHelper.assertExpectedEvents(false);
-		mockNetworkService.reset();
-		TestHelper.resetTestExpectations();
+		assertExpectedEvents(false);
+		resetTestExpectations();
 	}
 
 	@After
 	public void tearDown() {
-		mockNetworkService.reset();
+		resetTestExpectations();
 	}
 
 	@Test
@@ -220,5 +220,10 @@ public class SampleFunctionalTests {
 			"}";
 		assertExactMatch(expected, requests.get(0).getBodyJson());
 		TestHelper.assertExpectedEvents(true);
+	}
+
+	private void resetTestExpectations() {
+		mockNetworkService.reset();
+		TestHelper.resetTestExpectations();
 	}
 }

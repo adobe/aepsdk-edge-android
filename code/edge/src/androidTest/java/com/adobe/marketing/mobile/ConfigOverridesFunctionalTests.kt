@@ -49,8 +49,6 @@ class ConfigOverridesFunctionalTests {
     @Before
     @Throws(Exception::class)
     fun setup() {
-        resetTestExpectations()
-
         ServiceProvider.getInstance().networkService =
             mockNetworkService
         TestHelper.setExpectationEvent(EventType.CONFIGURATION, EventSource.REQUEST_CONTENT, 1)
@@ -71,7 +69,7 @@ class ConfigOverridesFunctionalTests {
 
     @After
     fun tearDown() {
-        mockNetworkService.reset()
+        resetTestExpectations()
     }
 
     // --------------------------------------------------------------------------------------------

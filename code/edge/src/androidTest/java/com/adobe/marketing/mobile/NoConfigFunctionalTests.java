@@ -76,7 +76,7 @@ public class NoConfigFunctionalTests {
 
 	@After
 	public void tearDown() {
-		mockNetworkService.reset();
+		resetTestExpectations();
 	}
 
 	@Test

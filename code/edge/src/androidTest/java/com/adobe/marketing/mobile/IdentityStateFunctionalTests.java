@@ -31,6 +31,7 @@ import com.adobe.marketing.mobile.util.KeyMustBeAbsent;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.MonitorExtension;
 import com.adobe.marketing.mobile.util.TestConstants;
+import com.adobe.marketing.mobile.util.TestHelper;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -83,7 +84,7 @@ public class IdentityStateFunctionalTests {
 
 	@After
 	public void tearDown() {
-		mockNetworkService.reset();
+		resetTestExpectations();
 	}
 
 	@Test
@@ -218,5 +219,10 @@ public class IdentityStateFunctionalTests {
 		);
 		assertEquals(1, requests.size());
 		assertExactMatch("{}", requests.get(0).getBodyJson(), new KeyMustBeAbsent("xdm.identityMap.ECID[0].id"));
+	}
+
+	private void resetTestExpectations() {
+		mockNetworkService.reset();
+		TestHelper.resetTestExpectations();
 	}
 }

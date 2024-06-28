@@ -86,7 +86,7 @@ public class ConsentStatusChangeFunctionalTests {
 
 	@After
 	public void tearDown() {
-		mockNetworkService.reset();
+		resetTestExpectations();
 	}
 
 	// Test sendNetworkRequest(final EdgeHit edgeHit, final Map<String, String> requestHeaders, final int attemptCount)
