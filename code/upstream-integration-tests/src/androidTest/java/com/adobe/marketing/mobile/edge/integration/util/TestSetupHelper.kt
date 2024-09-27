@@ -11,11 +11,40 @@
 
 package com.adobe.marketing.mobile.edge.integration.util
 
+import com.adobe.marketing.mobile.Edge
 import com.adobe.marketing.mobile.Event
+import com.adobe.marketing.mobile.edge.integration.BuildConfig
 import com.adobe.marketing.mobile.util.TestConstants
 import com.adobe.marketing.mobile.util.TestHelper
 
 object TestSetupHelper {
+
+    val defaultLocationHint: String?
+        get() {
+            return when (val locationHint = BuildConfig.EDGE_LOCATION_HINT) {
+                IntegrationTestConstants.LocationHintMapping.EMPTY_STRING -> ""
+                IntegrationTestConstants.LocationHintMapping.INVALID -> locationHint
+                IntegrationTestConstants.LocationHintMapping.NONE -> null
+                else -> locationHint
+            }
+        }
+
+    val defaultMobilePropertyId: String
+        get() {
+            val mobilePropertyId = BuildConfig.MOBILE_PROPERTY_ID
+            return mobilePropertyId.takeIf { it.isNotEmpty() } ?: IntegrationTestConstants.MobilePropertyId.PROD
+        }
+
+    fun setInitialLocationHint(locationHint: String?) {
+        // Location hint is non-null and non-empty
+        if (!locationHint.isNullOrEmpty()) {
+            println("Setting Edge location hint to: $locationHint")
+            Edge.setLocationHint(locationHint)
+            return
+        }
+        println("No preset Edge location hint is being used for this test.")
+    }
+
     /**
      * Returns the environment file ID for the provided edgeEnvironment value.
      *

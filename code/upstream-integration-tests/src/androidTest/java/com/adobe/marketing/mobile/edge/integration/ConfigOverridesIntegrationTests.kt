@@ -42,8 +42,8 @@ import java.util.concurrent.CountDownLatch
 @RunWith(AndroidJUnit4::class)
 class ConfigOverridesIntegrationTests {
     private val realNetworkService = RealNetworkService()
-    private val edgeLocationHint: String = BuildConfig.EDGE_LOCATION_HINT
-    private val edgeEnvironment: String = BuildConfig.EDGE_ENVIRONMENT
+    private val edgeLocationHint: String? = TestSetupHelper.defaultLocationHint
+    private val mobilePropertyId: String = TestSetupHelper.defaultMobilePropertyId
     private val VALID_DATASTREAM_ID_OVERRIDE = "15d7bce0-3e2c-447b-bbda-129c57c60820"
     private val VALID_DATASET_ID_CONFIGURED_AS_OVERRIDE = "6515e1dbfeb3b128d19bb1e4"
     private val VALID_DATASET_ID_NOT_CONFIGURED_AS_OVERRIDE = "6515e1f6296d1e28d3209b9f"
@@ -58,12 +58,12 @@ class ConfigOverridesIntegrationTests {
     @Before
     @Throws(Exception::class)
     fun setup() {
-        println("Environment var - Edge Network environment: $edgeEnvironment")
+        println("Environment var - Edge Network mobile property ID: $mobilePropertyId")
         println("Environment var - Edge Network location hint: $edgeLocationHint")
         ServiceProvider.getInstance().networkService = realNetworkService
 
         // Set environment file ID for specific Edge Network environment
-        MobileCore.configureWithAppID(TestSetupHelper.getEnvironmentFileID(edgeEnvironment))
+        MobileCore.configureWithAppID(mobilePropertyId)
         val latch = CountDownLatch(1)
         MobileCore.registerExtensions(
             listOf(
@@ -77,12 +77,7 @@ class ConfigOverridesIntegrationTests {
         latch.await()
 
         // Set Edge location hint if one is set for the test suite
-        if (edgeLocationHint.isNotEmpty()) {
-            print("Setting Edge location hint to: $edgeLocationHint")
-            Edge.setLocationHint(edgeLocationHint)
-        } else {
-            print("No preset Edge location hint is being used for this test.")
-        }
+        TestSetupHelper.setInitialLocationHint(edgeLocationHint)
 
         resetTestExpectations()
     }
