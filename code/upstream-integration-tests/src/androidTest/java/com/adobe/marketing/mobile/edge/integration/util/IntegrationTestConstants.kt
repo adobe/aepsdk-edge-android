@@ -31,7 +31,6 @@ internal object IntegrationTestConstants {
     // options into the intended actual location hint value.
     object LocationHintMapping {
         const val EMPTY_STRING = "Empty string: \"\""
-        const val INVALID = "Invalid"
         const val NONE = "(None)"
     }
 

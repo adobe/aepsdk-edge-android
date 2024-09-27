@@ -26,22 +26,21 @@ object TestSetupHelper {
     val defaultLocationHint: String?
         get() {
             return when (val locationHint = BuildConfig.EDGE_LOCATION_HINT) {
-                IntegrationTestConstants.LocationHintMapping.EMPTY_STRING -> ""
-                IntegrationTestConstants.LocationHintMapping.INVALID -> locationHint
                 IntegrationTestConstants.LocationHintMapping.NONE -> null
+                IntegrationTestConstants.LocationHintMapping.EMPTY_STRING -> ""
                 else -> locationHint
             }
         }
 
     /**
-     * Retrieves the mobile property ID from the shell environment.
+     * Retrieves the tags mobile property ID from the shell environment.
      *
-     * @return The mobile property ID if set in the environment, or a default value if not set.
+     * @return The tags mobile property ID if set in the environment, or a default value if not set.
      */
-    val defaultMobilePropertyId: String
+    val defaultTagsMobilePropertyId: String
         get() {
-            val mobilePropertyId = BuildConfig.MOBILE_PROPERTY_ID
-            return mobilePropertyId.takeIf { it.isNotEmpty() } ?: IntegrationTestConstants.MobilePropertyId.PROD
+            val tagsMobilePropertyId = BuildConfig.TAGS_MOBILE_PROPERTY_ID
+            return tagsMobilePropertyId.takeIf { it.isNotEmpty() } ?: IntegrationTestConstants.MobilePropertyId.PROD
         }
 
     /**

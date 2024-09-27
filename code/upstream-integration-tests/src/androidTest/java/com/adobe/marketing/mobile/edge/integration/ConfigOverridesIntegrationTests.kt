@@ -43,7 +43,7 @@ import java.util.concurrent.CountDownLatch
 class ConfigOverridesIntegrationTests {
     private val realNetworkService = RealNetworkService()
     private val edgeLocationHint: String? = TestSetupHelper.defaultLocationHint
-    private val mobilePropertyId: String = TestSetupHelper.defaultMobilePropertyId
+    private val tagsMobilePropertyId: String = TestSetupHelper.defaultTagsMobilePropertyId
     private val VALID_DATASTREAM_ID_OVERRIDE = "15d7bce0-3e2c-447b-bbda-129c57c60820"
     private val VALID_DATASET_ID_CONFIGURED_AS_OVERRIDE = "6515e1dbfeb3b128d19bb1e4"
     private val VALID_DATASET_ID_NOT_CONFIGURED_AS_OVERRIDE = "6515e1f6296d1e28d3209b9f"
@@ -58,12 +58,12 @@ class ConfigOverridesIntegrationTests {
     @Before
     @Throws(Exception::class)
     fun setup() {
-        println("Environment var - Edge Network mobile property ID: $mobilePropertyId")
+        println("Environment var - Edge Network tags mobile property ID: $tagsMobilePropertyId")
         println("Environment var - Edge Network location hint: $edgeLocationHint")
         ServiceProvider.getInstance().networkService = realNetworkService
 
-        // Set environment file ID for specific Edge Network environment
-        MobileCore.configureWithAppID(mobilePropertyId)
+        // Set the tags mobile property ID for a specific Edge Network environment
+        MobileCore.configureWithAppID(tagsMobilePropertyId)
         val latch = CountDownLatch(1)
         MobileCore.registerExtensions(
             listOf(

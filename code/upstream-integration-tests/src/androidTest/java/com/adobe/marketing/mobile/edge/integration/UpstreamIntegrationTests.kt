@@ -50,7 +50,7 @@ import java.util.concurrent.CountDownLatch
 class UpstreamIntegrationTests {
     private val realNetworkService = RealNetworkService()
     private val edgeLocationHint: String? = TestSetupHelper.defaultLocationHint
-    private val mobilePropertyId: String = TestSetupHelper.defaultMobilePropertyId
+    private val tagsMobilePropertyId: String = TestSetupHelper.defaultTagsMobilePropertyId
 
     @JvmField
     @Rule
@@ -60,12 +60,12 @@ class UpstreamIntegrationTests {
     @Before
     @Throws(Exception::class)
     fun setup() {
-        println("Environment var - Edge Network mobile property ID: $mobilePropertyId")
+        println("Environment var - Edge Network tags mobile property ID: $tagsMobilePropertyId")
         println("Environment var - Edge Network location hint: $edgeLocationHint")
         ServiceProvider.getInstance().networkService = realNetworkService
 
-        // Set environment file ID for specific Edge Network environment
-        MobileCore.configureWithAppID(mobilePropertyId)
+        // Set the tags mobile property ID for a specific Edge Network environment
+        MobileCore.configureWithAppID(tagsMobilePropertyId)
 
         val latch = CountDownLatch(1)
         MobileCore.registerExtensions(
