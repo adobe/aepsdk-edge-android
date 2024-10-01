@@ -39,9 +39,8 @@ on:
         type: choice
         description: '(Optional) The Edge location hint to set before each test.'
         required: false
-        default: ''
+        default: '(None)'
         options: 
-          - '' # Interpreted in the test code as no preset location hint; any non-valid location hint string is interpreted this way
           - 'or2'
           - 'va6'
           - 'irl1'
