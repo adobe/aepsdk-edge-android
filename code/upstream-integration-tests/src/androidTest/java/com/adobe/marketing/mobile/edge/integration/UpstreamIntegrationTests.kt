@@ -16,7 +16,7 @@ import com.adobe.marketing.mobile.Edge
 import com.adobe.marketing.mobile.ExperienceEvent
 import com.adobe.marketing.mobile.MobileCore
 import com.adobe.marketing.mobile.edge.identity.Identity
-import com.adobe.marketing.mobile.edge.integration.util.EdgeLocationHint
+import com.adobe.marketing.mobile.edge.integration.util.IntegrationTestConstants.EdgeLocationHint
 import com.adobe.marketing.mobile.edge.integration.util.TestSetupHelper
 import com.adobe.marketing.mobile.services.HttpMethod
 import com.adobe.marketing.mobile.services.ServiceProvider
@@ -49,8 +49,8 @@ import java.util.concurrent.CountDownLatch
 @RunWith(AndroidJUnit4::class)
 class UpstreamIntegrationTests {
     private val realNetworkService = RealNetworkService()
-    private val edgeLocationHint: String = BuildConfig.EDGE_LOCATION_HINT
-    private val edgeEnvironment: String = BuildConfig.EDGE_ENVIRONMENT
+    private val edgeLocationHint: String? = TestSetupHelper.defaultLocationHint
+    private val tagsMobilePropertyId: String = TestSetupHelper.defaultTagsMobilePropertyId
 
     @JvmField
     @Rule
@@ -60,12 +60,12 @@ class UpstreamIntegrationTests {
     @Before
     @Throws(Exception::class)
     fun setup() {
-        println("Environment var - Edge Network environment: $edgeEnvironment")
+        println("Environment var - Edge Network tags mobile property ID: $tagsMobilePropertyId")
         println("Environment var - Edge Network location hint: $edgeLocationHint")
         ServiceProvider.getInstance().networkService = realNetworkService
 
-        // Set environment file ID for specific Edge Network environment
-        MobileCore.configureWithAppID(TestSetupHelper.getEnvironmentFileID(edgeEnvironment))
+        // Set the tags mobile property ID for a specific Edge Network environment
+        MobileCore.configureWithAppID(tagsMobilePropertyId)
 
         val latch = CountDownLatch(1)
         MobileCore.registerExtensions(
@@ -80,12 +80,7 @@ class UpstreamIntegrationTests {
         latch.await()
 
         // Set Edge location hint if one is set for the test suite
-        if (edgeLocationHint.isNotEmpty()) {
-            print("Setting Edge location hint to: $edgeLocationHint")
-            Edge.setLocationHint(edgeLocationHint)
-        } else {
-            print("No preset Edge location hint is being used for this test.")
-        }
+        TestSetupHelper.setInitialLocationHint(edgeLocationHint)
 
         resetTestExpectations()
     }
@@ -495,7 +490,7 @@ class UpstreamIntegrationTests {
 
         // If there is a location hint preset for the test suite, check consistency between it and the
         // value from the Edge Network
-        if (edgeLocationHint.isNotEmpty()) {
+        if (!edgeLocationHint.isNullOrEmpty()) {
             assertEquals(edgeLocationHint, locationHintResult)
         }
 
@@ -625,7 +620,7 @@ class UpstreamIntegrationTests {
         // Verify
         // If there is a location hint preset for the test suite, check consistency between it and the
         // value from the Edge Network
-        if (edgeLocationHint.isNotEmpty()) {
+        if (!edgeLocationHint.isNullOrEmpty()) {
             assertEquals(edgeLocationHint, locationHintResult)
         }
 

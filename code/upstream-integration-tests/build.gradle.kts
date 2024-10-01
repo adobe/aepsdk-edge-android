@@ -46,11 +46,11 @@ android {
         testInstrumentationRunnerArguments["clearPackageData"] = "true"
 
         val EDGE_LOCATION_HINT: String by project
-        val EDGE_ENVIRONMENT: String by project
+        val TAGS_MOBILE_PROPERTY_ID: String by project
 
         // buildConfigField assignment with default values
         buildConfigField("String", "EDGE_LOCATION_HINT", "\"$EDGE_LOCATION_HINT\"")
-        buildConfigField("String", "EDGE_ENVIRONMENT", "\"$EDGE_ENVIRONMENT\"")
+        buildConfigField("String", "TAGS_MOBILE_PROPERTY_ID", "\"$TAGS_MOBILE_PROPERTY_ID\"")
     }
 
     buildTypes {
