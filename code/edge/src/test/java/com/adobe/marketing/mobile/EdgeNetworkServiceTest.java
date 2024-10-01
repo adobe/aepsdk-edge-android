@@ -217,7 +217,7 @@ public class EdgeNetworkServiceTest {
 				DEFAULT_TIMEOUT,
 				DEFAULT_TIMEOUT
 			),
-			mockNetworkService.getAllNetworkRequests().get(0)
+			mockNetworkService.getAllNetworkRequests(2000).get(0)
 		);
 	}
 
@@ -265,7 +265,7 @@ public class EdgeNetworkServiceTest {
 				DEFAULT_TIMEOUT,
 				DEFAULT_TIMEOUT
 			),
-			mockNetworkService.getAllNetworkRequests().get(0)
+			mockNetworkService.getAllNetworkRequests(2000).get(0)
 		);
 	}
 
