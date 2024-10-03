@@ -45,4 +45,8 @@ internal object IntegrationTestConstants {
     object MobilePropertyId {
         const val PROD = "94f571f308d5/6b1be84da76a/launch-023a1b64f561-development"
     }
+
+    object NetworkKeys {
+        const val DEFAULT_EDGE_DOMAIN = "edge.adobedc.net"
+    }
 }
