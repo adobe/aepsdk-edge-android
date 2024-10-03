@@ -16,6 +16,7 @@ import com.adobe.marketing.mobile.Event
 import com.adobe.marketing.mobile.edge.integration.BuildConfig
 import com.adobe.marketing.mobile.util.TestConstants
 import com.adobe.marketing.mobile.util.TestHelper
+import org.junit.Assert.fail
 
 object TestSetupHelper {
     /**
@@ -65,10 +66,16 @@ object TestSetupHelper {
      * @return The interact URL with location hint applied.
      */
     fun createInteractURL(locationHint: String?): String {
+        // Timeout is in milliseconds
+        val sharedState = TestHelper.getSharedStateFor(IntegrationTestConstants.ExtensionName.CONFIGURATION, 10_000)
+        val edgeDomain = sharedState?.get(IntegrationTestConstants.ConfigurationKey.EDGE_DOMAIN) as? String
+        if (edgeDomain.isNullOrEmpty()) {
+            fail("Edge domain could not be fetched from the configuration shared state.")
+        }
         return if (locationHint.isNullOrEmpty()) {
-            "https://obumobile5.data.adobedc.net/ee/v1/interact"
+            "https://$edgeDomain/ee/v1/interact"
         } else {
-            "https://obumobile5.data.adobedc.net/ee/$locationHint/v1/interact"
+            "https://$edgeDomain/ee/$locationHint/v1/interact"
         }
     }
 

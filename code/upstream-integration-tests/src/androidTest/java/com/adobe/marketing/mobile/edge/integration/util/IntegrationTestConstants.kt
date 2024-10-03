@@ -1,6 +1,10 @@
 package com.adobe.marketing.mobile.edge.integration.util
 
 internal object IntegrationTestConstants {
+    object ConfigurationKey {
+        const val EDGE_DOMAIN = "edge.domain"
+    }
+
     /**
      * All location hint values available for the Edge Network extension
      */
@@ -25,6 +29,10 @@ internal object IntegrationTestConstants {
 
         /** Australia */
         AUS3("aus3");
+    }
+
+    object ExtensionName {
+        const val CONFIGURATION = "com.adobe.module.configuration"
     }
 
     // Primarily used in the context of GitHub Action workflows to transform preset location hint
