@@ -53,7 +53,7 @@ functional-test-coverage:
 
 upstream-integration-test:
 	(./code/gradlew -p code/upstream-integration-tests uninstallDebugAndroidTest)
-	(./code/gradlew -p code/upstream-integration-tests connectedDebugAndroidTest -PTAGS_MOBILE_PROPERTY_IDD=$(TAGS_MOBILE_PROPERTY_ID) -PEDGE_LOCATION_HINT=$(EDGE_LOCATION_HINT))
+	(./code/gradlew -p code/upstream-integration-tests connectedDebugAndroidTest -PTAGS_MOBILE_PROPERTY_IDD=$(TAGS_MOBILE_PROPERTY_ID) -PEDGE_LOCATION_HINT=$(EDGE_LOCATION_HINT)) --info
 
 javadoc:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) javadocJar)
