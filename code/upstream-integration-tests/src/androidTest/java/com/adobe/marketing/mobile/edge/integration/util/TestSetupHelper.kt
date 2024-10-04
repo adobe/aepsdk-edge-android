@@ -24,27 +24,12 @@ object TestSetupHelper {
      *
      * @return The Edge location hint if set in the environment, or `""` if not set.
      */
-//    val defaultLocationHint: String?
-//        get() {
-//            return when (val locationHint: String = BuildConfig.EDGE_LOCATION_HINT.trim()) {
-//                IntegrationTestConstants.LocationHintMapping.NONE -> null
-//                "\"None\"" -> "NONEWITHQUOTES"
-//                "'None'" -> "SINGLEQUOTES"
-//                IntegrationTestConstants.LocationHintMapping.EMPTY_STRING -> ""
-//                else -> locationHint
-//            }
-//        }
     val defaultLocationHint: String?
         get() {
-            // Trimming to avoid whitespace issues
-            val locationHint = BuildConfig.EDGE_LOCATION_HINT.trim()
-
-            return if (locationHint == IntegrationTestConstants.LocationHintMapping.NONE) {
-                null
-            } else if (locationHint == IntegrationTestConstants.LocationHintMapping.EMPTY_STRING) {
-                ""
-            } else {
-                locationHint
+            return when (val locationHint: String = BuildConfig.EDGE_LOCATION_HINT.trim()) {
+                IntegrationTestConstants.LocationHintMapping.NONE -> null
+                IntegrationTestConstants.LocationHintMapping.EMPTY_STRING -> ""
+                else -> locationHint
             }
         }
 
