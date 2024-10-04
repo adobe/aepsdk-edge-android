@@ -115,6 +115,9 @@ jobs:
       uses: reactivecircus/android-emulator-runner@f0d1ed2dcad93c7479e8b2f2226c83af54494915 # v2.32.0
       with:
         api-level: ${{ matrix.api-level }}
+        arch: x86_64
+        disk-size: 6000M
+        heap-size: 600M
         force-avd-creation: false
         emulator-options: -no-metrics -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
         disable-animations: false
