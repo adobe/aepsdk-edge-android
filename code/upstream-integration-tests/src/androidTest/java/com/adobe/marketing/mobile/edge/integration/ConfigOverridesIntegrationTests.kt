@@ -58,6 +58,13 @@ class ConfigOverridesIntegrationTests {
     @Before
     @Throws(Exception::class)
     fun setup() {
+        val locationHint = BuildConfig.EDGE_LOCATION_HINT
+        if (BuildConfig.EDGE_LOCATION_HINT is String) {
+            println("Debug - EDGE_LOCATION_HINT is a String")
+        } else {
+            println("Debug - EDGE_LOCATION_HINT is not a String, it's ${locationHint?.javaClass?.name}")
+        }
+
         println("Environment var - Edge Network tags mobile property ID: $tagsMobilePropertyId")
         println("Environment var - Edge Network location hint: $edgeLocationHint")
         ServiceProvider.getInstance().networkService = realNetworkService
