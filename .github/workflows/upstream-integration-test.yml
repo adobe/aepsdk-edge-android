@@ -116,21 +116,18 @@ jobs:
         emulator-options: -no-metrics -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
         disable-animations: true
         script: |
+          adb logcat -c                             # clear logs
+          touch app/emulator.log                    # create log file
+          chmod 777 app/emulator.log                # allow writing to log file
+          adb logcat >> app/emulator.log &          # pipe all logcat messages into log file as a background process
           make upstream-integration-test TAGS_MOBILE_PROPERTY_ID=${{ github.event.inputs.tags-mobile-property-id }} EDGE_LOCATION_HINT=${{ github.event.inputs.edge-location-hint }}
-          
-          adb logcat > logcat_output.txt &
-          LOGCAT_PID=$!
-          
-          wait
-
-          kill $LOGCAT_PID
 
     - name: Upload Logcat Logs
       if: always()
       uses: actions/upload-artifact@v4.4.0
       with:
         name: logcat-logs
-        path: logcat_output.txt
+        path: app/emulator.log
 
     # Potential workflow solutions on job failure
     - name: On failure
