@@ -68,7 +68,7 @@ jobs:
           echo 'Job run identifier is:' ${{ inputs.id }}
         fi;
 
-    - name: Check branch and raise warning if mismatched
+    - name: Check branch mismatch
       run: |
         CURRENT_BRANCH=$(echo "${GITHUB_REF##*/}")
         INPUT_BRANCH="${{ github.event.inputs.branch }}"
