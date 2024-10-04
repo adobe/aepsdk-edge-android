@@ -117,6 +117,15 @@ jobs:
         disable-animations: true
         script: make upstream-integration-test TAGS_MOBILE_PROPERTY_ID=${{ github.event.inputs.tags-mobile-property-id }} EDGE_LOCATION_HINT=${{ github.event.inputs.edge-location-hint }}
     
+    - name: Capture Logcat Output
+      run: adb logcat > logcat_output.txt
+
+    - name: Upload Logcat Logs
+      uses: actions/upload-artifact@v4.4.0
+      with:
+        name: logcat-logs
+        path: logcat_output.txt
+
     # Potential workflow solutions on job failure
     - name: On failure
       if: ${{ failure() }}
