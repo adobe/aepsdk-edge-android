@@ -58,7 +58,6 @@ class ConfigOverridesIntegrationTests {
     @Before
     @Throws(Exception::class)
     fun setup() {
-        println("TESTING - ARE CHANGES WORKING")
         val locationHint = BuildConfig.EDGE_LOCATION_HINT
         if (BuildConfig.EDGE_LOCATION_HINT is String) {
             println("Debug - EDGE_LOCATION_HINT is a String")
