@@ -16,7 +16,6 @@ import com.adobe.marketing.mobile.Event
 import com.adobe.marketing.mobile.edge.integration.BuildConfig
 import com.adobe.marketing.mobile.util.TestConstants
 import com.adobe.marketing.mobile.util.TestHelper
-import kotlin.reflect.typeOf
 
 object TestSetupHelper {
     /**
@@ -26,7 +25,7 @@ object TestSetupHelper {
      */
     val defaultLocationHint: String?
         get() {
-            return when (val locationHint: String = BuildConfig.EDGE_LOCATION_HINT.trim()) {
+            return when (val locationHint = BuildConfig.EDGE_LOCATION_HINT.trim()) {
                 IntegrationTestConstants.LocationHintMapping.NONE -> null
                 IntegrationTestConstants.LocationHintMapping.EMPTY_STRING -> ""
                 else -> locationHint
