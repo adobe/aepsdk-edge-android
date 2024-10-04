@@ -54,7 +54,7 @@ on:
 
 jobs:
   test-integration-upstream:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         api-level: [29]
@@ -67,6 +67,16 @@ jobs:
         else
           echo 'Job run identifier is:' ${{ inputs.id }}
         fi;
+    - name: Delete unnecessary tools 🔧
+      uses: jlumbroso/free-disk-space@v1.3.1
+      with:
+        android: false # Don't remove Android tools
+        tool-cache: true # Remove image tool cache - rm -rf "$AGENT_TOOLSDIRECTORY"
+        dotnet: true # rm -rf /usr/share/dotnet
+        haskell: true # rm -rf /opt/ghc...
+        swap-storage: true # rm -f /mnt/swapfile (4GiB)
+        docker-images: false # Takes 16s, enable if needed in the future
+        large-packages: false # includes google-cloud-sdk and it's slow
 
     - name: Checkout
       uses: actions/checkout@v4.2.0
@@ -90,6 +100,8 @@ jobs:
       uses: reactivecircus/android-emulator-runner@f0d1ed2dcad93c7479e8b2f2226c83af54494915 # v2.32.0
       with:
         api-level: ${{ matrix.api-level }}
+        disk-size: 6000M
+        heap-size: 600M
         force-avd-creation: false
         emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
         disable-animations: true
