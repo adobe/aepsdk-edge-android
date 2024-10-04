@@ -67,6 +67,18 @@ jobs:
         else
           echo 'Job run identifier is:' ${{ inputs.id }}
         fi;
+
+    - name: Check branch and raise warning if mismatched
+      run: |
+        CURRENT_BRANCH=$(echo "${GITHUB_REF##*/}")
+        INPUT_BRANCH="${{ github.event.inputs.branch }}"
+        echo "Running on branch: ${CURRENT_BRANCH}"
+        echo "Input branch: ${INPUT_BRANCH}"
+
+        if [ "${CURRENT_BRANCH}" != "${INPUT_BRANCH}" ]; then
+          echo "::warning title=Branch Mismatch::Input branch '${INPUT_BRANCH}' does not match current branch '${CURRENT_BRANCH}'"
+        fi
+
     - name: Delete unnecessary tools 🔧
       uses: jlumbroso/free-disk-space@v1.3.1
       with:
