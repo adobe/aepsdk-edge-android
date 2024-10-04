@@ -115,11 +115,15 @@ jobs:
         force-avd-creation: false
         emulator-options: -no-metrics -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
         disable-animations: true
-        script: make upstream-integration-test TAGS_MOBILE_PROPERTY_ID=${{ github.event.inputs.tags-mobile-property-id }} EDGE_LOCATION_HINT=${{ github.event.inputs.edge-location-hint }}
-    
-    - name: Capture Logcat Output
-      if: always()
-      run: adb logcat > logcat_output.txt
+        script: |
+          make upstream-integration-test TAGS_MOBILE_PROPERTY_ID=${{ github.event.inputs.tags-mobile-property-id }} EDGE_LOCATION_HINT=${{ github.event.inputs.edge-location-hint }}
+          
+          adb logcat > logcat_output.txt &
+          LOGCAT_PID=$!
+          
+          wait
+
+          kill $LOGCAT_PID
 
     - name: Upload Logcat Logs
       if: always()
