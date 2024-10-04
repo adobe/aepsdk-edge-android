@@ -113,7 +113,7 @@ jobs:
         disk-size: 6000M
         heap-size: 600M
         force-avd-creation: false
-        emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+        emulator-options: -no-metrics -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
         disable-animations: true
         script: make upstream-integration-test TAGS_MOBILE_PROPERTY_ID=${{ github.event.inputs.tags-mobile-property-id }} EDGE_LOCATION_HINT=${{ github.event.inputs.edge-location-hint }}
     
