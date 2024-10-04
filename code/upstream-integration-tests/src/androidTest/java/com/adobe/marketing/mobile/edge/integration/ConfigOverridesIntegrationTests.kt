@@ -64,6 +64,14 @@ class ConfigOverridesIntegrationTests {
 
         // Set the tags mobile property ID for a specific Edge Network environment
         MobileCore.configureWithAppID(tagsMobilePropertyId)
+
+        // Use expectation to guarantee Configuration shared state availability
+        // Required primarily by `createInteractURL`
+        TestHelper.setExpectationEvent(
+            TestConstants.EventType.CONFIGURATION,
+            TestConstants.EventSource.RESPONSE_CONTENT,
+            1
+        )
         val latch = CountDownLatch(1)
         MobileCore.registerExtensions(
             listOf(
@@ -75,6 +83,7 @@ class ConfigOverridesIntegrationTests {
             latch.countDown()
         }
         latch.await()
+        TestHelper.assertExpectedEvents(true)
 
         // Set Edge location hint if one is set for the test suite
         TestSetupHelper.setInitialLocationHint(edgeLocationHint)
