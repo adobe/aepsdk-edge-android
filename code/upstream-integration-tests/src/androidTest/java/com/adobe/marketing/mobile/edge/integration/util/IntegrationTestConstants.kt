@@ -38,8 +38,8 @@ internal object IntegrationTestConstants {
     // Primarily used in the context of GitHub Action workflows to transform preset location hint
     // options into the intended actual location hint value.
     object LocationHintMapping {
-        const val EMPTY_STRING = "Empty string: \"\""
-        const val NONE = "(None)"
+        const val EMPTY_STRING = "EmptyString"
+        const val NONE = "None"
     }
 
     object MobilePropertyId {

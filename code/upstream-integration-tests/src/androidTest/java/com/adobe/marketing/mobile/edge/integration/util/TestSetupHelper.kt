@@ -25,7 +25,7 @@ object TestSetupHelper {
      */
     val defaultLocationHint: String?
         get() {
-            return when (val locationHint = BuildConfig.EDGE_LOCATION_HINT) {
+            return when (val locationHint = BuildConfig.EDGE_LOCATION_HINT.trim()) {
                 IntegrationTestConstants.LocationHintMapping.NONE -> null
                 IntegrationTestConstants.LocationHintMapping.EMPTY_STRING -> ""
                 else -> locationHint
