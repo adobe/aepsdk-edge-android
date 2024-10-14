@@ -11,38 +11,51 @@
 
 package com.adobe.marketing.mobile.edge.integration.util
 
+import com.adobe.marketing.mobile.Edge
 import com.adobe.marketing.mobile.Event
+import com.adobe.marketing.mobile.edge.integration.BuildConfig
 import com.adobe.marketing.mobile.util.TestConstants
 import com.adobe.marketing.mobile.util.TestHelper
 
 object TestSetupHelper {
     /**
-     * Returns the environment file ID for the provided edgeEnvironment value.
+     * Retrieves the Edge location hint from the shell environment.
      *
-     * @param edgeEnvironment The edgeEnvironment value to use.
-     * @return The environment file ID for the provided edgeEnvironment value.
+     * @return The Edge location hint if set in the environment, or `""` if not set.
      */
-    fun getEnvironmentFileID(edgeEnvironment: String): String {
-        when (edgeEnvironment) {
-            "prod" -> {
-                return "94f571f308d5/6b1be84da76a/launch-023a1b64f561-development"
-            }
-
-            "pre-prod" -> {
-                return "94f571f308d5/6b1be84da76a/launch-023a1b64f561-development"
-            }
-
-            "int" -> {
-                // TODO: create integration environment environment file ID
-                return "94f571f308d5/6b1be84da76a/launch-023a1b64f561-development"
-            }
-
-            else -> {
-                // Catchall for any other values
-                println("Unsupported edgeEnvironment value: $edgeEnvironment. Using prod as default.")
-                return "94f571f308d5/6b1be84da76a/launch-023a1b64f561-development"
+    val defaultLocationHint: String?
+        get() {
+            return when (val locationHint = BuildConfig.EDGE_LOCATION_HINT.trim()) {
+                IntegrationTestConstants.LocationHintMapping.NONE -> null
+                IntegrationTestConstants.LocationHintMapping.EMPTY_STRING -> ""
+                else -> locationHint
             }
         }
+
+    /**
+     * Retrieves the tags mobile property ID from the shell environment.
+     *
+     * @return The tags mobile property ID if set in the environment, or a default value if not set.
+     */
+    val defaultTagsMobilePropertyId: String
+        get() {
+            val tagsMobilePropertyId = BuildConfig.TAGS_MOBILE_PROPERTY_ID
+            return tagsMobilePropertyId.takeIf { it.isNotEmpty() } ?: IntegrationTestConstants.MobilePropertyId.PROD
+        }
+
+    /**
+     * Sets the initial Edge location hint for the test suite if a valid, non-null, and non-empty location hint is provided.
+     *
+     * @param locationHint An optional string representing the location hint to be set. Must be non-null and non-empty to be applied.
+     */
+    fun setInitialLocationHint(locationHint: String?) {
+        // Location hint is non-null and non-empty
+        if (!locationHint.isNullOrEmpty()) {
+            println("Setting Edge location hint to: $locationHint")
+            Edge.setLocationHint(locationHint)
+            return
+        }
+        println("No preset Edge location hint is being used for this test.")
     }
 
     /**
@@ -52,10 +65,18 @@ object TestSetupHelper {
      * @return The interact URL with location hint applied.
      */
     fun createInteractURL(locationHint: String?): String {
+        // Timeout is in milliseconds
+        val sharedState = TestHelper.getSharedStateFor(IntegrationTestConstants.ExtensionName.CONFIGURATION, 10_000)
+        val edgeDomain = (sharedState?.get(IntegrationTestConstants.ConfigurationKey.EDGE_DOMAIN) as? String)
+            ?: run {
+                println("Edge domain could not be fetched from the configuration shared state, or was invalid. " +
+                        "Using default Edge domain: ${IntegrationTestConstants.NetworkKeys.DEFAULT_EDGE_DOMAIN}")
+                IntegrationTestConstants.NetworkKeys.DEFAULT_EDGE_DOMAIN
+            }
         return if (locationHint.isNullOrEmpty()) {
-            "https://obumobile5.data.adobedc.net/ee/v1/interact"
+            "https://$edgeDomain/ee/v1/interact"
         } else {
-            "https://obumobile5.data.adobedc.net/ee/$locationHint/v1/interact"
+            "https://$edgeDomain/ee/$locationHint/v1/interact"
         }
     }
 

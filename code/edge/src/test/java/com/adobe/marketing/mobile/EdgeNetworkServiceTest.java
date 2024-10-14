@@ -155,7 +155,7 @@ public class EdgeNetworkServiceTest {
 
 		// verify
 		assertEquals(EdgeNetworkService.Retry.NO, retryResult.getShouldRetry());
-		assertEquals(0, mockNetworkService.connectAsyncWasCalledTimes);
+		assertEquals(0, mockNetworkService.getConnectAsyncCallCount());
 	}
 
 	@Test
@@ -163,7 +163,7 @@ public class EdgeNetworkServiceTest {
 		// setup
 		final String jsonRequest = "{}";
 		final Map<String, String> requestProperty = new HashMap<String, String>();
-		mockNetworkService.mockConnectAsyncConnection = null;
+		mockNetworkService.setDefaultResponse(null);
 		networkService = new EdgeNetworkService(mockNetworkService);
 
 		// test
@@ -184,7 +184,7 @@ public class EdgeNetworkServiceTest {
 		);
 
 		// verify
-		assertEquals(1, mockNetworkService.connectAsyncWasCalledTimes);
+		assertEquals(1, mockNetworkService.getConnectAsyncCallCount());
 		assertEquals(EdgeNetworkService.Retry.YES, retryResult.getShouldRetry());
 	}
 
@@ -217,7 +217,7 @@ public class EdgeNetworkServiceTest {
 				DEFAULT_TIMEOUT,
 				DEFAULT_TIMEOUT
 			),
-			mockNetworkService.connectAsyncParamNetworkRequest.get(0)
+			mockNetworkService.getAllNetworkRequests(2000).get(0)
 		);
 	}
 
@@ -265,7 +265,7 @@ public class EdgeNetworkServiceTest {
 				DEFAULT_TIMEOUT,
 				DEFAULT_TIMEOUT
 			),
-			mockNetworkService.connectAsyncParamNetworkRequest.get(0)
+			mockNetworkService.getAllNetworkRequests(2000).get(0)
 		);
 	}
 
@@ -275,7 +275,7 @@ public class EdgeNetworkServiceTest {
 		final String jsonRequest = "{}";
 		final String responseStr = "{\"key\":\"value\"}";
 		MockConnection mockConnection = new MockConnection(200, responseStr, null);
-		mockNetworkService.mockConnectAsyncConnection = mockConnection;
+		mockNetworkService.setDefaultResponse(mockConnection);
 		networkService = new EdgeNetworkService(mockNetworkService);
 
 		// test
@@ -296,7 +296,7 @@ public class EdgeNetworkServiceTest {
 		final String jsonRequest = "{}";
 		final String responseStr = "OK";
 		MockConnection mockConnection = new MockConnection(204, responseStr, null);
-		mockNetworkService.mockConnectAsyncConnection = mockConnection;
+		mockNetworkService.setDefaultResponse(mockConnection);
 		networkService = new EdgeNetworkService(mockNetworkService);
 
 		// test
@@ -317,7 +317,7 @@ public class EdgeNetworkServiceTest {
 		final String jsonRequest = "{}";
 		final String errorStr = "Service Unavailable";
 		MockConnection mockConnection = new MockConnection(502, null, errorStr);
-		mockNetworkService.mockConnectAsyncConnection = mockConnection;
+		mockNetworkService.setDefaultResponse(mockConnection);
 		networkService = new EdgeNetworkService(mockNetworkService);
 
 		// test
@@ -365,7 +365,7 @@ public class EdgeNetworkServiceTest {
 		final String url = "https://test.com";
 		final String jsonRequest = "{}";
 		MockConnection mockConnection = new MockConnection(responseCode, null, errorString, null);
-		mockNetworkService.mockConnectAsyncConnection = mockConnection;
+		mockNetworkService.setDefaultResponse(mockConnection);
 		networkService = new EdgeNetworkService(mockNetworkService);
 
 		// test
@@ -385,7 +385,7 @@ public class EdgeNetworkServiceTest {
 		final String url = "https://test.com";
 		final String jsonRequest = "{}";
 		MockConnection mockConnection = new MockConnection(200, "{}", null);
-		mockNetworkService.mockConnectAsyncConnection = mockConnection;
+		mockNetworkService.setDefaultResponse(mockConnection);
 		networkService = new EdgeNetworkService(mockNetworkService);
 
 		// test
@@ -406,7 +406,7 @@ public class EdgeNetworkServiceTest {
 		final String url = "https://test.com";
 		final String jsonRequest = "{}";
 		final String errorStr = "Service Unavailable";
-		mockNetworkService.mockConnectAsyncConnection = new MockConnection(503, null, errorStr, null);
+		mockNetworkService.setDefaultResponse(new MockConnection(503, null, errorStr, null));
 		networkService = new EdgeNetworkService(mockNetworkService);
 
 		// test
@@ -426,7 +426,7 @@ public class EdgeNetworkServiceTest {
 		final String jsonRequest = "{}";
 		final String errorStr = "Internal server error";
 		MockConnection mockConnection = new MockConnection(500, null, errorStr, null);
-		mockNetworkService.mockConnectAsyncConnection = mockConnection;
+		mockNetworkService.setDefaultResponse(mockConnection);
 		networkService = new EdgeNetworkService(mockNetworkService);
 
 		// test
@@ -447,7 +447,7 @@ public class EdgeNetworkServiceTest {
 		final String url = "https://test.com";
 		final String jsonRequest = "{}";
 		MockConnection mockConnection = new MockConnection(500, null, null);
-		mockNetworkService.mockConnectAsyncConnection = mockConnection;
+		mockNetworkService.setDefaultResponse(mockConnection);
 		networkService = new EdgeNetworkService(mockNetworkService);
 
 		// test
@@ -469,7 +469,7 @@ public class EdgeNetworkServiceTest {
 		final String url = "https://test.com";
 		final String jsonRequest = "{}";
 		MockConnection mockConnection = new MockConnection(500, null, "");
-		mockNetworkService.mockConnectAsyncConnection = mockConnection;
+		mockNetworkService.setDefaultResponse(mockConnection);
 		networkService = new EdgeNetworkService(mockNetworkService);
 
 		// test
@@ -504,7 +504,7 @@ public class EdgeNetworkServiceTest {
 			"    }";
 
 		MockConnection mockConnection = new MockConnection(500, null, errorStr);
-		mockNetworkService.mockConnectAsyncConnection = mockConnection;
+		mockNetworkService.setDefaultResponse(mockConnection);
 		networkService = new EdgeNetworkService(mockNetworkService);
 
 		// test

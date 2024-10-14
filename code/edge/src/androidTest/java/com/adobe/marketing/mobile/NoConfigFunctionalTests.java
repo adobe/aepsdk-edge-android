@@ -26,12 +26,12 @@ import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.FakeIdentity;
+import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.JSONUtils;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.MonitorExtension;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
-import com.adobe.marketing.mobile.util.TestUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -82,30 +82,32 @@ public class NoConfigFunctionalTests {
 	@Test
 	public void testHandleExperienceEventRequest_withPendingConfigurationState_expectEventsQueueIsBlocked()
 		throws Exception {
+		// Set "fake" ECID
+		final String jsonStr =
+			"{" +
+			"  \"identityMap\": {" +
+			"    \"ECID\": [" +
+			"      {" +
+			"        \"id\": 1234," +
+			"        \"authenticatedState\": \"ambiguous\"," +
+			"        \"primary\": false" +
+			"      }" +
+			"    ]" +
+			"  }" +
+			"}";
+
+		final JSONObject jsonObject = new JSONObject(jsonStr);
+		final Map<String, Object> identityMap = JSONUtils.toMap(jsonObject);
+
+		setExpectationEvent(FakeIdentity.EVENT_TYPE, "com.adobe.eventSource.response", 1);
+		FakeIdentity.setXDMSharedState(identityMap, FakeIdentity.EVENT_TYPE);
+		assertExpectedEvents(true);
+
 		Map<String, Object> configState = getSharedStateFor(
 			TestConstants.SharedState.CONFIGURATION,
 			TestConstants.Defaults.WAIT_SHARED_STATE_TIMEOUT_MS
 		);
 		assertNull(configState); // verify Configuration state is pending
-
-		// Set "fake" ECID
-		final String jsonStr =
-			"{\n" +
-			"      \"identityMap\": {\n" +
-			"        \"ECID\": [\n" +
-			"          {\n" +
-			"            \"id\":" +
-			"1234" +
-			",\n" +
-			"            \"authenticatedState\": \"ambiguous\",\n" +
-			"            \"primary\": false\n" +
-			"          }\n" +
-			"        ]\n" +
-			"      }\n" +
-			"}";
-
-		final JSONObject jsonObject = new JSONObject(jsonStr);
-		final Map<String, Object> identityMap = JSONUtils.toMap(jsonObject);
 
 		resetTestExpectations(); // reset received events
 		setExpectationEvent(EventType.EDGE, EventSource.REQUEST_CONTENT, 1);
@@ -147,9 +149,7 @@ public class NoConfigFunctionalTests {
 			"      \"identityMap\": {\n" +
 			"        \"ECID\": [\n" +
 			"          {\n" +
-			"            \"id\":" +
-			"1234" +
-			",\n" +
+			"            \"id\": 1234,\n" +
 			"            \"authenticatedState\": \"ambiguous\",\n" +
 			"            \"primary\": false\n" +
 			"          }\n" +
@@ -206,26 +206,38 @@ public class NoConfigFunctionalTests {
 		assertEquals("personalization:decisions", receivedHandles.get(0).getType());
 		assertEquals(1, receivedHandles.get(0).getPayload().size());
 
-		Map<String, String> handle1 = TestUtils.flattenMap(receivedHandles.get(0).getPayload().get(0));
-
-		assertEquals(4, handle1.size());
-		assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9", handle1.get("id"));
-		assertEquals("#D41DBA", handle1.get("items[0].data.content.value"));
-		assertEquals("https://ns.adobe.com/personalization/json-content-item", handle1.get("items[0].schema"));
-		assertEquals("buttonColor", handle1.get("scope"));
+		String expectedHandle1 =
+			"{" +
+			"  \"id\": \"AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9\"," +
+			"  \"items\": [" +
+			"    {" +
+			"      \"data\": {" +
+			"        \"content\": {" +
+			"          \"value\": \"#D41DBA\"" +
+			"        }" +
+			"      }," +
+			"      \"schema\": \"https://ns.adobe.com/personalization/json-content-item\"" +
+			"    }" +
+			"  ]," +
+			"  \"scope\": \"buttonColor\"" +
+			"}";
+		JSONAsserts.assertEquals(expectedHandle1, receivedHandles.get(0).getPayload().get(0));
 
 		// verify handle 2
 		assertEquals("identity:exchange", receivedHandles.get(1).getType());
 		assertEquals(1, receivedHandles.get(1).getPayload().size());
 
-		Map<String, String> handle2 = TestUtils.flattenMap(receivedHandles.get(1).getPayload().get(0));
-
-		assertEquals(5, handle2.size());
-		assertEquals("411", handle2.get("id"));
-		assertEquals("url", handle2.get("type"));
-		assertEquals("//example.url?d_uuid=9876", handle2.get("spec.url"));
-		assertEquals("false", handle2.get("spec.hideReferrer"));
-		assertEquals("10080", handle2.get("spec.ttlMinutes"));
+		String expectedHandle2 =
+			"{" +
+			"  \"id\": 411," +
+			"  \"spec\": {" +
+			"    \"hideReferrer\": false," +
+			"    \"ttlMinutes\": 10080," +
+			"    \"url\": \"//example.url?d_uuid=9876\"" +
+			"  }," +
+			"  \"type\": \"url\"" +
+			"}";
+		JSONAsserts.assertEquals(expectedHandle2, receivedHandles.get(1).getPayload().get(0));
 	}
 
 	/**
