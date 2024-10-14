@@ -397,7 +397,7 @@ public class EdgeNetworkServiceTest {
 		String[] invalidRetryAfter = {"1", "5", "30", "60", "180", "300"};
 
 		for (String retryAfter : invalidRetryAfter) {
-			testRecoverableWithRetryAfter(503, retryAfter, Integer.parseInt(retryAfter)); // expecting default timeout
+			testRecoverableWithRetryAfter(503, retryAfter, Integer.parseInt(retryAfter)); // expecting provided timeout
 		}
 	}
 
