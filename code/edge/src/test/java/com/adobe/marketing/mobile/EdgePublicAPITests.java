@@ -15,12 +15,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
+import com.adobe.marketing.mobile.util.CollectionEqualCount;
+import com.adobe.marketing.mobile.util.JSONAsserts;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -106,13 +107,13 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.REQUEST_CONTENT, requestEvent.getSource());
-		assertTrue(requestEvent.getEventData().containsKey("xdm"));
-		assertTrue(requestEvent.getEventData().containsKey("data"));
-		assertFalse(requestEvent.getEventData().containsKey("datasetId"));
+
+		String expected = "{\"data\": {}, \"xdm\": {}}";
+		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData(), new CollectionEqualCount());
 	}
 
 	@Test
-	public void testSetLocationHint_whenHintIsValue_dispatchesEdgeUpdateIdentity() throws InterruptedException {
+	public void testSetLocationHint_whenHintIsValue_dispatchesEdgeUpdateIdentity() {
 		Edge.setLocationHint("or2");
 
 		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
@@ -121,12 +122,12 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.UPDATE_IDENTITY, requestEvent.getSource());
-		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
-		assertEquals("or2", requestEvent.getEventData().get("locationHint"));
+		String expected = "{\"locationHint\": \"or2\"}";
+		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 	}
 
 	@Test
-	public void testSetLocationHint_whenHintIsNull_dispatchesEdgeUpdateIdentity() throws InterruptedException {
+	public void testSetLocationHint_whenHintIsNull_dispatchesEdgeUpdateIdentity() {
 		Edge.setLocationHint(null);
 
 		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
@@ -135,12 +136,12 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.UPDATE_IDENTITY, requestEvent.getSource());
-		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
-		assertNull(requestEvent.getEventData().get("locationHint"));
+		String expected = "{\"locationHint\": null}";
+		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 	}
 
 	@Test
-	public void testSetLocationHint_whenHintIsEmpty_dispatchesEdgeUpdateIdentity() throws InterruptedException {
+	public void testSetLocationHint_whenHintIsEmpty_dispatchesEdgeUpdateIdentity() {
 		Edge.setLocationHint("");
 
 		final ArgumentCaptor<Event> requestEventCaptor = ArgumentCaptor.forClass(Event.class);
@@ -149,8 +150,8 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.UPDATE_IDENTITY, requestEvent.getSource());
-		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
-		assertEquals("", requestEvent.getEventData().get("locationHint"));
+		String expected = "{\"locationHint\": \"\"}";
+		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 	}
 
 	@Test
@@ -190,8 +191,8 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
-		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
-		assertEquals(true, requestEvent.getEventData().get("locationHint"));
+		String expected = "{\"locationHint\": true}";
+		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 
 		Event responseEvent = new Event.Builder(
 			EdgeConstants.EventName.RESPONSE_LOCATION_HINT,
@@ -246,8 +247,8 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
-		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
-		assertEquals(true, requestEvent.getEventData().get("locationHint"));
+		String expected = "{\"locationHint\": true}";
+		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 
 		Event responseEvent = new Event.Builder(
 			EdgeConstants.EventName.RESPONSE_LOCATION_HINT,
@@ -301,8 +302,8 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
-		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
-		assertEquals(true, requestEvent.getEventData().get("locationHint"));
+		String expected = "{\"locationHint\": true}";
+		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 
 		Event responseEvent = new Event.Builder(
 			EdgeConstants.EventName.RESPONSE_LOCATION_HINT,
@@ -356,8 +357,8 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
-		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
-		assertEquals(true, requestEvent.getEventData().get("locationHint"));
+		String expected = "{\"locationHint\": true}";
+		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 
 		// todo:
 		// 1. check assertTrue(latch.await(5500, TimeUnit.MILLISECONDS));
@@ -398,8 +399,8 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
-		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
-		assertEquals(true, requestEvent.getEventData().get("locationHint"));
+		String expected = "{\"locationHint\": true}";
+		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 
 		Event responseEvent = new Event.Builder(
 			EdgeConstants.EventName.RESPONSE_LOCATION_HINT,
@@ -447,8 +448,8 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
-		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
-		assertEquals(true, requestEvent.getEventData().get("locationHint"));
+		String expected = "{\"locationHint\": true}";
+		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 
 		Event responseEvent = new Event.Builder(
 			EdgeConstants.EventName.RESPONSE_LOCATION_HINT,
@@ -502,8 +503,8 @@ public class EdgePublicAPITests {
 		final Event requestEvent = requestEventCaptor.getValue();
 		assertEquals(EventType.EDGE, requestEvent.getType());
 		assertEquals(EventSource.REQUEST_IDENTITY, requestEvent.getSource());
-		assertTrue(requestEvent.getEventData().containsKey("locationHint"));
-		assertEquals(true, requestEvent.getEventData().get("locationHint"));
+		String expected = "{\"locationHint\": true}";
+		JSONAsserts.assertExactMatch(expected, requestEvent.getEventData());
 
 		Event responseEvent = new Event.Builder(
 			EdgeConstants.EventName.RESPONSE_LOCATION_HINT,

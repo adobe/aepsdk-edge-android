@@ -13,6 +13,7 @@ package com.adobe.marketing.mobile;
 
 import static org.junit.Assert.assertEquals;
 
+import com.adobe.marketing.mobile.util.JSONAsserts;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
@@ -33,10 +34,13 @@ public class EventUtilsTests {
 			}
 		);
 
-		assertEquals(3, result.size());
-		assertEquals("123", result.get("edge.configId"));
-		assertEquals("prod", result.get("edge.environment"));
-		assertEquals("my.domain.com", result.get("edge.domain"));
+		String expected =
+			"{\n" +
+			"  \"edge.configId\": \"123\",\n" +
+			"  \"edge.domain\": \"my.domain.com\",\n" +
+			"  \"edge.environment\": \"prod\"\n" +
+			"}";
+		JSONAsserts.assertEquals(expected, result);
 	}
 
 	@Test
@@ -51,8 +55,8 @@ public class EventUtilsTests {
 			}
 		);
 
-		assertEquals(1, result.size());
-		assertEquals("123", result.get("edge.configId"));
+		String expected = "{ \"edge.configId\": \"123\" }";
+		JSONAsserts.assertEquals(expected, result);
 	}
 
 	@Test
@@ -97,8 +101,8 @@ public class EventUtilsTests {
 			}
 		);
 
-		assertEquals(1, result.size());
-		assertEquals("prod", result.get("edge.environment"));
+		String expected = "{ \"edge.environment\": \"prod\" }";
+		JSONAsserts.assertEquals(expected, result);
 	}
 
 	@Test
@@ -143,8 +147,8 @@ public class EventUtilsTests {
 			}
 		);
 
-		assertEquals(1, result.size());
-		assertEquals("my.domain.com", result.get("edge.domain"));
+		String expected = "{ \"edge.domain\": \"my.domain.com\" }";
+		JSONAsserts.assertEquals(expected, result);
 	}
 
 	@Test

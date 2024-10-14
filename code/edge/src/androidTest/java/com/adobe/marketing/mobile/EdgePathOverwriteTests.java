@@ -12,6 +12,8 @@
 package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
+import static com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch;
+import static com.adobe.marketing.mobile.util.NodeConfig.Scope.Subtree;
 import static com.adobe.marketing.mobile.util.TestHelper.assertExpectedEvents;
 import static com.adobe.marketing.mobile.util.TestHelper.resetTestExpectations;
 import static com.adobe.marketing.mobile.util.TestHelper.setExpectationEvent;
@@ -24,15 +26,16 @@ import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
+import com.adobe.marketing.mobile.util.CollectionEqualCount;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.MonitorExtension;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
+import com.adobe.marketing.mobile.util.ValueTypeMatch;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import org.junit.After;
 import org.junit.Before;
@@ -101,7 +104,7 @@ public class EdgePathOverwriteTests {
 							"xdm",
 							new HashMap<String, Object>() {
 								{
-									put("testString", "xdmValue");
+									put("testString", "stringValue");
 									put("testInt", 10);
 									put("testBool", false);
 									put("testDouble", 12.89);
@@ -149,37 +152,68 @@ public class EdgePathOverwriteTests {
 		);
 		assertEquals(1, resultRequests.size());
 
-		Map<String, String> resultPayload = mockNetworkService.getFlattenedNetworkRequestBody(resultRequests.get(0));
-		assertEquals(18, resultPayload.size());
-		assertEquals("true", resultPayload.get("meta.konductorConfig.streaming.enabled"));
-		assertEquals("\u0000", resultPayload.get("meta.konductorConfig.streaming.recordSeparator"));
-		assertEquals("\n", resultPayload.get("meta.konductorConfig.streaming.lineFeed"));
-		assertNotNull(resultPayload.get("xdm.identityMap.ECID[0].id"));
-		assertEquals("false", resultPayload.get("xdm.identityMap.ECID[0].primary"));
-		assertEquals("ambiguous", resultPayload.get("xdm.identityMap.ECID[0].authenticatedState"));
-		assertNotNull(resultPayload.get("events[0].xdm._id"));
-		assertNotNull(resultPayload.get("events[0].xdm.timestamp"));
-		assertEquals("xdmValue", resultPayload.get("events[0].xdm.testString"));
-		assertEquals("10", resultPayload.get("events[0].xdm.testInt"));
-		assertEquals("false", resultPayload.get("events[0].xdm.testBool"));
-		assertEquals("12.89", resultPayload.get("events[0].xdm.testDouble"));
-		assertEquals("elem1", resultPayload.get("events[0].xdm.testArray[0]"));
-		assertEquals("elem2", resultPayload.get("events[0].xdm.testArray[1]"));
-		assertEquals("value", resultPayload.get("events[0].xdm.testMap.key"));
+		String expected =
+			"{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"xdm\": {" +
+			"        \"_id\": \"STRING_TYPE\"," +
+			"        \"testArray\": [\"elem1\", \"elem2\"]," +
+			"        \"testBool\": false," +
+			"        \"testDouble\": 12.89," +
+			"        \"testInt\": 10," +
+			"        \"testMap\": {" +
+			"          \"key\": \"value\"" +
+			"        }," +
+			"        \"testString\": \"stringValue\"," +
+			"        \"timestamp\": \"STRING_TYPE\"" +
+			"      }" +
+			"    }" +
+			"  ]," +
+			"  \"meta\": {" +
+			"    \"konductorConfig\": {" +
+			"      \"streaming\": {" +
+			"        \"enabled\": true," +
+			"        \"lineFeed\": \"\\n\"," +
+			"        \"recordSeparator\": \"\\u0000\"" +
+			"      }" +
+			"    }" +
+			"  }," +
+			"  \"xdm\": {" +
+			"    \"identityMap\": {" +
+			"      \"ECID\": [" +
+			"        {" +
+			"          \"authenticatedState\": \"ambiguous\"," +
+			"          \"id\": \"STRING_TYPE\"," +
+			"          \"primary\": false" +
+			"        }" +
+			"      ]" +
+			"    }," +
+			"    \"implementationDetails\": {" +
+			"      \"environment\": \"app\"," +
+			"      \"name\": \"" +
+			EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE +
+			"\"," +
+			"      \"version\": \"" +
+			MobileCore.extensionVersion() +
+			"+" +
+			Edge.extensionVersion() +
+			"\"" +
+			"    }" +
+			"  }" +
+			"}";
 
-		assertTrue(resultRequests.get(0).getUrl().startsWith(EXEDGE_MEDIA_URL_STRING));
-		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
-		assertNotNull(resultRequests.get(0).queryParam("requestId"));
+		assertExactMatch(
+			expected,
+			resultRequests.get(0).getBodyJson(),
+			new CollectionEqualCount(Subtree),
+			new ValueTypeMatch("xdm.identityMap.ECID[0].id", "events[0].xdm._id", "events[0].xdm.timestamp")
+		);
 
-		assertEquals("app", resultPayload.get("xdm.implementationDetails.environment"));
-		assertEquals(
-			EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE,
-			resultPayload.get("xdm.implementationDetails.name")
-		);
-		assertEquals(
-			MobileCore.extensionVersion() + "+" + Edge.extensionVersion(),
-			resultPayload.get("xdm.implementationDetails.version")
-		);
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(EXEDGE_MEDIA_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 	}
 
 	@Test
@@ -198,7 +232,7 @@ public class EdgePathOverwriteTests {
 							"xdm",
 							new HashMap<String, Object>() {
 								{
-									put("testString", "xdmValue");
+									put("testString", "stringValue");
 									put("testInt", 10);
 									put("testBool", false);
 									put("testDouble", 12.89);
@@ -246,36 +280,67 @@ public class EdgePathOverwriteTests {
 		);
 		assertEquals(1, resultRequests.size());
 
-		Map<String, String> resultPayload = mockNetworkService.getFlattenedNetworkRequestBody(resultRequests.get(0));
-		assertEquals(18, resultPayload.size());
-		assertEquals("true", resultPayload.get("meta.konductorConfig.streaming.enabled"));
-		assertEquals("\u0000", resultPayload.get("meta.konductorConfig.streaming.recordSeparator"));
-		assertEquals("\n", resultPayload.get("meta.konductorConfig.streaming.lineFeed"));
-		assertNotNull(resultPayload.get("xdm.identityMap.ECID[0].id"));
-		assertEquals("false", resultPayload.get("xdm.identityMap.ECID[0].primary"));
-		assertEquals("ambiguous", resultPayload.get("xdm.identityMap.ECID[0].authenticatedState"));
-		assertNotNull(resultPayload.get("events[0].xdm._id"));
-		assertNotNull(resultPayload.get("events[0].xdm.timestamp"));
-		assertEquals("xdmValue", resultPayload.get("events[0].xdm.testString"));
-		assertEquals("10", resultPayload.get("events[0].xdm.testInt"));
-		assertEquals("false", resultPayload.get("events[0].xdm.testBool"));
-		assertEquals("12.89", resultPayload.get("events[0].xdm.testDouble"));
-		assertEquals("elem1", resultPayload.get("events[0].xdm.testArray[0]"));
-		assertEquals("elem2", resultPayload.get("events[0].xdm.testArray[1]"));
-		assertEquals("value", resultPayload.get("events[0].xdm.testMap.key"));
+		String expected =
+			"{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"xdm\": {" +
+			"        \"_id\": \"STRING_TYPE\"," +
+			"        \"testArray\": [\"elem1\", \"elem2\"]," +
+			"        \"testBool\": false," +
+			"        \"testDouble\": 12.89," +
+			"        \"testInt\": 10," +
+			"        \"testMap\": {" +
+			"          \"key\": \"value\"" +
+			"        }," +
+			"        \"testString\": \"stringValue\"," +
+			"        \"timestamp\": \"STRING_TYPE\"" +
+			"      }" +
+			"    }" +
+			"  ]," +
+			"  \"meta\": {" +
+			"    \"konductorConfig\": {" +
+			"      \"streaming\": {" +
+			"        \"enabled\": true," +
+			"        \"lineFeed\": \"\\n\"," +
+			"        \"recordSeparator\": \"\\u0000\"" +
+			"      }" +
+			"    }" +
+			"  }," +
+			"  \"xdm\": {" +
+			"    \"identityMap\": {" +
+			"      \"ECID\": [" +
+			"        {" +
+			"          \"authenticatedState\": \"ambiguous\"," +
+			"          \"id\": \"STRING_TYPE\"," +
+			"          \"primary\": false" +
+			"        }" +
+			"      ]" +
+			"    }," +
+			"    \"implementationDetails\": {" +
+			"      \"environment\": \"app\"," +
+			"      \"name\": \"" +
+			EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE +
+			"\"," +
+			"      \"version\": \"" +
+			MobileCore.extensionVersion() +
+			"+" +
+			Edge.extensionVersion() +
+			"\"" +
+			"    }" +
+			"  }" +
+			"}";
 
-		assertTrue(resultRequests.get(0).getUrl().startsWith(EXEDGE_MEDIA_OR2_LOC_URL_STRING));
-		assertEquals(CONFIG_ID, resultRequests.get(0).queryParam("configId"));
-		assertNotNull(resultRequests.get(0).queryParam("requestId"));
+		assertExactMatch(
+			expected,
+			resultRequests.get(0).getBodyJson(),
+			new CollectionEqualCount(Subtree),
+			new ValueTypeMatch("xdm.identityMap.ECID[0].id", "events[0].xdm._id", "events[0].xdm.timestamp")
+		);
 
-		assertEquals("app", resultPayload.get("xdm.implementationDetails.environment"));
-		assertEquals(
-			EdgeJson.Event.ImplementationDetails.BASE_NAMESPACE,
-			resultPayload.get("xdm.implementationDetails.name")
-		);
-		assertEquals(
-			MobileCore.extensionVersion() + "+" + Edge.extensionVersion(),
-			resultPayload.get("xdm.implementationDetails.version")
-		);
+		TestableNetworkRequest networkRequest = resultRequests.get(0);
+		assertTrue(networkRequest.getUrl().startsWith(EXEDGE_MEDIA_OR2_LOC_URL_STRING));
+		assertEquals(CONFIG_ID, networkRequest.queryParam("configId"));
+		assertNotNull(networkRequest.queryParam("requestId"));
 	}
 }

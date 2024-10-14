@@ -21,13 +21,13 @@ import com.adobe.marketing.mobile.services.HttpMethod
 import com.adobe.marketing.mobile.services.ServiceProvider
 import com.adobe.marketing.mobile.services.TestableNetworkRequest
 import com.adobe.marketing.mobile.util.JSONAsserts
+import com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch
 import com.adobe.marketing.mobile.util.MonitorExtension
 import com.adobe.marketing.mobile.util.RealNetworkService
 import com.adobe.marketing.mobile.util.TestConstants
 import com.adobe.marketing.mobile.util.TestHelper
-import org.json.JSONObject
 import org.junit.After
-import org.junit.Assert
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Rule
@@ -42,8 +42,8 @@ import java.util.concurrent.CountDownLatch
 @RunWith(AndroidJUnit4::class)
 class ConfigOverridesIntegrationTests {
     private val realNetworkService = RealNetworkService()
-    private val edgeLocationHint: String = BuildConfig.EDGE_LOCATION_HINT
-    private val edgeEnvironment: String = BuildConfig.EDGE_ENVIRONMENT
+    private val edgeLocationHint: String? = TestSetupHelper.defaultLocationHint
+    private val tagsMobilePropertyId: String = TestSetupHelper.defaultTagsMobilePropertyId
     private val VALID_DATASTREAM_ID_OVERRIDE = "15d7bce0-3e2c-447b-bbda-129c57c60820"
     private val VALID_DATASET_ID_CONFIGURED_AS_OVERRIDE = "6515e1dbfeb3b128d19bb1e4"
     private val VALID_DATASET_ID_NOT_CONFIGURED_AS_OVERRIDE = "6515e1f6296d1e28d3209b9f"
@@ -58,12 +58,20 @@ class ConfigOverridesIntegrationTests {
     @Before
     @Throws(Exception::class)
     fun setup() {
-        println("Environment var - Edge Network environment: $edgeEnvironment")
+        println("Environment var - Edge Network tags mobile property ID: $tagsMobilePropertyId")
         println("Environment var - Edge Network location hint: $edgeLocationHint")
         ServiceProvider.getInstance().networkService = realNetworkService
 
-        // Set environment file ID for specific Edge Network environment
-        MobileCore.configureWithAppID(TestSetupHelper.getEnvironmentFileID(edgeEnvironment))
+        // Set the tags mobile property ID for a specific Edge Network environment
+        MobileCore.configureWithAppID(tagsMobilePropertyId)
+
+        // Use expectation to guarantee Configuration shared state availability
+        // Required primarily by `createInteractURL`
+        TestHelper.setExpectationEvent(
+            TestConstants.EventType.CONFIGURATION,
+            TestConstants.EventSource.RESPONSE_CONTENT,
+            1
+        )
         val latch = CountDownLatch(1)
         MobileCore.registerExtensions(
             listOf(
@@ -75,14 +83,10 @@ class ConfigOverridesIntegrationTests {
             latch.countDown()
         }
         latch.await()
+        TestHelper.assertExpectedEvents(true)
 
         // Set Edge location hint if one is set for the test suite
-        if (edgeLocationHint.isNotEmpty()) {
-            print("Setting Edge location hint to: $edgeLocationHint")
-            Edge.setLocationHint(edgeLocationHint)
-        } else {
-            print("No preset Edge location hint is being used for this test.")
-        }
+        TestSetupHelper.setInitialLocationHint(edgeLocationHint)
 
         resetTestExpectations()
     }
@@ -113,8 +117,8 @@ class ConfigOverridesIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        Assert.assertEquals(1, matchingResponses?.size)
-        Assert.assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
+        assertEquals(1, matchingResponses?.size)
+        assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
     }
 
     @Test
@@ -138,8 +142,8 @@ class ConfigOverridesIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        Assert.assertEquals(1, matchingResponses?.size)
-        Assert.assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
+        assertEquals(1, matchingResponses?.size)
+        assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
 
         val expectedErrorJSON = """
         {
@@ -151,13 +155,10 @@ class ConfigOverridesIntegrationTests {
 
         val errorEvents = TestSetupHelper.getEdgeResponseErrors()
 
-        Assert.assertEquals(1, errorEvents.size)
+        assertEquals(1, errorEvents.size)
 
         val errorEvent = errorEvents.first()
-        JSONAsserts.assertExactMatch(
-            expected = JSONObject(expectedErrorJSON),
-            actual = JSONObject(errorEvent.eventData)
-        )
+        assertExactMatch(expectedErrorJSON, errorEvent.eventData)
     }
 
     @Test
@@ -195,8 +196,8 @@ class ConfigOverridesIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        Assert.assertEquals(1, matchingResponses?.size)
-        Assert.assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
+        assertEquals(1, matchingResponses?.size)
+        assertEquals(200, matchingResponses?.firstOrNull()?.responseCode)
     }
 
     // TODO: Enable after PDCL-11131 issue is fixed
@@ -238,8 +239,8 @@ class ConfigOverridesIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        Assert.assertEquals(1, matchingResponses?.size)
-        Assert.assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
+        assertEquals(1, matchingResponses?.size)
+        assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
 
         val expectedErrorJSON = """
         {
@@ -251,13 +252,10 @@ class ConfigOverridesIntegrationTests {
 
         val errorEvents = TestSetupHelper.getEdgeResponseErrors()
 
-        Assert.assertEquals(1, errorEvents.size)
+        assertEquals(1, errorEvents.size)
 
         val errorEvent = errorEvents.first()
-        JSONAsserts.assertExactMatch(
-            expected = JSONObject(expectedErrorJSON),
-            actual = JSONObject(errorEvent.eventData)
-        )
+        JSONAsserts.assertEquals(expectedErrorJSON, errorEvent.eventData)
     }
 
     // TODO: Enable after PDCL-11131 issue is fixed
@@ -298,8 +296,8 @@ class ConfigOverridesIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        Assert.assertEquals(1, matchingResponses?.size)
-        Assert.assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
+        assertEquals(1, matchingResponses?.size)
+        assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
 
         val expectedErrorJSON = """
         {
@@ -311,13 +309,10 @@ class ConfigOverridesIntegrationTests {
 
         val errorEvents = TestSetupHelper.getEdgeResponseErrors()
 
-        Assert.assertEquals(1, errorEvents.size)
+        assertEquals(1, errorEvents.size)
 
         val errorEvent = errorEvents.first()
-        JSONAsserts.assertExactMatch(
-            expected = JSONObject(expectedErrorJSON),
-            actual = JSONObject(errorEvent.eventData)
-        )
+        JSONAsserts.assertEquals(expectedErrorJSON, errorEvent.eventData)
     }
 
     // TODO: Enable after PDCL-11131 issue is fixed
@@ -359,8 +354,8 @@ class ConfigOverridesIntegrationTests {
         realNetworkService.assertAllNetworkRequestExpectations()
         val matchingResponses = realNetworkService.getResponsesFor(interactNetworkRequest)
 
-        Assert.assertEquals(1, matchingResponses?.size)
-        Assert.assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
+        assertEquals(1, matchingResponses?.size)
+        assertEquals(400, matchingResponses?.firstOrNull()?.responseCode)
 
         val expectedErrorJSON = """
         {
@@ -372,13 +367,10 @@ class ConfigOverridesIntegrationTests {
 
         val errorEvents = TestSetupHelper.getEdgeResponseErrors()
 
-        Assert.assertEquals(1, errorEvents.size)
+        assertEquals(1, errorEvents.size)
 
         val errorEvent = errorEvents.first()
-        JSONAsserts.assertExactMatch(
-            expected = JSONObject(expectedErrorJSON),
-            actual = JSONObject(errorEvent.eventData)
-        )
+        JSONAsserts.assertEquals(expectedErrorJSON, errorEvent.eventData)
     }
 
     /**

@@ -12,19 +12,20 @@
 package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.services.HttpMethod.POST;
+import static com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch;
+import static com.adobe.marketing.mobile.util.NodeConfig.Scope.Subtree;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.services.TestableNetworkRequest;
+import com.adobe.marketing.mobile.util.ElementCount;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.MonitorExtension;
 import com.adobe.marketing.mobile.util.TestConstants;
 import com.adobe.marketing.mobile.util.TestHelper;
-import com.adobe.marketing.mobile.util.TestUtils;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -144,9 +145,7 @@ public class SampleFunctionalTests {
 		assertEquals(2, dispatchedEvents.size());
 
 		Map<String, Object> eventData = dispatchedEvents.get(1).getEventData();
-		assertNotNull(eventData);
-
-		assertEquals(1, TestUtils.flattenMap(eventData).size());
+		assertExactMatch("{}", eventData, new ElementCount(1, Subtree));
 	}
 
 	@Test
@@ -209,9 +208,17 @@ public class SampleFunctionalTests {
 		);
 		assertEquals(1, requests.size());
 
-		Map<String, String> flattendRequestBody = mockNetworkService.getFlattenedNetworkRequestBody(requests.get(0));
-		assertEquals("testType", flattendRequestBody.get("events[0].xdm.eventType"));
-
+		String expected =
+			"{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"xdm\": {" +
+			"        \"eventType\": \"testType\"" +
+			"      }" +
+			"    }" +
+			"  ]" +
+			"}";
+		assertExactMatch(expected, requests.get(0).getBodyJson());
 		TestHelper.assertExpectedEvents(true);
 	}
 }

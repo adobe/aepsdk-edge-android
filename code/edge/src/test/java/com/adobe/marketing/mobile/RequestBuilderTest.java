@@ -11,6 +11,8 @@
 
 package com.adobe.marketing.mobile;
 
+import static com.adobe.marketing.mobile.util.JSONAsserts.assertExactMatch;
+import static com.adobe.marketing.mobile.util.NodeConfig.Scope.Subtree;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertNotNull;
@@ -22,21 +24,16 @@ import static org.mockito.Mockito.when;
 import com.adobe.marketing.mobile.edge.Datastream;
 import com.adobe.marketing.mobile.edge.SDKConfig;
 import com.adobe.marketing.mobile.services.NamedCollection;
+import com.adobe.marketing.mobile.util.CollectionEqualCount;
+import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.JSONUtils;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.ValueNode;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
+import com.adobe.marketing.mobile.util.KeyMustBeAbsent;
+import com.adobe.marketing.mobile.util.TimeUtils;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -74,7 +71,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_doesNotFail_whenDataStoreIsNull() throws Exception {
+	public void getPayloadWithExperienceEvents_doesNotFail_whenDataStoreIsNull() {
 		RequestBuilder requestBuilder = new RequestBuilder(null);
 		List<Event> events = getSingleEvent(getExperienceEventData("value"));
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
@@ -82,31 +79,55 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("value", payloadMap.get("events[0].data.key"));
-		assertEquals(events.get(0).getUniqueIdentifier(), payloadMap.get("events[0].xdm._id"));
-		assertEquals(formatTimestamp(events.get(0).getTimestamp()), payloadMap.get("events[0].xdm.timestamp"));
+		String expected =
+			"{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"data\": {" +
+			"        \"key\": \"value\"" +
+			"      }," +
+			"      \"xdm\": {" +
+			"        \"_id\": \"" +
+			events.get(0).getUniqueIdentifier() +
+			"\"," +
+			"        \"timestamp\": \"" +
+			formatTimestamp(events.get(0).getTimestamp()) +
+			"\"" +
+			"      }" +
+			"    }" +
+			"  ]" +
+			"}";
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_setsEventTimestampAndEventId_whenEventsListIsValid() throws Exception {
+	public void getPayloadWithExperienceEvents_setsEventTimestampAndEventId_whenEventsListIsValid() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value"));
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
 
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals(events.get(0).getUniqueIdentifier(), payloadMap.get("events[0].xdm._id"));
-		assertEquals(formatTimestamp(events.get(0).getTimestamp()), payloadMap.get("events[0].xdm.timestamp"));
+		String expected =
+			"{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"xdm\": {" +
+			"        \"_id\": \"" +
+			events.get(0).getUniqueIdentifier() +
+			"\"," +
+			"        \"timestamp\": \"" +
+			formatTimestamp(events.get(0).getTimestamp()) +
+			"\"" +
+			"      }" +
+			"    }" +
+			"  ]" +
+			"}";
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_doesNotOverwriteTimestamp_whenValidTimestampPresent() throws Exception {
+	public void getPayloadWithExperienceEvents_doesNotOverwriteTimestamp_whenValidTimestampPresent() {
 		String testTimestamp = "2021-06-03T00:00:20Z";
 		List<Event> events = getSingleEvent(getExperienceEventData("value", null, testTimestamp));
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
@@ -114,15 +135,24 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-		assertNotSame(formatTimestamp(events.get(0).getTimestamp()), payloadMap.get("events[0].xdm.timestamp"));
-		assertEquals(testTimestamp, payloadMap.get("events[0].xdm.timestamp"));
+		assertNotSame(testTimestamp, formatTimestamp(events.get(0).getTimestamp()));
+		String expected =
+			"{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"xdm\": {" +
+			"        \"timestamp\": \"" +
+			testTimestamp +
+			"\"" +
+			"      }" +
+			"    }" +
+			"  ]" +
+			"}";
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_doesNotOverwriteTimestamp_whenInvalidTimestampPresent()
-		throws Exception {
+	public void getPayloadWithExperienceEvents_doesNotOverwriteTimestamp_whenInvalidTimestampPresent() {
 		String testTimestamp = "invalidTimestamp";
 		List<Event> events = getSingleEvent(getExperienceEventData("value", null, testTimestamp));
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
@@ -130,14 +160,24 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-		assertNotSame(formatTimestamp(events.get(0).getTimestamp()), payloadMap.get("events[0].xdm.timestamp"));
-		assertEquals(testTimestamp, payloadMap.get("events[0].xdm.timestamp"));
+		assertNotSame(testTimestamp, formatTimestamp(events.get(0).getTimestamp()));
+		String expected =
+			"{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"xdm\": {" +
+			"        \"timestamp\": \"" +
+			testTimestamp +
+			"\"" +
+			"      }" +
+			"    }" +
+			"  ]" +
+			"}";
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_setsEventTimestamp_whenProvidedTimestampIsEmpty() throws Exception {
+	public void getPayloadWithExperienceEvents_setsEventTimestamp_whenProvidedTimestampIsEmpty() {
 		String testTimestamp = "";
 		List<Event> events = getSingleEvent(getExperienceEventData("value", null, testTimestamp));
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
@@ -145,60 +185,83 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-		assertEquals(formatTimestamp(events.get(0).getTimestamp()), payloadMap.get("events[0].xdm.timestamp"));
+		String expected =
+			"{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"xdm\": {" +
+			"        \"timestamp\": \"" +
+			formatTimestamp(events.get(0).getTimestamp()) +
+			"\"" +
+			"      }" +
+			"    }" +
+			"  ]" +
+			"}";
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_setsCollectMeta_whenEventContainsDatasetId() throws Exception {
+	public void getPayloadWithExperienceEvents_setsCollectMeta_whenEventContainsDatasetId() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value", "5dd603781b95cc18a83d42ce"));
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
 
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("5dd603781b95cc18a83d42ce", payloadMap.get("events[0].meta.collect.datasetId"));
-		assertFalse(payloadMap.containsKey("events[0].datasetId")); // verify internal key is removed
+		String expected =
+			"{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"meta\": {" +
+			"        \"collect\": {" +
+			"          \"datasetId\": \"5dd603781b95cc18a83d42ce\"" +
+			"        }" +
+			"      }" +
+			"    }" +
+			"  ]" +
+			"}";
+		// Verify internal key is removed
+		assertExactMatch(expected, payload, new KeyMustBeAbsent("events[0].datasetId"));
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_setsCollectMeta_whenEventContainsDatasetIdWithWhitespace()
-		throws Exception {
+	public void getPayloadWithExperienceEvents_setsCollectMeta_whenEventContainsDatasetIdWithWhitespace() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value", "   5dd603781b95cc18a83d42ce   "));
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
 
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("5dd603781b95cc18a83d42ce", payloadMap.get("events[0].meta.collect.datasetId"));
-		assertFalse(payloadMap.containsKey("events[0].datasetId")); // verify internal key is removed
+		String expected =
+			"{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"meta\": {" +
+			"        \"collect\": {" +
+			"          \"datasetId\": \"5dd603781b95cc18a83d42ce\"" +
+			"        }" +
+			"      }" +
+			"    }" +
+			"  ]" +
+			"}";
+		// Verify internal key is removed
+		assertExactMatch(expected, payload, new KeyMustBeAbsent("events[0].datasetId"));
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_doesNotSetCollectMeta_whenEventDoesNotContainDatasetId()
-		throws Exception {
+	public void getPayloadWithExperienceEvents_doesNotSetCollectMeta_whenEventDoesNotContainDatasetId() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value"));
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
 
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertFalse(payloadMap.containsKey("events[0].meta"));
-		assertFalse(payloadMap.containsKey("events[0].datasetId")); // verify internal key is removed
+		// Verify internal key is removed
+		assertExactMatch("{}", payload, new KeyMustBeAbsent("events[0].datasetId", "events[0].meta"));
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_doesNotCollectMeta_whenEventContainsEmptyDatasetId() throws Exception {
+	public void getPayloadWithExperienceEvents_doesNotCollectMeta_whenEventContainsEmptyDatasetId() {
 		List<Map<String, Object>> eventsData = new ArrayList<>();
 		eventsData.add(getExperienceEventData("one", ""));
 		eventsData.add(getExperienceEventData("two", "   "));
@@ -209,17 +272,11 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 2);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertFalse(payloadMap.containsKey("events[0].meta"));
-		assertFalse(payloadMap.containsKey("events[0].datasetId")); // verify internal key not set
-		assertFalse(payloadMap.containsKey("events[1].meta"));
-		assertFalse(payloadMap.containsKey("events[1].datasetId")); // verify internal key not set
+		assertExactMatch("{}", payload, new KeyMustBeAbsent("events[*].datasetId", "events[*].meta"));
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_doesNotCollectMeta_whenEventContainsNullDatasetId() throws Exception {
+	public void getPayloadWithExperienceEvents_doesNotCollectMeta_whenEventContainsNullDatasetId() {
 		Map<String, Object> collectMeta = new HashMap<>();
 		collectMeta.put(EdgeJson.Event.Metadata.DATASET_ID, null);
 		Map<String, Object> eventMeta = new HashMap<>();
@@ -234,18 +291,34 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals(events.get(0).getUniqueIdentifier(), payloadMap.get("events[0].xdm._id"));
-		assertEquals(formatTimestamp(events.get(0).getTimestamp()), payloadMap.get("events[0].xdm.timestamp"));
-		assertFalse(payloadMap.containsKey("events[0].meta"));
-		assertFalse(payloadMap.containsKey("events[0].datasetId")); // verify internal key not set
+		String expected =
+			"{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"meta\": {" +
+			"        \"collect\": {}" +
+			"      }," +
+			"      \"xdm\": {" +
+			"        \"_id\": \"" +
+			events.get(0).getUniqueIdentifier() +
+			"\"," +
+			"        \"timestamp\": \"" +
+			formatTimestamp(events.get(0).getTimestamp()) +
+			"\"" +
+			"      }" +
+			"    }" +
+			"  ]" +
+			"}";
+		assertExactMatch(
+			expected,
+			payload,
+			new KeyMustBeAbsent("events[0].datasetId"),
+			new CollectionEqualCount(Subtree, "events[0].meta")
+		);
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_addsMultipleEvents_whenEventsListContainsMultipleEvents()
-		throws Exception {
+	public void getPayloadWithExperienceEvents_addsMultipleEvents_whenEventsListContainsMultipleEvents() {
 		List<Map<String, Object>> eventsData = new ArrayList<>();
 		eventsData.add(getExperienceEventData("one"));
 		eventsData.add(getExperienceEventData("two"));
@@ -256,23 +329,42 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 2);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("one", payloadMap.get("events[0].data.key"));
-		assertEquals(events.get(0).getUniqueIdentifier(), payloadMap.get("events[0].xdm._id"));
-		assertEquals(formatTimestamp(events.get(0).getTimestamp()), payloadMap.get("events[0].xdm.timestamp"));
-		assertFalse(payloadMap.containsKey("events[0].meta"));
-
-		assertEquals("two", payloadMap.get("events[1].data.key"));
-		assertEquals(events.get(1).getUniqueIdentifier(), payloadMap.get("events[1].xdm._id"));
-		assertEquals(formatTimestamp(events.get(1).getTimestamp()), payloadMap.get("events[1].xdm.timestamp"));
-		assertFalse(payloadMap.containsKey("events[1].meta"));
+		String expected =
+			"{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"data\": {" +
+			"        \"key\": \"one\"" +
+			"      }," +
+			"      \"xdm\": {" +
+			"        \"_id\": \"" +
+			events.get(0).getUniqueIdentifier() +
+			"\"," +
+			"        \"timestamp\": \"" +
+			formatTimestamp(events.get(0).getTimestamp()) +
+			"\"" +
+			"      }" +
+			"    }," +
+			"    {" +
+			"      \"data\": {" +
+			"        \"key\": \"two\"" +
+			"      }," +
+			"      \"xdm\": {" +
+			"        \"_id\": \"" +
+			events.get(1).getUniqueIdentifier() +
+			"\"," +
+			"        \"timestamp\": \"" +
+			formatTimestamp(events.get(1).getTimestamp()) +
+			"\"" +
+			"      }" +
+			"    }" +
+			"  ]" +
+			"}";
+		assertExactMatch(expected, payload, new KeyMustBeAbsent("events[*].meta"));
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_addsMultipleEventsWithDatasetId_whenEventsListContainsMultipleEventsWithDatasetId()
-		throws Exception {
+	public void getPayloadWithExperienceEvents_addsMultipleEventsWithDatasetId_whenEventsListContainsMultipleEventsWithDatasetId() {
 		List<Map<String, Object>> eventsData = new ArrayList<>();
 		eventsData.add(getExperienceEventData("one", "abc"));
 		eventsData.add(getExperienceEventData("two", "123"));
@@ -283,25 +375,52 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 2);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("one", payloadMap.get("events[0].data.key"));
-		assertEquals(events.get(0).getUniqueIdentifier(), payloadMap.get("events[0].xdm._id"));
-		assertEquals(formatTimestamp(events.get(0).getTimestamp()), payloadMap.get("events[0].xdm.timestamp"));
-		assertEquals("abc", payloadMap.get("events[0].meta.collect.datasetId"));
-		assertFalse(payloadMap.containsKey("events[0].datasetId")); // verify internal key is removed
-
-		assertEquals("two", payloadMap.get("events[1].data.key"));
-		assertEquals(events.get(1).getUniqueIdentifier(), payloadMap.get("events[1].xdm._id"));
-		assertEquals(formatTimestamp(events.get(1).getTimestamp()), payloadMap.get("events[1].xdm.timestamp"));
-		assertEquals("123", payloadMap.get("events[1].meta.collect.datasetId"));
-		assertFalse(payloadMap.containsKey("events[1].datasetId")); // verify internal key is removed
+		String expected =
+			"{" +
+			"  \"events\": [" +
+			"    {" +
+			"      \"data\": {" +
+			"        \"key\": \"one\"" +
+			"      }," +
+			"      \"xdm\": {" +
+			"        \"_id\": \"" +
+			events.get(0).getUniqueIdentifier() +
+			"\"," +
+			"        \"timestamp\": \"" +
+			formatTimestamp(events.get(0).getTimestamp()) +
+			"\"" +
+			"      }," +
+			"      \"meta\": {" +
+			"        \"collect\": {" +
+			"          \"datasetId\": \"abc\"" +
+			"        }" +
+			"      }" +
+			"    }," +
+			"    {" +
+			"      \"data\": {" +
+			"        \"key\": \"two\"" +
+			"      }," +
+			"      \"xdm\": {" +
+			"        \"_id\": \"" +
+			events.get(1).getUniqueIdentifier() +
+			"\"," +
+			"        \"timestamp\": \"" +
+			formatTimestamp(events.get(1).getTimestamp()) +
+			"\"" +
+			"      }," +
+			"      \"meta\": {" +
+			"        \"collect\": {" +
+			"          \"datasetId\": \"123\"" +
+			"        }" +
+			"      }" +
+			"    }" +
+			"  ]" +
+			"}";
+		assertExactMatch(expected, payload, new KeyMustBeAbsent("events[*].datasetId"));
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_addsKonductorConfigWithStreaming_whenStreamingEnabled()
-		throws Exception {
+	public void getPayloadWithExperienceEvents_addsKonductorConfigWithStreaming_whenStreamingEnabled() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value"));
 		requestBuilder.enableResponseStreaming("\u0000", "\n");
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
@@ -309,16 +428,23 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("true", payloadMap.get("meta.konductorConfig.streaming.enabled"));
-		assertEquals("\u0000", payloadMap.get("meta.konductorConfig.streaming.recordSeparator"));
-		assertEquals("\n", payloadMap.get("meta.konductorConfig.streaming.lineFeed"));
+		String expected =
+			"{" +
+			"  \"meta\": {" +
+			"    \"konductorConfig\": {" +
+			"      \"streaming\": {" +
+			"        \"enabled\": true," +
+			"        \"recordSeparator\": \"\\u0000\"," +
+			"        \"lineFeed\": \"\\n\"" +
+			"      }" +
+			"    }" +
+			"  }" +
+			"}";
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_setsSdkConfigMeta_whenSdkConfigPresent() throws Exception {
+	public void getPayloadWithExperienceEvents_setsSdkConfigMeta_whenSdkConfigPresent() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value", null));
 		requestBuilder.addSdkConfig(new SDKConfig(new Datastream("OriginalDatastreamId")));
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
@@ -326,14 +452,21 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("OriginalDatastreamId", payloadMap.get("meta.sdkConfig.datastream.original"));
+		String expected =
+			"{" +
+			"  \"meta\": {" +
+			"    \"sdkConfig\": {" +
+			"      \"datastream\": {" +
+			"        \"original\": \"OriginalDatastreamId\"" +
+			"      }" +
+			"    }" +
+			"  }" +
+			"}";
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_setsConfigOverridesMeta_whenConfigOverridesPresent() throws Exception {
+	public void getPayloadWithExperienceEvents_setsConfigOverridesMeta_whenConfigOverridesPresent() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value", "5dd603781b95cc18a83d42ce"));
 		requestBuilder.addConfigOverrides(
 			new HashMap() {
@@ -347,15 +480,13 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("val", payloadMap.get("meta.configOverrides.key"));
+		String expected =
+			"{" + "  \"meta\": {" + "    \"configOverrides\": {" + "      \"key\": \"val\"" + "    }" + "  }" + "}";
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_doesNotSetConfigOverridesMeta_whenConfigOverridesEmpty()
-		throws Exception {
+	public void getPayloadWithExperienceEvents_doesNotSetConfigOverridesMeta_whenConfigOverridesEmpty() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value", "5dd603781b95cc18a83d42ce"));
 		requestBuilder.addConfigOverrides(new HashMap() {});
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
@@ -363,15 +494,11 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertNull(payloadMap.get("meta.configOverrides"));
+		assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.configOverrides"));
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_doesNotSetConfigOverridesMeta_whenConfigOverridesNull()
-		throws Exception {
+	public void getPayloadWithExperienceEvents_doesNotSetConfigOverridesMeta_whenConfigOverridesNull() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value", "5dd603781b95cc18a83d42ce"));
 		requestBuilder.addConfigOverrides(null);
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
@@ -379,28 +506,23 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertNull(payloadMap.get("meta.configOverrides"));
+		assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.configOverrides"));
 	}
 
 	@Test
 	public void getPayloadWithExperienceEvents_addsIdentityMap_whenEcidGiven() throws Exception {
 		List<Event> events = getSingleEvent(getExperienceEventData("value"));
 		final String jsonStr =
-			"{\n" +
-			"      \"identityMap\": {\n" +
-			"        \"ECID\": [\n" +
-			"          {\n" +
-			"            \"id\":" +
-			"myECID" +
-			",\n" +
-			"            \"authenticatedState\": \"ambiguous\",\n" +
-			"            \"primary\": false\n" +
-			"          }\n" +
-			"        ]\n" +
-			"      }\n" +
+			"{" +
+			"      \"identityMap\": {" +
+			"        \"ECID\": [" +
+			"          {" +
+			"            \"id\": \"myECID\"," +
+			"            \"authenticatedState\": \"ambiguous\"," +
+			"            \"primary\": false" +
+			"          }" +
+			"        ]" +
+			"      }" +
 			"}";
 
 		final JSONObject jsonObject = new JSONObject(jsonStr);
@@ -411,61 +533,72 @@ public class RequestBuilderTest {
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("myECID", payloadMap.get("xdm.identityMap.ECID[0].id"));
+		String expected =
+			"{" +
+			"  \"xdm\": {" +
+			"    \"identityMap\": {" +
+			"      \"ECID\": [" +
+			"        {" +
+			"          \"id\": \"myECID\"" +
+			"        }" +
+			"      ]" +
+			"    }" +
+			"  }" +
+			"}";
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_addsStoreMetadataWithPayloads_whenPayloadsInDataStore()
-		throws Exception {
+	public void getPayloadWithExperienceEvents_addsStoreMetadataWithPayloads_whenPayloadsInDataStore() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value"));
 		setupMockStoreMetadata();
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("kndctr_3E2A28175B8ED3720A495E23_AdobeOrg_optout", payloadMap.get("meta.state.entries[0].key"));
-		assertEquals("", payloadMap.get("meta.state.entries[0].value"));
-		assertEquals("7200", payloadMap.get("meta.state.entries[0].maxAge"));
-
-		assertEquals("kndctr_3E2A28175B8ED3720A495E23_AdobeOrg_identity", payloadMap.get("meta.state.entries[1].key"));
-		assertEquals(
-			"Cg8KBnN5bmNlZBIBMRiA9SQKMwoERUNJRBImNjA5MjY2MDcwMDIxMDI0NzMyNDYwNDgzMTg3MjA0MDkxMDQ3NjQYgIGjEBCFwbjv_i0=",
-			payloadMap.get("meta.state.entries[1].value")
-		);
-		assertEquals("34128000", payloadMap.get("meta.state.entries[1].maxAge"));
+		String expected =
+			"{" +
+			"  \"meta\": {" +
+			"    \"state\": {" +
+			"      \"entries\": [" +
+			"        {" +
+			"          \"key\": \"kndctr_3E2A28175B8ED3720A495E23_AdobeOrg_optout\"," +
+			"          \"value\": \"\"," +
+			"          \"maxAge\": 7200" +
+			"        }," +
+			"        {" +
+			"          \"key\": \"kndctr_3E2A28175B8ED3720A495E23_AdobeOrg_identity\"," +
+			"          \"value\": \"Cg8KBnN5bmNlZBIBMRiA9SQKMwoERUNJRBImNjA5MjY2MDcwMDIxMDI0NzMyNDYwNDgzMTg3MjA0MDkxMDQ3NjQYgIGjEBCFwbjv_i0=\"," +
+			"          \"maxAge\": 34128000" +
+			"        }" +
+			"      ]" +
+			"    }" +
+			"  }" +
+			"}";
+		assertExactMatch(expected, payload);
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_NoAddStoreMetadata_whenNullPayloadInDataStore() throws Exception {
+	public void getPayloadWithExperienceEvents_NoAddStoreMetadata_whenNullPayloadInDataStore() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value"));
 		setupMockStoreMetadataNullDatastoreKey();
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertNull(payloadMap.get("meta.state"));
+		assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.state"));
 	}
 
 	@Test
-	public void getPayloadWithExperienceEvents_doesNotAddStoreMetadata_whenDatastoreIsEmpty() throws Exception {
+	public void getPayloadWithExperienceEvents_doesNotAddStoreMetadata_whenDatastoreIsEmpty() {
 		List<Event> events = getSingleEvent(getExperienceEventData("value"));
 		setupMockStoreMetadataEmpty();
 		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
 		assertNotNull(payload);
 		assertNumberOfEvents(payload, 1);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-		assertNull(payloadMap.get("meta.state")); // StateMetadata not added if empty
+		// StateMetadata not added if empty
+		assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.state"));
 	}
 
 	// getConsentPayload tests
@@ -516,7 +649,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getConsentPayload_happy() throws Exception {
+	public void getConsentPayload_happy() {
 		final Map<String, Object> collectConsent = new HashMap<String, Object>() {
 			{
 				put(
@@ -539,12 +672,33 @@ public class RequestBuilderTest {
 		);
 		assertNotNull(payload);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-		assertEquals(5, payloadMap.size()); // 4 from standard fields, 1 from collect value
-		assertStandardFieldsInConsentUpdatesPayload(payload);
-		// assert consent value provided in the consent event
-		assertEquals("y", payloadMap.get("consent[0].value.collect.val"));
+		String expected =
+			"{" +
+			"  \"consent\": [" +
+			"    {" +
+			"      \"standard\": \"Adobe\"," +
+			"      \"value\": {" +
+			"        \"collect\": {" +
+			"          \"val\": \"y\"" +
+			"        }" +
+			"      }," +
+			"      \"version\": \"2.0\"" +
+			"    }" +
+			"  ]," +
+			"  \"meta\": {" +
+			"    \"konductorConfig\": {" +
+			"      \"streaming\": {" +
+			"        \"enabled\": false" +
+			"      }" +
+			"    }" +
+			"  }," +
+			"  \"query\": {" +
+			"    \"consent\": {" +
+			"      \"operation\": \"update\"" +
+			"    }" +
+			"  }" +
+			"}";
+		JSONAsserts.assertEquals(expected, payload);
 	}
 
 	@Test
@@ -577,26 +731,23 @@ public class RequestBuilderTest {
 		);
 		assertStandardFieldsInConsentUpdatesPayload(payload);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-		assertNull(payloadMap.get("meta.state")); // StateMetadata not added to consent requests
+		// StateMetadata not added to consent requests
+		assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.state"));
 	}
 
 	@Test
 	public void getConsentPayload_addsIdentityMap() throws Exception {
 		final String jsonStr =
-			"{\n" +
-			"      \"identityMap\": {\n" +
-			"        \"ECID\": [\n" +
-			"          {\n" +
-			"            \"id\":" +
-			"1234" +
-			",\n" +
-			"            \"authenticatedState\": \"ambiguous\",\n" +
-			"            \"primary\": false\n" +
-			"          }\n" +
-			"        ]\n" +
-			"      }\n" +
+			"{" +
+			"      \"identityMap\": {" +
+			"        \"ECID\": [" +
+			"          {" +
+			"            \"id\": 1234," +
+			"            \"authenticatedState\": \"ambiguous\"," +
+			"            \"primary\": false" +
+			"          }" +
+			"        ]" +
+			"      }" +
 			"}";
 
 		final JSONObject jsonObject = new JSONObject(jsonStr);
@@ -702,29 +853,43 @@ public class RequestBuilderTest {
 
 		assertStandardFieldsInConsentUpdatesPayload(payload);
 
-		Map<String, String> payloadMap = new HashMap<>();
-		addKeys("", new ObjectMapper().readTree(payload.toString()), payloadMap);
-
-		assertEquals("true", payloadMap.get("meta.konductorConfig.streaming.enabled"));
-		assertEquals("\u0000", payloadMap.get("meta.konductorConfig.streaming.recordSeparator"));
-		assertEquals("\n", payloadMap.get("meta.konductorConfig.streaming.lineFeed"));
+		String expected =
+			"{" +
+			"  \"meta\": {" +
+			"    \"konductorConfig\": {" +
+			"      \"streaming\": {" +
+			"        \"enabled\": true," +
+			"        \"recordSeparator\": \"\\u0000\"," +
+			"        \"lineFeed\": \"\\n\"" +
+			"      }" +
+			"    }" +
+			"  }" +
+			"}";
+		assertExactMatch(expected, payload);
 	}
 
 	// assert on standard fields included in the payload of all consent requests
-	private void assertStandardFieldsInConsentUpdatesPayload(final JSONObject payload) throws Exception {
-		assertNotNull(payload);
-		JSONObject query = payload.getJSONObject("query");
-		assertNotNull(query);
-		JSONObject consentQuery = query.getJSONObject("consent");
-		assertNotNull(consentQuery);
-		assertEquals(1, consentQuery.length());
-		assertEquals("update", consentQuery.getString("operation"));
-
-		JSONArray consent = payload.optJSONArray("consent");
-		assertNotNull(consent);
-		assertEquals(1, consent.length());
-		assertEquals("Adobe", consent.getJSONObject(0).getString("standard"));
-		assertEquals("2.0", consent.getJSONObject(0).getString("version"));
+	private void assertStandardFieldsInConsentUpdatesPayload(final JSONObject payload) {
+		String expected =
+			"{" +
+			"  \"consent\": [" +
+			"    {" +
+			"      \"standard\": \"Adobe\"," +
+			"      \"version\": \"2.0\"" +
+			"    }" +
+			"  ]," +
+			"  \"query\": {" +
+			"    \"consent\": {" +
+			"      \"operation\": \"update\"" +
+			"    }" +
+			"  }" +
+			"}";
+		assertExactMatch(
+			expected,
+			payload,
+			new CollectionEqualCount("consent"), // Validates that `consent` array only has 1 element
+			new CollectionEqualCount(Subtree, "query") // Validates that `query` onwards has same number of elements
+		);
 	}
 
 	private void assertNumberOfEvents(final JSONObject payload, final int expectedEventCount) {
@@ -772,66 +937,51 @@ public class RequestBuilderTest {
 		return events;
 	}
 
-	private Map<String, Object> getExperienceEventData(final String value, final String datasetId) throws IOException {
+	private Map<String, Object> getExperienceEventData(final String value, final String datasetId) {
 		return getExperienceEventData(value, datasetId, null);
 	}
 
-	@SuppressWarnings("unchecked")
 	private Map<String, Object> getExperienceEventData(
 		final String value,
 		final String datasetId,
 		final String timestamp
-	) throws IOException {
-		final String spaces = "    ";
-		StringBuilder builder = new StringBuilder();
-		builder.append("{\n");
-		builder.append(spaces).append("\"xdm\": {\n");
-		builder.append(spaces).append(spaces).append("\"stitch\": \"abc_stitch\",\n");
-		builder.append(spaces).append(spaces).append("\"eventType\": \"view:load\"\n");
+	) {
+		// Initialize the main map and nested maps
+		Map<String, Object> experienceEventData = new HashMap<>();
+		Map<String, Object> xdmMap = new HashMap<>();
+
+		// Populate the xdm map
+		xdmMap.put("stitch", "abc_stitch");
+		xdmMap.put("eventType", "view:load");
 
 		if (timestamp != null) {
-			builder.append(spaces).append(spaces).append(",\"timestamp\": \"").append(timestamp).append("\"\n");
+			xdmMap.put("timestamp", timestamp);
 		}
 
-		builder.append(spaces).append("}");
+		// Add xdm map to the main map
+		experienceEventData.put("xdm", xdmMap);
 
-		if (value != null || datasetId != null) {
-			builder.append(",\n");
-		} else {
-			builder.append("\n");
-		}
-
+		// Optionally add the data map
 		if (value != null) {
-			builder.append(spaces).append("\"data\": {\n");
-			builder.append(spaces).append(spaces).append("\"key\": \"").append(value).append("\"\n");
-			builder.append(spaces).append("}");
-
-			if (datasetId != null) {
-				builder.append(",\n");
-			} else {
-				builder.append("\n");
-			}
+			Map<String, Object> dataMap = new HashMap<>();
+			dataMap.put("key", value);
+			experienceEventData.put("data", dataMap);
 		}
 
+		// Optionally add the datasetId
 		if (datasetId != null) {
-			builder.append(spaces).append("\"datasetId\": \"").append(datasetId).append("\"\n");
+			experienceEventData.put("datasetId", datasetId);
 		}
 
-		builder.append("}");
-
-		ObjectMapper mapper = new ObjectMapper();
-		return mapper.readValue(builder.toString(), Map.class);
+		return experienceEventData;
 	}
 
-	private Map<String, Object> getExperienceEventData(final String value) throws IOException {
+	private Map<String, Object> getExperienceEventData(final String value) {
 		return getExperienceEventData(value, null);
 	}
 
 	private String formatTimestamp(final long timestamp) {
-		final String TIMESTAMP_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-		SimpleDateFormat simpleDateFormat = new SimpleDateFormat(TIMESTAMP_FORMAT);
-		simpleDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-		return simpleDateFormat.format(new Date(timestamp));
+		return TimeUtils.getISO8601UTCDateWithMilliseconds(new Date(timestamp));
 	}
 
 	private void setupMockStoreMetadataNullDatastoreKey() {
@@ -856,41 +1006,5 @@ public class RequestBuilderTest {
 		HashMap<String, String> payloads = new HashMap<>();
 
 		when(mockNamedCollection.getMap(EdgeConstants.DataStoreKeys.STORE_PAYLOADS)).thenReturn(payloads);
-	}
-
-	/**
-	 * Deserialize {@code JsonNode} and flatten to provided {@code map}.
-	 * For example, a JSON such as "{xdm: {stitchId: myID, eventType: myType}}" is flattened
-	 * to two map elements "xdm.stitchId" = "myID" and "xdm.eventType" = "myType".
-	 *
-	 * Method is called recursively. To use, call with an empty path such as
-	 * {@code addKeys("", new ObjectMapper().readTree(JsonNodeAsString), map);}
-	 *
-	 * @param currentPath the path in {@code JsonNode} to process
-	 * @param jsonNode {@link JsonNode} to deserialize
-	 * @param map {@code Map<String, String>} instance to store flattened JSON result
-	 *
-	 * @see <a href="https://stackoverflow.com/a/24150263">Stack Overflow post</a>
-	 */
-	private void addKeys(String currentPath, JsonNode jsonNode, Map<String, String> map) {
-		if (jsonNode.isObject()) {
-			ObjectNode objectNode = (ObjectNode) jsonNode;
-			Iterator<Map.Entry<String, JsonNode>> iter = objectNode.fields();
-			String pathPrefix = currentPath.isEmpty() ? "" : currentPath + ".";
-
-			while (iter.hasNext()) {
-				Map.Entry<String, JsonNode> entry = iter.next();
-				addKeys(pathPrefix + entry.getKey(), entry.getValue(), map);
-			}
-		} else if (jsonNode.isArray()) {
-			ArrayNode arrayNode = (ArrayNode) jsonNode;
-
-			for (int i = 0; i < arrayNode.size(); i++) {
-				addKeys(currentPath + "[" + i + "]", arrayNode.get(i), map);
-			}
-		} else if (jsonNode.isValueNode()) {
-			ValueNode valueNode = (ValueNode) jsonNode;
-			map.put(currentPath, valueNode.asText());
-		}
 	}
 }

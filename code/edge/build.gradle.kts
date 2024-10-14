@@ -15,7 +15,9 @@ plugins {
 }
 
 val mavenCoreVersion: String by project
+val mavenEdgeConsentVersion: String by project
 val mavenEdgeIdentityVersion: String by project
+val mavenTestUtilsVersion: String by project
 
 aepLibrary {
     namespace = "com.adobe.marketing.mobile.edge"
@@ -34,11 +36,10 @@ dependencies {
     implementation("com.adobe.marketing.mobile:core:$mavenCoreVersion")
     implementation("com.adobe.marketing.mobile:edgeidentity:$mavenEdgeIdentityVersion")
 
-    testImplementation(project(":test-utils"))
-    testImplementation("com.fasterxml.jackson.core:jackson-databind:2.12.7")
+    testImplementation("com.github.adobe:aepsdk-testutils-android:$mavenTestUtilsVersion")
 
-    androidTestImplementation(project(":test-utils"))
-    androidTestImplementation("com.adobe.marketing.mobile:edgeconsent:3.0.0-SNAPSHOT")
+    androidTestImplementation("com.github.adobe:aepsdk-testutils-android:$mavenTestUtilsVersion")
+    androidTestImplementation("com.adobe.marketing.mobile:edgeconsent:$mavenEdgeConsentVersion")
     {
         exclude(group = "com.adobe.marketing.mobile", module = "edge")
     }

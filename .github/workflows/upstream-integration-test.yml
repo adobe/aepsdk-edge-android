@@ -13,34 +13,34 @@
 # Action to execute upstream integration tests - Edge Network (Konductor)
 name: Integration Tests
 
-# Controls when the action will run. Workflow runs when manually triggered using the UI
-# or API.
 on:
+  # `*` is a special character in YAML so you have to quote this string
+  # Avoiding start of hour and other common times to avoid conflicts with peak times
+  schedule:
+    # Run every weekday at 12:45 PM PDT (Daylight saving time) -> 7:45 PM UTC
+    # Add +1 hour when back in PST
+    - cron:  '45 19 * * 1-5'
+
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to use when running integration tests'
+        description: 'The branch to use when running the integration tests'
         required: false
         default: 'main'
       id:
-        description: 'Identifier for the run (optional)'
+        description: '(Optional) The identifier for the run.'
         required: false
-      environment:
-        type: choice
-        description: 'Edge Network environment to test'
-        required: true
-        default: 'prod'
-        options:
-          - prod
-          - pre-prod
-          - int
-      edge-location-hint:
-        type: choice
-        description: 'Edge location hint to set before each test (optional)'
+      tags-mobile-property-id:
+        type: string
+        description: '(Optional) The tags mobile property ID to use for the test. A default is used if not set.'
         required: false
         default: ''
+      edge-location-hint:
+        type: choice
+        description: '(Optional) The Edge location hint to set before each test.'
+        required: false
+        default: 'None'
         options: 
-          - '' # Interpreted in the test code as no preset location hint; any non-valid location hint string is interpreted this way
           - 'or2'
           - 'va6'
           - 'irl1'
@@ -48,19 +48,18 @@ on:
           - 'jpn3'
           - 'sgp3'
           - 'aus3'
+          - 'EmptyString'
+          - 'Invalid'
+          - 'None'
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   test-integration-upstream:
-    # The type of runner that the job will run on
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         api-level: [29]
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-
     - name: Job run identifier ${{ github.event.inputs.id }}
       run: |
         if [ -z "${{ github.event.inputs.id }}" ]; then \
@@ -69,33 +68,102 @@ jobs:
           echo 'Job run identifier is:' ${{ inputs.id }}
         fi;
 
+    - name: Check branch mismatch
+      run: |
+        CURRENT_BRANCH=$(echo "${GITHUB_REF##*/}")
+        INPUT_BRANCH="${{ github.event.inputs.branch }}"
+        echo "Running on branch: ${CURRENT_BRANCH}"
+        echo "Input branch: ${INPUT_BRANCH}"
+
+        if [ "${CURRENT_BRANCH}" != "${INPUT_BRANCH}" ]; then
+          echo "::warning title=Branch Mismatch::Input branch '${INPUT_BRANCH}' does not match current branch '${CURRENT_BRANCH}'"
+        fi
+
+    # This is to help reduce Android emulator boot up flakiness issues:
+    # See: https://github.com/ReactiveCircus/android-emulator-runner/issues/324#issuecomment-2009351180
+    - name: Delete unnecessary tools 🔧
+      uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+      with:
+        android: false # Don't remove Android tools
+        tool-cache: true # Remove image tool cache - rm -rf "$AGENT_TOOLSDIRECTORY"
+        dotnet: true # rm -rf /usr/share/dotnet
+        haskell: true # rm -rf /opt/ghc...
+        swap-storage: true # rm -f /mnt/swapfile (4GiB)
+        docker-images: false # Takes 16s, enable if needed in the future
+        large-packages: false # includes google-cloud-sdk and it's slow
+
+    # The Android emulator requires Kernel-based Virtual Machine (KVM) access to run efficiently. 
+    # This step ensures that the KVM is accessible with the proper permissions across all users.
+    - name: Enable KVM group perms
+      run: |
+        echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger --name-match=kvm
+        ls /dev/kvm
+
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4.2.0
       with:
         ref: ${{ github.event.inputs.branch }}
 
-    - name: Setup JAVA 11
-      uses: actions/setup-java@v3
+    - name: Set up Java
+      uses: actions/setup-java@v4.4.0
       with:
-        distribution: 'temurin'
-        java-version: 11
+        distribution: 'zulu'
+        java-version: 17
 
-    - name: Cache Gradle packages
-      uses: actions/cache@v2
+    - name: Gradle cache
+      uses: gradle/actions/setup-gradle@v4.1.0
+
+    - name: AVD cache
+      uses: actions/cache@v4.0.2
+      id: avd-cache
       with:
-        path: ~/.gradle/caches
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
-        restore-keys: ${{ runner.os }}-gradle
-
-    - name: run tests
-      uses: reactivecircus/android-emulator-runner@v2
+        path: |
+          ~/.android/avd/*
+          ~/.android/adb*
+        key: avd-${{ matrix.api-level }}
+    
+    # Note that the AVD configurations must match what's used in the test step, otherwise the cache will not be used.
+    - name: create AVD and generate snapshot for caching
+      if: steps.avd-cache.outputs.cache-hit != 'true'
+      uses: reactivecircus/android-emulator-runner@f0d1ed2dcad93c7479e8b2f2226c83af54494915 # v2.32.0
       with:
         api-level: ${{ matrix.api-level }}
+        arch: x86_64
+        disk-size: 6000M
+        heap-size: 600M
         force-avd-creation: false
-        emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+        emulator-options: -no-metrics -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+        disable-animations: false
+        script: echo "Generated AVD snapshot for caching."
+
+    # Logcat logging from: https://github.com/ReactiveCircus/android-emulator-runner/issues/9#issuecomment-867909354
+    - name: Run tests
+      uses: reactivecircus/android-emulator-runner@f0d1ed2dcad93c7479e8b2f2226c83af54494915 # v2.32.0
+      with:
+        api-level: ${{ matrix.api-level }}
+        arch: x86_64
+        disk-size: 6000M
+        heap-size: 600M
+        force-avd-creation: false
+        emulator-options: -no-metrics -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
         disable-animations: true
-        script: make upstream-integration-test EDGE_ENVIRONMENT=${{ github.event.inputs.environment }} EDGE_LOCATION_HINT=${{ github.event.inputs.edge-location-hint }}
-    
+        script: |
+          mkdir -p logs                              # Ensure the 'logs' directory exists
+          adb logcat -c                              # Clear logs
+          touch logs/emulator.log                    # Create log file
+          chmod 777 logs/emulator.log                # Allow writing to log file
+          adb logcat >> logs/emulator.log &          # Pipe all logcat messages into log file as a background process
+          make upstream-integration-test TAGS_MOBILE_PROPERTY_ID=${{ github.event.inputs.tags-mobile-property-id }} EDGE_LOCATION_HINT=${{ github.event.inputs.edge-location-hint }}
+
+    - name: Upload Logcat Logs
+      if: always()
+      uses: actions/upload-artifact@v4.4.0
+      with:
+        name: logcat-logs
+        path: logs/emulator.log
+
     # Potential workflow solutions on job failure
     - name: On failure
       if: ${{ failure() }}
