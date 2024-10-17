@@ -412,7 +412,8 @@ public class EdgeNetworkServiceTest {
 		final Map<String, String> headers = new HashMap<>();
 		headers.put(HEADER_RETRY_AFTER, retryAfter);
 		MockConnection mockConnection = new MockConnection(responseCode, null, "error", headers);
-		mockNetworkService.mockConnectAsyncConnection = mockConnection;
+		mockNetworkService.reset();
+		mockNetworkService.setMockResponseFor(url, mockConnection);
 		networkService = new EdgeNetworkService(mockNetworkService);
 
 		// test
