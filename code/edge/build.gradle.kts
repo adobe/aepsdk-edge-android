@@ -39,8 +39,5 @@ dependencies {
     testImplementation("com.github.adobe:aepsdk-testutils-android:$mavenTestUtilsVersion")
 
     androidTestImplementation("com.github.adobe:aepsdk-testutils-android:$mavenTestUtilsVersion")
-    androidTestImplementation("com.adobe.marketing.mobile:edgeconsent:$mavenEdgeConsentVersion")
-    {
-        exclude(group = "com.adobe.marketing.mobile", module = "edge")
-    }
+    androidTestImplementation("com.adobe.marketing.mobile:edgeconsent:3.0.0")
 }
