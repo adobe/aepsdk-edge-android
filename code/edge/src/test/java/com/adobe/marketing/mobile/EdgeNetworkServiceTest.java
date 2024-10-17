@@ -367,7 +367,7 @@ public class EdgeNetworkServiceTest {
 
 	@Test
 	public void testDoRequest_whenConnection_RecoverableResponseCode_507_ReturnsRetryYes_AndNoResponseCallback_AndNoErrorCallback() {
-		testRecoverableNetworkResponse(507, "Gateway Timeout");
+		testRecoverableNetworkResponse(507, "Insufficient Storage");
 	}
 
 	@Test
@@ -383,7 +383,7 @@ public class EdgeNetworkServiceTest {
 
 	@Test
 	public void testDoRequest_whenConnection_InvalidRetryAfter_ReturnsDefaultRetryTimeout() {
-		testRecoverableNetworkResponse(507, "Gateway Timeout");
+		testRecoverableNetworkResponse(507, "Insufficient Storage");
 		String[] invalidRetryAfter = { "InvalidRetryAfter", "A", "", "-1", "0", "     " };
 
 		for (String retryAfter : invalidRetryAfter) {
@@ -393,7 +393,7 @@ public class EdgeNetworkServiceTest {
 
 	@Test
 	public void testDoRequest_whenConnection_ValidRetryAfter_ReturnsCorrectRetryTimeout() {
-		testRecoverableNetworkResponse(507, "Gateway Timeout");
+		testRecoverableNetworkResponse(507, "Insufficient Storage");
 		String[] invalidRetryAfter = { "1", "5", "30", "60", "180", "300" };
 
 		for (String retryAfter : invalidRetryAfter) {
