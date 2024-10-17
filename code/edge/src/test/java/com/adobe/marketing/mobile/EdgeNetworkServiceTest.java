@@ -384,7 +384,7 @@ public class EdgeNetworkServiceTest {
 	@Test
 	public void testDoRequest_whenConnection_InvalidRetryAfter_ReturnsDefaultRetryTimeout() {
 		testRecoverableNetworkResponse(507, "Gateway Timeout");
-		String[] invalidRetryAfter = {"InvalidRetryAfter", "A", "", "-1", "0", "     "};
+		String[] invalidRetryAfter = { "InvalidRetryAfter", "A", "", "-1", "0", "     " };
 
 		for (String retryAfter : invalidRetryAfter) {
 			testRecoverableWithRetryAfter(503, retryAfter, 5); // expecting default timeout
@@ -394,14 +394,18 @@ public class EdgeNetworkServiceTest {
 	@Test
 	public void testDoRequest_whenConnection_ValidRetryAfter_ReturnsCorrectRetryTimeout() {
 		testRecoverableNetworkResponse(507, "Gateway Timeout");
-		String[] invalidRetryAfter = {"1", "5", "30", "60", "180", "300"};
+		String[] invalidRetryAfter = { "1", "5", "30", "60", "180", "300" };
 
 		for (String retryAfter : invalidRetryAfter) {
 			testRecoverableWithRetryAfter(503, retryAfter, Integer.parseInt(retryAfter)); // expecting provided timeout
 		}
 	}
 
-	private void testRecoverableWithRetryAfter(final int responseCode, final String retryAfter, final int expectedRetryAfter) {
+	private void testRecoverableWithRetryAfter(
+		final int responseCode,
+		final String retryAfter,
+		final int expectedRetryAfter
+	) {
 		// setup
 		final String url = "https://test.com";
 		final String jsonRequest = "{}";

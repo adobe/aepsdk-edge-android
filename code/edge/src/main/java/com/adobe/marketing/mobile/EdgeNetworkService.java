@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -102,13 +101,14 @@ class EdgeNetworkService {
 		"Request to Edge Network failed with an unknown exception";
 
 	static final Set<Integer> recoverableNetworkErrorCodes = mergeUnique(
-            NetworkingConstants.RECOVERABLE_ERROR_CODES,
-            Arrays.asList(
-                    -1, // returned for SocketTimeoutException
-                    429, // too many requests - The user has sent too many requests in a given amount of time ("rate limiting").
-                    507, // insufficient storage
-                    HttpURLConnection.HTTP_BAD_GATEWAY
-            ));
+		NetworkingConstants.RECOVERABLE_ERROR_CODES,
+		Arrays.asList(
+			-1, // returned for SocketTimeoutException
+			429, // too many requests - The user has sent too many requests in a given amount of time ("rate limiting").
+			507, // insufficient storage
+			HttpURLConnection.HTTP_BAD_GATEWAY
+		)
+	);
 
 	private final Networking networkService;
 
@@ -262,7 +262,7 @@ class EdgeNetworkService {
 		int retryAfter = EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS;
 		if (header != null && header.matches("\\d+")) {
 			try {
-                retryAfter = Integer.parseInt(header);
+				retryAfter = Integer.parseInt(header);
 			} catch (NumberFormatException e) {
 				Log.debug(
 					LOG_TAG,
@@ -580,10 +580,10 @@ class EdgeNetworkService {
 		}
 	}
 
-    private static Set<Integer> mergeUnique(final List<Integer> arr1, final List<Integer> arr2) {
-        Set<Integer> merged = new HashSet<>();
-        merged.addAll(arr1);
-        merged.addAll(arr2);
-        return merged;
-    }
+	private static Set<Integer> mergeUnique(final List<Integer> arr1, final List<Integer> arr2) {
+		Set<Integer> merged = new HashSet<>();
+		merged.addAll(arr1);
+		merged.addAll(arr2);
+		return merged;
+	}
 }
