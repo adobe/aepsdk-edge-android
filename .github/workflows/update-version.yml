@@ -1,48 +1,52 @@
-#
-# Copyright 2024 Adobe. All rights reserved.
-# This file is licensed to you under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License. You may obtain a copy
-# of the License at http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software distributed under
-# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
-# OF ANY KIND, either express or implied. See the License for the specific language
-# governing permissions and limitations under the License.
-#
+name: Update Versions
 
-name: Update Version
 on:
   workflow_dispatch:
     inputs:
-      version: 
-        description: 'New version to use for the Edge extension. Example: 3.0.0'
+      version:
+        description: 'New version to use for the extension (ex: 3.0.1).'
         required: true
+        type: string
+        default: ''
+
+      branch:
+        description: 'The target branch where the version update will be applied and the pull request will be merged into.'
+        required: true
+        type: string
+        default: ''
 
       core-dependency:
-        description: '[Optional] Update Core dependency in pom.xml. Example: 3.0.0'
+        description: 'If a version is provided, update AEPCore dependency in gradle.properties (ex: 3.0.1).'
         required: false
+        type: string
+        default: ''
 
-      identity-dependency:
-        description: '[Optional] Update Edge Identity dependency in pom.xml. Example: 3.0.0'
+      edge-identity-dependency:
+        description: 'If a version is provided, update AEPEdgeIdentity dependency in gradle.properties (ex: 3.0.1).'
         required: false
+        type: string
+        default: ''
+
+      edge-consent-dependency:
+        description: 'If a version is provided, update AEPEdgeConsent dependency in gradle.properties (ex: 3.0.1).'
+        required: false
+        type: string
+        default: ''
+
+      testutils-dependency:
+        description: 'If a version is provided, update AEPTestUtils dependency in gradle.properties (ex: 3.0.1).'
+        required: false
+        type: string
+        default: ''
 
 jobs:
-  update-version:
-    runs-on: ubuntu-latest
-
-    steps:    
-    - name: Checkout
-      uses: actions/checkout@v3
-    
-    - name: Update Edge
-      run: (./scripts/version.sh -u -v ${{ github.event.inputs.version }} -d "Core ${{ github.event.inputs.core-dependency }}, EdgeIdentity ${{ github.event.inputs.identity-dependency }}")
-
-    - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v5
-      with:
-        token: ${{ github.token }}
-        commit-message: Updating version to ${{ github.event.inputs.version }}.
-        branch: version-${{ github.event.inputs.version }}-update
-        delete-branch: true
-        title: Updating version to ${{ github.event.inputs.version }}
-        body: Updating version to ${{ github.event.inputs.version }}
+  update-versions:
+    permissions:
+      contents: write
+    uses: timkimadobe/aepsdk-commons/.github/workflows/versions.yml@version-script-update
+    with:
+      version: ${{ github.event.inputs.version }}
+      branch: ${{ github.event.inputs.branch }}
+      dependencies: AEPCore ${{ github.event.inputs.core-dependency }}, AEPEdgeIdentity ${{ github.event.inputs.edge-identity-dependency }}, AEPEdgeConsent ${{ github.event.inputs.edge-consent-dependency }}, AEPTestUtils ${{ github.event.inputs.testutils-dependency }}
+      paths: code/edge/src/main/java/com/adobe/marketing/mobile/EdgeConstants.java, code/gradle.properties
+      update: true
