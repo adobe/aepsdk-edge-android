@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'New version to use for the extension (ex: 3.0.1).'
+        description: 'New version to use for the extension (ex: 1.2.3).'
         required: true
         type: string
         default: ''
@@ -16,25 +16,25 @@ on:
         default: ''
 
       core-dependency:
-        description: 'If a version is provided, update AEPCore dependency in gradle.properties (ex: 3.0.1).'
+        description: 'If a version is provided, update AEPCore dependency in gradle.properties (ex: 1.2.3).'
         required: false
         type: string
         default: ''
 
       edge-identity-dependency:
-        description: 'If a version is provided, update AEPEdgeIdentity dependency in gradle.properties (ex: 3.0.1).'
+        description: 'If a version is provided, update AEPEdgeIdentity dependency in gradle.properties (ex: 1.2.3).'
         required: false
         type: string
         default: ''
 
       edge-consent-dependency:
-        description: 'If a version is provided, update AEPEdgeConsent dependency in gradle.properties (ex: 3.0.1).'
+        description: 'If a version is provided, update AEPEdgeConsent dependency in gradle.properties (ex: 1.2.3).'
         required: false
         type: string
         default: ''
 
       testutils-dependency:
-        description: 'If a version is provided, update AEPTestUtils dependency in gradle.properties (ex: 3.0.1).'
+        description: 'If a version is provided, update AEPTestUtils dependency in gradle.properties (ex: 1.2.3).'
         required: false
         type: string
         default: ''

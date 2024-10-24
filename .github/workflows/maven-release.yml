@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'The existing tag (version) to be released (ex: 5.0.1).'
+        description: 'The existing tag (version) to be released (ex: 1.2.3).'
         required: true        
 
       create-github-release:
@@ -25,7 +25,7 @@ on:
         default: true
 
       edge-identity-dependency:
-        description: 'The AEPEdgeIdentity dependency version in gradle.properties to be validated (ex: 3.0.1).'
+        description: 'The AEPEdgeIdentity dependency version in gradle.properties to be validated (ex: 1.2.3).'
         required: true
         type: string
         default: ''
