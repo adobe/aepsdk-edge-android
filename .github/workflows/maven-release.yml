@@ -16,7 +16,9 @@ on:
     inputs:
       tag:
         description: 'The existing tag (version) to be released (ex: 1.2.3).'
-        required: true        
+        type: string
+        required: true
+        default: ''
 
       create-github-release:
         description: 'Create GitHub release with tag? ("false" to skip)'
@@ -26,8 +28,8 @@ on:
 
       edge-identity-dependency:
         description: 'The AEPEdgeIdentity dependency version in gradle.properties to be validated (ex: 1.2.3).'
-        required: true
         type: string
+        required: true
         default: ''
 jobs:
   publish:
