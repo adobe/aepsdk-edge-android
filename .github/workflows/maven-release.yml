@@ -21,7 +21,7 @@ on:
         default: ''
 
       create-github-release:
-        description: 'Create GitHub release with tag? ("false" to skip)'
+        description: 'Create GitHub release using tag (`false` to skip).'
         type: boolean
         required: true
         default: true
