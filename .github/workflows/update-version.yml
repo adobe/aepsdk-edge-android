@@ -44,7 +44,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    uses: timkimadobe/aepsdk-commons/.github/workflows/versions.yml@version-script-update
+    uses: adobe/aepsdk-commons/.github/workflows/versions.yml@version-script-update
     with:
       version: ${{ github.event.inputs.version }}
       branch: ${{ github.event.inputs.branch }}
