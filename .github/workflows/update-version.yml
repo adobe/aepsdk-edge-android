@@ -28,25 +28,33 @@ on:
         default: ''
 
       core-dependency:
-        description: 'If a version is provided, update AEPCore dependency in gradle.properties (ex: 1.2.3).'
+        description: > 
+          If a version is provided, update AEPCore dependency in gradle.properties (ex: 1.2.3).
+          This is a published dependency in the pom.xml file.
         type: string
         required: false
         default: ''
 
       edge-identity-dependency:
-        description: 'If a version is provided, update AEPEdgeIdentity dependency in gradle.properties (ex: 1.2.3).'
+        description: > 
+          If a version is provided, update AEPEdgeIdentity dependency in gradle.properties (ex: 1.2.3).
+          This is a published dependency in the pom.xml file.
         type: string
         required: false
         default: ''
 
       edge-consent-dependency:
-        description: 'If a version is provided, update AEPEdgeConsent dependency in gradle.properties (ex: 1.2.3).'
+        description: > 
+          If a version is provided, update AEPEdgeConsent dependency in gradle.properties (ex: 1.2.3).
+          This is a testing-only dependency.
         type: string
         required: false
         default: ''
 
       testutils-dependency:
-        description: 'If a version is provided, update AEPTestUtils dependency in gradle.properties (ex: 1.2.3).'
+        description: >
+          If a version is provided, update AEPTestUtils dependency in gradle.properties (ex: 1.2.3).
+          This is a testing-only dependency.
         type: string
         required: false
         default: ''
