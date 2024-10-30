@@ -18,10 +18,9 @@ on:
         description: 'The existing tag (version) to be released (ex: 1.2.3).'
         type: string
         required: true
-        default: ''
 
       create-github-release:
-        description: 'Create GitHub release using tag (`false` to skip).'
+        description: 'Create GitHub release using tag.'
         type: boolean
         required: true
         default: true
@@ -30,7 +29,7 @@ on:
         description: 'The AEPEdgeIdentity dependency version in gradle.properties to be validated (ex: 1.2.3).'
         type: string
         required: true
-        default: ''
+
 jobs:
   publish:
     permissions:
@@ -41,7 +40,7 @@ jobs:
     with:
       tag: ${{ github.event.inputs.tag }}
       create-github-release: ${{ github.event.inputs.create-github-release == 'true' }}
-      version-verify-paths: code/gradle.properties, code/edge/src/main/java/com/adobe/marketing/mobile/EdgeConstants.java
-      version-verify-dependencies: AEPEdgeIdentity ${{ github.event.inputs.edge-identity-dependency }}
+      version-validation-paths: code/gradle.properties, code/edge/src/main/java/com/adobe/marketing/mobile/EdgeConstants.java
+      version-validation-dependencies: AEPEdgeIdentity ${{ github.event.inputs.edge-identity-dependency }}
       workflow_tag: gha-android-1.0.0 # This tag must match the tag used for the reusable workflow.
     secrets: inherit
