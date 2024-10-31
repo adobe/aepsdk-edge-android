@@ -34,13 +34,10 @@ jobs:
   publish:
     permissions:
         contents: write
-    # @<workflow-version-tag> refers to the tag (version) of the reusable workflow in the aepsdk-commons repository.
-    # When updating the tag here, the `workflow_tag` input to the workflow must match this value.
-    uses: adobe/aepsdk-commons/.github/workflows/android-maven-release.yml@gha-android-1.0.0
+    uses: adobe/aepsdk-commons/.github/workflows/android-maven-release.yml@gha-1.0.0
     with:
       tag: ${{ github.event.inputs.tag }}
       create-github-release: ${{ github.event.inputs.create-github-release == 'true' }}
       version-validation-paths: code/gradle.properties, code/edge/src/main/java/com/adobe/marketing/mobile/EdgeConstants.java
       version-validation-dependencies: AEPEdgeIdentity ${{ github.event.inputs.edge-identity-dependency }}
-      workflow_tag: gha-android-1.0.0 # This tag must match the tag used for the reusable workflow.
     secrets: inherit
