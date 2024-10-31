@@ -15,12 +15,12 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'The existing tag (version) to be released (ex: 1.2.3).'
+        description: 'The tag (version) to be released (ex: 1.2.3).'
         type: string
         required: true
 
       create-github-release:
-        description: 'Create GitHub release using tag.'
+        description: 'Create GitHub release using tag. If the provided `tag` does not exist, it will be created.'
         type: boolean
         required: true
         default: true
