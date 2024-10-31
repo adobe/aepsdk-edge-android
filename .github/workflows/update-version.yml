@@ -19,13 +19,11 @@ on:
         description: 'New version to use for the extension (ex: 1.2.3).'
         type: string
         required: true
-        default: ''
 
       branch:
         description: 'The target branch where the version update will be applied and the pull request will be merged into.'
         type: string
         required: true
-        default: ''
 
       core-dependency:
         description: | 
