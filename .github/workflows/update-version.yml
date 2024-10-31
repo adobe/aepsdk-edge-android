@@ -62,7 +62,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    uses: adobe/aepsdk-commons/.github/workflows/versions.yml@gha-1.0.0
+    uses: timkimadobe/aepsdk-commons/.github/workflows/versions.yml@gha-1.0.0
     with:
       version: ${{ github.event.inputs.version }}
       branch: ${{ github.event.inputs.branch }}
