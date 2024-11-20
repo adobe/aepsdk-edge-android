@@ -18,20 +18,18 @@ import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NetworkRequest;
 import com.adobe.marketing.mobile.services.Networking;
-import com.adobe.marketing.mobile.services.NetworkingConstants;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -100,13 +98,14 @@ class EdgeNetworkService {
 	private static final String DEFAULT_GENERIC_ERROR_MESSAGE =
 		"Request to Edge Network failed with an unknown exception";
 
-	static final Set<Integer> recoverableNetworkErrorCodes = mergeUnique(
-		NetworkingConstants.RECOVERABLE_ERROR_CODES,
+	static final List<Integer> recoverableNetworkErrorCodes = new ArrayList<>(
 		Arrays.asList(
 			-1, // returned for SocketTimeoutException
 			429, // too many requests - The user has sent too many requests in a given amount of time ("rate limiting").
-			507, // insufficient storage
-			HttpURLConnection.HTTP_BAD_GATEWAY
+			HttpURLConnection.HTTP_CLIENT_TIMEOUT,
+			HttpURLConnection.HTTP_BAD_GATEWAY,
+			HttpURLConnection.HTTP_UNAVAILABLE,
+			HttpURLConnection.HTTP_GATEWAY_TIMEOUT
 		)
 	);
 
@@ -259,10 +258,9 @@ class EdgeNetworkService {
 	private int computeRetryInterval(final HttpConnecting connection) {
 		String header = connection.getResponsePropertyValue(EdgeConstants.NetworkKeys.HEADER_KEY_RETRY_AFTER);
 
-		int retryAfter = EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS;
 		if (header != null && header.matches("\\d+")) {
 			try {
-				retryAfter = Integer.parseInt(header);
+				return Integer.parseInt(header);
 			} catch (NumberFormatException e) {
 				Log.debug(
 					LOG_TAG,
@@ -274,7 +272,7 @@ class EdgeNetworkService {
 			}
 		}
 
-		return retryAfter > 0 ? retryAfter : EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS;
+		return EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS;
 	}
 
 	/**
@@ -578,12 +576,5 @@ class EdgeNetworkService {
 			Log.warning(LOG_TAG, LOG_SOURCE, "Exception reading network error response: " + e.getLocalizedMessage());
 			return composeGenericErrorAsJson(e.getMessage());
 		}
-	}
-
-	private static Set<Integer> mergeUnique(final List<Integer> arr1, final List<Integer> arr2) {
-		Set<Integer> merged = new HashSet<>();
-		merged.addAll(arr1);
-		merged.addAll(arr2);
-		return merged;
 	}
 }

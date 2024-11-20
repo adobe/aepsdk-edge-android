@@ -75,7 +75,9 @@ dependencies {
 
     implementation("com.adobe.marketing.mobile:core:$mavenCoreVersion")
     implementation("com.adobe.marketing.mobile:edgeidentity:$mavenEdgeIdentityVersion")
-    implementation("com.adobe.marketing.mobile:edgeconsent:3.0.0")
+    implementation("com.adobe.marketing.mobile:edgeconsent:$mavenEdgeConsentVersion") {
+        exclude(group = "com.adobe.marketing.mobile", module = "edge")
+    }
     implementation("com.adobe.marketing.mobile:assurance:3.0.0")
 
     implementation("androidx.constraintlayout:constraintlayout:2.0.4")
