@@ -18,7 +18,7 @@ on:
 jobs:
   build-and-test:
     name: " "
-    uses: timkimadobe/aepsdk-commons/.github/workflows/ios-build-and-test.yml@android-circleci-to-gha
+    uses: timkimadobe/aepsdk-commons/.github/workflows/android-build-and-test.yml@android-circleci-to-gha
     with:
       android-api-levels: '[29, 30]'
       run-test-unit: true
