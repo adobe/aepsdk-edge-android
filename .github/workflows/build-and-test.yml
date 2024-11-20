@@ -17,10 +17,10 @@ on:
 
 jobs:
   build-and-test:
-    name: " "
+    name: "CI"
     uses: timkimadobe/aepsdk-commons/.github/workflows/android-build-and-test.yml@android-circleci-to-gha
     with:
-      android-api-levels: '[29, 30]'
+      android-api-levels: '[29]'
       run-test-unit: true
       run-test-functional: true
       run-test-integration: true
