@@ -51,6 +51,8 @@ functional-test-coverage:
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) uninstallPhoneDebugAndroidTest)
 	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) createPhoneDebugAndroidTestCoverageReport)
 
+integration-test-coverage: upstream-integration-test
+
 upstream-integration-test:
 	(./code/gradlew -p code/upstream-integration-tests uninstallDebugAndroidTest)
 	(./code/gradlew -p code/upstream-integration-tests connectedDebugAndroidTest -PTAGS_MOBILE_PROPERTY_IDD=$(TAGS_MOBILE_PROPERTY_ID) -PEDGE_LOCATION_HINT=$(EDGE_LOCATION_HINT))
