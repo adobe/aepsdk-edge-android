@@ -39,5 +39,5 @@ jobs:
       tag: ${{ github.event.inputs.tag }}
       create-github-release: ${{ github.event.inputs.create-github-release == 'true' }}
       version-validation-paths: code/gradle.properties, code/edge/src/main/java/com/adobe/marketing/mobile/EdgeConstants.java
-      version-validation-dependencies: AEPEdgeIdentity ${{ github.event.inputs.edge-identity-dependency }}
+      version-validation-dependencies: EdgeIdentity ${{ github.event.inputs.edge-identity-dependency }}
     secrets: inherit
