@@ -25,4 +25,5 @@ jobs:
       run-test-functional: true
       run-test-integration: true
       run-build-app: true
+      enable-codecov: true
     secrets: inherit
