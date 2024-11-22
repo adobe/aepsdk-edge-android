@@ -18,7 +18,7 @@ on:
 jobs:
   build-and-test:
     name: "CI"
-    uses: timkimadobe/aepsdk-commons/.github/workflows/android-build-and-test.yml@android-circleci-to-gha
+    uses: adobe/aepsdk-commons/.github/workflows/android-build-and-test.yml@gha-android-3.0.0
     with:
       android-api-levels: '[29]'
       run-test-unit: true
