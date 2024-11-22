@@ -66,6 +66,6 @@ jobs:
     with:
       version: ${{ github.event.inputs.version }}
       branch: ${{ github.event.inputs.branch }}
-      dependencies: AEPCore ${{ github.event.inputs.core-dependency }}, AEPEdgeIdentity ${{ github.event.inputs.edge-identity-dependency }}, AEPEdgeConsent ${{ github.event.inputs.edge-consent-dependency }}, AEPTestUtils ${{ github.event.inputs.testutils-dependency }}
+      dependencies: Core ${{ github.event.inputs.core-dependency }}, EdgeIdentity ${{ github.event.inputs.edge-identity-dependency }}, EdgeConsent ${{ github.event.inputs.edge-consent-dependency }}, TestUtils ${{ github.event.inputs.testutils-dependency }}
       paths: code/edge/src/main/java/com/adobe/marketing/mobile/EdgeConstants.java, code/gradle.properties
       update: true
