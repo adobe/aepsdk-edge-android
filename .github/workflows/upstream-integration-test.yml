@@ -124,7 +124,7 @@ jobs:
           ~/.android/adb*
         key: avd-${{ matrix.api-level }}
     
-    # Note that the AVD configurations must match what's used in the test step, otherwise the cache will not be used.
+    # Note that the AVD configurations must exactly match what's used in the test step, otherwise the cache will not be used.
     - name: create AVD and generate snapshot for caching
       if: steps.avd-cache.outputs.cache-hit != 'true'
       uses: reactivecircus/android-emulator-runner@f0d1ed2dcad93c7479e8b2f2226c83af54494915 # v2.32.0
@@ -135,7 +135,7 @@ jobs:
         heap-size: 600M
         force-avd-creation: false
         emulator-options: -no-metrics -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-        disable-animations: false
+        disable-animations: true
         script: echo "Generated AVD snapshot for caching."
 
     # Logcat logging from: https://github.com/ReactiveCircus/android-emulator-runner/issues/9#issuecomment-867909354
@@ -147,7 +147,7 @@ jobs:
         disk-size: 6000M
         heap-size: 600M
         force-avd-creation: false
-        emulator-options: -no-metrics -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+        emulator-options: -no-snapshot-save -no-metrics -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
         disable-animations: true
         script: |
           mkdir -p logs                              # Ensure the 'logs' directory exists
