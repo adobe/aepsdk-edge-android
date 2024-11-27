@@ -26,12 +26,12 @@ on:
         default: true
 
       core-dependency:
-        description: 'The AEPCore dependency version in gradle.properties to be validated (ex: 1.2.3).'
+        description: 'The Core dependency version in gradle.properties to be validated (ex: 1.2.3).'
         type: string
         required: true
 
       edge-identity-dependency:
-        description: 'The AEPEdgeIdentity dependency version in gradle.properties to be validated (ex: 1.2.3).'
+        description: 'The EdgeIdentity dependency version in gradle.properties to be validated (ex: 1.2.3).'
         type: string
         required: true
 
