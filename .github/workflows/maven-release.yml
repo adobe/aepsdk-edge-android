@@ -11,6 +11,7 @@
 #
 
 name: Publish Release
+
 on: 
   workflow_dispatch:
     inputs:
@@ -25,8 +26,13 @@ on:
         required: true
         default: true
 
+      core-dependency:
+        description: 'The Core dependency version in gradle.properties to be validated (ex: 1.2.3).'
+        type: string
+        required: true
+
       edge-identity-dependency:
-        description: 'The AEPEdgeIdentity dependency version in gradle.properties to be validated (ex: 1.2.3).'
+        description: 'The EdgeIdentity dependency version in gradle.properties to be validated (ex: 1.2.3).'
         type: string
         required: true
 
@@ -34,10 +40,10 @@ jobs:
   publish:
     permissions:
         contents: write
-    uses: adobe/aepsdk-commons/.github/workflows/android-maven-release.yml@gha-android-3.0.0
+    uses: adobe/aepsdk-commons/.github/workflows/android-maven-release.yml@gha-android-3.1.0
     with:
       tag: ${{ github.event.inputs.tag }}
       create-github-release: ${{ github.event.inputs.create-github-release == 'true' }}
       version-validation-paths: code/gradle.properties, code/edge/src/main/java/com/adobe/marketing/mobile/EdgeConstants.java
-      version-validation-dependencies: EdgeIdentity ${{ github.event.inputs.edge-identity-dependency }}
+      version-validation-dependencies: Core ${{ github.event.inputs.core-dependency }}, EdgeIdentity ${{ github.event.inputs.edge-identity-dependency }}
     secrets: inherit

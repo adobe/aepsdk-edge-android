@@ -18,7 +18,7 @@ on:
 jobs:
   build-and-test:
     name: "CI"
-    uses: adobe/aepsdk-commons/.github/workflows/android-build-and-test.yml@gha-android-3.0.0
+    uses: adobe/aepsdk-commons/.github/workflows/android-build-and-test.yml@gha-android-3.1.0
     with:
       android-api-levels: '[29]'
       run-test-unit: true
@@ -26,4 +26,5 @@ jobs:
       run-test-integration: true
       run-build-app: true
       enable-codecov: true
+      javadoc-build-path: code/edge/build/dokka/javadoc
     secrets: inherit
