@@ -27,7 +27,7 @@ on:
 
       core-dependency:
         description: | 
-          If a version is provided, update AEPCore dependency in gradle.properties (ex: 1.2.3).
+          If a version is provided, update Core dependency in gradle.properties (ex: 1.2.3).
           This is a published dependency in the pom.xml file.
         type: string
         required: false
@@ -35,7 +35,7 @@ on:
 
       edge-identity-dependency:
         description: | 
-          If a version is provided, update AEPEdgeIdentity dependency in gradle.properties (ex: 1.2.3).
+          If a version is provided, update EdgeIdentity dependency in gradle.properties (ex: 1.2.3).
           This is a published dependency in the pom.xml file.
         type: string
         required: false
@@ -43,7 +43,7 @@ on:
 
       edge-consent-dependency:
         description: | 
-          If a version is provided, update AEPEdgeConsent dependency in gradle.properties (ex: 1.2.3).
+          If a version is provided, update EdgeConsent dependency in gradle.properties (ex: 1.2.3).
           This is a testing-only dependency.
         type: string
         required: false
@@ -51,7 +51,7 @@ on:
 
       testutils-dependency:
         description: |
-          If a version is provided, update AEPTestUtils dependency in gradle.properties (ex: 1.2.3).
+          If a version is provided, update TestUtils dependency in gradle.properties (ex: 1.2.3).
           This is a testing-only dependency.
         type: string
         required: false
@@ -62,10 +62,10 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    uses: adobe/aepsdk-commons/.github/workflows/versions.yml@gha-android-3.0.0
+    uses: adobe/aepsdk-commons/.github/workflows/versions.yml@gha-android-3.1.0
     with:
       version: ${{ github.event.inputs.version }}
       branch: ${{ github.event.inputs.branch }}
       dependencies: Core ${{ github.event.inputs.core-dependency }}, EdgeIdentity ${{ github.event.inputs.edge-identity-dependency }}, EdgeConsent ${{ github.event.inputs.edge-consent-dependency }}, TestUtils ${{ github.event.inputs.testutils-dependency }}
-      paths: code/edge/src/main/java/com/adobe/marketing/mobile/EdgeConstants.java, code/gradle.properties
+      paths: code/gradle.properties, code/edge/src/main/java/com/adobe/marketing/mobile/EdgeConstants.java
       update: true
