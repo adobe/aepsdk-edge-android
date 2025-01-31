@@ -14,19 +14,16 @@
 name: Integration Tests
 
 on:
-  # `*` is a special character in YAML so you have to quote this string
-  # Avoiding start of hour and other common times to avoid conflicts with peak times
   schedule:
-    # Run every weekday at 12:45 PM PDT (Daylight saving time) -> 7:45 PM UTC
-    # Add +1 hour when back in PST
-    - cron:  '45 19 * * 1-5'
+    # The `*` character is a special symbol in YAML and must be quoted.
+    # 
+    # Scheduled job timing:
+    # * Runs every weekday at 11:37 AM PST / 12:37 PM PDT (during daylight saving time).
+    # * Avoids the start of the hour and other peak times to reduce runner availability issues.
+    - cron:  '37 19 * * 1-5'
 
   workflow_dispatch:
     inputs:
-      branch:
-        description: 'The branch to use when running the integration tests'
-        required: false
-        default: 'main'
       id:
         description: '(Optional) The identifier for the run.'
         required: false
@@ -53,12 +50,8 @@ on:
           - 'None'
 
 jobs:
-  test-integration-upstream:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        api-level: [29]
-
+  setup-job:
+    runs-on: ubuntu-24.04
     steps:
     - name: Job run identifier ${{ github.event.inputs.id }}
       run: |
@@ -68,104 +61,12 @@ jobs:
           echo 'Job run identifier is:' ${{ inputs.id }}
         fi;
 
-    - name: Check branch mismatch
-      run: |
-        CURRENT_BRANCH=$(echo "${GITHUB_REF##*/}")
-        INPUT_BRANCH="${{ github.event.inputs.branch }}"
-        echo "Running on branch: ${CURRENT_BRANCH}"
-        echo "Input branch: ${INPUT_BRANCH}"
+  upstream-integration-test:
+    name: "Edge Network (server) integration test"
+    needs: setup-job
+    uses: adobe/aepsdk-commons/.github/workflows/android-custom-command-build-and-test.yml@gha-android-3.3.0
+    with:
+      android-api-levels: '[29]'
+      command: make upstream-integration-test TAGS_MOBILE_PROPERTY_ID=${{ github.event.inputs.tags-mobile-property-id }} EDGE_LOCATION_HINT=${{ github.event.inputs.edge-location-hint }}
+    secrets: inherit
 
-        if [ "${CURRENT_BRANCH}" != "${INPUT_BRANCH}" ]; then
-          echo "::warning title=Branch Mismatch::Input branch '${INPUT_BRANCH}' does not match current branch '${CURRENT_BRANCH}'"
-        fi
-
-    # This is to help reduce Android emulator boot up flakiness issues:
-    # See: https://github.com/ReactiveCircus/android-emulator-runner/issues/324#issuecomment-2009351180
-    - name: Delete unnecessary tools 🔧
-      uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
-      with:
-        android: false # Don't remove Android tools
-        tool-cache: true # Remove image tool cache - rm -rf "$AGENT_TOOLSDIRECTORY"
-        dotnet: true # rm -rf /usr/share/dotnet
-        haskell: true # rm -rf /opt/ghc...
-        swap-storage: true # rm -f /mnt/swapfile (4GiB)
-        docker-images: false # Takes 16s, enable if needed in the future
-        large-packages: false # includes google-cloud-sdk and it's slow
-
-    # The Android emulator requires Kernel-based Virtual Machine (KVM) access to run efficiently. 
-    # This step ensures that the KVM is accessible with the proper permissions across all users.
-    - name: Enable KVM group perms
-      run: |
-        echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-        sudo udevadm control --reload-rules
-        sudo udevadm trigger --name-match=kvm
-        ls /dev/kvm
-
-    - name: Checkout
-      uses: actions/checkout@v4.2.0
-      with:
-        ref: ${{ github.event.inputs.branch }}
-
-    - name: Set up Java
-      uses: actions/setup-java@v4.4.0
-      with:
-        distribution: 'zulu'
-        java-version: 17
-
-    - name: Gradle cache
-      uses: gradle/actions/setup-gradle@v4.1.0
-
-    - name: AVD cache
-      uses: actions/cache@v4.0.2
-      id: avd-cache
-      with:
-        path: |
-          ~/.android/avd/*
-          ~/.android/adb*
-        key: avd-${{ matrix.api-level }}
-    
-    # Note that the AVD configurations must exactly match what's used in the test step, otherwise the cache will not be used.
-    - name: create AVD and generate snapshot for caching
-      if: steps.avd-cache.outputs.cache-hit != 'true'
-      uses: reactivecircus/android-emulator-runner@f0d1ed2dcad93c7479e8b2f2226c83af54494915 # v2.32.0
-      with:
-        api-level: ${{ matrix.api-level }}
-        arch: x86_64
-        disk-size: 6000M
-        heap-size: 600M
-        force-avd-creation: false
-        emulator-options: -no-metrics -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-        disable-animations: true
-        script: echo "Generated AVD snapshot for caching."
-
-    # Logcat logging from: https://github.com/ReactiveCircus/android-emulator-runner/issues/9#issuecomment-867909354
-    - name: Run tests
-      uses: reactivecircus/android-emulator-runner@f0d1ed2dcad93c7479e8b2f2226c83af54494915 # v2.32.0
-      with:
-        api-level: ${{ matrix.api-level }}
-        arch: x86_64
-        disk-size: 6000M
-        heap-size: 600M
-        force-avd-creation: false
-        emulator-options: -no-snapshot-save -no-metrics -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-        disable-animations: true
-        script: |
-          mkdir -p logs                              # Ensure the 'logs' directory exists
-          adb logcat -c                              # Clear logs
-          touch logs/emulator.log                    # Create log file
-          chmod 777 logs/emulator.log                # Allow writing to log file
-          adb logcat >> logs/emulator.log &          # Pipe all logcat messages into log file as a background process
-          make upstream-integration-test TAGS_MOBILE_PROPERTY_ID=${{ github.event.inputs.tags-mobile-property-id }} EDGE_LOCATION_HINT=${{ github.event.inputs.edge-location-hint }}
-
-    - name: Upload Logcat Logs
-      if: always()
-      uses: actions/upload-artifact@v4.4.0
-      with:
-        name: logcat-logs
-        path: logs/emulator.log
-
-    # Potential workflow solutions on job failure
-    - name: On failure
-      if: ${{ failure() }}
-      run: |
-        echo 'Job used branch: ' ${{ github.event.inputs.branch }}. Please make sure this is the branch to run off of.
