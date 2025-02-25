@@ -20,15 +20,19 @@ import static org.junit.Assert.fail;
 
 import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.services.NetworkRequest;
+import com.adobe.marketing.mobile.services.NetworkingConstants;
 import com.adobe.marketing.mobile.util.MockConnection;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.json.JSONException;
@@ -50,6 +54,7 @@ public class EdgeNetworkServiceTest {
 	private static final String TEST_URL = "https://test.com";
 	private static final String HEADER_CONTENT_TYPE = "Content-Type";
 	private static final String HEADER_CONTENT_TYPE_JSON_VALUE = "application/json";
+	private static final String HEADER_RETRY_AFTER = "Retry-After";
 	private final Map<String, String> requestHeaders = new HashMap<String, String>() {
 		{
 			put("key1", "value1");
@@ -358,6 +363,65 @@ public class EdgeNetworkServiceTest {
 	@Test
 	public void testDoRequest_whenConnection_RecoverableResponseCode_504_ReturnsRetryYes_AndNoResponseCallback_AndNoErrorCallback() {
 		testRecoverableNetworkResponse(504, "Gateway Timeout");
+	}
+
+	@Test
+	public void testDoRequest_whenConnection_RecoverableResponseCode_507_ReturnsRetryYes_AndNoResponseCallback_AndNoErrorCallback() {
+		testRecoverableNetworkResponse(507, "Insufficient Storage");
+	}
+
+	@Test
+	public void testDoRequest_whenConnection_RecoverableResponseCodeAndRetryAfter_ReturnsRetryTimeout() {
+		Set<Integer> recoverableNetworkErrorCodes = new HashSet<>();
+		recoverableNetworkErrorCodes.addAll(NetworkingConstants.RECOVERABLE_ERROR_CODES);
+		recoverableNetworkErrorCodes.addAll(Arrays.asList(429, 502, 507, -1));
+
+		for (int responseCode : recoverableNetworkErrorCodes) {
+			testRecoverableWithRetryAfter(responseCode, "30", 30);
+		}
+	}
+
+	@Test
+	public void testDoRequest_whenConnection_InvalidRetryAfter_ReturnsDefaultRetryTimeout() {
+		testRecoverableNetworkResponse(507, "Insufficient Storage");
+		String[] invalidRetryAfter = { "InvalidRetryAfter", "A", "", "-1", "0", "     " };
+
+		for (String retryAfter : invalidRetryAfter) {
+			testRecoverableWithRetryAfter(503, retryAfter, 5); // expecting default timeout
+		}
+	}
+
+	@Test
+	public void testDoRequest_whenConnection_ValidRetryAfter_ReturnsCorrectRetryTimeout() {
+		testRecoverableNetworkResponse(507, "Insufficient Storage");
+		String[] invalidRetryAfter = { "1", "5", "30", "60", "180", "300" };
+
+		for (String retryAfter : invalidRetryAfter) {
+			testRecoverableWithRetryAfter(503, retryAfter, Integer.parseInt(retryAfter)); // expecting provided timeout
+		}
+	}
+
+	private void testRecoverableWithRetryAfter(
+		final int responseCode,
+		final String retryAfter,
+		final int expectedRetryAfter
+	) {
+		// setup
+		final String url = "https://test.com";
+		final String jsonRequest = "{}";
+		final Map<String, String> headers = new HashMap<>();
+		headers.put(HEADER_RETRY_AFTER, retryAfter);
+		MockConnection mockConnection = new MockConnection(responseCode, null, "error", headers);
+		mockNetworkService.reset();
+		mockNetworkService.setMockResponseFor(url, mockConnection);
+		networkService = new EdgeNetworkService(mockNetworkService);
+
+		// test
+		DoRequestResult result = doRequestSync(url, jsonRequest);
+
+		// verify
+		assertEquals(EdgeNetworkService.Retry.YES, result.retryResult.getShouldRetry());
+		assertEquals(expectedRetryAfter, result.retryResult.getRetryIntervalSeconds());
 	}
 
 	private void testRecoverableNetworkResponse(final int responseCode, final String errorString) {
