@@ -64,7 +64,7 @@ jobs:
   upstream-integration-test:
     name: "Edge Network (server) integration test"
     needs: setup-job
-    uses: adobe/aepsdk-commons/.github/workflows/android-custom-command-build-and-test.yml@gha-android-3.3.0
+    uses: adobe/aepsdk-commons/.github/workflows/android-custom-command-build-and-test.yml@gha-android-3.3.1
     with:
       android-api-levels: '[29]'
       command: make upstream-integration-test TAGS_MOBILE_PROPERTY_ID=${{ github.event.inputs.tags-mobile-property-id }} EDGE_LOCATION_HINT=${{ github.event.inputs.edge-location-hint }}
