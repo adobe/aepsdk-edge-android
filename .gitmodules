@@ -1,0 +1,4 @@
+[submodule "core"]
+	path = core
+	url = git@github.com:yangyansong-adbe/aepsdk-core-android.git
+	branch = use_coroutines_2_IO_dispatcher

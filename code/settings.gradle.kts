@@ -29,8 +29,8 @@ dependencyResolutionManagement {
 }
 rootProject.name = "aepsdk-edge-android"
 include (":edge",
-        ":app",
-        ":app-kotlin",
-        ":app-util-xdm",
-        ":upstream-integration-tests"
+//        ":app",
+//        ":app-kotlin",
+//        ":app-util-xdm",
+//        ":upstream-integration-tests"
         )

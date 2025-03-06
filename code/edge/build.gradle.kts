@@ -32,14 +32,39 @@ aepLibrary {
     }
 }
 
+android {
+
+    sourceSets {
+        getByName("main").java.srcDirs(
+            "src/main/java",
+            "../../core/code/core/src/main/java",
+            "../../core/code/core/src/phone/java"
+        )
+    }
+}
+
 dependencies {
-    implementation("com.adobe.marketing.mobile:core:$mavenCoreVersion")
-    implementation("com.adobe.marketing.mobile:edgeidentity:$mavenEdgeIdentityVersion")
+//    implementation("com.github.yangyansong-adbe:aepsdk-core-android:use_coroutines_2_IO_dispatcher-SNAPSHOT")
+    implementation("androidx.lifecycle:lifecycle-process:2.0.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.3.1")
+    implementation("androidx.compose.runtime:runtime:1.4.3")
+    implementation("androidx.compose.material:material:1.4.3")
+    implementation("androidx.compose.animation:animation:1.4.3")
+    implementation("androidx.activity:activity-compose:1.5.0")
+    implementation("com.adobe.marketing.mobile:edgeidentity:$mavenEdgeIdentityVersion"){
+        exclude("com.adobe.marketing.mobile", "core")
+    }
 
-    testImplementation("com.github.adobe:aepsdk-testutils-android:$mavenTestUtilsVersion")
 
-    androidTestImplementation("com.github.adobe:aepsdk-testutils-android:$mavenTestUtilsVersion")
+    testImplementation("com.github.adobe:aepsdk-testutils-android:$mavenTestUtilsVersion") {
+        exclude("com.adobe.marketing.mobile", "core")
+    }
+
+    androidTestImplementation("com.github.adobe:aepsdk-testutils-android:$mavenTestUtilsVersion") {
+        exclude("com.adobe.marketing.mobile", "core")
+    }
     androidTestImplementation("com.adobe.marketing.mobile:edgeconsent:$mavenEdgeConsentVersion") {
         exclude(group = "com.adobe.marketing.mobile", module = "edge")
+        exclude("com.adobe.marketing.mobile", "core")
     }
 }
