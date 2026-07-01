@@ -18,6 +18,8 @@ class RetryResult {
 
 	private final EdgeNetworkService.Retry shouldRetry;
 	private int retryIntervalSeconds = EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS;
+	private final EdgeNetworkService.NetworkRequestOutcome networkRequestOutcome;
+	private String responseBody = null;
 
 	/**
 	 * Constructs a {@link RetryResult} with the specified retry value and default retry interval of 5 seconds.
@@ -26,6 +28,9 @@ class RetryResult {
 	 */
 	RetryResult(final EdgeNetworkService.Retry shouldRetry) {
 		this.shouldRetry = shouldRetry;
+		this.networkRequestOutcome = shouldRetry == EdgeNetworkService.Retry.YES
+				? EdgeNetworkService.NetworkRequestOutcome.RETRY
+				: EdgeNetworkService.NetworkRequestOutcome.SUCCESS;
 	}
 
 	/**
@@ -36,6 +41,25 @@ class RetryResult {
 	 */
 	RetryResult(final EdgeNetworkService.Retry shouldRetry, final int retryIntervalSeconds) {
 		this.shouldRetry = shouldRetry;
+		this.retryIntervalSeconds =
+			retryIntervalSeconds > 0 ? retryIntervalSeconds : EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS;
+		this.networkRequestOutcome = shouldRetry == EdgeNetworkService.Retry.YES
+				? EdgeNetworkService.NetworkRequestOutcome.RETRY
+				: EdgeNetworkService.NetworkRequestOutcome.SUCCESS;
+	}
+
+	/**
+	 * Constructs a {@link RetryResult} with an explicit {@link EdgeNetworkService.NetworkRequestOutcome},
+	 * used by batch-aware callers that need finer-grained classification than retry/no-retry.
+	 *
+	 * @param outcome the granular outcome of the network attempt
+	 * @param retryIntervalSeconds retry wait in seconds (only meaningful when outcome is RETRY)
+	 */
+	RetryResult(final EdgeNetworkService.NetworkRequestOutcome outcome, final int retryIntervalSeconds) {
+		this.networkRequestOutcome = outcome;
+		this.shouldRetry = outcome == EdgeNetworkService.NetworkRequestOutcome.RETRY
+				? EdgeNetworkService.Retry.YES
+				: EdgeNetworkService.Retry.NO;
 		this.retryIntervalSeconds =
 			retryIntervalSeconds > 0 ? retryIntervalSeconds : EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS;
 	}
@@ -56,5 +80,27 @@ class RetryResult {
 	 */
 	public int getRetryIntervalSeconds() {
 		return retryIntervalSeconds;
+	}
+
+	/**
+	 * Gets the granular network outcome, used by batch-aware processors to decide the next queue action.
+	 *
+	 * @return the {@link EdgeNetworkService.NetworkRequestOutcome} for this result
+	 */
+	public EdgeNetworkService.NetworkRequestOutcome getNetworkRequestOutcome() {
+		return networkRequestOutcome;
+	}
+
+	/**
+	 * Returns the server error body captured for a terminal 400 response, or {@code null} if none
+	 * was captured. Only meaningful when {@link #getNetworkRequestOutcome()} is
+	 * {@link EdgeNetworkService.NetworkRequestOutcome#EXPLODE_400}.
+	 */
+	String getResponseBody() {
+		return responseBody;
+	}
+
+	void setResponseBody(final String responseBody) {
+		this.responseBody = responseBody;
 	}
 }

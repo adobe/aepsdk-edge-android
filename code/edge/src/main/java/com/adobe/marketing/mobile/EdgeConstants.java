@@ -39,6 +39,7 @@ final class EdgeConstants {
 		static final String REQUEST_CONFIG_LINE_FEED = "\n";
 		static final int RETRY_INTERVAL_SECONDS = 5;
 		static final int LOCATION_HINT_TTL_SEC = 1800;
+		static final int MAX_BATCH_SIZE = 10;
 
 		static final ConsentStatus COLLECT_CONSENT_YES = ConsentStatus.YES; // used if Consent extension is not registered
 		static final ConsentStatus COLLECT_CONSENT_PENDING = ConsentStatus.PENDING; // used when Consent encoding failed or the value different than y/n
@@ -106,6 +107,7 @@ final class EdgeConstants {
 			static final String EDGE_CONFIG_ID = "edge.configId";
 			static final String EDGE_DOMAIN = "edge.domain";
 			static final String EDGE_REQUEST_ENVIRONMENT = "edge.environment";
+			static final String EDGE_BATCHING_ENABLED = "edge.batching.enabled";
 
 			private Configuration() {}
 		}

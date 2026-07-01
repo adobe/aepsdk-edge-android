@@ -828,6 +828,10 @@ public class NetworkResponseHandlerTest {
 		assertNotNull(returnedEvent);
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue("state:store".equalsIgnoreCase(returnedEvent.getSource()));
+		// Batch routing policy: state:store carries no eventIndex and is a global (session-scoped)
+		// handle. In a multi-event request it is broadcast with a null parentId rather than being
+		// mis-attributed to event[0], so no requestEventId is present. The store side-effect is still
+		// persisted globally (handleStoreEventHandle runs before routing).
 		String expectedEventData =
 			"{\n" +
 			"  \"type\": \"state:store\",\n" +
@@ -838,10 +842,7 @@ public class NetworkResponseHandlerTest {
 			"      \"maxAge\": 15552000\n" +
 			"    }\n" +
 			"  ],\n" +
-			"  \"requestId\": \"123\",\n" +
-			"  \"requestEventId\": \"" +
-			requestEvent1.getUniqueIdentifier() +
-			"\"\n" +
+			"  \"requestId\": \"123\"\n" +
 			"}";
 		JSONAsserts.assertEquals(expectedEventData, returnedEvent.getEventData());
 
@@ -849,6 +850,7 @@ public class NetworkResponseHandlerTest {
 		assertNotNull(returnedEvent);
 		assertTrue(EVENT_TYPE_EDGE.equalsIgnoreCase(returnedEvent.getType()));
 		assertTrue("pairedeventexample".equalsIgnoreCase(returnedEvent.getSource()));
+		// Indexed handle (eventIndex 1) is still attributed to its specific event.
 		expectedEventData =
 			"{\n" +
 			"  \"type\": \"pairedeventexample\",\n" +
@@ -1235,19 +1237,11 @@ public class NetworkResponseHandlerTest {
 		latch.await(100, TimeUnit.MILLISECONDS);
 		latch.await(100, TimeUnit.MILLISECONDS);
 
-		assertEquals(1, receivedData1.size());
-		String expectedEventData1 =
-			"{\n" +
-			"  \"payload\": [\n" +
-			"    {\n" +
-			"      \"key\": \"s_ecid\",\n" +
-			"      \"value\": \"MCMID|29068398647607325310376254630528178721\",\n" +
-			"      \"maxAge\": 15552000\n" +
-			"    }\n" +
-			"  ],\n" +
-			"  \"type\": \"state:store\"\n" +
-			"}";
-		JSONAsserts.assertEquals(expectedEventData1, receivedData1.get(0).toMap());
+		// state:store carries no eventIndex and is a global handle: in a multi-event request it is
+		// broadcast (null parentId) and not accumulated against any single event's callback, so
+		// event1 (which had no indexed handle of its own) receives zero handles. The store payload
+		// is still persisted globally.
+		assertEquals(0, receivedData1.size());
 
 		assertEquals(1, receivedData2.size());
 		String expectedEventData2 =
@@ -1996,5 +1990,127 @@ public class NetworkResponseHandlerTest {
 			assertEquals(parentEventIds[i], returnedEvent.getParentID());
 			assertEquals(parentEventIds[i], returnedEvent.getResponseID());
 		}
+	}
+
+	// -------------------------------------------------------------------------
+	// WI-2: collapsed no-index error routing — fan-out to all waiting events
+	// -------------------------------------------------------------------------
+
+	@Test
+	public void testDispatchEventErrors_noIndex_batchOfTwo_fanOutToBothWaitingEvents() {
+		// A no-index error for a batch of 2 must produce one ERROR_RESPONSE_CONTENT per waiting event.
+		final String jsonError =
+			"{\n" +
+			"  \"requestId\": \"batch-req-123\",\n" +
+			"  \"errors\": [\n" +
+			"    {\n" +
+			"      \"status\": 503,\n" +
+			"      \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
+			"      \"title\": \"Service unavailable\"\n" +
+			"    }\n" +
+			"  ]\n" +
+			"}";
+
+		final String requestId = "batch-req-id";
+		final Event event1 = new Event.Builder("e1", "testType", "testSource").build();
+		final Event event2 = new Event.Builder("e2", "testType", "testSource").build();
+
+		networkResponseHandler.addWaitingEvents(
+			requestId,
+			new ArrayList<Event>() {
+				{
+					add(event1);
+					add(event2);
+				}
+			}
+		);
+		networkResponseHandler.processResponseOnError(jsonError, requestId);
+
+		// 2 error events dispatched — one per waiting event
+		ArgumentCaptor<Event> captor = ArgumentCaptor.forClass(Event.class);
+		mockCore.verify(() -> MobileCore.dispatchEvent(captor.capture()), times(2));
+
+		List<Event> dispatched = captor.getAllValues();
+		assertEquals(2, dispatched.size());
+
+		// Both events are on the error channel
+		for (Event e : dispatched) {
+			assertEquals(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT, e.getSource());
+		}
+
+		// Each event is chained to its own originating request event
+		assertEquals(event1.getUniqueIdentifier(), dispatched.get(0).getParentID());
+		assertEquals(event2.getUniqueIdentifier(), dispatched.get(1).getParentID());
+	}
+
+	@Test
+	public void testDispatchEventErrors_noIndex_singleWaitingEvent_routesToThatEvent() {
+		// WI-2 collapsed path: a single waiting event is N==1, the loop naturally yields event[0].
+		final String jsonError =
+			"{\n" +
+			"  \"requestId\": \"req-single\",\n" +
+			"  \"errors\": [\n" +
+			"    {\n" +
+			"      \"status\": 503,\n" +
+			"      \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\n" +
+			"      \"title\": \"Service unavailable\"\n" +
+			"    }\n" +
+			"  ]\n" +
+			"}";
+
+		final String requestId = "req-single";
+		final Event event1 = new Event.Builder("e1", "testType", "testSource").build();
+
+		networkResponseHandler.addWaitingEvents(requestId, new ArrayList<Event>() {{ add(event1); }});
+		networkResponseHandler.processResponseOnError(jsonError, requestId);
+
+		// Exactly 1 error event, chained to event1
+		ArgumentCaptor<Event> captor = ArgumentCaptor.forClass(Event.class);
+		mockCore.verify(() -> MobileCore.dispatchEvent(captor.capture()), times(1));
+
+		Event dispatched = captor.getValue();
+		assertEquals(EVENT_SOURCE_EXTENSION_ERROR_RESPONSE_CONTENT, dispatched.getSource());
+		assertEquals(event1.getUniqueIdentifier(), dispatched.getParentID());
+	}
+
+	@Test
+	public void testProcessResponseOnSuccess_stateStoreHandle_noIndex_batchOfTwo_broadcastsOnce() {
+		// Global handle (state:store) with no eventIndex must be broadcast as exactly ONE event
+		// with null parentId regardless of batch size (locked decision 1).
+		final String jsonResponse =
+			"{\n" +
+			"  \"requestId\": \"batch-state-req\",\n" +
+			"  \"handle\": [\n" +
+			"    {\n" +
+			"      \"type\": \"state:store\",\n" +
+			"      \"payload\": [{\"key\": \"kndctr_org_cluster\", \"value\": \"va6\", \"maxAge\": 1800}]\n" +
+			"    }\n" +
+			"  ]\n" +
+			"}";
+
+		final String requestId = "batch-state-req";
+		final Event event1 = new Event.Builder("e1", "testType", "testSource").build();
+		final Event event2 = new Event.Builder("e2", "testType", "testSource").build();
+
+		networkResponseHandler.addWaitingEvents(
+			requestId,
+			new ArrayList<Event>() {
+				{
+					add(event1);
+					add(event2);
+				}
+			}
+		);
+		networkResponseHandler.processResponseOnSuccess(jsonResponse, requestId);
+
+		// Exactly one RESPONSE_CONTENT event (the broadcast), NOT two
+		ArgumentCaptor<Event> captor = ArgumentCaptor.forClass(Event.class);
+		mockCore.verify(() -> MobileCore.dispatchEvent(captor.capture()), times(1));
+
+		Event dispatched = captor.getValue();
+		// state:store events are dispatched using the handle type as the event source (see dispatchEventResponse)
+		assertEquals("state:store", dispatched.getSource());
+		// Broadcast has no parent
+		assertNull(dispatched.getParentID());
 	}
 }

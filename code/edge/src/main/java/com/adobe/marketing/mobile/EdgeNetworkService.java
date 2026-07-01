@@ -72,6 +72,24 @@ class EdgeNetworkService {
 		}
 	}
 
+	/**
+	 * Granular classification of a completed network attempt, used by batch processing to
+	 * decide the next queue action without re-inspecting HTTP codes.
+	 *
+	 * <ul>
+	 *   <li>{@link #SUCCESS}     — 2xx / 207: response callbacks already fired; remove batch.</li>
+	 *   <li>{@link #RETRY}       — recoverable (429 / 5xx / timeout): nothing ingested; retry batch.</li>
+	 *   <li>{@link #EXPLODE_400} — 400: nothing ingested; re-send each event individually.</li>
+	 *   <li>{@link #DROP}        — other non-recoverable (403, 404, 422 …): drop batch, error all.</li>
+	 * </ul>
+	 */
+	public enum NetworkRequestOutcome {
+		SUCCESS,
+		RETRY,
+		EXPLODE_400,
+		DROP
+	}
+
 	interface ResponseCallback {
 		/**
 		 * This method is called when the response was successfully fetched from the Adobe Experience Edge
@@ -151,13 +169,13 @@ class EdgeNetworkService {
 				responseCallback.onComplete();
 			}
 
-			return new RetryResult(Retry.NO);
+			return new RetryResult(NetworkRequestOutcome.DROP, 0);
 		}
 
 		HttpConnecting connection = doConnect(url, jsonRequest, requestHeaders);
 
 		if (connection == null) {
-			final RetryResult retryResult = new RetryResult(Retry.YES);
+			final RetryResult retryResult = new RetryResult(NetworkRequestOutcome.RETRY, EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS);
 			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -167,7 +185,7 @@ class EdgeNetworkService {
 			return retryResult;
 		}
 
-		RetryResult retryResult = new RetryResult(Retry.NO);
+		RetryResult retryResult = new RetryResult(NetworkRequestOutcome.SUCCESS, 0);
 
 		if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
 			Log.debug(
@@ -195,7 +213,8 @@ class EdgeNetworkService {
 				connection.getResponseMessage()
 			);
 		} else if (recoverableNetworkErrorCodes.contains(connection.getResponseCode())) {
-			retryResult = new RetryResult(Retry.YES, computeRetryInterval(connection));
+			final int retryInterval = computeRetryInterval(connection);
+			retryResult = new RetryResult(NetworkRequestOutcome.RETRY, retryInterval);
 
 			if (connection.getResponseCode() == -1) {
 				Log.debug(
@@ -231,6 +250,19 @@ class EdgeNetworkService {
 				shouldStreamResponse ? konductorConfig.getLineFeed() : null,
 				responseCallback
 			);
+		} else if (connection.getResponseCode() == HttpURLConnection.HTTP_BAD_REQUEST) {
+			// 400 means nothing was ingested. If this is a batch, the caller will explode it to
+			// individual requests. Suppress handleError and onComplete here so events don't get
+			// phantom error/complete callbacks before the individual resends are attempted.
+			// Capture the body so terminal callers (batch-of-1) can deliver the real error.
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Connection to Experience Edge returned 400 Bad Request. Response message: %s. Nothing ingested.",
+				connection.getResponseMessage()
+			);
+			retryResult = new RetryResult(NetworkRequestOutcome.EXPLODE_400, 0);
+			retryResult.setResponseBody(readErrorBodyAsJson(connection.getErrorStream()));
 		} else {
 			Log.warning(
 				LOG_TAG,
@@ -240,11 +272,16 @@ class EdgeNetworkService {
 				connection.getResponseMessage()
 			);
 			handleError(connection.getErrorStream(), responseCallback);
+			retryResult = new RetryResult(NetworkRequestOutcome.DROP, 0);
 		}
 
 		connection.close();
 
-		if (retryResult.getShouldRetry() == Retry.NO && responseCallback != null) {
+		// For EXPLODE_400, skip onComplete: the caller will re-register individual events under
+		// new request IDs and fire their own completions after explosion.
+		if (retryResult.getShouldRetry() == Retry.NO
+				&& retryResult.getNetworkRequestOutcome() != NetworkRequestOutcome.EXPLODE_400
+				&& responseCallback != null) {
 			responseCallback.onComplete();
 		}
 
@@ -517,6 +554,32 @@ class EdgeNetworkService {
 			EdgeConstants.NetworkKeys.HEADER_VALUE_APPLICATION_JSON
 		);
 		return defaultHeaders;
+	}
+
+	/**
+	 * Reads the error body from {@code inputStream} and returns it as a JSON string.
+	 * Mirrors the parsing logic of {@link #handleError} but returns the result instead of
+	 * invoking a callback — used for capturing 400 bodies for terminal error delivery.
+	 *
+	 * @param inputStream the error stream from the HTTP connection, may be null
+	 * @return valid JSON string representing the error; never null
+	 */
+	String readErrorBodyAsJson(final InputStream inputStream) {
+		if (inputStream == null) {
+			return composeGenericErrorAsJson(null);
+		}
+
+		String responseStr = readInputStream(inputStream);
+		try {
+			if (responseStr != null) {
+				new JSONObject(responseStr); // validate JSON
+			} else {
+				responseStr = composeGenericErrorAsJson(null);
+			}
+		} catch (JSONException e) {
+			responseStr = composeGenericErrorAsJson(responseStr);
+		}
+		return responseStr;
 	}
 
 	/**

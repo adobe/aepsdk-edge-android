@@ -27,7 +27,7 @@ public class TestApplication extends Application {
 	private static final String LOG_SOURCE = "TestApplication";
 
 	// TODO: Set up the preferred Environment File ID from your mobile property configured in Data Collection UI
-	private final String ENVIRONMENT_FILE_ID = "";
+	private final String ENVIRONMENT_FILE_ID = "94f571f308d5/de953fa166e4/launch-f122c57f66ad-development";
 
 	@Override
 	public void onCreate() {

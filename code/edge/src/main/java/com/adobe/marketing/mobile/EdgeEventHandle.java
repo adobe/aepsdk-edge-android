@@ -23,6 +23,8 @@ import org.json.JSONObject;
  */
 public class EdgeEventHandle {
 
+	static final int ABSENT_EVENT_INDEX = -1;
+
 	private final int eventIndex;
 	private final String type;
 	private final List<Map<String, Object>> payload;
@@ -41,7 +43,7 @@ public class EdgeEventHandle {
 
 		String tempType = handle.optString(EdgeJson.Response.EventHandle.TYPE);
 		this.type = StringUtils.isNullOrEmpty(tempType) ? null : tempType;
-		this.eventIndex = handle.optInt(EdgeJson.Response.EventHandle.EVENT_INDEX, 0);
+		this.eventIndex = handle.optInt(EdgeJson.Response.EventHandle.EVENT_INDEX, ABSENT_EVENT_INDEX);
 		this.payload = Utils.toListOfMaps(handle.optJSONArray(EdgeJson.Response.EventHandle.PAYLOAD));
 	}
 
@@ -60,8 +62,8 @@ public class EdgeEventHandle {
 	}
 
 	/**
-	 * @return Encodes the event to which this handle is attached as the index in the events array in EdgeRequest
-	 * If not found in the {@link JSONObject} response, it fallbacks to 0 as per Edge Network spec
+	 * @return the index of the event in the batch this handle is attached to, or
+	 * {@link #ABSENT_EVENT_INDEX} if no eventIndex was present in the response (global handle).
 	 */
 	int getEventIndex() {
 		return eventIndex;

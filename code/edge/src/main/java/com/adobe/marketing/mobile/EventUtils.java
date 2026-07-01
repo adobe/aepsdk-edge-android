@@ -82,6 +82,13 @@ final class EventUtils {
 			MapUtils.putIfNotEmpty(edgeConfig, configKey, configValue);
 		}
 
+		if (configSharedState != null && configSharedState.containsKey(EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED)) {
+			edgeConfig.put(
+				EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED,
+				DataReader.optBoolean(configSharedState, EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED, false)
+			);
+		}
+
 		return edgeConfig;
 	}
 

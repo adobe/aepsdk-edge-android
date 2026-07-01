@@ -98,7 +98,7 @@ class EdgeExtension extends Extension {
 			);
 
 			final DataQueue dataQueue = ServiceProvider.getInstance().getDataQueueService().getDataQueue(getName());
-			this.hitQueue = new PersistentHitQueue(dataQueue, hitProcessor);
+			this.hitQueue = new EdgeBatchingHitQueue(dataQueue, hitProcessor);
 		} else {
 			this.hitQueue = hitQueue;
 		}
