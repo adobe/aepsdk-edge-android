@@ -20,6 +20,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -144,6 +145,8 @@ public class NetworkResponseHandlerTest {
 	@After
 	public void tearDown() {
 		mockCore.close();
+		// Reset the co-located behaviour switch so a test that flips it can't leak into others.
+		NetworkResponseHandler.earlyPerEventCompletionEnabled = true;
 	}
 
 	@Test
@@ -2112,5 +2115,281 @@ public class NetworkResponseHandlerTest {
 		assertEquals("state:store", dispatched.getSource());
 		// Broadcast has no parent
 		assertNull(dispatched.getParentID());
+	}
+
+	// -------------------------------------------------------------------------
+	// Early per-event completion (index-advance) — NetworkResponseHandler.earlyPerEventCompletionEnabled
+	// -------------------------------------------------------------------------
+
+	/** A single streamed fragment carrying one indexed, non-global handle for {@code eventIndex}. */
+	private static String indexedHandleFragment(final int eventIndex) {
+		return (
+			"{\n" +
+			"  \"handle\": [\n" +
+			"    { \"type\": \"pairedeventexample\", \"eventIndex\": " +
+			eventIndex +
+			", \"payload\": [ { \"id\": \"p" +
+			eventIndex +
+			"\" } ] }\n" +
+			"  ]\n" +
+			"}"
+		);
+	}
+
+	/** A single streamed fragment carrying a global (no eventIndex) state:store handle. */
+	private static String globalStateStoreFragment() {
+		return (
+			"{\n" +
+			"  \"handle\": [\n" +
+			"    { \"type\": \"state:store\", \"payload\": [ { \"key\": \"k\", \"value\": \"v\", \"maxAge\": 1 } ] }\n" +
+			"  ]\n" +
+			"}"
+		);
+	}
+
+	private Event completionEvent(final String name) {
+		return new Event.Builder(name, "testType", "testSource").setEventData(requestSendCompletionTrueEventData).build();
+	}
+
+	/** Captures all dispatched events so far and returns only the CONTENT_COMPLETE ones, in order. */
+	private List<Event> capturedContentCompleteEvents() {
+		ArgumentCaptor<Event> captor = ArgumentCaptor.forClass(Event.class);
+		mockCore.verify(() -> MobileCore.dispatchEvent(captor.capture()), atLeast(0));
+		List<Event> completes = new ArrayList<>();
+		for (Event e : captor.getAllValues()) {
+			if (EVENT_SOURCE_CONTENT_COMPLETE.equals(e.getSource())) {
+				completes.add(e);
+			}
+		}
+		return completes;
+	}
+
+	@Test
+	public void testEarlyCompletion_multiEventStream_completesEachEventWhenNextIndexArrives() {
+		final String requestId = "req-early";
+		final Event e0 = completionEvent("e0");
+		final Event e1 = completionEvent("e1");
+		final Event e2 = completionEvent("e2");
+		networkResponseHandler.addWaitingEvents(
+			requestId,
+			new ArrayList<Event>() {
+				{
+					add(e0);
+					add(e1);
+					add(e2);
+				}
+			}
+		);
+
+		// index 0 fragment: nothing completes yet (no higher index seen)
+		networkResponseHandler.processResponseOnSuccess(indexedHandleFragment(0), requestId);
+		assertEquals(0, capturedContentCompleteEvents().size());
+
+		// index 1 fragment: event 0 is now known complete
+		networkResponseHandler.processResponseOnSuccess(indexedHandleFragment(1), requestId);
+		List<Event> after1 = capturedContentCompleteEvents();
+		assertEquals(1, after1.size());
+		assertEquals(e0.getUniqueIdentifier(), after1.get(0).getParentID());
+
+		// index 2 fragment: event 1 now completes
+		networkResponseHandler.processResponseOnSuccess(indexedHandleFragment(2), requestId);
+		List<Event> after2 = capturedContentCompleteEvents();
+		assertEquals(2, after2.size());
+		assertEquals(e1.getUniqueIdentifier(), after2.get(1).getParentID());
+
+		// stream close: the last event (index 2) completes
+		networkResponseHandler.processResponseOnComplete(requestId);
+		List<Event> afterComplete = capturedContentCompleteEvents();
+		assertEquals(3, afterComplete.size());
+		assertEquals(e2.getUniqueIdentifier(), afterComplete.get(2).getParentID());
+	}
+
+	@Test
+	public void testEarlyCompletion_completionFiresBeforeNextIndexHandleDispatch() {
+		// A completing event's downstream listeners (e.g. a caller merging accumulated response data
+		// into its own cache on completion) must never observe a higher-indexed sibling's handle data
+		// that arrived in the same response — so completion(N) must be dispatched strictly before
+		// index N+1's own handle is dispatched, not after.
+		final String requestId = "req-order";
+		final Event e0 = completionEvent("e0");
+		final Event e1 = completionEvent("e1");
+		networkResponseHandler.addWaitingEvents(
+			requestId,
+			new ArrayList<Event>() {
+				{
+					add(e0);
+					add(e1);
+				}
+			}
+		);
+
+		networkResponseHandler.processResponseOnSuccess(indexedHandleFragment(0), requestId);
+
+		ArgumentCaptor<Event> captor = ArgumentCaptor.forClass(Event.class);
+		mockCore.reset();
+		// index 1 fragment, in the SAME processResponseOnSuccess call: this must first complete
+		// event 0, THEN dispatch index 1's own handle — not the other way around.
+		networkResponseHandler.processResponseOnSuccess(indexedHandleFragment(1), requestId);
+		mockCore.verify(() -> MobileCore.dispatchEvent(captor.capture()), atLeast(1));
+
+		int completionIndex = -1;
+		int handle1Index = -1;
+		List<Event> dispatched = captor.getAllValues();
+		for (int i = 0; i < dispatched.size(); i++) {
+			Event e = dispatched.get(i);
+			if (EVENT_SOURCE_CONTENT_COMPLETE.equals(e.getSource()) && e0.getUniqueIdentifier().equals(e.getParentID())) {
+				completionIndex = i;
+			} else if ("pairedeventexample".equals(e.getSource())) {
+				handle1Index = i;
+			}
+		}
+
+		assertTrue("event 0's completion must be dispatched", completionIndex >= 0);
+		assertTrue("index 1's handle must be dispatched", handle1Index >= 0);
+		assertTrue(
+			"completion for event 0 must be dispatched before index 1's handle, so a completion listener never observes index 1's data",
+			completionIndex < handle1Index
+		);
+	}
+
+	@Test
+	public void testEarlyCompletion_zeroHandleMiddleEvent_completesOnIndexAdvance() {
+		final String requestId = "req-zero";
+		final Event e0 = completionEvent("e0");
+		final Event e1 = completionEvent("e1"); // will receive no handle of its own
+		final Event e2 = completionEvent("e2");
+		networkResponseHandler.addWaitingEvents(
+			requestId,
+			new ArrayList<Event>() {
+				{
+					add(e0);
+					add(e1);
+					add(e2);
+				}
+			}
+		);
+
+		networkResponseHandler.processResponseOnSuccess(indexedHandleFragment(0), requestId);
+		assertEquals(0, capturedContentCompleteEvents().size());
+
+		// jump straight to index 2 (event 1 produced nothing) → events 0 AND 1 complete
+		networkResponseHandler.processResponseOnSuccess(indexedHandleFragment(2), requestId);
+		List<Event> completes = capturedContentCompleteEvents();
+		assertEquals(2, completes.size());
+		assertEquals(e0.getUniqueIdentifier(), completes.get(0).getParentID());
+		assertEquals(e1.getUniqueIdentifier(), completes.get(1).getParentID());
+
+		networkResponseHandler.processResponseOnComplete(requestId);
+		assertEquals(3, capturedContentCompleteEvents().size());
+	}
+
+	@Test
+	public void testEarlyCompletion_globalHandle_doesNotAdvanceCompletion() {
+		final String requestId = "req-global";
+		final Event e0 = completionEvent("e0");
+		final Event e1 = completionEvent("e1");
+		networkResponseHandler.addWaitingEvents(
+			requestId,
+			new ArrayList<Event>() {
+				{
+					add(e0);
+					add(e1);
+				}
+			}
+		);
+
+		networkResponseHandler.processResponseOnSuccess(indexedHandleFragment(0), requestId);
+		// a global (no-eventIndex) handle must NOT advance completion
+		networkResponseHandler.processResponseOnSuccess(globalStateStoreFragment(), requestId);
+		assertEquals(0, capturedContentCompleteEvents().size());
+
+		networkResponseHandler.processResponseOnComplete(requestId);
+		assertEquals(2, capturedContentCompleteEvents().size());
+	}
+
+	@Test
+	public void testEarlyCompletion_batchOfOne_completesOnlyAtStreamClose() {
+		final String requestId = "req-single";
+		final Event e0 = completionEvent("e0");
+		networkResponseHandler.addWaitingEvents(
+			requestId,
+			new ArrayList<Event>() {
+				{
+					add(e0);
+				}
+			}
+		);
+
+		networkResponseHandler.processResponseOnSuccess(indexedHandleFragment(0), requestId);
+		// only index 0 exists → no early completion, identical to legacy
+		assertEquals(0, capturedContentCompleteEvents().size());
+
+		networkResponseHandler.processResponseOnComplete(requestId);
+		List<Event> completes = capturedContentCompleteEvents();
+		assertEquals(1, completes.size());
+		assertEquals(e0.getUniqueIdentifier(), completes.get(0).getParentID());
+	}
+
+	@Test
+	public void testEarlyCompletion_outOfOrderLowerIndex_doesNotDoubleComplete() {
+		final String requestId = "req-anomaly";
+		final Event e0 = completionEvent("e0");
+		final Event e1 = completionEvent("e1");
+		final Event e2 = completionEvent("e2");
+		networkResponseHandler.addWaitingEvents(
+			requestId,
+			new ArrayList<Event>() {
+				{
+					add(e0);
+					add(e1);
+					add(e2);
+				}
+			}
+		);
+
+		networkResponseHandler.processResponseOnSuccess(indexedHandleFragment(0), requestId);
+		networkResponseHandler.processResponseOnSuccess(indexedHandleFragment(2), requestId); // completes e0, e1
+		assertEquals(2, capturedContentCompleteEvents().size());
+
+		// anomaly: index 1 arrives after events through index 1 were already completed → no re-completion
+		networkResponseHandler.processResponseOnSuccess(indexedHandleFragment(1), requestId);
+		assertEquals(2, capturedContentCompleteEvents().size());
+
+		networkResponseHandler.processResponseOnComplete(requestId);
+		List<Event> all = capturedContentCompleteEvents();
+		assertEquals(3, all.size());
+		// each event completed exactly once, in index order
+		assertEquals(e0.getUniqueIdentifier(), all.get(0).getParentID());
+		assertEquals(e1.getUniqueIdentifier(), all.get(1).getParentID());
+		assertEquals(e2.getUniqueIdentifier(), all.get(2).getParentID());
+	}
+
+	@Test
+	public void testEarlyCompletionDisabled_completesAllAtStreamClose_legacyParity() {
+		NetworkResponseHandler.earlyPerEventCompletionEnabled = false; // reset in tearDown
+
+		final String requestId = "req-legacy";
+		final Event e0 = completionEvent("e0");
+		final Event e1 = completionEvent("e1");
+		networkResponseHandler.addWaitingEvents(
+			requestId,
+			new ArrayList<Event>() {
+				{
+					add(e0);
+					add(e1);
+				}
+			}
+		);
+
+		networkResponseHandler.processResponseOnSuccess(indexedHandleFragment(0), requestId);
+		networkResponseHandler.processResponseOnSuccess(indexedHandleFragment(1), requestId);
+		// disabled → nothing completes early even though a higher index was seen
+		assertEquals(0, capturedContentCompleteEvents().size());
+
+		networkResponseHandler.processResponseOnComplete(requestId);
+		List<Event> completes = capturedContentCompleteEvents();
+		assertEquals(2, completes.size());
+		assertEquals(e0.getUniqueIdentifier(), completes.get(0).getParentID());
+		assertEquals(e1.getUniqueIdentifier(), completes.get(1).getParentID());
 	}
 }

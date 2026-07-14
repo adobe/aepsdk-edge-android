@@ -18,8 +18,12 @@ package com.adobe.marketing.mobile;
 class BatchOutcome {
 
 	enum Kind {
-		/** All entities in the batch were resolved (delivered, dropped with error, or ingested).
-		 *  Remove the whole batch from the queue. */
+		/** The first {@link #resolvedHeadCount} entities (from the head) were resolved (delivered,
+		 *  dropped with error, or ingested). Remove exactly that many from the queue — {@code
+		 *  processBatch} may have been given a larger peeked window than it actually resolved (e.g. a
+		 *  window truncated at a Consent/Reset/decode-failure boundary, or a single non-ExperienceEvent
+		 *  head processed alone); only the resolved prefix is safe to dequeue. Anything beyond it was
+		 *  never sent and must stay queued for the next cycle. */
 		DONE,
 
 		/** A recoverable network error occurred; nothing was ingested.
@@ -41,8 +45,15 @@ class BatchOutcome {
 		this.resolvedHeadCount = resolvedHeadCount;
 	}
 
-	static BatchOutcome done() {
-		return new BatchOutcome(Kind.DONE, 0, 0);
+	/**
+	 * @param resolvedCount the number of entities, counted from the head of the window {@code
+	 *     processBatch} was given, that were actually resolved (sent/dropped) and are therefore safe
+	 *     to remove from the queue. Must never exceed the size of the window passed to {@code
+	 *     processBatch} — pass the count of entities actually acted upon, not the full peeked window,
+	 *     whenever the two can differ (truncation, single-entity delegation, decode failure).
+	 */
+	static BatchOutcome done(final int resolvedCount) {
+		return new BatchOutcome(Kind.DONE, 0, resolvedCount);
 	}
 
 	static BatchOutcome retryBatch(final int retryAfterSeconds) {

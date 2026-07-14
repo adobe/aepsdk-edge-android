@@ -88,7 +88,7 @@ class EdgeHitProcessor implements HitProcessing {
 	 * @return {@link BatchOutcome} instructing the queue how to advance
 	 */
 	BatchOutcome processBatch(@NonNull final List<DataEntity> entities) {
-		if(entities.isEmpty()) return BatchOutcome.done();
+		if(entities.isEmpty()) return BatchOutcome.done(0);
 
 		final DataEntity headEntity = entities.get(0);
 		final EdgeDataEntity headEdgeEntity = EdgeDataEntity.fromDataEntity(headEntity);
@@ -96,7 +96,7 @@ class EdgeHitProcessor implements HitProcessing {
 		if (headEdgeEntity == null) {
 			Log.debug(LOG_TAG, LOG_SOURCE,
 					"Unable to deserialize head entity to EdgeDataEntity, dropping.");
-			return BatchOutcome.done();
+			return BatchOutcome.done(1);
 		}
 
 		// Non-experience events (consent, reset) must be processed alone.
@@ -145,14 +145,14 @@ class EdgeHitProcessor implements HitProcessing {
 			Log.debug(LOG_TAG, LOG_SOURCE,
 					"Cannot process batch: Edge config ID is null/empty, dropping %d events.",
 					batchEntities.size());
-			return BatchOutcome.done();
+			return BatchOutcome.done(batchEntities.size());
 		}
 
 		final JSONObject requestPayload = request.getPayloadWithExperienceEvents(batchEvents);
 		if (requestPayload == null) {
 			Log.warning(LOG_TAG, LOG_SOURCE,
 					"Failed to build batch request payload, dropping %d events.", batchEntities.size());
-			return BatchOutcome.done();
+			return BatchOutcome.done(batchEntities.size());
 		}
 
 		final Map<String, Object> requestProperties = getRequestProperties(headEdgeEntity.getEvent());
@@ -164,22 +164,14 @@ class EdgeHitProcessor implements HitProcessing {
 		networkResponseHandler.addWaitingEvents(edgeHit.getRequestId(), batchEvents);
 
 		final Map<String, String> requestHeaders = getRequestHeaders();
-		// Measure the full request round trip (connect + response read + onComplete) — doRequest is
-		// synchronous, so this spans send → response received for this request id.
-		final long startNanos = System.nanoTime();
 		final RetryResult result = sendBatchNetworkRequest(
 				headEntity.getUniqueIdentifier(), edgeHit, requestHeaders);
-		final long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000L;
-		Log.debug(LOG_TAG, LOG_SOURCE,
-				"Round trip for request id (%s) with %d event(s): %d ms (outcome=%s).",
-				edgeHit.getRequestId(), batchEntities.size(), elapsedMs,
-				result.getNetworkRequestOutcome());
 
 		switch (result.getNetworkRequestOutcome()) {
 			case SUCCESS:
 				Log.debug(LOG_TAG, LOG_SOURCE,
 						"Batch of %d events sent and processed successfully.", batchEntities.size());
-				return BatchOutcome.done();
+				return BatchOutcome.done(batchEntities.size());
 
 			case RETRY:
 				Log.debug(LOG_TAG, LOG_SOURCE,
@@ -194,7 +186,7 @@ class EdgeHitProcessor implements HitProcessing {
 							"Single event received 400; delivering terminal error for request id (%s).",
 							edgeHit.getRequestId());
 					deliverTerminalBadRequest(edgeHit.getRequestId(), result.getResponseBody());
-					return BatchOutcome.done();
+					return BatchOutcome.done(1);
 				} else {
 					// Batch of N>1: nothing ingested — clean up waiting state then explode.
 					Log.warning(LOG_TAG, LOG_SOURCE,
@@ -208,10 +200,10 @@ class EdgeHitProcessor implements HitProcessing {
 				Log.warning(LOG_TAG, LOG_SOURCE,
 						"Batch of %d events received non-recoverable error; dropping all.",
 						batchEntities.size());
-				return BatchOutcome.done();
+				return BatchOutcome.done(batchEntities.size());
 
 			default:
-				return BatchOutcome.done();
+				return BatchOutcome.done(batchEntities.size());
 		}
 	}
 
@@ -223,7 +215,7 @@ class EdgeHitProcessor implements HitProcessing {
 		final boolean[] done = { true };
 		processHit(entity, result -> done[0] = result);
 		if (done[0]) {
-			return BatchOutcome.done();
+			return BatchOutcome.done(1);
 		}
 		return BatchOutcome.retryBatch(retryInterval(entity));
 	}
@@ -359,7 +351,7 @@ class EdgeHitProcessor implements HitProcessing {
 
 		Log.debug(LOG_TAG, LOG_SOURCE,
 				"Explosion complete: all %d events resolved.", batchEntities.size());
-		return BatchOutcome.done();
+		return BatchOutcome.done(resolvedCount);
 	}
 
 	/**

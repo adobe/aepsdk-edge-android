@@ -71,14 +71,6 @@ class EdgeBatchingHitQueue extends HitQueuing {
 	@Override
 	public boolean queue(final DataEntity entity) {
 		final boolean result = queue.add(entity);
-		Log.debug(
-			LOG_TAG,
-			LOG_SOURCE,
-			"Queued entity %s (added=%b); queue depth now %d.",
-			entity != null ? entity.getUniqueIdentifier() : "null",
-			result,
-			queue.count()
-		);
 		processNextBatch();
 		return result;
 	}
@@ -142,7 +134,14 @@ class EdgeBatchingHitQueue extends HitQueuing {
 
 		switch (outcome.getKind()) {
 			case DONE:
-				queue.remove(entities.size());
+				// Remove only what processBatch actually resolved — it may have been given a larger
+				// peeked window than it acted on (truncation at a Consent/Reset/decode-failure
+				// boundary, or a single non-ExperienceEvent head processed alone), and anything beyond
+				// the resolved prefix was never sent, so it must stay queued for the next cycle.
+				final int doneResolvedCount = outcome.getResolvedHeadCount();
+				if (doneResolvedCount > 0) {
+					queue.remove(doneResolvedCount);
+				}
 				isTaskScheduled.set(false);
 				processNextBatch();
 				break;
@@ -211,14 +210,6 @@ class EdgeBatchingHitQueue extends HitQueuing {
 		);
 		final int queueDepth = queue.count();
 		final int batchSize = batchingEnabled ? Math.min(queueDepth, EdgeConstants.Defaults.MAX_BATCH_SIZE) : 1;
-		Log.debug(
-			LOG_TAG,
-			LOG_SOURCE,
-			"Batch-size decision: batching=%b, queueDepth=%d → batchSize=%d.",
-			batchingEnabled,
-			queueDepth,
-			batchSize
-		);
 		return batchSize;
 	}
 }

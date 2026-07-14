@@ -124,11 +124,45 @@ public class EdgeHitProcessorBatchTests {
 		BatchOutcome outcome = hitProcessor.processBatch(Collections.singletonList(entity));
 
 		assertEquals(BatchOutcome.Kind.DONE, outcome.getKind());
+		// Regression guard: DONE must report exactly how many entities were resolved, so the queue
+		// removes only those — never a stale/full peeked-window count.
+		assertEquals(1, outcome.getResolvedHeadCount());
 		// Waiting events registered before the network call
 		verify(mockNetworkResponseHandler, times(1)).addWaitingEvents(anyString(), any());
 		// No error path triggered
 		verify(mockNetworkResponseHandler, never()).processResponseOnError(anyString(), anyString());
 		verify(mockNetworkResponseHandler, never()).processResponseOnComplete(anyString());
+	}
+
+	@Test
+	public void testProcessBatch_twoExperienceEvents_success_resolvedHeadCountIsTwo() {
+		mockNetworkReturns(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0));
+		DataEntity entity1 = buildExperienceEventEntity();
+		DataEntity entity2 = buildExperienceEventEntity();
+
+		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(entity1, entity2));
+
+		assertEquals(BatchOutcome.Kind.DONE, outcome.getKind());
+		assertEquals(2, outcome.getResolvedHeadCount());
+	}
+
+	@Test
+	public void testProcessBatch_experienceEventFollowedByConsent_resolvesOnlyLeadingExperienceRun() {
+		// Regression guard: a mixed window (ExperienceEvent then Consent) must truncate the batch at
+		// the Consent boundary and report a resolvedHeadCount matching only the entities actually
+		// sent (1), not the full peeked window (2) — otherwise EdgeBatchingHitQueue's DONE handling
+		// would remove the untouched Consent entity from the queue without ever processing it.
+		mockNetworkReturns(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0));
+		DataEntity experienceEntity = buildExperienceEventEntity();
+		DataEntity consentEntity = buildConsentEventEntity();
+
+		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(experienceEntity, consentEntity));
+
+		assertEquals(BatchOutcome.Kind.DONE, outcome.getKind());
+		assertEquals(1, outcome.getResolvedHeadCount());
+		// Only one network request — for the ExperienceEvent alone; the Consent entity was never sent.
+		verify(mockEdgeNetworkService, times(1))
+			.doRequest(anyString(), anyString(), ArgumentMatchers.anyMap(), any(EdgeNetworkService.ResponseCallback.class));
 	}
 
 	@Test

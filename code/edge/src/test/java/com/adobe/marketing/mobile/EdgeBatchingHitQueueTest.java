@@ -82,7 +82,7 @@ public class EdgeBatchingHitQueueTest {
 		when(mockDataQueue.peek())
 			.thenReturn(entity)
 			.thenAnswer(inv -> { latch.countDown(); return null; });
-		when(mockProcessor.processBatch(any())).thenReturn(BatchOutcome.done());
+		when(mockProcessor.processBatch(any())).thenReturn(BatchOutcome.done(1));
 
 		hitQueue = new EdgeBatchingHitQueue(mockDataQueue, mockProcessor, executor);
 		hitQueue.beginProcessing();
@@ -104,7 +104,7 @@ public class EdgeBatchingHitQueueTest {
 			.thenAnswer(inv -> { latch.countDown(); return null; });
 		when(mockDataQueue.count()).thenReturn(3);
 		when(mockDataQueue.peek(3)).thenReturn(batch);
-		when(mockProcessor.processBatch(batch)).thenReturn(BatchOutcome.done());
+		when(mockProcessor.processBatch(batch)).thenReturn(BatchOutcome.done(3));
 
 		hitQueue = new EdgeBatchingHitQueue(mockDataQueue, mockProcessor, executor);
 		hitQueue.beginProcessing();
@@ -112,6 +112,34 @@ public class EdgeBatchingHitQueueTest {
 		latch.await(2, TimeUnit.SECONDS);
 
 		verify(mockDataQueue, times(1)).remove(3);
+	}
+
+	@Test
+	public void testBeginProcessing_done_truncatedResolvedCount_removesOnlyResolvedPrefix() throws InterruptedException {
+		// Regression test: processBatch may resolve fewer entities than the peeked window (e.g. a
+		// window truncated at a Consent/Reset/decode-failure boundary). The queue must remove only
+		// the resolved prefix reported on BatchOutcome, never the full peeked window size — otherwise
+		// the untouched trailing entities are silently lost.
+		List<DataEntity> batch = buildBatchEntities(3, true);
+		DataEntity head = batch.get(0);
+		final CountDownLatch latch = new CountDownLatch(1);
+
+		when(mockDataQueue.peek())
+			.thenReturn(head)
+			.thenAnswer(inv -> { latch.countDown(); return null; });
+		when(mockDataQueue.count()).thenReturn(3);
+		when(mockDataQueue.peek(3)).thenReturn(batch);
+		// Only 2 of the 3 peeked entities were actually resolved (e.g. the 3rd was a Consent event
+		// that truncated the ExperienceEvent run).
+		when(mockProcessor.processBatch(batch)).thenReturn(BatchOutcome.done(2));
+
+		hitQueue = new EdgeBatchingHitQueue(mockDataQueue, mockProcessor, executor);
+		hitQueue.beginProcessing();
+
+		latch.await(2, TimeUnit.SECONDS);
+
+		verify(mockDataQueue, times(1)).remove(2);
+		verify(mockDataQueue, never()).remove(3);
 	}
 
 	// -------------------------------------------------------------------------
@@ -170,7 +198,7 @@ public class EdgeBatchingHitQueueTest {
 		when(mockDataQueue.peek())
 			.thenReturn(entity)
 			.thenAnswer(inv -> { latch.countDown(); return null; });
-		when(mockProcessor.processBatch(any())).thenReturn(BatchOutcome.done());
+		when(mockProcessor.processBatch(any())).thenReturn(BatchOutcome.done(1));
 
 		hitQueue = new EdgeBatchingHitQueue(mockDataQueue, mockProcessor, executor);
 		hitQueue.beginProcessing();
@@ -195,7 +223,7 @@ public class EdgeBatchingHitQueueTest {
 			.thenAnswer(inv -> { latch.countDown(); return null; });
 		when(mockDataQueue.count()).thenReturn(queueCount);
 		when(mockDataQueue.peek(expectedBatchSize)).thenReturn(batch);
-		when(mockProcessor.processBatch(any())).thenReturn(BatchOutcome.done());
+		when(mockProcessor.processBatch(any())).thenReturn(BatchOutcome.done(expectedBatchSize));
 
 		hitQueue = new EdgeBatchingHitQueue(mockDataQueue, mockProcessor, executor);
 		hitQueue.beginProcessing();
@@ -217,7 +245,7 @@ public class EdgeBatchingHitQueueTest {
 			.thenAnswer(inv -> { latch.countDown(); return null; });
 		when(mockDataQueue.count()).thenReturn(queueCount);
 		when(mockDataQueue.peek(EdgeConstants.Defaults.MAX_BATCH_SIZE)).thenReturn(batch);
-		when(mockProcessor.processBatch(any())).thenReturn(BatchOutcome.done());
+		when(mockProcessor.processBatch(any())).thenReturn(BatchOutcome.done(EdgeConstants.Defaults.MAX_BATCH_SIZE));
 
 		hitQueue = new EdgeBatchingHitQueue(mockDataQueue, mockProcessor, executor);
 		hitQueue.beginProcessing();
