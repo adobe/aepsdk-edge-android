@@ -97,6 +97,7 @@ public class EdgeHitProcessorBatchTests {
 
 		edgeConfig = new HashMap<>();
 		edgeConfig.put("edge.configId", "test-config-id");
+		edgeConfig.put("edge.batching.eventNameAllowlist", Collections.singletonList("test-event"));
 
 		hitProcessor = new EdgeHitProcessor(
 			mockNetworkResponseHandler,

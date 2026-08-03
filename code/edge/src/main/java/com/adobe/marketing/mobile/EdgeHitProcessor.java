@@ -107,13 +107,25 @@ class EdgeHitProcessor implements HitProcessing {
 			return processSingleEntity(headEntity);
 		}
 
+		// Events whose name isn't in the configured allowlist must also be processed alone.
+		if (!isEventNameAllowlistedForBatching(headEdgeEntity)) {
+			Log.trace(LOG_TAG, LOG_SOURCE,
+					"Head entity's event name (%s) is not in the batching allowlist; processing alone.",
+					headEdgeEntity.getEvent().getName());
+			return processSingleEntity(headEntity);
+		}
+
 		// Collect the consecutive ExperienceEvent run from the front.
 		final List<DataEntity> batchEntities = new ArrayList<>();
 		final List<Event> batchEvents = new ArrayList<>();
 
 		for (final DataEntity dataEntity : entities) {
 			final EdgeDataEntity edgeEntity = EdgeDataEntity.fromDataEntity(dataEntity);
-			if (edgeEntity == null || !EventUtils.isExperienceEvent(edgeEntity.getEvent())) {
+			if (
+				edgeEntity == null ||
+				!EventUtils.isExperienceEvent(edgeEntity.getEvent()) ||
+				!isEventNameAllowlistedForBatching(edgeEntity)
+			) {
 				break;
 			}
 			batchEntities.add(dataEntity);
@@ -205,6 +217,30 @@ class EdgeHitProcessor implements HitProcessing {
 			default:
 				return BatchOutcome.done(batchEntities.size());
 		}
+	}
+
+	/**
+	 * Checks whether {@code entity}'s underlying {@link Event} name is present in the
+	 * {@code edge.batching.eventNameAllowlist} configuration snapshotted on this entity at
+	 * enqueue time. An absent or empty allowlist means no event names are eligible for
+	 * batching (opt-in allowlist semantics) — {@code edge.batching.enabled} alone is not
+	 * sufficient to batch a given event.
+	 *
+	 * @param entity the {@link EdgeDataEntity} whose event name is being checked
+	 * @return true if the entity's event name is explicitly allowlisted for batching
+	 */
+	private boolean isEventNameAllowlistedForBatching(@NonNull final EdgeDataEntity entity) {
+		final List<String> allowlist = DataReader.optStringList(
+			entity.getConfiguration(),
+			EdgeConstants.SharedState.Configuration.EDGE_BATCHING_EVENT_NAME_ALLOWLIST,
+			null
+		);
+
+		if (allowlist == null || allowlist.isEmpty()) {
+			return false;
+		}
+
+		return allowlist.contains(entity.getEvent().getName());
 	}
 
 	/**

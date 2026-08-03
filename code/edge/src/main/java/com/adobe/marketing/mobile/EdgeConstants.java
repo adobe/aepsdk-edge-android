@@ -108,6 +108,7 @@ final class EdgeConstants {
 			static final String EDGE_DOMAIN = "edge.domain";
 			static final String EDGE_REQUEST_ENVIRONMENT = "edge.environment";
 			static final String EDGE_BATCHING_ENABLED = "edge.batching.enabled";
+			static final String EDGE_BATCHING_EVENT_NAME_ALLOWLIST = "edge.batching.eventNameAllowlist";
 
 			private Configuration() {}
 		}

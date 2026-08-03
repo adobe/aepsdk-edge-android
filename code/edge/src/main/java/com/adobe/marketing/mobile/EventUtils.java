@@ -82,10 +82,46 @@ final class EventUtils {
 			MapUtils.putIfNotEmpty(edgeConfig, configKey, configValue);
 		}
 
+		// Bundled batching config is a per-key fallback only: consulted for a given key solely when
+		// that key is absent from the Configuration shared state (i.e. not set programmatically, and
+		// not delivered by a remote/Launch-published configuration). Any value present in the
+		// Configuration shared state always wins over the bundled file for that same key.
+		final Map<String, Object> bundledBatchingConfig = EdgeBundledBatchingConfig.get();
+
 		if (configSharedState != null && configSharedState.containsKey(EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED)) {
 			edgeConfig.put(
 				EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED,
 				DataReader.optBoolean(configSharedState, EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED, false)
+			);
+		} else if (bundledBatchingConfig.containsKey(EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED)) {
+			edgeConfig.put(
+				EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED,
+				DataReader.optBoolean(bundledBatchingConfig, EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED, false)
+			);
+		}
+
+		if (
+			configSharedState != null &&
+			configSharedState.containsKey(EdgeConstants.SharedState.Configuration.EDGE_BATCHING_EVENT_NAME_ALLOWLIST)
+		) {
+			edgeConfig.put(
+				EdgeConstants.SharedState.Configuration.EDGE_BATCHING_EVENT_NAME_ALLOWLIST,
+				DataReader.optStringList(
+					configSharedState,
+					EdgeConstants.SharedState.Configuration.EDGE_BATCHING_EVENT_NAME_ALLOWLIST,
+					null
+				)
+			);
+		} else if (
+			bundledBatchingConfig.containsKey(EdgeConstants.SharedState.Configuration.EDGE_BATCHING_EVENT_NAME_ALLOWLIST)
+		) {
+			edgeConfig.put(
+				EdgeConstants.SharedState.Configuration.EDGE_BATCHING_EVENT_NAME_ALLOWLIST,
+				DataReader.optStringList(
+					bundledBatchingConfig,
+					EdgeConstants.SharedState.Configuration.EDGE_BATCHING_EVENT_NAME_ALLOWLIST,
+					null
+				)
 			);
 		}
 

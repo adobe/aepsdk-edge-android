@@ -12,13 +12,32 @@
 package com.adobe.marketing.mobile;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mockStatic;
 
 import com.adobe.marketing.mobile.util.JSONAsserts;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+import org.mockito.MockedStatic;
 
 public class EventUtilsTests {
+
+	private MockedStatic<EdgeBundledBatchingConfig> mockBundledBatchingConfigStatic;
+
+	@Before
+	public void setup() {
+		mockBundledBatchingConfigStatic = mockStatic(EdgeBundledBatchingConfig.class);
+		mockBundledBatchingConfigStatic.when(EdgeBundledBatchingConfig::get).thenReturn(Collections.emptyMap());
+	}
+
+	@After
+	public void tearDown() {
+		mockBundledBatchingConfigStatic.close();
+	}
 
 	@Test
 	public void testGetEdgeConfiguration_allValidConfigs() {
@@ -193,5 +212,79 @@ public class EventUtilsTests {
 		);
 
 		assertEquals(0, result.size());
+	}
+
+	// -------------------------------------------------------------------------
+	// Bundled batching config fallback (per-key)
+	// -------------------------------------------------------------------------
+
+	@Test
+	public void testGetEdgeConfiguration_batchingEnabled_presentInSharedState_bundledConfigIgnored() {
+		mockBundledBatchingConfigStatic
+			.when(EdgeBundledBatchingConfig::get)
+			.thenReturn(Collections.singletonMap("edge.batching.enabled", false));
+
+		Map<String, Object> result = EventUtils.getEdgeConfiguration(
+			new HashMap<String, Object>() {
+				{
+					put("edge.batching.enabled", true);
+				}
+			}
+		);
+
+		assertEquals(true, result.get("edge.batching.enabled"));
+	}
+
+	@Test
+	public void testGetEdgeConfiguration_batchingEnabled_absentFromSharedState_usesBundledConfig() {
+		mockBundledBatchingConfigStatic
+			.when(EdgeBundledBatchingConfig::get)
+			.thenReturn(Collections.singletonMap("edge.batching.enabled", true));
+
+		Map<String, Object> result = EventUtils.getEdgeConfiguration(new HashMap<>());
+
+		assertEquals(true, result.get("edge.batching.enabled"));
+	}
+
+	@Test
+	public void testGetEdgeConfiguration_batchingEnabled_absentFromBoth_keyNotInResult() {
+		Map<String, Object> result = EventUtils.getEdgeConfiguration(new HashMap<>());
+
+		assertEquals(false, result.containsKey("edge.batching.enabled"));
+	}
+
+	@Test
+	public void testGetEdgeConfiguration_eventNameAllowlist_presentInSharedState_bundledConfigIgnored() {
+		mockBundledBatchingConfigStatic
+			.when(EdgeBundledBatchingConfig::get)
+			.thenReturn(Collections.singletonMap("edge.batching.eventNameAllowlist", Arrays.asList("BundledEvent")));
+
+		Map<String, Object> result = EventUtils.getEdgeConfiguration(
+			new HashMap<String, Object>() {
+				{
+					put("edge.batching.eventNameAllowlist", Arrays.asList("SharedStateEvent"));
+				}
+			}
+		);
+
+		assertEquals(Arrays.asList("SharedStateEvent"), result.get("edge.batching.eventNameAllowlist"));
+	}
+
+	@Test
+	public void testGetEdgeConfiguration_eventNameAllowlist_absentFromSharedState_usesBundledConfig() {
+		mockBundledBatchingConfigStatic
+			.when(EdgeBundledBatchingConfig::get)
+			.thenReturn(Collections.singletonMap("edge.batching.eventNameAllowlist", Arrays.asList("BundledEvent")));
+
+		Map<String, Object> result = EventUtils.getEdgeConfiguration(new HashMap<>());
+
+		assertEquals(Arrays.asList("BundledEvent"), result.get("edge.batching.eventNameAllowlist"));
+	}
+
+	@Test
+	public void testGetEdgeConfiguration_eventNameAllowlist_absentFromBoth_keyNotInResult() {
+		Map<String, Object> result = EventUtils.getEdgeConfiguration(new HashMap<>());
+
+		assertEquals(false, result.containsKey("edge.batching.eventNameAllowlist"));
 	}
 }
