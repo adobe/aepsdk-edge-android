@@ -156,12 +156,8 @@ class NetworkResponseHandler {
 				eventIds.add(event.getUniqueIdentifier());
 			}
 
-			if (!temp.isEmpty()) {
-				return new ArrayList<>(eventIds);
-			}
+			return eventIds;
 		}
-
-		return Collections.emptyList();
 	}
 
 	/**
