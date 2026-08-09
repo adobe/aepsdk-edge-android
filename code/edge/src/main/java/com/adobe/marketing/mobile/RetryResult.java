@@ -26,7 +26,8 @@ class RetryResult {
 	 * @param shouldRetry value indicating if the hit should be retried
 	 */
 	RetryResult(final EdgeNetworkService.Retry shouldRetry) {
-		this.networkRequestOutcome = shouldRetry == EdgeNetworkService.Retry.YES
+		this.networkRequestOutcome =
+			shouldRetry == EdgeNetworkService.Retry.YES
 				? EdgeNetworkService.NetworkRequestOutcome.RETRY
 				: EdgeNetworkService.NetworkRequestOutcome.SUCCESS;
 	}
@@ -40,7 +41,8 @@ class RetryResult {
 	RetryResult(final EdgeNetworkService.Retry shouldRetry, final int retryIntervalSeconds) {
 		this.retryIntervalSeconds =
 			retryIntervalSeconds > 0 ? retryIntervalSeconds : EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS;
-		this.networkRequestOutcome = shouldRetry == EdgeNetworkService.Retry.YES
+		this.networkRequestOutcome =
+			shouldRetry == EdgeNetworkService.Retry.YES
 				? EdgeNetworkService.NetworkRequestOutcome.RETRY
 				: EdgeNetworkService.NetworkRequestOutcome.SUCCESS;
 	}
@@ -67,8 +69,8 @@ class RetryResult {
 	 */
 	public EdgeNetworkService.Retry getShouldRetry() {
 		return networkRequestOutcome == EdgeNetworkService.NetworkRequestOutcome.RETRY
-				? EdgeNetworkService.Retry.YES
-				: EdgeNetworkService.Retry.NO;
+			? EdgeNetworkService.Retry.YES
+			: EdgeNetworkService.Retry.NO;
 	}
 
 	/**

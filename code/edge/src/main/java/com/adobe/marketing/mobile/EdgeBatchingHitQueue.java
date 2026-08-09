@@ -161,13 +161,11 @@ class EdgeBatchingHitQueue extends HitQueuing {
 					explodeRemaining--;
 				}
 				break;
-
 			case RETRY:
 				// Nothing removed — a recoverable failure is retried in place, never skipped,
 				// whether or not this is mid-drain.
 				retryDelaySeconds = outcome.getValue();
 				break;
-
 			case EXPLODE:
 				explodeRemaining = outcome.getValue();
 				Log.trace(

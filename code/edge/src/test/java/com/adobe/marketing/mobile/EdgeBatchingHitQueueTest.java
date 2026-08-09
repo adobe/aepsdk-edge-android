@@ -48,8 +48,11 @@ import org.mockito.junit.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class EdgeBatchingHitQueueTest {
 
-	@Mock DataQueue mockDataQueue;
-	@Mock EdgeHitProcessor mockProcessor;
+	@Mock
+	DataQueue mockDataQueue;
+
+	@Mock
+	EdgeHitProcessor mockProcessor;
 
 	private EdgeBatchingHitQueue hitQueue;
 	private ScheduledExecutorService executor;
@@ -82,7 +85,10 @@ public class EdgeBatchingHitQueueTest {
 		// First peek() returns the entity; second (next cycle, empty queue) fires the latch.
 		when(mockDataQueue.peek())
 			.thenReturn(entity)
-			.thenAnswer(inv -> { latch.countDown(); return null; });
+			.thenAnswer(inv -> {
+				latch.countDown();
+				return null;
+			});
 		when(mockProcessor.processBatch(any())).thenReturn(BatchOutcome.done(1));
 
 		hitQueue = new EdgeBatchingHitQueue(mockDataQueue, mockProcessor, executor);
@@ -102,7 +108,10 @@ public class EdgeBatchingHitQueueTest {
 
 		when(mockDataQueue.peek())
 			.thenReturn(head)
-			.thenAnswer(inv -> { latch.countDown(); return null; });
+			.thenAnswer(inv -> {
+				latch.countDown();
+				return null;
+			});
 		when(mockDataQueue.count()).thenReturn(3);
 		when(mockDataQueue.peek(3)).thenReturn(batch);
 		when(mockProcessor.processBatch(batch)).thenReturn(BatchOutcome.done(3));
@@ -116,7 +125,8 @@ public class EdgeBatchingHitQueueTest {
 	}
 
 	@Test
-	public void testBeginProcessing_done_truncatedResolvedCount_removesOnlyResolvedPrefix() throws InterruptedException {
+	public void testBeginProcessing_done_truncatedResolvedCount_removesOnlyResolvedPrefix()
+		throws InterruptedException {
 		// Regression test: processBatch may resolve fewer entities than the peeked window (e.g. a
 		// window truncated at a Consent/Reset/decode-failure boundary). The queue must remove only
 		// the resolved prefix reported on BatchOutcome, never the full peeked window size — otherwise
@@ -127,7 +137,10 @@ public class EdgeBatchingHitQueueTest {
 
 		when(mockDataQueue.peek())
 			.thenReturn(head)
-			.thenAnswer(inv -> { latch.countDown(); return null; });
+			.thenAnswer(inv -> {
+				latch.countDown();
+				return null;
+			});
 		when(mockDataQueue.count()).thenReturn(3);
 		when(mockDataQueue.peek(3)).thenReturn(batch);
 		// Only 2 of the 3 peeked entities were actually resolved (e.g. the 3rd was a Consent event
@@ -176,16 +189,16 @@ public class EdgeBatchingHitQueueTest {
 
 		when(mockDataQueue.peek())
 			.thenReturn(batch.get(0), batch.get(0), batch.get(1), batch.get(2))
-			.thenAnswer(inv -> { latch.countDown(); return null; });
+			.thenAnswer(inv -> {
+				latch.countDown();
+				return null;
+			});
 		when(mockDataQueue.count()).thenReturn(3);
 		when(mockDataQueue.peek(3)).thenReturn(batch);
 		when(mockProcessor.processBatch(batch)).thenReturn(BatchOutcome.explode(3));
-		when(mockProcessor.processBatch(Collections.singletonList(batch.get(0))))
-			.thenReturn(BatchOutcome.done(1));
-		when(mockProcessor.processBatch(Collections.singletonList(batch.get(1))))
-			.thenReturn(BatchOutcome.done(1));
-		when(mockProcessor.processBatch(Collections.singletonList(batch.get(2))))
-			.thenReturn(BatchOutcome.done(1));
+		when(mockProcessor.processBatch(Collections.singletonList(batch.get(0)))).thenReturn(BatchOutcome.done(1));
+		when(mockProcessor.processBatch(Collections.singletonList(batch.get(1)))).thenReturn(BatchOutcome.done(1));
+		when(mockProcessor.processBatch(Collections.singletonList(batch.get(2)))).thenReturn(BatchOutcome.done(1));
 
 		hitQueue = new EdgeBatchingHitQueue(mockDataQueue, mockProcessor, executor);
 		hitQueue.beginProcessing();
@@ -211,7 +224,10 @@ public class EdgeBatchingHitQueueTest {
 
 		when(mockDataQueue.peek())
 			.thenReturn(batch.get(0))
-			.thenAnswer(inv -> { retrySeen.countDown(); return batch.get(0); });
+			.thenAnswer(inv -> {
+				retrySeen.countDown();
+				return batch.get(0);
+			});
 		when(mockDataQueue.count()).thenReturn(2);
 		when(mockDataQueue.peek(2)).thenReturn(batch);
 		when(mockProcessor.processBatch(batch)).thenReturn(BatchOutcome.explode(2));
@@ -242,7 +258,10 @@ public class EdgeBatchingHitQueueTest {
 
 		when(mockDataQueue.peek())
 			.thenReturn(entity)
-			.thenAnswer(inv -> { latch.countDown(); return null; });
+			.thenAnswer(inv -> {
+				latch.countDown();
+				return null;
+			});
 		when(mockProcessor.processBatch(any())).thenReturn(BatchOutcome.done(1));
 
 		hitQueue = new EdgeBatchingHitQueue(mockDataQueue, mockProcessor, executor);
@@ -265,7 +284,10 @@ public class EdgeBatchingHitQueueTest {
 
 		when(mockDataQueue.peek())
 			.thenReturn(head)
-			.thenAnswer(inv -> { latch.countDown(); return null; });
+			.thenAnswer(inv -> {
+				latch.countDown();
+				return null;
+			});
 		when(mockDataQueue.count()).thenReturn(queueCount);
 		when(mockDataQueue.peek(expectedBatchSize)).thenReturn(batch);
 		when(mockProcessor.processBatch(any())).thenReturn(BatchOutcome.done(expectedBatchSize));
@@ -287,7 +309,10 @@ public class EdgeBatchingHitQueueTest {
 
 		when(mockDataQueue.peek())
 			.thenReturn(head)
-			.thenAnswer(inv -> { latch.countDown(); return null; });
+			.thenAnswer(inv -> {
+				latch.countDown();
+				return null;
+			});
 		when(mockDataQueue.count()).thenReturn(queueCount);
 		when(mockDataQueue.peek(EdgeConstants.Defaults.MAX_BATCH_SIZE)).thenReturn(batch);
 		when(mockProcessor.processBatch(any())).thenReturn(BatchOutcome.done(EdgeConstants.Defaults.MAX_BATCH_SIZE));

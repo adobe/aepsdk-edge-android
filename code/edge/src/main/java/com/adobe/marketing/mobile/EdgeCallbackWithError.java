@@ -23,7 +23,6 @@ import java.util.List;
  * for this interface at dispatch time and calls {@link #onError} when errors are available.
  */
 public interface EdgeCallbackWithError extends EdgeCallback {
-
 	/**
 	 * Called when one or more errors are returned for the sent {@link ExperienceEvent}.
 	 * May be called alongside {@link #onComplete} if some handles were also returned.

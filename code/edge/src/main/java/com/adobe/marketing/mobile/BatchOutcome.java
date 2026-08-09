@@ -28,7 +28,7 @@ class BatchOutcome {
 		/** {@code value} = seconds to wait before the next cycle; nothing removed. */
 		RETRY,
 		/** {@code value} = number of entities to drain one at a time via forced batch-size-1. */
-		EXPLODE
+		EXPLODE,
 	}
 
 	private final Kind kind;
@@ -65,7 +65,6 @@ class BatchOutcome {
 	 * A batch of {@code count} events got a 400 — nothing was ingested. Remove nothing yet; instead
 	 * tell the queue to drain exactly these {@code count} entities one at a time (via the ordinary
 	 * single-event path) before resuming normal batch-sized peeking. See
-	 * {@link EdgeBatchingHitQueue#runBatchCycle()}.
 	 *
 	 * @param count number of entities in the batch that must now be drained individually
 	 */

@@ -87,7 +87,7 @@ class EdgeNetworkService {
 		SUCCESS,
 		RETRY,
 		EXPLODE_400,
-		DROP
+		DROP,
 	}
 
 	interface ResponseCallback {
@@ -196,7 +196,10 @@ class EdgeNetworkService {
 		HttpConnecting connection = doConnect(url, jsonRequest, requestHeaders);
 
 		if (connection == null) {
-			final RetryResult retryResult = new RetryResult(NetworkRequestOutcome.RETRY, EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS);
+			final RetryResult retryResult = new RetryResult(
+				NetworkRequestOutcome.RETRY,
+				EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS
+			);
 			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -303,9 +306,11 @@ class EdgeNetworkService {
 
 		// For EXPLODE_400, skip onComplete: the caller will re-register individual events under
 		// new request IDs and fire their own completions after explosion.
-		if (retryResult.getShouldRetry() == Retry.NO
-				&& retryResult.getNetworkRequestOutcome() != NetworkRequestOutcome.EXPLODE_400
-				&& responseCallback != null) {
+		if (
+			retryResult.getShouldRetry() == Retry.NO &&
+			retryResult.getNetworkRequestOutcome() != NetworkRequestOutcome.EXPLODE_400 &&
+			responseCallback != null
+		) {
 			responseCallback.onComplete();
 		}
 

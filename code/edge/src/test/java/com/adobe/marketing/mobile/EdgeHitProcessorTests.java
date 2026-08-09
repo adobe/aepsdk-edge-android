@@ -462,13 +462,7 @@ public class EdgeHitProcessorTests {
 			EdgeNetworkService.ResponseCallback.class
 		);
 		verify(mockEdgeNetworkService)
-			.doRequest(
-				anyString(),
-				anyString(),
-				ArgumentMatchers.anyMap(),
-				eq(false),
-				callbackArgCaptor.capture()
-			);
+			.doRequest(anyString(), anyString(), ArgumentMatchers.anyMap(), eq(false), callbackArgCaptor.capture());
 		callbackArgCaptor.getValue().onComplete();
 		verify(realNetworkResponseHandler).removeWaitingEvents(hit.getRequestId());
 		verify(mockResponseCallbackHandler, times(1)).unregisterCallback(mockEvent1.getUniqueIdentifier());
@@ -519,13 +513,7 @@ public class EdgeHitProcessorTests {
 			EdgeNetworkService.ResponseCallback.class
 		);
 		verify(mockEdgeNetworkService)
-			.doRequest(
-				anyString(),
-				anyString(),
-				ArgumentMatchers.anyMap(),
-				eq(false),
-				callbackArgCaptor.capture()
-			);
+			.doRequest(anyString(), anyString(), ArgumentMatchers.anyMap(), eq(false), callbackArgCaptor.capture());
 		callbackArgCaptor.getValue().onComplete(); // simulates this is done by the doRequest method
 		verify(realNetworkResponseHandler).removeWaitingEvents(hit.getRequestId());
 		verify(mockResponseCallbackHandler, never()).unregisterCallback(anyString());
@@ -586,13 +574,7 @@ public class EdgeHitProcessorTests {
 
 		// verify
 		verify(mockEdgeNetworkService, times(1))
-			.doRequest(
-				anyString(),
-				anyString(),
-				ArgumentMatchers.anyMap(),
-				eq(false),
-				callbackArgCaptor.capture()
-			);
+			.doRequest(anyString(), anyString(), ArgumentMatchers.anyMap(), eq(false), callbackArgCaptor.capture());
 		callbackArgCaptor.getValue().onComplete();
 		verify(realNetworkResponseHandler).removeWaitingEvents(hit.getRequestId());
 		verify(mockResponseCallbackHandler, times(1)).unregisterCallback(mockEvent1.getUniqueIdentifier());

@@ -620,7 +620,10 @@ public class EdgeNetworkServiceTest {
 
 		// verify - nothing was ingested; onError/onComplete are suppressed so the caller can resend
 		// each event individually without a phantom error/complete firing first.
-		assertEquals(EdgeNetworkService.NetworkRequestOutcome.EXPLODE_400, result.retryResult.getNetworkRequestOutcome());
+		assertEquals(
+			EdgeNetworkService.NetworkRequestOutcome.EXPLODE_400,
+			result.retryResult.getNetworkRequestOutcome()
+		);
 		assertEquals(EdgeNetworkService.Retry.NO, result.retryResult.getShouldRetry());
 		assertNull(result.onResponseCallback[0]);
 		assertNull(result.onErrorCallback[0]);

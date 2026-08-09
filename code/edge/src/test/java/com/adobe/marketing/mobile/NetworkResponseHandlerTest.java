@@ -2062,7 +2062,14 @@ public class NetworkResponseHandlerTest {
 		final String requestId = "req-single";
 		final Event event1 = new Event.Builder("e1", "testType", "testSource").build();
 
-		networkResponseHandler.addWaitingEvents(requestId, new ArrayList<Event>() {{ add(event1); }});
+		networkResponseHandler.addWaitingEvents(
+			requestId,
+			new ArrayList<Event>() {
+				{
+					add(event1);
+				}
+			}
+		);
 		networkResponseHandler.processResponseOnError(jsonError, requestId);
 
 		// Exactly 1 error event, chained to event1
@@ -2146,7 +2153,9 @@ public class NetworkResponseHandlerTest {
 	}
 
 	private Event completionEvent(final String name) {
-		return new Event.Builder(name, "testType", "testSource").setEventData(requestSendCompletionTrueEventData).build();
+		return new Event.Builder(name, "testType", "testSource")
+			.setEventData(requestSendCompletionTrueEventData)
+			.build();
 	}
 
 	/** Captures all dispatched events so far and returns only the CONTENT_COMPLETE ones, in order. */
@@ -2235,7 +2244,9 @@ public class NetworkResponseHandlerTest {
 		List<Event> dispatched = captor.getAllValues();
 		for (int i = 0; i < dispatched.size(); i++) {
 			Event e = dispatched.get(i);
-			if (EVENT_SOURCE_CONTENT_COMPLETE.equals(e.getSource()) && e0.getUniqueIdentifier().equals(e.getParentID())) {
+			if (
+				EVENT_SOURCE_CONTENT_COMPLETE.equals(e.getSource()) && e0.getUniqueIdentifier().equals(e.getParentID())
+			) {
 				completionIndex = i;
 			} else if ("pairedeventexample".equals(e.getSource())) {
 				handle1Index = i;
@@ -2361,5 +2372,4 @@ public class NetworkResponseHandlerTest {
 		assertEquals(e1.getUniqueIdentifier(), all.get(1).getParentID());
 		assertEquals(e2.getUniqueIdentifier(), all.get(2).getParentID());
 	}
-
 }

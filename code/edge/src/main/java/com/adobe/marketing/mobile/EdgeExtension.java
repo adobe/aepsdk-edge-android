@@ -19,7 +19,6 @@ import com.adobe.marketing.mobile.services.DataQueue;
 import com.adobe.marketing.mobile.services.HitQueuing;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
-import com.adobe.marketing.mobile.services.PersistentHitQueue;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.DataReaderException;

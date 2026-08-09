@@ -228,7 +228,6 @@ class NetworkResponseHandler {
 		} catch (JSONException e) {
 			// ok, ignore if there are no warnings
 		}
-
 		// Early per-event completion happens inline as each handle/error/warning is processed above:
 		// observing eventIndex M sweeps completions for events 0..M-1 (see processEventHandles /
 		// dispatchEventErrors). The highest index seen (and anything still pending) completes at stream
@@ -629,8 +628,10 @@ class NetworkResponseHandler {
 	 * by design — these are broadcast globally rather than attributed to a specific event.
 	 */
 	private boolean isGlobalHandleType(final String handleType) {
-		return EdgeJson.Response.EventHandle.Store.TYPE.equals(handleType) ||
-			EdgeJson.Response.EventHandle.LocationHint.TYPE.equals(handleType);
+		return (
+			EdgeJson.Response.EventHandle.Store.TYPE.equals(handleType) ||
+			EdgeJson.Response.EventHandle.LocationHint.TYPE.equals(handleType)
+		);
 	}
 
 	private void dispatchEventResponse(
@@ -729,7 +730,12 @@ class NetworkResponseHandler {
 	 */
 	private void dispatchEventErrors(final JSONArray errorsArray, final boolean isError, final String requestId) {
 		if (JSONUtils.isNullOrEmpty(errorsArray)) {
-			Log.trace(LOG_TAG, LOG_SOURCE, "Received null/empty %s array, nothing to handle", isError ? "errors" : "warnings");
+			Log.trace(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Received null/empty %s array, nothing to handle",
+				isError ? "errors" : "warnings"
+			);
 			return;
 		}
 
@@ -771,10 +777,15 @@ class NetworkResponseHandler {
 				EdgeJson.Response.EventHandle.REPORT,
 				null
 			);
-			final boolean hasEventIndex = report != null && report.containsKey(EdgeJson.Response.EventHandle.EVENT_INDEX);
+			final boolean hasEventIndex =
+				report != null && report.containsKey(EdgeJson.Response.EventHandle.EVENT_INDEX);
 			final int eventIndex = hasEventIndex
-					? DataReader.optInt(report, EdgeJson.Response.EventHandle.EVENT_INDEX, EdgeEventHandle.ABSENT_EVENT_INDEX)
-					: EdgeEventHandle.ABSENT_EVENT_INDEX;
+				? DataReader.optInt(
+					report,
+					EdgeJson.Response.EventHandle.EVENT_INDEX,
+					EdgeEventHandle.ABSENT_EVENT_INDEX
+				)
+				: EdgeEventHandle.ABSENT_EVENT_INDEX;
 
 			// Complete any lower-indexed events still pending BEFORE dispatching this error's data —
 			// same ordering guarantee as processEventHandles, applied to the error/warning channel.

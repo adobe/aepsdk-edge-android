@@ -24,11 +24,9 @@ import static org.mockito.Mockito.when;
 
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.NamedCollection;
-import com.adobe.marketing.mobile.util.MapUtils;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.junit.After;
 import org.junit.Before;
@@ -99,19 +97,16 @@ public class EdgeHitProcessorBatchTests {
 	@Before
 	public void setup() {
 		mockCallbacksManagerStatic = mockStatic(CompletionCallbacksManager.class);
-		mockCallbacksManagerStatic.when(CompletionCallbacksManager::getInstance).thenReturn(mockCompletionCallbacksManager);
+		mockCallbacksManagerStatic
+			.when(CompletionCallbacksManager::getInstance)
+			.thenReturn(mockCompletionCallbacksManager);
 
 		edgeConfig = new HashMap<>();
 		edgeConfig.put("edge.configId", "test-config-id");
 		edgeConfig.put("edge.batching.eventNameAllowlist", Collections.singletonList("test-event"));
 
-		hitProcessor = new EdgeHitProcessor(
-			mockNetworkResponseHandler,
-			mockEdgeNetworkService,
-			mockNamedCollection,
-			null,
-			null
-		);
+		hitProcessor =
+			new EdgeHitProcessor(mockNetworkResponseHandler, mockEdgeNetworkService, mockNamedCollection, null, null);
 	}
 
 	@After
@@ -169,7 +164,13 @@ public class EdgeHitProcessorBatchTests {
 		assertEquals(1, outcome.getRemoveCount());
 		// Only one network request — for the ExperienceEvent alone; the Consent entity was never sent.
 		verify(mockEdgeNetworkService, times(1))
-			.doRequest(anyString(), anyString(), ArgumentMatchers.anyMap(), ArgumentMatchers.anyBoolean(), any(EdgeNetworkService.ResponseCallback.class));
+			.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.anyMap(),
+				ArgumentMatchers.anyBoolean(),
+				any(EdgeNetworkService.ResponseCallback.class)
+			);
 	}
 
 	@Test
@@ -193,7 +194,13 @@ public class EdgeHitProcessorBatchTests {
 		assertEquals(1, outcome.getRemoveCount());
 		// Only one network request — for the head alone; the differently-configured entity was never sent.
 		verify(mockEdgeNetworkService, times(1))
-			.doRequest(anyString(), anyString(), ArgumentMatchers.anyMap(), ArgumentMatchers.anyBoolean(), any(EdgeNetworkService.ResponseCallback.class));
+			.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.anyMap(),
+				ArgumentMatchers.anyBoolean(),
+				any(EdgeNetworkService.ResponseCallback.class)
+			);
 	}
 
 	@Test
@@ -277,7 +284,13 @@ public class EdgeHitProcessorBatchTests {
 
 		// Exactly one network request — the failed batch attempt; no internal resending.
 		verify(mockEdgeNetworkService, times(1))
-			.doRequest(anyString(), anyString(), ArgumentMatchers.anyMap(), ArgumentMatchers.anyBoolean(), any(EdgeNetworkService.ResponseCallback.class));
+			.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.anyMap(),
+				ArgumentMatchers.anyBoolean(),
+				any(EdgeNetworkService.ResponseCallback.class)
+			);
 
 		// Original batch waiting events cleaned up (no callbacks, just removal) — no terminal error
 		// delivered for the batch request ID itself; each event gets its own fresh attempt later.
@@ -307,7 +320,8 @@ public class EdgeHitProcessorBatchTests {
 		ArgumentCaptor<String> requestIdCaptor = ArgumentCaptor.forClass(String.class);
 		verify(mockNetworkResponseHandler, times(1)).addWaitingEvent(requestIdCaptor.capture(), any());
 
-		verify(mockNetworkResponseHandler, times(1)).processResponseOnError(eq(ERROR_BODY), eq(requestIdCaptor.getValue()));
+		verify(mockNetworkResponseHandler, times(1))
+			.processResponseOnError(eq(ERROR_BODY), eq(requestIdCaptor.getValue()));
 		verify(mockNetworkResponseHandler, times(1)).processResponseOnComplete(eq(requestIdCaptor.getValue()));
 	}
 
