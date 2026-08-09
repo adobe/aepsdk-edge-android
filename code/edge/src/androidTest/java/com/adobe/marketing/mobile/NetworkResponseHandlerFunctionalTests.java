@@ -704,6 +704,9 @@ public class NetworkResponseHandlerFunctionalTests {
 		dispatchEvents.addAll(getDispatchedEventsWith(EventType.EDGE, "pairedeventexample"));
 		assertEquals(2, dispatchEvents.size());
 
+		// The state:store handle carries no eventIndex and is a global (session-scoped) handle, so in a
+		// multi-event request it is broadcast rather than attributed to a specific event: no
+		// requestEventId in the data and a null parent id.
 		String expectedEventData1 =
 			"{" +
 			"  \"payload\": [" +
@@ -713,14 +716,11 @@ public class NetworkResponseHandlerFunctionalTests {
 			"      \"value\": \"MCMID|29068398647607325310376254630528178721\"" +
 			"    }" +
 			"  ]," +
-			"  \"requestEventId\": \"" +
-			event1.getUniqueIdentifier() +
-			"\"," +
 			"  \"requestId\": \"123\"," +
 			"  \"type\": \"state:store\"" +
 			"}";
 		JSONAsserts.assertEquals(expectedEventData1, dispatchEvents.get(0).getEventData());
-		assertEquals(event1.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
+		assertNull(dispatchEvents.get(0).getParentID());
 
 		// verify event 2
 		String expectedEventData2 =
@@ -844,7 +844,8 @@ public class NetworkResponseHandlerFunctionalTests {
 	@Test
 	public void testProcessResponseOnSuccess_WhenEventHandleAndError_dispatchesTwoEvents() throws InterruptedException {
 		setExpectationEvent(EventType.EDGE, EventSource.RESPONSE_CONTENT, 1);
-		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
+		// The no-eventIndex error fans out to both waiting events, so two error events are dispatched.
+		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 2);
 		final String requestId = "123";
 		final String jsonResponse =
 			"{\n" +
@@ -874,6 +875,9 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "state:store");
 		assertEquals(1, dispatchEvents.size());
 
+		// The state:store handle carries no eventIndex and is a global (session-scoped) handle, so in a
+		// multi-event request it is broadcast rather than attributed to a specific event: no
+		// requestEventId in the data and a null parent id.
 		String expectedEventData1 =
 			"{" +
 			"  \"payload\": [" +
@@ -883,20 +887,19 @@ public class NetworkResponseHandlerFunctionalTests {
 			"      \"value\": \"MCMID|29068398647607325310376254630528178721\"" +
 			"    }" +
 			"  ]," +
-			"  \"requestEventId\": \"" +
-			event1.getUniqueIdentifier() +
-			"\"," +
 			"  \"requestId\": \"123\"," +
 			"  \"type\": \"state:store\"" +
 			"}";
 
 		JSONAsserts.assertEquals(expectedEventData1, dispatchEvents.get(0).getEventData());
-		assertEquals(event1.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
+		assertNull(dispatchEvents.get(0).getParentID());
 
+		// The error carries no eventIndex — a root-level error means the whole batch failed, so it is
+		// dispatched once per waiting event (each caller learns their event failed).
 		List<Event> dispatchErrorEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
-		assertEquals(1, dispatchErrorEvents.size());
+		assertEquals(2, dispatchErrorEvents.size());
 
-		String expectedEventData2 =
+		String expectedErrorForEvent1 =
 			"{" +
 			"  \"requestEventId\": \"" +
 			event1.getUniqueIdentifier() +
@@ -906,8 +909,21 @@ public class NetworkResponseHandlerFunctionalTests {
 			"  \"title\": \"Failed to process personalization event\"," +
 			"  \"type\": \"personalization\"" +
 			"}";
-		JSONAsserts.assertEquals(expectedEventData2, dispatchErrorEvents.get(0).getEventData());
+		JSONAsserts.assertEquals(expectedErrorForEvent1, dispatchErrorEvents.get(0).getEventData());
 		assertEquals(event1.getUniqueIdentifier(), dispatchErrorEvents.get(0).getParentID());
+
+		String expectedErrorForEvent2 =
+			"{" +
+			"  \"requestEventId\": \"" +
+			event2.getUniqueIdentifier() +
+			"\"," +
+			"  \"requestId\": \"123\"," +
+			"  \"status\": 2003," +
+			"  \"title\": \"Failed to process personalization event\"," +
+			"  \"type\": \"personalization\"" +
+			"}";
+		JSONAsserts.assertEquals(expectedErrorForEvent2, dispatchErrorEvents.get(1).getEventData());
+		assertEquals(event2.getUniqueIdentifier(), dispatchErrorEvents.get(1).getParentID());
 	}
 
 	@Test

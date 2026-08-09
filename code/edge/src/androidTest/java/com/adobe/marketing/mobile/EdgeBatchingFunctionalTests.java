@@ -245,7 +245,9 @@ public class EdgeBatchingFunctionalTests {
 		config.put("edge.batching.enabled", enabled);
 		config.put("edge.batching.eventNameAllowlist", allowlist);
 		MobileCore.updateConfiguration(config);
-		assertExpectedEvents(false);
+		// Wait for the configuration response (barrier: config shared state is now applied), ignoring the
+		// other events updateConfiguration also emits (CONFIGURATION request, HUB shared state).
+		assertExpectedEvents(true);
 		resetTestExpectations();
 	}
 
