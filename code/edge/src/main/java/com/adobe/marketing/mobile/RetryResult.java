@@ -16,7 +16,6 @@ package com.adobe.marketing.mobile;
  */
 class RetryResult {
 
-	private final EdgeNetworkService.Retry shouldRetry;
 	private int retryIntervalSeconds = EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS;
 	private final EdgeNetworkService.NetworkRequestOutcome networkRequestOutcome;
 	private String responseBody = null;
@@ -27,7 +26,6 @@ class RetryResult {
 	 * @param shouldRetry value indicating if the hit should be retried
 	 */
 	RetryResult(final EdgeNetworkService.Retry shouldRetry) {
-		this.shouldRetry = shouldRetry;
 		this.networkRequestOutcome = shouldRetry == EdgeNetworkService.Retry.YES
 				? EdgeNetworkService.NetworkRequestOutcome.RETRY
 				: EdgeNetworkService.NetworkRequestOutcome.SUCCESS;
@@ -40,7 +38,6 @@ class RetryResult {
 	 * @param retryIntervalSeconds value in seconds indicating the retry interval
 	 */
 	RetryResult(final EdgeNetworkService.Retry shouldRetry, final int retryIntervalSeconds) {
-		this.shouldRetry = shouldRetry;
 		this.retryIntervalSeconds =
 			retryIntervalSeconds > 0 ? retryIntervalSeconds : EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS;
 		this.networkRequestOutcome = shouldRetry == EdgeNetworkService.Retry.YES
@@ -57,20 +54,21 @@ class RetryResult {
 	 */
 	RetryResult(final EdgeNetworkService.NetworkRequestOutcome outcome, final int retryIntervalSeconds) {
 		this.networkRequestOutcome = outcome;
-		this.shouldRetry = outcome == EdgeNetworkService.NetworkRequestOutcome.RETRY
-				? EdgeNetworkService.Retry.YES
-				: EdgeNetworkService.Retry.NO;
 		this.retryIntervalSeconds =
 			retryIntervalSeconds > 0 ? retryIntervalSeconds : EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS;
 	}
 
 	/**
-	 * Gets the value determining if this hit should be retried.
+	 * Gets the value determining if this hit should be retried, derived from the
+	 * {@link EdgeNetworkService.NetworkRequestOutcome}: {@code RETRY} maps to {@link EdgeNetworkService.Retry#YES},
+	 * every other outcome to {@link EdgeNetworkService.Retry#NO}.
 	 *
 	 * @return An EdgeNetworkService.Retry value determining if the hit should be retried
 	 */
 	public EdgeNetworkService.Retry getShouldRetry() {
-		return shouldRetry;
+		return networkRequestOutcome == EdgeNetworkService.NetworkRequestOutcome.RETRY
+				? EdgeNetworkService.Retry.YES
+				: EdgeNetworkService.Retry.NO;
 	}
 
 	/**

@@ -585,6 +585,50 @@ public class EdgeNetworkServiceTest {
 	}
 
 	@Test
+	public void testDoRequest_whenConnection_400ResponseCode_NotBatchRequest_TreatedAsUnrecoverable() {
+		// setup
+		final String jsonRequest = "{}";
+		final String errorStr = "Bad Request";
+		MockConnection mockConnection = new MockConnection(400, null, errorStr, null);
+		mockNetworkService.setDefaultResponse(mockConnection);
+		networkService = new EdgeNetworkService(mockNetworkService);
+
+		// test - single-event (non-batch) request, identical to a build without batching
+		DoRequestResult result = doRequestSync(TEST_URL, jsonRequest, false);
+
+		// verify - a 400 for a single event behaves exactly like any other unrecoverable code:
+		// onError fires (via handleError), onComplete fires, no EXPLODE_400 classification.
+		assertEquals(EdgeNetworkService.NetworkRequestOutcome.DROP, result.retryResult.getNetworkRequestOutcome());
+		assertEquals(EdgeNetworkService.Retry.NO, result.retryResult.getShouldRetry());
+		assertNull(result.onResponseCallback[0]);
+		assertNotNull(result.onErrorCallback[0]);
+		assertNotNull(result.onCompleteCallback[0]);
+		assertGenericJsonError(errorStr, DEFAULT_ERROR_NAMESPACE, result.onErrorCallback[1]);
+	}
+
+	@Test
+	public void testDoRequest_whenConnection_400ResponseCode_BatchRequest_ReturnsExplode400() {
+		// setup
+		final String jsonRequest = "{}";
+		final String errorStr = "Bad Request";
+		MockConnection mockConnection = new MockConnection(400, null, errorStr, null);
+		mockNetworkService.setDefaultResponse(mockConnection);
+		networkService = new EdgeNetworkService(mockNetworkService);
+
+		// test - a real multi-event batch, which the caller is prepared to explode into resends
+		DoRequestResult result = doRequestSync(TEST_URL, jsonRequest, true);
+
+		// verify - nothing was ingested; onError/onComplete are suppressed so the caller can resend
+		// each event individually without a phantom error/complete firing first.
+		assertEquals(EdgeNetworkService.NetworkRequestOutcome.EXPLODE_400, result.retryResult.getNetworkRequestOutcome());
+		assertEquals(EdgeNetworkService.Retry.NO, result.retryResult.getShouldRetry());
+		assertNull(result.onResponseCallback[0]);
+		assertNull(result.onErrorCallback[0]);
+		assertNull(result.onCompleteCallback[0]);
+		assertGenericJsonError(errorStr, DEFAULT_ERROR_NAMESPACE, result.retryResult.getResponseBody());
+	}
+
+	@Test
 	public void testHandleStreamingResponse_NullParams() {
 		// setup
 		networkService = new EdgeNetworkService(mockNetworkService);
@@ -955,6 +999,10 @@ public class EdgeNetworkServiceTest {
 	 * onError callback if called and the value.
 	 */
 	private DoRequestResult doRequestSync(final String url, final String body) {
+		return doRequestSync(url, body, false);
+	}
+
+	private DoRequestResult doRequestSync(final String url, final String body, final boolean isBatchRequest) {
 		final DoRequestResult result = new DoRequestResult();
 		final Map<String, String> requestProperty = new HashMap<>();
 		result.retryResult =
@@ -962,6 +1010,7 @@ public class EdgeNetworkServiceTest {
 				url,
 				body,
 				requestProperty,
+				isBatchRequest,
 				new EdgeNetworkService.ResponseCallback() {
 					@Override
 					public void onResponse(final String jsonResponse) {

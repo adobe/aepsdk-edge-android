@@ -162,6 +162,27 @@ class EdgeNetworkService {
 		final Map<String, String> requestHeaders,
 		final ResponseCallback responseCallback
 	) {
+		return doRequest(url, jsonRequest, requestHeaders, false, responseCallback);
+	}
+
+	/**
+	 * Same as {@link #doRequest(String, String, Map, ResponseCallback)}, with one additional
+	 * distinction: whether a 400 response is classified as {@link NetworkRequestOutcome#EXPLODE_400}
+	 * (only meaningful for a real multi-event batch, which the caller is prepared to explode into
+	 * individual resends) or treated as any other unrecoverable error code (single-event requests,
+	 * including exploded resends and Consent/Reset — identical to this method's behaviour before
+	 * batching existed).
+	 *
+	 * @param isBatchRequest true if {@code jsonRequest} carries more than one event and the caller
+	 *                       will explode a 400 into individual resends; false for single-event requests
+	 */
+	RetryResult doRequest(
+		final String url,
+		final String jsonRequest,
+		final Map<String, String> requestHeaders,
+		final boolean isBatchRequest,
+		final ResponseCallback responseCallback
+	) {
 		if (StringUtils.isNullOrEmpty(url)) {
 			Log.error(LOG_TAG, LOG_SOURCE, "Could not send request to a null url");
 
@@ -250,11 +271,11 @@ class EdgeNetworkService {
 				shouldStreamResponse ? konductorConfig.getLineFeed() : null,
 				responseCallback
 			);
-		} else if (connection.getResponseCode() == HttpURLConnection.HTTP_BAD_REQUEST) {
-			// 400 means nothing was ingested. If this is a batch, the caller will explode it to
+		} else if (isBatchRequest && connection.getResponseCode() == HttpURLConnection.HTTP_BAD_REQUEST) {
+			// 400 on a real batch means nothing was ingested and the caller will explode it to
 			// individual requests. Suppress handleError and onComplete here so events don't get
 			// phantom error/complete callbacks before the individual resends are attempted.
-			// Capture the body so terminal callers (batch-of-1) can deliver the real error.
+			// Capture the body so the caller can deliver the real error per exploded event, if needed.
 			Log.warning(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -264,6 +285,9 @@ class EdgeNetworkService {
 			retryResult = new RetryResult(NetworkRequestOutcome.EXPLODE_400, 0);
 			retryResult.setResponseBody(readErrorBodyAsJson(connection.getErrorStream()));
 		} else {
+			// A single-event 400 (including an exploded resend) falls through here, identical to any
+			// other unrecoverable error code — same log line, same handleError→onError→onComplete flow
+			// as before batching existed.
 			Log.warning(
 				LOG_TAG,
 				LOG_SOURCE,

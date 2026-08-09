@@ -13,7 +13,6 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
-import androidx.annotation.VisibleForTesting;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.DataReader;
@@ -41,29 +40,14 @@ class NetworkResponseHandler {
 
 	private static final String LOG_SOURCE = "NetworkResponseHandler";
 
-	/**
-	 * Behaviour switch for early per-event completion (index-advance). Defined here, alongside the
-	 * completion logic it governs, rather than as a global config/constant — there is intentionally no
-	 * runtime/Configuration API to change it yet.
-	 *
-	 * <p>When {@code true} (default), a batched event's completion fires as soon as a response fragment
-	 * for a higher {@code eventIndex} is observed (all lower-index events are then known complete),
-	 * instead of waiting for the whole batch's stream to close. The highest index and anything still
-	 * pending complete at stream close, exactly as before. When {@code false}, the behaviour is
-	 * identical to the historical "complete the whole batch at stream close" path.
-	 *
-	 * <p>Only relevant to multi-event batched responses on the streaming (SUCCESS/207) path; single
-	 * events, consent, batch-of-1, RETRY and EXPLODE_400 are unaffected either way.
-	 */
-	@VisibleForTesting
-	static boolean earlyPerEventCompletionEnabled = true;
-
 	// the order of the request events matter for matching them with the response events
 	private final ConcurrentMap<String, List<Event>> sentEventsWaitingResponse;
-	// early-completion progress, keyed by requestId: highest eventIndex observed in the response so far
-	private final ConcurrentMap<String, Integer> highestObservedIndex = new ConcurrentHashMap<>();
-	// early-completion progress, keyed by requestId: number of leading events already completed
-	// (monotonic; guarantees each event completes exactly once)
+	// Early per-event completion progress, keyed by requestId: number of leading events already
+	// completed (monotonic; guarantees each event completes exactly once). A batched event's completion
+	// fires as soon as a response fragment for a higher eventIndex is observed — all lower-index events
+	// are then known complete — instead of waiting for the whole batch's stream to close. The highest
+	// index and anything still pending complete at stream close. Single events / consent / batch-of-1
+	// simply complete at stream close, since no higher index is ever observed to advance the boundary.
 	private final ConcurrentMap<String, Integer> nextCompletionIndex = new ConcurrentHashMap<>();
 	private final Object mutex = new Object();
 	private final NamedCollection namedCollection;
@@ -143,7 +127,6 @@ class NetworkResponseHandler {
 		}
 
 		synchronized (mutex) {
-			highestObservedIndex.remove(requestId);
 			nextCompletionIndex.remove(requestId);
 			return sentEventsWaitingResponse.remove(requestId);
 		}
@@ -246,14 +229,10 @@ class NetworkResponseHandler {
 			// ok, ignore if there are no warnings
 		}
 
-		// Early per-event completion: now that this fragment's handles/errors/warnings are all
-		// processed and accumulated, complete every waiting event whose index is strictly below the
-		// highest index observed so far — observing index M means events 0..M-1 have no more data
-		// coming (Konductor streams fragments grouped by event, in index order). The highest index
-		// (and anything still pending) completes at stream close in processResponseOnComplete.
-		if (earlyPerEventCompletionEnabled) {
-			sweepCompletions(requestId, highestObservedIndexFor(requestId));
-		}
+		// Early per-event completion happens inline as each handle/error/warning is processed above:
+		// observing eventIndex M sweeps completions for events 0..M-1 (see processEventHandles /
+		// dispatchEventErrors). The highest index seen (and anything still pending) completes at stream
+		// close in processResponseOnComplete.
 	}
 
 	/**
@@ -319,7 +298,7 @@ class NetworkResponseHandler {
 	 */
 	void processResponseOnComplete(final String requestId) {
 		// Capture progress BEFORE removeWaitingEvents clears the per-request state.
-		final int alreadyCompleted = earlyPerEventCompletionEnabled ? completedCountFor(requestId) : 0;
+		final int alreadyCompleted = completedCountFor(requestId);
 
 		// removeWaitingEvents returns the full ordered event list for this request and clears state.
 		List<Event> removedWaitingEvents = removeWaitingEvents(requestId);
@@ -328,24 +307,18 @@ class NetworkResponseHandler {
 		}
 
 		// Complete everything not already early-completed (the highest index plus anything still
-		// pending). When early completion is off, alreadyCompleted is 0 → the whole batch completes
-		// here, identical to the historical stream-close behaviour.
+		// pending). For single events / consent nothing was early-completed → the whole request
+		// completes here at stream close.
 		for (int i = alreadyCompleted; i < removedWaitingEvents.size(); i++) {
 			completeEvent(requestId, removedWaitingEvents.get(i));
 		}
 	}
 
 	/**
-	 * @return the number of leading events already early-completed for {@code requestId} (0 if none —
-	 * including when the early-completion progress state is unavailable, e.g. an isolated unit test
-	 * that mocks this handler and invokes the real method with uninitialized fields).
+	 * @return the number of leading events already early-completed for {@code requestId}, or 0 if none.
 	 */
 	private int completedCountFor(final String requestId) {
-		final ConcurrentMap<String, Integer> progress = nextCompletionIndex;
-		if (progress == null) {
-			return 0;
-		}
-		final Integer completed = progress.get(requestId);
+		final Integer completed = nextCompletionIndex.get(requestId);
 		return completed == null ? 0 : completed;
 	}
 
@@ -381,61 +354,18 @@ class NetworkResponseHandler {
 	}
 
 	/**
-	 * Records the highest indexed {@code eventIndex} observed so far for {@code requestId}, used to
-	 * drive early per-event completion. No-op when early completion is disabled or the index is not a
-	 * real per-event index ({@link EdgeEventHandle#ABSENT_EVENT_INDEX}, i.e. global handles / no-index
-	 * broadcast errors — those must never advance completion).
-	 *
-	 * <p>If an index arrives that is lower than the completion boundary already reached, that violates
-	 * the assumed grouping (data for an event that was already completed); it is logged at WARNING for
-	 * investigation and otherwise ignored (the boundary is never moved backwards, so no event is
-	 * completed twice).
-	 *
-	 * @param requestId the batch request id
-	 * @param index the eventIndex observed on a handle/error/warning fragment
-	 */
-	private void recordObservedIndex(final String requestId, final int index) {
-		if (!earlyPerEventCompletionEnabled || index < 0) {
-			return;
-		}
-
-		synchronized (mutex) {
-			final Integer completed = nextCompletionIndex.get(requestId);
-			if (completed != null && index < completed) {
-				Log.warning(
-					LOG_TAG,
-					LOG_SOURCE,
-					"Unexpected response ordering: eventIndex %d arrived for request id (%s) after events through index %d were already completed. Not re-completing; investigate response grouping/ordering.",
-					index,
-					requestId,
-					completed - 1
-				);
-				return;
-			}
-
-			final Integer current = highestObservedIndex.get(requestId);
-			if (current == null || index > current) {
-				highestObservedIndex.put(requestId, index);
-			}
-		}
-	}
-
-	/**
-	 * @return the highest indexed {@code eventIndex} observed so far for {@code requestId}, or -1 if
-	 * none has been observed.
-	 */
-	private int highestObservedIndexFor(final String requestId) {
-		synchronized (mutex) {
-			final Integer value = highestObservedIndex.get(requestId);
-			return value == null ? -1 : value;
-		}
-	}
-
-	/**
 	 * Completes every waiting event for {@code requestId} whose position is at or after the current
-	 * completion boundary and strictly below {@code exclusiveUpperBound}, advancing the boundary so
-	 * each event completes exactly once. Events to complete are collected under {@code mutex} and the
-	 * actual completion (which dispatches events) is performed outside the lock.
+	 * completion boundary ({@code nextCompletionIndex}) and strictly below {@code exclusiveUpperBound},
+	 * advancing the boundary so each event completes exactly once. Called with a handle/error/warning's
+	 * {@code eventIndex}: observing index M means events 0..M-1 have no more data coming (Konductor
+	 * streams fragments grouped by event, in index order), so they can complete.
+	 *
+	 * <p>If {@code exclusiveUpperBound} is below the boundary already reached, a lower index arrived
+	 * after those events were completed — this violates the assumed grouping/ordering; it is logged at
+	 * WARNING and ignored (the boundary is never moved backwards, so no event completes twice).
+	 *
+	 * <p>Events to complete are collected under {@code mutex}; the actual completion (which dispatches
+	 * events) is performed outside the lock.
 	 *
 	 * @param requestId the batch request id
 	 * @param exclusiveUpperBound complete events with index in {@code [nextCompletionIndex,
@@ -449,6 +379,17 @@ class NetworkResponseHandler {
 				return;
 			}
 			int next = nextCompletionIndex.containsKey(requestId) ? nextCompletionIndex.get(requestId) : 0;
+			if (exclusiveUpperBound < next) {
+				Log.warning(
+					LOG_TAG,
+					LOG_SOURCE,
+					"Unexpected response ordering: eventIndex %d arrived for request id (%s) after events through index %d were already completed. Not re-completing; investigate response grouping/ordering.",
+					exclusiveUpperBound,
+					requestId,
+					next - 1
+				);
+				return;
+			}
 			final int limit = Math.min(exclusiveUpperBound, events.size());
 			while (next < limit) {
 				toComplete.add(events.get(next));
@@ -590,16 +531,13 @@ class NetworkResponseHandler {
 				}
 			}
 
-			// Track the highest per-event index seen, to drive early per-event completion. Global
-			// handles (ABSENT_EVENT_INDEX) do not advance completion.
-			recordObservedIndex(requestId, handleEventIndex);
-
 			// Complete any lower-indexed events still pending BEFORE dispatching this handle's data.
 			// Observing this handle's index means every lower index has no more data coming, so their
 			// completions (and whatever they read from downstream shared state, e.g. a listener's own
 			// in-progress accumulator) must fire before this handle is dispatched — not after, which
-			// would let this handle's data land ahead of a still-pending sibling's completion.
-			if (earlyPerEventCompletionEnabled && handleEventIndex != EdgeEventHandle.ABSENT_EVENT_INDEX) {
+			// would let this handle's data land ahead of a still-pending sibling's completion. Global
+			// handles (ABSENT_EVENT_INDEX) carry no index and do not advance completion.
+			if (handleEventIndex != EdgeEventHandle.ABSENT_EVENT_INDEX) {
 				sweepCompletions(requestId, handleEventIndex);
 			}
 
@@ -838,13 +776,10 @@ class NetworkResponseHandler {
 					? DataReader.optInt(report, EdgeJson.Response.EventHandle.EVENT_INDEX, EdgeEventHandle.ABSENT_EVENT_INDEX)
 					: EdgeEventHandle.ABSENT_EVENT_INDEX;
 
-			// Track the highest per-event index seen, to drive early per-event completion. No-index
-			// (root/broadcast) errors do not advance completion.
-			recordObservedIndex(requestId, eventIndex);
-
 			// Complete any lower-indexed events still pending BEFORE dispatching this error's data —
 			// same ordering guarantee as processEventHandles, applied to the error/warning channel.
-			if (earlyPerEventCompletionEnabled && eventIndex != EdgeEventHandle.ABSENT_EVENT_INDEX) {
+			// No-index (root/broadcast) errors carry no index and do not advance completion.
+			if (eventIndex != EdgeEventHandle.ABSENT_EVENT_INDEX) {
 				sweepCompletions(requestId, eventIndex);
 			}
 
@@ -879,23 +814,21 @@ class NetworkResponseHandler {
 			} else {
 				// A no-eventIndex error/warning applies to the whole request. Per the Konductor team,
 				// a root-level error means the whole batch failed atomically — it should not arrive
-				// after events already streamed successful per-event data. If early completion is on and
-				// some events already completed, flag it: those events did not receive this error.
-				if (earlyPerEventCompletionEnabled) {
-					final Integer completed;
-					synchronized (mutex) {
-						completed = nextCompletionIndex.get(requestId);
-					}
-					if (completed != null && completed > 0) {
-						Log.warning(
-							LOG_TAG,
-							LOG_SOURCE,
-							"Received a no-eventIndex %s for request id (%s) after %d event(s) were already early-completed; those events did not receive it. Root-level errors are expected only when the whole batch fails — investigate.",
-							isError ? "error" : "warning",
-							requestId,
-							completed
-						);
-					}
+				// after events already streamed successful per-event data. If some events already
+				// early-completed, flag it: those events did not receive this error.
+				final Integer completed;
+				synchronized (mutex) {
+					completed = nextCompletionIndex.get(requestId);
+				}
+				if (completed != null && completed > 0) {
+					Log.warning(
+						LOG_TAG,
+						LOG_SOURCE,
+						"Received a no-eventIndex %s for request id (%s) after %d event(s) were already early-completed; those events did not receive it. Root-level errors are expected only when the whole batch fails — investigate.",
+						isError ? "error" : "warning",
+						requestId,
+						completed
+					);
 				}
 
 				final List<String> waitingIds = getWaitingEvents(requestId);

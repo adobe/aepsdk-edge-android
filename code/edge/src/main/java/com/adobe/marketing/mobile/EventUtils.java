@@ -85,44 +85,20 @@ final class EventUtils {
 		// Bundled batching config is a per-key fallback only: consulted for a given key solely when
 		// that key is absent from the Configuration shared state (i.e. not set programmatically, and
 		// not delivered by a remote/Launch-published configuration). Any value present in the
-		// Configuration shared state always wins over the bundled file for that same key.
+		// Configuration shared state always wins over the bundled file for that same key. Values are
+		// copied raw; consumers coerce via DataReader (optBoolean/optStringList) at read time.
 		final Map<String, Object> bundledBatchingConfig = EdgeBundledBatchingConfig.get();
+		final String[] batchingConfigKeys = new String[] {
+			EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED,
+			EdgeConstants.SharedState.Configuration.EDGE_BATCHING_EVENT_NAME_ALLOWLIST,
+		};
 
-		if (configSharedState != null && configSharedState.containsKey(EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED)) {
-			edgeConfig.put(
-				EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED,
-				DataReader.optBoolean(configSharedState, EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED, false)
-			);
-		} else if (bundledBatchingConfig.containsKey(EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED)) {
-			edgeConfig.put(
-				EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED,
-				DataReader.optBoolean(bundledBatchingConfig, EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED, false)
-			);
-		}
-
-		if (
-			configSharedState != null &&
-			configSharedState.containsKey(EdgeConstants.SharedState.Configuration.EDGE_BATCHING_EVENT_NAME_ALLOWLIST)
-		) {
-			edgeConfig.put(
-				EdgeConstants.SharedState.Configuration.EDGE_BATCHING_EVENT_NAME_ALLOWLIST,
-				DataReader.optStringList(
-					configSharedState,
-					EdgeConstants.SharedState.Configuration.EDGE_BATCHING_EVENT_NAME_ALLOWLIST,
-					null
-				)
-			);
-		} else if (
-			bundledBatchingConfig.containsKey(EdgeConstants.SharedState.Configuration.EDGE_BATCHING_EVENT_NAME_ALLOWLIST)
-		) {
-			edgeConfig.put(
-				EdgeConstants.SharedState.Configuration.EDGE_BATCHING_EVENT_NAME_ALLOWLIST,
-				DataReader.optStringList(
-					bundledBatchingConfig,
-					EdgeConstants.SharedState.Configuration.EDGE_BATCHING_EVENT_NAME_ALLOWLIST,
-					null
-				)
-			);
+		for (final String batchingKey : batchingConfigKeys) {
+			if (configSharedState != null && configSharedState.containsKey(batchingKey)) {
+				edgeConfig.put(batchingKey, configSharedState.get(batchingKey));
+			} else if (bundledBatchingConfig.containsKey(batchingKey)) {
+				edgeConfig.put(batchingKey, bundledBatchingConfig.get(batchingKey));
+			}
 		}
 
 		return edgeConfig;

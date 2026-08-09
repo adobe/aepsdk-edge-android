@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.DataQueue;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -163,26 +164,70 @@ public class EdgeBatchingHitQueueTest {
 	}
 
 	// -------------------------------------------------------------------------
-	// PARTIAL_REMOVE outcome — remove resolved head count, schedule retry
+	// EXPLODE outcome — drain individually via forced batch-size-1, one at a time
 	// -------------------------------------------------------------------------
 
 	@Test
-	public void testBeginProcessing_partialRemove_removesResolvedCount() throws InterruptedException {
+	public void testBeginProcessing_explode_drainsOneAtATime_neverRemovesAsWholeBatch() throws InterruptedException {
+		// Batch of 3 gets a 400 (explode(3)); each of the 3 is then resolved individually via the
+		// ordinary single-entity path, forced to batchSize 1 regardless of config.
 		List<DataEntity> batch = buildBatchEntities(3, true);
-		DataEntity head = batch.get(0);
-		when(mockDataQueue.peek()).thenReturn(head);
+		final CountDownLatch latch = new CountDownLatch(1);
+
+		when(mockDataQueue.peek())
+			.thenReturn(batch.get(0), batch.get(0), batch.get(1), batch.get(2))
+			.thenAnswer(inv -> { latch.countDown(); return null; });
 		when(mockDataQueue.count()).thenReturn(3);
 		when(mockDataQueue.peek(3)).thenReturn(batch);
-		when(mockProcessor.processBatch(batch)).thenReturn(BatchOutcome.partialRemove(2, 15));
+		when(mockProcessor.processBatch(batch)).thenReturn(BatchOutcome.explode(3));
+		when(mockProcessor.processBatch(Collections.singletonList(batch.get(0))))
+			.thenReturn(BatchOutcome.done(1));
+		when(mockProcessor.processBatch(Collections.singletonList(batch.get(1))))
+			.thenReturn(BatchOutcome.done(1));
+		when(mockProcessor.processBatch(Collections.singletonList(batch.get(2))))
+			.thenReturn(BatchOutcome.done(1));
 
 		hitQueue = new EdgeBatchingHitQueue(mockDataQueue, mockProcessor, executor);
 		hitQueue.beginProcessing();
 
-		Thread.sleep(150);
+		latch.await(2, TimeUnit.SECONDS);
 
-		// Only the 2 resolved head entities removed
-		verify(mockDataQueue, times(1)).remove(2);
+		// The original batch-sized peek happened exactly once (the failed attempt); the 3 drain
+		// cycles never re-peek a batch window (peek(int) is called exactly this once, total).
+		verify(mockDataQueue, times(1)).peek(anyInt());
+		verify(mockDataQueue, times(1)).peek(3);
+		// Each of the 3 drained entities removed individually — never as a group of 3.
+		verify(mockDataQueue, times(3)).remove(1);
 		verify(mockDataQueue, never()).remove(3);
+	}
+
+	@Test
+	public void testBeginProcessing_explode_recoverableFailureDuringDrain_retriesInPlace_doesNotSkip()
+		throws InterruptedException {
+		// Batch of 2 gets a 400 (explode(2)); the first drained entity hits a recoverable failure and
+		// must be retried in place — never skipped, never removed — exactly like a non-batched retry.
+		List<DataEntity> batch = buildBatchEntities(2, true);
+		final CountDownLatch retrySeen = new CountDownLatch(1);
+
+		when(mockDataQueue.peek())
+			.thenReturn(batch.get(0))
+			.thenAnswer(inv -> { retrySeen.countDown(); return batch.get(0); });
+		when(mockDataQueue.count()).thenReturn(2);
+		when(mockDataQueue.peek(2)).thenReturn(batch);
+		when(mockProcessor.processBatch(batch)).thenReturn(BatchOutcome.explode(2));
+		when(mockProcessor.processBatch(Collections.singletonList(batch.get(0))))
+			.thenReturn(BatchOutcome.retryBatch(30));
+
+		hitQueue = new EdgeBatchingHitQueue(mockDataQueue, mockProcessor, executor);
+		hitQueue.beginProcessing();
+
+		retrySeen.await(2, TimeUnit.SECONDS);
+
+		// Never removed — the retrying entity stays queued, retried in place.
+		verify(mockDataQueue, never()).remove(anyInt());
+		verify(mockDataQueue, never()).remove();
+		// The second entity in the batch was never attempted while the first is still retrying.
+		verify(mockProcessor, never()).processBatch(Collections.singletonList(batch.get(1)));
 	}
 
 	// -------------------------------------------------------------------------

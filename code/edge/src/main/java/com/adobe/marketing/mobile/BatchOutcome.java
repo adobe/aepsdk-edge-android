@@ -14,73 +14,90 @@ package com.adobe.marketing.mobile;
 /**
  * Result returned by {@link EdgeHitProcessor#processBatch} to tell
  * {@link EdgeBatchingHitQueue} how to advance the queue after a batch attempt.
+ *
+ * <p>Every outcome is exactly one {@link Kind} plus the single integer that kind carries — never a
+ * combination, so there is no risk of reading the wrong field for the current outcome.
+ * {@link EdgeBatchingHitQueue} switches on {@link #getKind()} to act on it.
  */
 class BatchOutcome {
 
+	/** What happened, and what {@link BatchOutcome#getValue()} means for it. */
 	enum Kind {
-		/** The first {@link #resolvedHeadCount} entities (from the head) were resolved (delivered,
-		 *  dropped with error, or ingested). Remove exactly that many from the queue — {@code
-		 *  processBatch} may have been given a larger peeked window than it actually resolved (e.g. a
-		 *  window truncated at a Consent/Reset/decode-failure boundary, or a single non-ExperienceEvent
-		 *  head processed alone); only the resolved prefix is safe to dequeue. Anything beyond it was
-		 *  never sent and must stay queued for the next cycle. */
+		/** {@code value} = number of entities resolved from the head of the queue; safe to remove. */
 		DONE,
-
-		/** A recoverable network error occurred; nothing was ingested.
-		 *  Leave the entire batch in the queue and retry after {@link #retryAfterSeconds}. */
-		RETRY_BATCH,
-
-		/** A 400 explosion partially resolved the batch from the head.
-		 *  Remove the first {@link #resolvedHeadCount} entities; leave the rest for the next cycle. */
-		PARTIAL_REMOVE
+		/** {@code value} = seconds to wait before the next cycle; nothing removed. */
+		RETRY,
+		/** {@code value} = number of entities to drain one at a time via forced batch-size-1. */
+		EXPLODE
 	}
 
 	private final Kind kind;
-	private final int retryAfterSeconds;
-	private final int resolvedHeadCount;
+	private final int value;
 
-	private BatchOutcome(final Kind kind, final int retryAfterSeconds, final int resolvedHeadCount) {
+	private BatchOutcome(final Kind kind, final int value) {
 		this.kind = kind;
-		this.retryAfterSeconds = retryAfterSeconds;
-		this.resolvedHeadCount = resolvedHeadCount;
+		this.value = value;
 	}
 
 	/**
-	 * @param resolvedCount the number of entities, counted from the head of the window {@code
-	 *     processBatch} was given, that were actually resolved (sent/dropped) and are therefore safe
-	 *     to remove from the queue. Must never exceed the size of the window passed to {@code
-	 *     processBatch} — pass the count of entities actually acted upon, not the full peeked window,
-	 *     whenever the two can differ (truncation, single-entity delegation, decode failure).
+	 * The first {@code resolvedCount} entities (from the head) were resolved (delivered, dropped with
+	 * error, or ingested). Remove exactly that many and process the next cycle immediately — {@code
+	 * processBatch} may have been given a larger peeked window than it acted on (truncation at a
+	 * Consent/Reset/decode-failure/allowlist/config-mismatch boundary, or a single non-batchable head
+	 * processed alone); anything beyond the resolved prefix was never sent and must stay queued for the
+	 * next cycle.
+	 *
+	 * @param resolvedCount number of head entities safe to remove; never more than the window size.
 	 */
 	static BatchOutcome done(final int resolvedCount) {
-		return new BatchOutcome(Kind.DONE, 0, resolvedCount);
-	}
-
-	static BatchOutcome retryBatch(final int retryAfterSeconds) {
-		return new BatchOutcome(Kind.RETRY_BATCH, retryAfterSeconds, 0);
-	}
-
-	static BatchOutcome partialRemove(final int resolvedHeadCount) {
-		return new BatchOutcome(Kind.PARTIAL_REMOVE, 0, resolvedHeadCount);
+		return new BatchOutcome(Kind.DONE, resolvedCount);
 	}
 
 	/**
-	 * Variant used when the failed entity at the new queue head needs a retry delay before
-	 * the next cycle — e.g. after partial explosion where the next entity returned a recoverable error.
+	 * A recoverable network error occurred; nothing was ingested. Remove nothing (the whole batch
+	 * stays queued) and retry after {@code retryDelaySeconds}.
 	 */
-	static BatchOutcome partialRemove(final int resolvedHeadCount, final int retryAfterSeconds) {
-		return new BatchOutcome(Kind.PARTIAL_REMOVE, retryAfterSeconds, resolvedHeadCount);
+	static BatchOutcome retryBatch(final int retryDelaySeconds) {
+		return new BatchOutcome(Kind.RETRY, retryDelaySeconds);
 	}
 
+	/**
+	 * A batch of {@code count} events got a 400 — nothing was ingested. Remove nothing yet; instead
+	 * tell the queue to drain exactly these {@code count} entities one at a time (via the ordinary
+	 * single-event path) before resuming normal batch-sized peeking. See
+	 * {@link EdgeBatchingHitQueue#runBatchCycle()}.
+	 *
+	 * @param count number of entities in the batch that must now be drained individually
+	 */
+	static BatchOutcome explode(final int count) {
+		return new BatchOutcome(Kind.EXPLODE, count);
+	}
+
+	/** Which case this outcome represents; determines what {@link #getValue()} means. */
 	Kind getKind() {
 		return kind;
 	}
 
-	int getRetryAfterSeconds() {
-		return retryAfterSeconds;
+	/** The single integer this outcome carries; see {@link Kind} for what it means per case. */
+	int getValue() {
+		return value;
 	}
 
-	int getResolvedHeadCount() {
-		return resolvedHeadCount;
+	/** Number of entities to remove from the head of the queue after this attempt; 0 unless {@link Kind#DONE}. */
+	int getRemoveCount() {
+		return kind == Kind.DONE ? value : 0;
+	}
+
+	/** Seconds to wait before the next processing cycle; 0 unless {@link Kind#RETRY}. */
+	int getRetryDelaySeconds() {
+		return kind == Kind.RETRY ? value : 0;
+	}
+
+	/**
+	 * Number of entities that must be drained one at a time before batch-sized peeking resumes; 0
+	 * unless {@link Kind#EXPLODE}.
+	 */
+	int getExplodeCount() {
+		return kind == Kind.EXPLODE ? value : 0;
 	}
 }

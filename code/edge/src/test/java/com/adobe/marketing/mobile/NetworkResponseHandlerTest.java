@@ -145,8 +145,6 @@ public class NetworkResponseHandlerTest {
 	@After
 	public void tearDown() {
 		mockCore.close();
-		// Reset the co-located behaviour switch so a test that flips it can't leak into others.
-		NetworkResponseHandler.earlyPerEventCompletionEnabled = true;
 	}
 
 	@Test
@@ -2118,7 +2116,7 @@ public class NetworkResponseHandlerTest {
 	}
 
 	// -------------------------------------------------------------------------
-	// Early per-event completion (index-advance) — NetworkResponseHandler.earlyPerEventCompletionEnabled
+	// Early per-event completion (index-advance)
 	// -------------------------------------------------------------------------
 
 	/** A single streamed fragment carrying one indexed, non-global handle for {@code eventIndex}. */
@@ -2364,32 +2362,4 @@ public class NetworkResponseHandlerTest {
 		assertEquals(e2.getUniqueIdentifier(), all.get(2).getParentID());
 	}
 
-	@Test
-	public void testEarlyCompletionDisabled_completesAllAtStreamClose_legacyParity() {
-		NetworkResponseHandler.earlyPerEventCompletionEnabled = false; // reset in tearDown
-
-		final String requestId = "req-legacy";
-		final Event e0 = completionEvent("e0");
-		final Event e1 = completionEvent("e1");
-		networkResponseHandler.addWaitingEvents(
-			requestId,
-			new ArrayList<Event>() {
-				{
-					add(e0);
-					add(e1);
-				}
-			}
-		);
-
-		networkResponseHandler.processResponseOnSuccess(indexedHandleFragment(0), requestId);
-		networkResponseHandler.processResponseOnSuccess(indexedHandleFragment(1), requestId);
-		// disabled → nothing completes early even though a higher index was seen
-		assertEquals(0, capturedContentCompleteEvents().size());
-
-		networkResponseHandler.processResponseOnComplete(requestId);
-		List<Event> completes = capturedContentCompleteEvents();
-		assertEquals(2, completes.size());
-		assertEquals(e0.getUniqueIdentifier(), completes.get(0).getParentID());
-		assertEquals(e1.getUniqueIdentifier(), completes.get(1).getParentID());
-	}
 }

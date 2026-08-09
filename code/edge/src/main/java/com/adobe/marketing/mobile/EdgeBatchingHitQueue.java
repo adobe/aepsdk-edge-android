@@ -38,6 +38,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <ul>
  *   <li>batching disabled (default) → window of 1, identical to current single-event behaviour.
  *   <li>batching enabled → window of {@code min(queue.count(), MAX_BATCH_SIZE)}.
+ *   <li>draining a batch that just got a 400 → window of 1 for exactly that many cycles, regardless
+ *       of config, via {@link #explodeRemaining}.
  * </ul>
  */
 class EdgeBatchingHitQueue extends HitQueuing {
@@ -49,6 +51,13 @@ class EdgeBatchingHitQueue extends HitQueuing {
 	private final AtomicBoolean suspended = new AtomicBoolean(true);
 	private final AtomicBoolean isTaskScheduled = new AtomicBoolean(false);
 	private final ScheduledExecutorService scheduledExecutorService;
+
+	// Entities still to be drained one at a time after a batch 400, forcing batchSize to 1 until it
+	// reaches 0. Only ever touched from runBatchCycle, which always runs on
+	// scheduledExecutorService's single thread — no synchronization needed. Not persisted: if the
+	// process restarts mid-drain, normal batch-sized peeking resumes and, if the same events still
+	// form a bad batch, processBatch reports a fresh explodeCount and draining picks back up.
+	private int explodeRemaining = 0;
 
 	EdgeBatchingHitQueue(final DataQueue queue, final EdgeHitProcessor processor) {
 		this(queue, processor, Executors.newSingleThreadScheduledExecutor());
@@ -127,70 +136,73 @@ class EdgeBatchingHitQueue extends HitQueuing {
 			return;
 		}
 
-		final int batchSize = getEffectiveBatchSize(head);
+		// While draining a previously-exploded batch, force a window of 1 regardless of config —
+		// re-forming the same batch before it's fully drained would just repeat the same 400.
+		final int batchSize = explodeRemaining > 0 ? 1 : getEffectiveBatchSize(head);
 		final List<DataEntity> entities = batchSize > 1 ? queue.peek(batchSize) : Collections.singletonList(head);
 
 		final BatchOutcome outcome = processor.processBatch(entities);
 
+		int removeCount = 0;
+		int retryDelaySeconds = 0;
+
 		switch (outcome.getKind()) {
 			case DONE:
 				// Remove only what processBatch actually resolved — it may have been given a larger
-				// peeked window than it acted on (truncation at a Consent/Reset/decode-failure
-				// boundary, or a single non-ExperienceEvent head processed alone), and anything beyond
-				// the resolved prefix was never sent, so it must stay queued for the next cycle.
-				final int doneResolvedCount = outcome.getResolvedHeadCount();
-				if (doneResolvedCount > 0) {
-					queue.remove(doneResolvedCount);
+				// peeked window than it acted on (truncation at a Consent/Reset/decode-failure/
+				// allowlist/config boundary, or a single non-batchable head processed alone).
+				// Anything beyond the resolved prefix was never sent and stays queued for the next
+				// cycle.
+				removeCount = outcome.getValue();
+				if (explodeRemaining > 0) {
+					// One of the entities being drained resolved (delivered, dropped, or terminal
+					// error) — same completion criteria a genuinely single, non-batched event
+					// already uses.
+					explodeRemaining--;
 				}
-				isTaskScheduled.set(false);
-				processNextBatch();
 				break;
 
-			case RETRY_BATCH:
+			case RETRY:
+				// Nothing removed — a recoverable failure is retried in place, never skipped,
+				// whether or not this is mid-drain.
+				retryDelaySeconds = outcome.getValue();
+				break;
+
+			case EXPLODE:
+				explodeRemaining = outcome.getValue();
 				Log.trace(
 					LOG_TAG,
 					LOG_SOURCE,
-					"Batch of %d will be retried in %d seconds.",
-					entities.size(),
-					outcome.getRetryAfterSeconds()
-				);
-				scheduledExecutorService.schedule(
-					() -> {
-						isTaskScheduled.set(false);
-						processNextBatch();
-					},
-					outcome.getRetryAfterSeconds(),
-					TimeUnit.SECONDS
+					"Batch of %d events received 400; draining individually over the next %d cycle(s).",
+					explodeRemaining,
+					explodeRemaining
 				);
 				break;
+		}
 
-			case PARTIAL_REMOVE:
-				final int resolved = outcome.getResolvedHeadCount();
-				if (resolved > 0) {
-					queue.remove(resolved);
-				}
-				final int partialDelay = outcome.getRetryAfterSeconds();
-				if (partialDelay > 0) {
-					Log.trace(
-						LOG_TAG,
-						LOG_SOURCE,
-						"Partial removal of %d entities; next entity needs retry in %d seconds.",
-						resolved,
-						partialDelay
-					);
-					scheduledExecutorService.schedule(
-						() -> {
-							isTaskScheduled.set(false);
-							processNextBatch();
-						},
-						partialDelay,
-						TimeUnit.SECONDS
-					);
-				} else {
+		if (removeCount > 0) {
+			queue.remove(removeCount);
+		}
+
+		if (retryDelaySeconds > 0) {
+			Log.trace(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Removed %d resolved entities; next cycle scheduled in %d seconds.",
+				removeCount,
+				retryDelaySeconds
+			);
+			scheduledExecutorService.schedule(
+				() -> {
 					isTaskScheduled.set(false);
 					processNextBatch();
-				}
-				break;
+				},
+				retryDelaySeconds,
+				TimeUnit.SECONDS
+			);
+		} else {
+			isTaskScheduled.set(false);
+			processNextBatch();
 		}
 	}
 

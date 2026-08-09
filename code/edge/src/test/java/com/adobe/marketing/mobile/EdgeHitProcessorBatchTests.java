@@ -43,6 +43,12 @@ import org.mockito.junit.MockitoJUnitRunner;
 /**
  * Tests for {@link EdgeHitProcessor#processBatch} — covering the unified single = batch-of-1
  * path, terminal-400 delivery (regression guard), explosion flow, and Consent/Reset terminal-400.
+ *
+ * <p>Single-event 400s are no longer classified as {@code EXPLODE_400} by (the real)
+ * {@link EdgeNetworkService#doRequest}; only a real N&gt;1 batch is. So tests exercising a
+ * single-event terminal-400 simulate what the real network layer does — invoking the injected
+ * {@link EdgeNetworkService.ResponseCallback}'s {@code onError}/{@code onComplete} — the same way
+ * {@code EdgeHitProcessorTests} does for the non-batching build.
  */
 @RunWith(MockitoJUnitRunner.class)
 public class EdgeHitProcessorBatchTests {
@@ -124,10 +130,10 @@ public class EdgeHitProcessorBatchTests {
 
 		BatchOutcome outcome = hitProcessor.processBatch(Collections.singletonList(entity));
 
-		assertEquals(BatchOutcome.Kind.DONE, outcome.getKind());
+		assertEquals(0, outcome.getRetryDelaySeconds()); // done -> process immediately, no retry delay
 		// Regression guard: DONE must report exactly how many entities were resolved, so the queue
 		// removes only those — never a stale/full peeked-window count.
-		assertEquals(1, outcome.getResolvedHeadCount());
+		assertEquals(1, outcome.getRemoveCount());
 		// Waiting events registered before the network call
 		verify(mockNetworkResponseHandler, times(1)).addWaitingEvents(anyString(), any());
 		// No error path triggered
@@ -143,8 +149,8 @@ public class EdgeHitProcessorBatchTests {
 
 		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(entity1, entity2));
 
-		assertEquals(BatchOutcome.Kind.DONE, outcome.getKind());
-		assertEquals(2, outcome.getResolvedHeadCount());
+		assertEquals(0, outcome.getRetryDelaySeconds()); // done -> process immediately, no retry delay
+		assertEquals(2, outcome.getRemoveCount());
 	}
 
 	@Test
@@ -159,11 +165,35 @@ public class EdgeHitProcessorBatchTests {
 
 		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(experienceEntity, consentEntity));
 
-		assertEquals(BatchOutcome.Kind.DONE, outcome.getKind());
-		assertEquals(1, outcome.getResolvedHeadCount());
+		assertEquals(0, outcome.getRetryDelaySeconds()); // done -> process immediately, no retry delay
+		assertEquals(1, outcome.getRemoveCount());
 		// Only one network request — for the ExperienceEvent alone; the Consent entity was never sent.
 		verify(mockEdgeNetworkService, times(1))
-			.doRequest(anyString(), anyString(), ArgumentMatchers.anyMap(), any(EdgeNetworkService.ResponseCallback.class));
+			.doRequest(anyString(), anyString(), ArgumentMatchers.anyMap(), ArgumentMatchers.anyBoolean(), any(EdgeNetworkService.ResponseCallback.class));
+	}
+
+	@Test
+	public void testProcessBatch_twoExperienceEvents_differentConfig_resolvesOnlyHead() {
+		// Regression guard: a batched request is built entirely from the head's snapshotted config
+		// (see buildExperienceEventHit) — a single request can only carry one datastream ID/override.
+		// Two events with different configs must not be combined into one request, or the second
+		// would silently lose its own config and be sent under the head's. The run truncates at the
+		// mismatch, same as a Consent boundary; the second entity becomes its own head on a later cycle.
+		mockNetworkReturns(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0));
+
+		Map<String, Object> otherConfig = new HashMap<>(edgeConfig);
+		otherConfig.put("edge.configId", "a-different-config-id");
+
+		DataEntity experienceEntity = buildExperienceEventEntity();
+		DataEntity differentConfigEntity = buildExperienceEventEntity(otherConfig);
+
+		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(experienceEntity, differentConfigEntity));
+
+		assertEquals(0, outcome.getRetryDelaySeconds()); // done -> process immediately, no retry delay
+		assertEquals(1, outcome.getRemoveCount());
+		// Only one network request — for the head alone; the differently-configured entity was never sent.
+		verify(mockEdgeNetworkService, times(1))
+			.doRequest(anyString(), anyString(), ArgumentMatchers.anyMap(), ArgumentMatchers.anyBoolean(), any(EdgeNetworkService.ResponseCallback.class));
 	}
 
 	@Test
@@ -173,8 +203,8 @@ public class EdgeHitProcessorBatchTests {
 
 		BatchOutcome outcome = hitProcessor.processBatch(Collections.singletonList(entity));
 
-		assertEquals(BatchOutcome.Kind.RETRY_BATCH, outcome.getKind());
-		assertEquals(5, outcome.getRetryAfterSeconds());
+		assertEquals(0, outcome.getRemoveCount()); // retry -> nothing removed
+		assertEquals(5, outcome.getRetryDelaySeconds());
 		// Waiting events registered
 		verify(mockNetworkResponseHandler, times(1)).addWaitingEvents(anyString(), any());
 	}
@@ -185,16 +215,14 @@ public class EdgeHitProcessorBatchTests {
 
 	@Test
 	public void testProcessBatch_singleExperienceEvent_400_deliversTerminalError() {
-		RetryResult explodeResult = new RetryResult(EdgeNetworkService.NetworkRequestOutcome.EXPLODE_400, 0);
-		explodeResult.setResponseBody(ERROR_BODY);
-		mockNetworkReturns(explodeResult);
+		mockNetworkReturnsTerminalError(ERROR_BODY);
 
 		DataEntity entity = buildExperienceEventEntity();
 
 		BatchOutcome outcome = hitProcessor.processBatch(Collections.singletonList(entity));
 
 		// Must return DONE (event is fully resolved — error delivered)
-		assertEquals(BatchOutcome.Kind.DONE, outcome.getKind());
+		assertEquals(0, outcome.getRetryDelaySeconds()); // done -> process immediately, no retry delay
 
 		// Capture the requestId assigned during addWaitingEvents so we can assert the same
 		// requestId is passed to processResponseOnError and processResponseOnComplete.
@@ -215,98 +243,47 @@ public class EdgeHitProcessorBatchTests {
 		edgeConfig.put("edge.configId", "test-config-id");
 		edgeConfig.put("edge.batching.enabled", false);
 
-		RetryResult explodeResult = new RetryResult(EdgeNetworkService.NetworkRequestOutcome.EXPLODE_400, 0);
-		explodeResult.setResponseBody(ERROR_BODY);
-		mockNetworkReturns(explodeResult);
+		mockNetworkReturnsTerminalError(ERROR_BODY);
 
 		DataEntity entity = buildExperienceEventEntity();
 
 		BatchOutcome outcome = hitProcessor.processBatch(Collections.singletonList(entity));
 
-		assertEquals(BatchOutcome.Kind.DONE, outcome.getKind());
+		assertEquals(0, outcome.getRetryDelaySeconds()); // done -> process immediately, no retry delay
 		verify(mockNetworkResponseHandler, times(1)).processResponseOnError(eq(ERROR_BODY), anyString());
 		verify(mockNetworkResponseHandler, times(1)).processResponseOnComplete(anyString());
 	}
 
 	// -------------------------------------------------------------------------
-	// WI-1b: N>1 batch 400 — clean up waiting state, then explode to singles
+	// WI-1b: N>1 batch 400 — clean up waiting state, signal explode(N)
 	// -------------------------------------------------------------------------
 
 	@Test
-	public void testProcessBatch_twoEvents_400_removesWaitingEventsAndExplodes() {
-		// Batch of 2 gets 400; each individual resend succeeds
-		RetryResult explodeResult = new RetryResult(EdgeNetworkService.NetworkRequestOutcome.EXPLODE_400, 0);
-		explodeResult.setResponseBody(ERROR_BODY);
-		RetryResult successResult = new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0);
-
-		mockNetworkReturnsSequence(explodeResult, successResult, successResult);
+	public void testProcessBatch_twoEvents_400_returnsExplodeCount_cleansUpWaitingEvents() {
+		// Batch of 2 gets 400 — nothing ingested. processBatch no longer resends individually itself;
+		// it reports explode(2) so EdgeBatchingHitQueue can drain the two entities one at a time via
+		// the ordinary single-event path (see EdgeBatchingHitQueueTest for the multi-cycle draining
+		// behavior, including the retry-without-skip guarantee).
+		mockNetworkReturns(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.EXPLODE_400, 0));
 
 		DataEntity entity1 = buildExperienceEventEntity();
 		DataEntity entity2 = buildExperienceEventEntity();
 
 		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(entity1, entity2));
 
-		// All resolved
-		assertEquals(BatchOutcome.Kind.DONE, outcome.getKind());
+		assertEquals(0, outcome.getRemoveCount());
+		assertEquals(0, outcome.getRetryDelaySeconds());
+		assertEquals(2, outcome.getExplodeCount());
 
-		// 3 network requests: 1 original batch + 2 individual resends
-		verify(mockEdgeNetworkService, times(3))
-			.doRequest(anyString(), anyString(), ArgumentMatchers.anyMap(), any(EdgeNetworkService.ResponseCallback.class));
+		// Exactly one network request — the failed batch attempt; no internal resending.
+		verify(mockEdgeNetworkService, times(1))
+			.doRequest(anyString(), anyString(), ArgumentMatchers.anyMap(), ArgumentMatchers.anyBoolean(), any(EdgeNetworkService.ResponseCallback.class));
 
-		// Original batch waiting events cleaned up (no callbacks, just removal)
+		// Original batch waiting events cleaned up (no callbacks, just removal) — no terminal error
+		// delivered for the batch request ID itself; each event gets its own fresh attempt later.
 		verify(mockNetworkResponseHandler, times(1)).removeWaitingEvents(anyString());
-
-		// No terminal error delivery for the original batch request ID
-		verify(mockNetworkResponseHandler, never()).processResponseOnError(eq(ERROR_BODY), anyString());
-
-		// 3 addWaitingEvents calls: 1 for the original batch + 2 for individual resends
-		verify(mockNetworkResponseHandler, times(3)).addWaitingEvents(anyString(), any());
-	}
-
-	@Test
-	public void testProcessBatch_twoEvents_400_oneIndividualGets400_oneSuceeds() {
-		// Batch of 2 gets 400; first individual gets another 400 (terminal), second succeeds
-		RetryResult batchExplodeResult = new RetryResult(EdgeNetworkService.NetworkRequestOutcome.EXPLODE_400, 0);
-		batchExplodeResult.setResponseBody(ERROR_BODY);
-		RetryResult singleExplodeResult = new RetryResult(EdgeNetworkService.NetworkRequestOutcome.EXPLODE_400, 0);
-		singleExplodeResult.setResponseBody(ERROR_BODY);
-		RetryResult successResult = new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0);
-
-		mockNetworkReturnsSequence(batchExplodeResult, singleExplodeResult, successResult);
-
-		DataEntity entity1 = buildExperienceEventEntity();
-		DataEntity entity2 = buildExperienceEventEntity();
-
-		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(entity1, entity2));
-
-		// Both resolved (first via terminal error delivery, second via success)
-		assertEquals(BatchOutcome.Kind.DONE, outcome.getKind());
-
-		// 3 network requests total
-		verify(mockEdgeNetworkService, times(3))
-			.doRequest(anyString(), anyString(), ArgumentMatchers.anyMap(), any(EdgeNetworkService.ResponseCallback.class));
-
-		// Terminal error for the bad single event
-		verify(mockNetworkResponseHandler, times(1)).processResponseOnError(eq(ERROR_BODY), anyString());
-		verify(mockNetworkResponseHandler, times(1)).processResponseOnComplete(anyString());
-	}
-
-	@Test
-	public void testProcessBatch_twoEvents_400_oneIndividualNeedsRetry() {
-		// Batch of 2 gets 400; first individual needs retry
-		RetryResult batchExplodeResult = new RetryResult(EdgeNetworkService.NetworkRequestOutcome.EXPLODE_400, 0);
-		RetryResult retryResult = new RetryResult(EdgeNetworkService.NetworkRequestOutcome.RETRY, 10);
-
-		mockNetworkReturnsSequence(batchExplodeResult, retryResult);
-
-		DataEntity entity1 = buildExperienceEventEntity();
-		DataEntity entity2 = buildExperienceEventEntity();
-
-		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(entity1, entity2));
-
-		// Nothing resolved before the retry — head entity is the retrying one
-		assertEquals(BatchOutcome.Kind.RETRY_BATCH, outcome.getKind());
-		assertEquals(10, outcome.getRetryAfterSeconds());
+		verify(mockNetworkResponseHandler, never()).processResponseOnError(anyString(), anyString());
+		verify(mockNetworkResponseHandler, never()).processResponseOnComplete(anyString());
 	}
 
 	// -------------------------------------------------------------------------
@@ -315,17 +292,16 @@ public class EdgeHitProcessorBatchTests {
 
 	@Test
 	public void testProcessBatch_consentEvent_400_deliversTerminalError() {
-		RetryResult explodeResult = new RetryResult(EdgeNetworkService.NetworkRequestOutcome.EXPLODE_400, 0);
-		explodeResult.setResponseBody(ERROR_BODY);
-		mockNetworkReturns(explodeResult);
+		mockNetworkReturnsTerminalError(ERROR_BODY);
 
 		DataEntity entity = buildConsentEventEntity();
 
-		// Consent event goes through processHit → processUpdateConsentEventHit → sendNetworkRequest
-		// sendNetworkRequest must handle EXPLODE_400 as terminal
+		// Consent event goes through processHit → processUpdateConsentEventHit → sendNetworkRequest,
+		// identical to a non-batching build — the real network layer delivers the terminal error via
+		// the injected callback, simulated here the same way.
 		BatchOutcome outcome = hitProcessor.processBatch(Collections.singletonList(entity));
 
-		assertEquals(BatchOutcome.Kind.DONE, outcome.getKind());
+		assertEquals(0, outcome.getRetryDelaySeconds()); // done -> process immediately, no retry delay
 
 		// Consent events register with addWaitingEvent (singular)
 		ArgumentCaptor<String> requestIdCaptor = ArgumentCaptor.forClass(String.class);
@@ -343,9 +319,7 @@ public class EdgeHitProcessorBatchTests {
 	public void testProcessBatch_singleEvent_400_allThreeStepsComplete() {
 		// addWaitingEvents, processResponseOnError, and processResponseOnComplete must all fire
 		// exactly once for a terminal-400 on a batch-of-1.
-		RetryResult explodeResult = new RetryResult(EdgeNetworkService.NetworkRequestOutcome.EXPLODE_400, 0);
-		explodeResult.setResponseBody(ERROR_BODY);
-		mockNetworkReturns(explodeResult);
+		mockNetworkReturnsTerminalError(ERROR_BODY);
 
 		DataEntity entity = buildExperienceEventEntity();
 		hitProcessor.processBatch(Collections.singletonList(entity));
@@ -360,6 +334,10 @@ public class EdgeHitProcessorBatchTests {
 	// -------------------------------------------------------------------------
 
 	private DataEntity buildExperienceEventEntity() {
+		return buildExperienceEventEntity(edgeConfig);
+	}
+
+	private DataEntity buildExperienceEventEntity(final Map<String, Object> config) {
 		Map<String, Object> xdmData = new HashMap<>();
 		xdmData.put("test", "data");
 		Map<String, Object> eventData = new HashMap<>();
@@ -369,7 +347,7 @@ public class EdgeHitProcessorBatchTests {
 			.setEventData(eventData)
 			.build();
 
-		return new EdgeDataEntity(event, edgeConfig, identityMap).toDataEntity();
+		return new EdgeDataEntity(event, config, identityMap).toDataEntity();
 	}
 
 	private DataEntity buildConsentEventEntity() {
@@ -395,37 +373,37 @@ public class EdgeHitProcessorBatchTests {
 				anyString(),
 				anyString(),
 				ArgumentMatchers.anyMap(),
+				ArgumentMatchers.anyBoolean(),
 				any(EdgeNetworkService.ResponseCallback.class)
 			)
 		)
 			.thenReturn(retryResult);
 	}
 
-	/** Stubs doRequest to return the given results in sequence (last value is repeated if needed). */
-	private void mockNetworkReturnsSequence(final RetryResult first, final RetryResult... rest) {
+	/**
+	 * Stubs a single (non-batch) doRequest call to behave exactly like the real
+	 * {@code EdgeNetworkService.doRequest} does for a single-event terminal error: invokes the
+	 * injected callback's {@code onError} then {@code onComplete} synchronously, and returns a
+	 * {@code DROP} result — mirroring what a real 400 (or any other unrecoverable code) does when
+	 * {@code isBatchRequest} is {@code false}.
+	 */
+	private void mockNetworkReturnsTerminalError(final String errorBody) {
 		when(mockEdgeNetworkService.buildUrl(any(EdgeEndpoint.class), anyString(), anyString()))
 			.thenReturn("https://test.com");
-
-		if (rest == null || rest.length == 0) {
-			when(
-				mockEdgeNetworkService.doRequest(
-					anyString(),
-					anyString(),
-					ArgumentMatchers.anyMap(),
-					any(EdgeNetworkService.ResponseCallback.class)
-				)
+		when(
+			mockEdgeNetworkService.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.anyMap(),
+				ArgumentMatchers.anyBoolean(),
+				any(EdgeNetworkService.ResponseCallback.class)
 			)
-				.thenReturn(first);
-		} else {
-			when(
-				mockEdgeNetworkService.doRequest(
-					anyString(),
-					anyString(),
-					ArgumentMatchers.anyMap(),
-					any(EdgeNetworkService.ResponseCallback.class)
-				)
-			)
-				.thenReturn(first, rest);
-		}
+		)
+			.thenAnswer(invocation -> {
+				final EdgeNetworkService.ResponseCallback callback = invocation.getArgument(4);
+				callback.onError(errorBody);
+				callback.onComplete();
+				return new RetryResult(EdgeNetworkService.NetworkRequestOutcome.DROP, 0);
+			});
 	}
 }
