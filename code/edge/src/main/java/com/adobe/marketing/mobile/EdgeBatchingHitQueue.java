@@ -37,7 +37,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * configuration:
  * <ul>
  *   <li>batching disabled (default) → window of 1, identical to current single-event behaviour.
- *   <li>batching enabled → window of {@code min(queue.count(), MAX_BATCH_SIZE)}.
+ *   <li>batching enabled → window of {@code min(queue.count(), maxBatchSize)}, where
+ *       {@code maxBatchSize} comes from {@code edge.batching.maxBatchSize} (falling back to
+ *       {@link EdgeConstants.Defaults#MAX_BATCH_SIZE} if absent or non-positive, and clamped to
+ *       {@link EdgeConstants.Defaults#MAX_BATCH_SIZE_LIMIT} regardless of source).
  *   <li>draining a batch that just got a 400 → window of 1 for exactly that many cycles, regardless
  *       of config, via {@link #explodeRemaining}.
  * </ul>
@@ -206,7 +209,8 @@ class EdgeBatchingHitQueue extends HitQueuing {
 
 	/**
 	 * Returns the number of entities to include in the next batch, based on the
-	 * {@code edge.batching.enabled} flag snapshotted in the head entity's configuration.
+	 * {@code edge.batching.enabled} flag and {@code edge.batching.maxBatchSize} snapshotted in the
+	 * head entity's configuration.
 	 */
 	private int getEffectiveBatchSize(final DataEntity head) {
 		final EdgeDataEntity entity = EdgeDataEntity.fromDataEntity(head);
@@ -219,7 +223,24 @@ class EdgeBatchingHitQueue extends HitQueuing {
 			false
 		);
 		final int queueDepth = queue.count();
-		final int batchSize = batchingEnabled ? Math.min(queueDepth, EdgeConstants.Defaults.MAX_BATCH_SIZE) : 1;
-		return batchSize;
+        return batchingEnabled ? Math.min(queueDepth, getMaxBatchSize(entity)) : 1;
+	}
+
+	/**
+	 * Returns the configured {@code edge.batching.maxBatchSize} from the entity's snapshotted
+	 * configuration, or {@link EdgeConstants.Defaults#MAX_BATCH_SIZE} if the key is absent or not a
+	 * positive value. Clamped to {@link EdgeConstants.Defaults#MAX_BATCH_SIZE_LIMIT} regardless of
+	 * source, so a misconfigured value can't grow the batch (and the request payload) unbounded.
+	 */
+	private int getMaxBatchSize(final EdgeDataEntity entity) {
+		final int configured = DataReader.optInt(
+			entity.getConfiguration(),
+			EdgeConstants.SharedState.Configuration.EDGE_BATCHING_MAX_BATCH_SIZE,
+			EdgeConstants.Defaults.MAX_BATCH_SIZE
+		);
+		if (configured <= 0) {
+			return EdgeConstants.Defaults.MAX_BATCH_SIZE;
+		}
+		return Math.min(configured, EdgeConstants.Defaults.MAX_BATCH_SIZE_LIMIT);
 	}
 }

@@ -63,13 +63,14 @@ public class EdgeBundledBatchingConfigTests {
 	}
 
 	@Test
-	public void testGet_validJson_parsesBothKeys() {
+	public void testGet_validJson_parsesAllKeys() {
 		when(mockDeviceInfoService.getAsset(EdgeBundledBatchingConfig.BUNDLED_CONFIG_FILE_NAME))
 			.thenReturn(
 				streamOf(
 					"{" +
 					"\"edge.batching.enabled\": true," +
-					"\"edge.batching.eventNameAllowlist\": [\"Edge Optimize Proposition Interaction Request\"]" +
+					"\"edge.batching.eventNameAllowlist\": [\"Edge Optimize Proposition Interaction Request\"]," +
+					"\"edge.batching.maxBatchSize\": 25" +
 					"}"
 				)
 			);
@@ -81,6 +82,7 @@ public class EdgeBundledBatchingConfigTests {
 			Arrays.asList("Edge Optimize Proposition Interaction Request"),
 			result.get("edge.batching.eventNameAllowlist")
 		);
+		assertEquals(25, result.get("edge.batching.maxBatchSize"));
 	}
 
 	@Test

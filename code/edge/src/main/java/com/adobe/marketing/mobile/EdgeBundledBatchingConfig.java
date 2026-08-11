@@ -23,17 +23,18 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
- * Loads a first-launch fallback for the Edge batching configuration keys ({@code edge.batching.enabled}
- * and {@code edge.batching.eventNameAllowlist}) from a JSON file bundled in the app's assets folder.
+ * Loads a first-launch fallback for the Edge batching configuration keys ({@code edge.batching.enabled},
+ * {@code edge.batching.eventNameAllowlist}, and {@code edge.batching.maxBatchSize}) from a JSON file
+ * bundled in the app's assets folder.
  *
  * <p>This is a per-key fallback, not a wholesale configuration replacement: {@link EventUtils#getEdgeConfiguration}
- * consults this bundled file only for whichever of the two batching keys is absent from the Configuration
+ * consults this bundled file only for whichever batching key is absent from the Configuration
  * shared state at the time an event is queued. Any key present in the Configuration shared state — whether
  * set programmatically via {@code MobileCore.updateConfiguration()} or delivered by a remote/Launch-published
  * configuration — always takes precedence over the bundled file's value for that same key.
  *
  * <p>Unlike Mobile Core's own {@code ADBMobileConfig.json} bundled-configuration mechanism (which this
- * mirrors in spirit), this file is scoped specifically to the two Edge batching keys and is not a
+ * mirrors in spirit), this file is scoped specifically to the Edge batching keys and is not a
  * general-purpose configuration bundle.
  */
 final class EdgeBundledBatchingConfig {

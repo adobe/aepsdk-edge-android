@@ -287,4 +287,39 @@ public class EventUtilsTests {
 
 		assertEquals(false, result.containsKey("edge.batching.eventNameAllowlist"));
 	}
+
+	@Test
+	public void testGetEdgeConfiguration_maxBatchSize_presentInSharedState_bundledConfigIgnored() {
+		mockBundledBatchingConfigStatic
+			.when(EdgeBundledBatchingConfig::get)
+			.thenReturn(Collections.singletonMap("edge.batching.maxBatchSize", 5));
+
+		Map<String, Object> result = EventUtils.getEdgeConfiguration(
+			new HashMap<String, Object>() {
+				{
+					put("edge.batching.maxBatchSize", 25);
+				}
+			}
+		);
+
+		assertEquals(25, result.get("edge.batching.maxBatchSize"));
+	}
+
+	@Test
+	public void testGetEdgeConfiguration_maxBatchSize_absentFromSharedState_usesBundledConfig() {
+		mockBundledBatchingConfigStatic
+			.when(EdgeBundledBatchingConfig::get)
+			.thenReturn(Collections.singletonMap("edge.batching.maxBatchSize", 25));
+
+		Map<String, Object> result = EventUtils.getEdgeConfiguration(new HashMap<>());
+
+		assertEquals(25, result.get("edge.batching.maxBatchSize"));
+	}
+
+	@Test
+	public void testGetEdgeConfiguration_maxBatchSize_absentFromBoth_keyNotInResult() {
+		Map<String, Object> result = EventUtils.getEdgeConfiguration(new HashMap<>());
+
+		assertEquals(false, result.containsKey("edge.batching.maxBatchSize"));
+	}
 }

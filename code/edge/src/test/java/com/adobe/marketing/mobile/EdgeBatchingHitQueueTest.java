@@ -326,6 +326,118 @@ public class EdgeBatchingHitQueueTest {
 		verify(mockDataQueue, never()).peek(queueCount);
 	}
 
+	@Test
+	public void testGetEffectiveBatchSize_configuredMaxBatchSize_smallerThanDefault_honorsConfiguredValue()
+		throws InterruptedException {
+		// edge.batching.maxBatchSize=3 caps the window below the built-in default of 10.
+		final int configuredMax = 3;
+		List<DataEntity> batch = buildBatchEntities(configuredMax, true, configuredMax);
+		DataEntity head = batch.get(0);
+		final CountDownLatch latch = new CountDownLatch(1);
+
+		when(mockDataQueue.peek())
+			.thenReturn(head)
+			.thenAnswer(inv -> {
+				latch.countDown();
+				return null;
+			});
+		when(mockDataQueue.count()).thenReturn(10);
+		when(mockDataQueue.peek(configuredMax)).thenReturn(batch);
+		when(mockProcessor.processBatch(any())).thenReturn(BatchOutcome.done(configuredMax));
+
+		hitQueue = new EdgeBatchingHitQueue(mockDataQueue, mockProcessor, executor);
+		hitQueue.beginProcessing();
+
+		latch.await(2, TimeUnit.SECONDS);
+
+		verify(mockDataQueue, times(1)).peek(configuredMax);
+		verify(mockDataQueue, never()).peek(EdgeConstants.Defaults.MAX_BATCH_SIZE);
+	}
+
+	@Test
+	public void testGetEffectiveBatchSize_configuredMaxBatchSize_largerThanDefault_honorsConfiguredValue()
+		throws InterruptedException {
+		// edge.batching.maxBatchSize=20 raises the window above the built-in default of 10.
+		final int configuredMax = 20;
+		List<DataEntity> batch = buildBatchEntities(configuredMax, true, configuredMax);
+		DataEntity head = batch.get(0);
+		final CountDownLatch latch = new CountDownLatch(1);
+
+		when(mockDataQueue.peek())
+			.thenReturn(head)
+			.thenAnswer(inv -> {
+				latch.countDown();
+				return null;
+			});
+		when(mockDataQueue.count()).thenReturn(25);
+		when(mockDataQueue.peek(configuredMax)).thenReturn(batch);
+		when(mockProcessor.processBatch(any())).thenReturn(BatchOutcome.done(configuredMax));
+
+		hitQueue = new EdgeBatchingHitQueue(mockDataQueue, mockProcessor, executor);
+		hitQueue.beginProcessing();
+
+		latch.await(2, TimeUnit.SECONDS);
+
+		verify(mockDataQueue, times(1)).peek(configuredMax);
+		verify(mockDataQueue, never()).peek(EdgeConstants.Defaults.MAX_BATCH_SIZE);
+	}
+
+	@Test
+	public void testGetEffectiveBatchSize_configuredMaxBatchSize_exceedsLimit_clampsToLimit()
+		throws InterruptedException {
+		// edge.batching.maxBatchSize=50 exceeds MAX_BATCH_SIZE_LIMIT (20); clamped to the limit
+		// regardless of what was configured, so a misconfigured value can't grow the batch unbounded.
+		final int configuredMax = 50;
+		final int limit = EdgeConstants.Defaults.MAX_BATCH_SIZE_LIMIT;
+		List<DataEntity> batch = buildBatchEntities(limit, true, configuredMax);
+		DataEntity head = batch.get(0);
+		final CountDownLatch latch = new CountDownLatch(1);
+
+		when(mockDataQueue.peek())
+			.thenReturn(head)
+			.thenAnswer(inv -> {
+				latch.countDown();
+				return null;
+			});
+		when(mockDataQueue.count()).thenReturn(100);
+		when(mockDataQueue.peek(limit)).thenReturn(batch);
+		when(mockProcessor.processBatch(any())).thenReturn(BatchOutcome.done(limit));
+
+		hitQueue = new EdgeBatchingHitQueue(mockDataQueue, mockProcessor, executor);
+		hitQueue.beginProcessing();
+
+		latch.await(2, TimeUnit.SECONDS);
+
+		verify(mockDataQueue, times(1)).peek(limit);
+		verify(mockDataQueue, never()).peek(configuredMax);
+	}
+
+	@Test
+	public void testGetEffectiveBatchSize_nonPositiveConfiguredMaxBatchSize_fallsBackToDefault()
+		throws InterruptedException {
+		// edge.batching.maxBatchSize=0 is not a usable value; falls back to the built-in default.
+		List<DataEntity> batch = buildBatchEntities(EdgeConstants.Defaults.MAX_BATCH_SIZE, true, 0);
+		DataEntity head = batch.get(0);
+		final CountDownLatch latch = new CountDownLatch(1);
+
+		when(mockDataQueue.peek())
+			.thenReturn(head)
+			.thenAnswer(inv -> {
+				latch.countDown();
+				return null;
+			});
+		when(mockDataQueue.count()).thenReturn(EdgeConstants.Defaults.MAX_BATCH_SIZE + 5);
+		when(mockDataQueue.peek(EdgeConstants.Defaults.MAX_BATCH_SIZE)).thenReturn(batch);
+		when(mockProcessor.processBatch(any())).thenReturn(BatchOutcome.done(EdgeConstants.Defaults.MAX_BATCH_SIZE));
+
+		hitQueue = new EdgeBatchingHitQueue(mockDataQueue, mockProcessor, executor);
+		hitQueue.beginProcessing();
+
+		latch.await(2, TimeUnit.SECONDS);
+
+		verify(mockDataQueue, times(1)).peek(EdgeConstants.Defaults.MAX_BATCH_SIZE);
+	}
+
 	// -------------------------------------------------------------------------
 	// Suspend
 	// -------------------------------------------------------------------------
@@ -349,9 +461,16 @@ public class EdgeBatchingHitQueueTest {
 	// -------------------------------------------------------------------------
 
 	private DataEntity buildEntity(final boolean batchingEnabled) {
+		return buildEntity(batchingEnabled, null);
+	}
+
+	private DataEntity buildEntity(final boolean batchingEnabled, final Integer maxBatchSize) {
 		Map<String, Object> config = new HashMap<>(edgeConfig);
 		if (batchingEnabled) {
 			config.put(EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED, true);
+		}
+		if (maxBatchSize != null) {
+			config.put(EdgeConstants.SharedState.Configuration.EDGE_BATCHING_MAX_BATCH_SIZE, maxBatchSize);
 		}
 
 		Map<String, Object> xdmData = new HashMap<>();
@@ -367,9 +486,17 @@ public class EdgeBatchingHitQueueTest {
 	}
 
 	private List<DataEntity> buildBatchEntities(final int count, final boolean batchingEnabled) {
+		return buildBatchEntities(count, batchingEnabled, null);
+	}
+
+	private List<DataEntity> buildBatchEntities(
+		final int count,
+		final boolean batchingEnabled,
+		final Integer maxBatchSize
+	) {
 		List<DataEntity> list = new ArrayList<>();
 		for (int i = 0; i < count; i++) {
-			list.add(buildEntity(batchingEnabled));
+			list.add(buildEntity(batchingEnabled, maxBatchSize));
 		}
 		return list;
 	}

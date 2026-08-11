@@ -91,6 +91,7 @@ final class EventUtils {
 		final String[] batchingConfigKeys = new String[] {
 			EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED,
 			EdgeConstants.SharedState.Configuration.EDGE_BATCHING_EVENT_NAME_ALLOWLIST,
+			EdgeConstants.SharedState.Configuration.EDGE_BATCHING_MAX_BATCH_SIZE,
 		};
 
 		for (final String batchingKey : batchingConfigKeys) {

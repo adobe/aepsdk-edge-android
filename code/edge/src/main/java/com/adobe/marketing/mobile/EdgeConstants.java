@@ -39,7 +39,11 @@ final class EdgeConstants {
 		static final String REQUEST_CONFIG_LINE_FEED = "\n";
 		static final int RETRY_INTERVAL_SECONDS = 5;
 		static final int LOCATION_HINT_TTL_SEC = 1800;
+		// Fallback used when edge.batching.maxBatchSize is absent from both Configuration and the
+		// bundled batching config file, or is not a positive value.
 		static final int MAX_BATCH_SIZE = 10;
+		// Upper bound a configured edge.batching.maxBatchSize is clamped to, regardless of source.
+		static final int MAX_BATCH_SIZE_LIMIT = 20;
 
 		static final ConsentStatus COLLECT_CONSENT_YES = ConsentStatus.YES; // used if Consent extension is not registered
 		static final ConsentStatus COLLECT_CONSENT_PENDING = ConsentStatus.PENDING; // used when Consent encoding failed or the value different than y/n
@@ -109,6 +113,7 @@ final class EdgeConstants {
 			static final String EDGE_REQUEST_ENVIRONMENT = "edge.environment";
 			static final String EDGE_BATCHING_ENABLED = "edge.batching.enabled";
 			static final String EDGE_BATCHING_EVENT_NAME_ALLOWLIST = "edge.batching.eventNameAllowlist";
+			static final String EDGE_BATCHING_MAX_BATCH_SIZE = "edge.batching.maxBatchSize";
 
 			private Configuration() {}
 		}
