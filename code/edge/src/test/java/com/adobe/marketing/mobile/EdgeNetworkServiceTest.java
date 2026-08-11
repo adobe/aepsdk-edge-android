@@ -628,7 +628,6 @@ public class EdgeNetworkServiceTest {
 		assertNull(result.onResponseCallback[0]);
 		assertNull(result.onErrorCallback[0]);
 		assertNull(result.onCompleteCallback[0]);
-		assertGenericJsonError(errorStr, DEFAULT_ERROR_NAMESPACE, result.retryResult.getResponseBody());
 	}
 
 	@Test

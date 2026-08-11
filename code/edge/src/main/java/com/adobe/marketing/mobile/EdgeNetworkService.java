@@ -277,8 +277,8 @@ class EdgeNetworkService {
 		} else if (isBatchRequest && connection.getResponseCode() == HttpURLConnection.HTTP_BAD_REQUEST) {
 			// 400 on a real batch means nothing was ingested and the caller will explode it to
 			// individual requests. Suppress handleError and onComplete here so events don't get
-			// phantom error/complete callbacks before the individual resends are attempted.
-			// Capture the body so the caller can deliver the real error per exploded event, if needed.
+			// phantom error/complete callbacks before the individual resends are attempted; each
+			// exploded resend gets its own fresh error (if any) from its own single-event attempt.
 			Log.warning(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -286,7 +286,6 @@ class EdgeNetworkService {
 				connection.getResponseMessage()
 			);
 			retryResult = new RetryResult(NetworkRequestOutcome.EXPLODE_400, 0);
-			retryResult.setResponseBody(readErrorBodyAsJson(connection.getErrorStream()));
 		} else {
 			// A single-event 400 (including an exploded resend) falls through here, identical to any
 			// other unrecoverable error code — same log line, same handleError→onError→onComplete flow
@@ -583,32 +582,6 @@ class EdgeNetworkService {
 			EdgeConstants.NetworkKeys.HEADER_VALUE_APPLICATION_JSON
 		);
 		return defaultHeaders;
-	}
-
-	/**
-	 * Reads the error body from {@code inputStream} and returns it as a JSON string.
-	 * Mirrors the parsing logic of {@link #handleError} but returns the result instead of
-	 * invoking a callback — used for capturing 400 bodies for terminal error delivery.
-	 *
-	 * @param inputStream the error stream from the HTTP connection, may be null
-	 * @return valid JSON string representing the error; never null
-	 */
-	String readErrorBodyAsJson(final InputStream inputStream) {
-		if (inputStream == null) {
-			return composeGenericErrorAsJson(null);
-		}
-
-		String responseStr = readInputStream(inputStream);
-		try {
-			if (responseStr != null) {
-				new JSONObject(responseStr); // validate JSON
-			} else {
-				responseStr = composeGenericErrorAsJson(null);
-			}
-		} catch (JSONException e) {
-			responseStr = composeGenericErrorAsJson(responseStr);
-		}
-		return responseStr;
 	}
 
 	/**

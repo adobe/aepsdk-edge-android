@@ -18,7 +18,6 @@ class RetryResult {
 
 	private int retryIntervalSeconds = EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS;
 	private final EdgeNetworkService.NetworkRequestOutcome networkRequestOutcome;
-	private String responseBody = null;
 
 	/**
 	 * Constructs a {@link RetryResult} with the specified retry value and default retry interval of 5 seconds.
@@ -89,18 +88,5 @@ class RetryResult {
 	 */
 	public EdgeNetworkService.NetworkRequestOutcome getNetworkRequestOutcome() {
 		return networkRequestOutcome;
-	}
-
-	/**
-	 * Returns the server error body captured for a terminal 400 response, or {@code null} if none
-	 * was captured. Only meaningful when {@link #getNetworkRequestOutcome()} is
-	 * {@link EdgeNetworkService.NetworkRequestOutcome#EXPLODE_400}.
-	 */
-	String getResponseBody() {
-		return responseBody;
-	}
-
-	void setResponseBody(final String responseBody) {
-		this.responseBody = responseBody;
 	}
 }
