@@ -223,7 +223,7 @@ class EdgeBatchingHitQueue extends HitQueuing {
 			false
 		);
 		final int queueDepth = queue.count();
-        return batchingEnabled ? Math.min(queueDepth, getMaxBatchSize(entity)) : 1;
+		return batchingEnabled ? Math.min(queueDepth, getMaxBatchSize(entity)) : 1;
 	}
 
 	/**
