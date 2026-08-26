@@ -24,7 +24,6 @@ import com.adobe.marketing.mobile.services.ServiceProvider;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Map;
 import org.junit.After;
 import org.junit.Before;
@@ -63,26 +62,25 @@ public class EdgeBundledBatchingConfigTests {
 	}
 
 	@Test
-	public void testGet_validJson_parsesAllKeys() {
+	public void testGet_validJson_parsesGroupedConfig() {
 		when(mockDeviceInfoService.getAsset(EdgeBundledBatchingConfig.BUNDLED_CONFIG_FILE_NAME))
 			.thenReturn(
 				streamOf(
 					"{" +
-					"\"edge.batching.enabled\": true," +
-					"\"edge.batching.eventNameAllowlist\": [\"Edge Optimize Proposition Interaction Request\"]," +
-					"\"edge.batching.maxBatchSize\": 25" +
+					"\"enabled\": true," +
+					"\"maxBatchSize\": 25," +
+					"\"wildcards\": [{\"xdmEventType\": \"media.*\", \"enabled\": false}]," +
+					"\"edgeMedia\": [{\"xdmEventType\": \"media.play\", \"enabled\": true}]" +
 					"}"
 				)
 			);
 
 		Map<String, Object> result = EdgeBundledBatchingConfig.get();
 
-		assertEquals(true, result.get("edge.batching.enabled"));
-		assertEquals(
-			Arrays.asList("Edge Optimize Proposition Interaction Request"),
-			result.get("edge.batching.eventNameAllowlist")
-		);
-		assertEquals(25, result.get("edge.batching.maxBatchSize"));
+		assertEquals(true, result.get("enabled"));
+		assertEquals(25, result.get("maxBatchSize"));
+		assertTrue(result.containsKey("wildcards"));
+		assertTrue(result.containsKey("edgeMedia"));
 	}
 
 	@Test
@@ -114,7 +112,7 @@ public class EdgeBundledBatchingConfigTests {
 
 	@Test
 	public void testGet_calledTwice_onlyReadsAssetOnce() {
-		when(mockDeviceInfoService.getAsset(anyString())).thenReturn(streamOf("{\"edge.batching.enabled\": true}"));
+		when(mockDeviceInfoService.getAsset(anyString())).thenReturn(streamOf("{\"enabled\": true}"));
 
 		EdgeBundledBatchingConfig.get();
 		EdgeBundledBatchingConfig.get();

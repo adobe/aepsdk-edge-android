@@ -18,7 +18,6 @@ import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.DataQueue;
 import com.adobe.marketing.mobile.services.HitQueuing;
 import com.adobe.marketing.mobile.services.Log;
-import com.adobe.marketing.mobile.util.DataReader;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -208,39 +207,22 @@ class EdgeBatchingHitQueue extends HitQueuing {
 	}
 
 	/**
-	 * Returns the number of entities to include in the next batch, based on the
-	 * {@code edge.batching.enabled} flag and {@code edge.batching.maxBatchSize} snapshotted in the
-	 * head entity's configuration.
+	 * Returns the number of entities to include in the next batch, based on the {@code enabled} flag
+	 * and {@code maxBatchSize} from the {@code edge.batching} configuration snapshotted in the head
+	 * entity's configuration (parsed by {@link EdgeBatchingConfig}). {@code maxBatchSize} is clamped to
+	 * a positive value no greater than {@link EdgeConstants.Defaults#MAX_BATCH_SIZE_LIMIT}, so a
+	 * misconfigured value can't grow the batch (and the request payload) unbounded.
 	 */
 	private int getEffectiveBatchSize(final DataEntity head) {
 		final EdgeDataEntity entity = EdgeDataEntity.fromDataEntity(head);
 		if (entity == null) {
 			return 1;
 		}
-		final boolean batchingEnabled = DataReader.optBoolean(
-			entity.getConfiguration(),
-			EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED,
-			false
-		);
-		final int queueDepth = queue.count();
-		return batchingEnabled ? Math.min(queueDepth, getMaxBatchSize(entity)) : 1;
-	}
-
-	/**
-	 * Returns the configured {@code edge.batching.maxBatchSize} from the entity's snapshotted
-	 * configuration, or {@link EdgeConstants.Defaults#MAX_BATCH_SIZE} if the key is absent or not a
-	 * positive value. Clamped to {@link EdgeConstants.Defaults#MAX_BATCH_SIZE_LIMIT} regardless of
-	 * source, so a misconfigured value can't grow the batch (and the request payload) unbounded.
-	 */
-	private int getMaxBatchSize(final EdgeDataEntity entity) {
-		final int configured = DataReader.optInt(
-			entity.getConfiguration(),
-			EdgeConstants.SharedState.Configuration.EDGE_BATCHING_MAX_BATCH_SIZE,
-			EdgeConstants.Defaults.MAX_BATCH_SIZE
-		);
-		if (configured <= 0) {
-			return EdgeConstants.Defaults.MAX_BATCH_SIZE;
+		final EdgeBatchingConfig batchingConfig = EdgeBatchingConfig.from(entity.getConfiguration());
+		if (!batchingConfig.isEnabled()) {
+			return 1;
 		}
-		return Math.min(configured, EdgeConstants.Defaults.MAX_BATCH_SIZE_LIMIT);
+		final int queueDepth = queue.count();
+		return Math.min(queueDepth, batchingConfig.getMaxBatchSize());
 	}
 }

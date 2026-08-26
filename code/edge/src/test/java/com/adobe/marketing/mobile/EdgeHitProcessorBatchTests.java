@@ -103,7 +103,12 @@ public class EdgeHitProcessorBatchTests {
 
 		edgeConfig = new HashMap<>();
 		edgeConfig.put("edge.configId", "test-config-id");
-		edgeConfig.put("edge.batching.eventNameAllowlist", Collections.singletonList("test-event"));
+		Map<String, Object> batchingEvent = new HashMap<>();
+		batchingEvent.put(EdgeConstants.Batching.XDM_EVENT_TYPE, "test.event");
+		batchingEvent.put(EdgeConstants.Batching.ENABLED, true);
+		Map<String, Object> batching = new HashMap<>();
+		batching.put("events", Collections.singletonList(batchingEvent));
+		edgeConfig.put(EdgeConstants.SharedState.Configuration.EDGE_BATCHING, batching);
 
 		hitProcessor =
 			new EdgeHitProcessor(mockNetworkResponseHandler, mockEdgeNetworkService, mockNamedCollection, null, null);
@@ -354,6 +359,7 @@ public class EdgeHitProcessorBatchTests {
 	private DataEntity buildExperienceEventEntity(final Map<String, Object> config) {
 		Map<String, Object> xdmData = new HashMap<>();
 		xdmData.put("test", "data");
+		xdmData.put("eventType", "test.event");
 		Map<String, Object> eventData = new HashMap<>();
 		eventData.put("xdm", xdmData);
 

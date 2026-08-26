@@ -82,23 +82,23 @@ final class EventUtils {
 			MapUtils.putIfNotEmpty(edgeConfig, configKey, configValue);
 		}
 
-		// Bundled batching config is a per-key fallback only: consulted for a given key solely when
-		// that key is absent from the Configuration shared state (i.e. not set programmatically, and
-		// not delivered by a remote/Launch-published configuration). Any value present in the
-		// Configuration shared state always wins over the bundled file for that same key. Values are
-		// copied raw; consumers coerce via DataReader (optBoolean/optStringList) at read time.
-		final Map<String, Object> bundledBatchingConfig = EdgeBundledBatchingConfig.get();
-		final String[] batchingConfigKeys = new String[] {
-			EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED,
-			EdgeConstants.SharedState.Configuration.EDGE_BATCHING_EVENT_NAME_ALLOWLIST,
-			EdgeConstants.SharedState.Configuration.EDGE_BATCHING_MAX_BATCH_SIZE,
-		};
-
-		for (final String batchingKey : batchingConfigKeys) {
-			if (configSharedState != null && configSharedState.containsKey(batchingKey)) {
-				edgeConfig.put(batchingKey, configSharedState.get(batchingKey));
-			} else if (bundledBatchingConfig.containsKey(batchingKey)) {
-				edgeConfig.put(batchingKey, bundledBatchingConfig.get(batchingKey));
+		// Batching config (edge.batching) is resolved wholesale, not per-key: the entire grouped
+		// object is taken from the Configuration shared state when present (remote/Launch), otherwise
+		// from the bundled asset file. Both sources use the identical grouped format, so a single
+		// object either wins or falls back as a unit — keeping behavior predictable and making
+		// bundled-vs-remote comparison straightforward. Parsed lazily by EdgeBatchingConfig at use.
+		final Map<String, Object> remoteBatchingConfig = DataReader.optTypedMap(
+			Object.class,
+			configSharedState,
+			EdgeConstants.SharedState.Configuration.EDGE_BATCHING,
+			null
+		);
+		if (remoteBatchingConfig != null) {
+			edgeConfig.put(EdgeConstants.SharedState.Configuration.EDGE_BATCHING, remoteBatchingConfig);
+		} else {
+			final Map<String, Object> bundledBatchingConfig = EdgeBundledBatchingConfig.get();
+			if (!bundledBatchingConfig.isEmpty()) {
+				edgeConfig.put(EdgeConstants.SharedState.Configuration.EDGE_BATCHING, bundledBatchingConfig);
 			}
 		}
 
@@ -107,5 +107,24 @@ final class EventUtils {
 
 	static Map<String, Object> getConfig(@NonNull final Event event) {
 		return DataReader.optTypedMap(Object.class, event.getEventData(), EdgeConstants.EventDataKeys.Config.KEY, null);
+	}
+
+	/**
+	 * Extracts {@code xdm.eventType} from the event's data, used as the batching whitelist key.
+	 *
+	 * @param event the outgoing Experience Event
+	 * @return the {@code xdm.eventType} value, or null if the event has no XDM or no {@code eventType}
+	 */
+	@androidx.annotation.Nullable static String getXdmEventType(@NonNull final Event event) {
+		final Map<String, Object> xdm = DataReader.optTypedMap(
+			Object.class,
+			event.getEventData(),
+			EdgeJson.Event.XDM,
+			null
+		);
+		if (xdm == null) {
+			return null;
+		}
+		return DataReader.optString(xdm, EdgeJson.Event.Xdm.EVENT_TYPE, null);
 	}
 }

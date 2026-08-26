@@ -41,6 +41,7 @@ class EdgeJson {
 		static class Xdm {
 
 			static final String EVENT_ID = "_id";
+			static final String EVENT_TYPE = "eventType";
 			static final String TIMESTAMP = "timestamp";
 			static final String IDENTITY_MAP = "identityMap";
 

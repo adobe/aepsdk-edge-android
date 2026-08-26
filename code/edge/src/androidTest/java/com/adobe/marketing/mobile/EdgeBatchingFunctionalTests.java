@@ -28,9 +28,11 @@ import com.adobe.marketing.mobile.services.TestableNetworkRequest;
 import com.adobe.marketing.mobile.util.MockNetworkService;
 import com.adobe.marketing.mobile.util.MonitorExtension;
 import com.adobe.marketing.mobile.util.TestConstants;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -54,8 +56,8 @@ import org.junit.runner.RunWith;
  * on the next cycle. Assertions are written to hold regardless of exactly how the events distribute
  * across the (1 or 2) resulting requests, so they are not flaky.
  *
- * <p>All events are sent via {@link Edge#sendEvent}, which names the dispatched Edge request event
- * {@code "AEP Request Event"} — hence the allowlist value used here.
+ * <p>All events are sent via {@link Edge#sendEvent} carrying {@code xdm.eventType == "batchingFunctionalTest"};
+ * batching is whitelisted by {@code xdm.eventType}, hence that value is used in the allow-list here.
  */
 @RunWith(AndroidJUnit4.class)
 public class EdgeBatchingFunctionalTests {
@@ -64,8 +66,8 @@ public class EdgeBatchingFunctionalTests {
 	private static final String EXEDGE_INTERACT_URL_STRING = TestConstants.Defaults.EXEDGE_INTERACT_URL_STRING;
 	private static final String CONFIG_ID = "1234abcd-abcd-1234-5678-123456abcdef";
 
-	// Name of the Edge request event dispatched by Edge.sendEvent (EdgeConstants.EventName.REQUEST_CONTENT).
-	private static final String EDGE_REQUEST_EVENT_NAME = "AEP Request Event";
+	// The xdm.eventType stamped on every test event; batching whitelists by xdm.eventType.
+	private static final String BATCH_EVENT_TYPE = "batchingFunctionalTest";
 
 	@Rule
 	public RuleChain rule = RuleChain.outerRule(new LogOnErrorRule()).around(new SetupCoreRule());
@@ -130,7 +132,7 @@ public class EdgeBatchingFunctionalTests {
 	@Test
 	public void testBatchingEnabledAndAllowlisted_multipleEvents_coalescedIntoFewerRequests()
 		throws InterruptedException {
-		applyBatchingConfig(true, Arrays.asList(EDGE_REQUEST_EVENT_NAME));
+		applyBatchingConfig(true, Arrays.asList(BATCH_EVENT_TYPE));
 		setDefaultResponse();
 		// Hold the first cycle in the network so the remaining events enqueue and coalesce.
 		mockNetworkService.enableNetworkResponseDelay(1);
@@ -161,7 +163,7 @@ public class EdgeBatchingFunctionalTests {
 	}
 
 	// -------------------------------------------------------------------------
-	// Batching enabled but event name not allowlisted — allowlist gate
+	// Batching enabled but xdm.eventType not allowlisted — allow-list gate
 	// -------------------------------------------------------------------------
 
 	@Test
@@ -178,7 +180,7 @@ public class EdgeBatchingFunctionalTests {
 			EXEDGE_INTERACT_URL_STRING,
 			POST
 		);
-		// Batching enabled but the event name is not allowlisted → still one event per request.
+		// Batching enabled but the xdm.eventType is not allowlisted → still one event per request.
 		assertEquals(3, requests.size());
 		for (final TestableNetworkRequest request : requests) {
 			assertEquals(1, eventCountInBody(request));
@@ -192,7 +194,7 @@ public class EdgeBatchingFunctionalTests {
 	@Test
 	public void testBatchingEnabledAndAllowlisted_serverError_stillCompletesEachEventCallback()
 		throws InterruptedException {
-		applyBatchingConfig(true, Arrays.asList(EDGE_REQUEST_EVENT_NAME));
+		applyBatchingConfig(true, Arrays.asList(BATCH_EVENT_TYPE));
 		// Non-recoverable server error for every request; each event must still complete its callback.
 		final HttpConnecting errorResponse = mockNetworkService.createMockNetworkResponse(
 			"{\"type\":\"https://ns.adobe.com/aep/errors/EXEG-0104-422\",\"status\":422,\"title\":\"Unprocessable\"}",
@@ -238,12 +240,23 @@ public class EdgeBatchingFunctionalTests {
 		return latch;
 	}
 
-	/** Merges the batching keys into the Configuration shared state and waits for it to apply. */
-	private void applyBatchingConfig(final boolean enabled, final List<String> allowlist) throws InterruptedException {
+	/** Merges the grouped {@code edge.batching} object into the Configuration shared state and waits for it to apply. */
+	private void applyBatchingConfig(final boolean enabled, final List<String> eventTypes) throws InterruptedException {
 		setExpectationEvent(EventType.CONFIGURATION, EventSource.RESPONSE_CONTENT, 1);
+		final HashMap<String, Object> batching = new HashMap<>();
+		batching.put("enabled", enabled);
+		final List<Map<String, Object>> events = new ArrayList<>();
+		if (eventTypes != null) {
+			for (final String type : eventTypes) {
+				final HashMap<String, Object> entry = new HashMap<>();
+				entry.put("xdmEventType", type);
+				entry.put("enabled", true);
+				events.add(entry);
+			}
+		}
+		batching.put("events", events);
 		final HashMap<String, Object> config = new HashMap<>();
-		config.put("edge.batching.enabled", enabled);
-		config.put("edge.batching.eventNameAllowlist", allowlist);
+		config.put("edge.batching", batching);
 		MobileCore.updateConfiguration(config);
 		// Wait for the configuration response (barrier: config shared state is now applied), ignoring the
 		// other events updateConfiguration also emits (CONFIGURATION request, HUB shared state).

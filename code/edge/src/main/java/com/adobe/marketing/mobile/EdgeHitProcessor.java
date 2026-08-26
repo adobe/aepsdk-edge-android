@@ -102,10 +102,10 @@ class EdgeHitProcessor implements HitProcessing {
 		}
 
 		// Collect the consecutive run of batchable ExperienceEvents from the front. An entity is
-		// batchable only if it decodes, is an ExperienceEvent, is on the event-name allowlist, and
-		// shares the head's snapshotted config (a single request can only carry one datastream
-		// ID/override, so events queued under a different config cannot be combined with the head's).
-		// The first entity that fails any of these (including the head) stops the run.
+		// batchable only if it decodes, is an ExperienceEvent, has an xdm.eventType whitelisted by the
+		// batching config, and shares the head's snapshotted config (a single request can only carry one
+		// datastream ID/override, so events queued under a different config cannot be combined with the
+		// head's). The first entity that fails any of these (including the head) stops the run.
 		final List<DataEntity> batchEntities = new ArrayList<>();
 		final List<Event> batchEvents = new ArrayList<>();
 
@@ -114,7 +114,7 @@ class EdgeHitProcessor implements HitProcessing {
 			if (
 				edgeEntity == null ||
 				!EventUtils.isExperienceEvent(edgeEntity.getEvent()) ||
-				!isEventNameAllowlistedForBatching(edgeEntity) ||
+				!isEventTypeBatchable(edgeEntity) ||
 				!hasSameRequestConfig(edgeEntity, headEdgeEntity)
 			) {
 				break;
@@ -123,9 +123,9 @@ class EdgeHitProcessor implements HitProcessing {
 			batchEvents.add(edgeEntity.getEvent());
 		}
 
-		// Head isn't batchable (non-ExperienceEvent, or not allowlisted), or only the head qualifies —
-		// process the head alone via the existing single-entity path (consent, reset, non-allowlisted,
-		// and single-Experience-event cases all funnel here).
+		// Head isn't batchable (non-ExperienceEvent, or xdm.eventType not whitelisted), or only the head
+		// qualifies — process the head alone via the existing single-entity path (consent, reset,
+		// non-whitelisted, and single-Experience-event cases all funnel here).
 		if (batchEntities.size() <= 1) {
 			Log.trace(
 				LOG_TAG,
@@ -192,27 +192,18 @@ class EdgeHitProcessor implements HitProcessing {
 	}
 
 	/**
-	 * Checks whether {@code entity}'s underlying {@link Event} name is present in the
-	 * {@code edge.batching.eventNameAllowlist} configuration snapshotted on this entity at
-	 * enqueue time. An absent or empty allowlist means no event names are eligible for
-	 * batching (opt-in allowlist semantics) — {@code edge.batching.enabled} alone is not
-	 * sufficient to batch a given event.
+	 * Checks whether {@code entity}'s outgoing Experience Event is whitelisted for batching by its
+	 * {@code xdm.eventType}, per the {@code edge.batching} configuration snapshotted on this entity at
+	 * enqueue time (see {@link EdgeBatchingConfig}). Strict allow-list semantics: an event whose
+	 * {@code xdm.eventType} is absent, or matched only by disabled entries, is not batchable —
+	 * {@code enabled} alone is not sufficient.
 	 *
-	 * @param entity the {@link EdgeDataEntity} whose event name is being checked
-	 * @return true if the entity's event name is explicitly allowlisted for batching
+	 * @param entity the {@link EdgeDataEntity} whose event is being checked
+	 * @return true if the entity's {@code xdm.eventType} is whitelisted (exact or wildcard) for batching
 	 */
-	private boolean isEventNameAllowlistedForBatching(@NonNull final EdgeDataEntity entity) {
-		final List<String> allowlist = DataReader.optStringList(
-			entity.getConfiguration(),
-			EdgeConstants.SharedState.Configuration.EDGE_BATCHING_EVENT_NAME_ALLOWLIST,
-			null
-		);
-
-		if (allowlist == null || allowlist.isEmpty()) {
-			return false;
-		}
-
-		return allowlist.contains(entity.getEvent().getName());
+	private boolean isEventTypeBatchable(@NonNull final EdgeDataEntity entity) {
+		final EdgeBatchingConfig batchingConfig = EdgeBatchingConfig.from(entity.getConfiguration());
+		return batchingConfig.isEventTypeBatchable(EventUtils.getXdmEventType(entity.getEvent()));
 	}
 
 	/**

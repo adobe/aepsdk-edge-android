@@ -51,6 +51,22 @@ final class EdgeConstants {
 		private Defaults() {}
 	}
 
+	/**
+	 * Reserved keys within the {@code edge.batching} configuration object. Any top-level key in that
+	 * object that is <em>not</em> one of these is treated as an extension group: an array of event
+	 * objects ({@code {xdmEventType, enabled}}). See {@link EdgeBatchingConfig}.
+	 */
+	static final class Batching {
+
+		static final String ENABLED = "enabled";
+		static final String MAX_BATCH_SIZE = "maxBatchSize";
+		static final String WILDCARDS = "wildcards";
+		static final String META = "_meta";
+		static final String XDM_EVENT_TYPE = "xdmEventType";
+
+		private Batching() {}
+	}
+
 	static final class EventDataKeys {
 
 		static final String EDGE_REQUEST_ID = "requestId";
@@ -111,9 +127,10 @@ final class EdgeConstants {
 			static final String EDGE_CONFIG_ID = "edge.configId";
 			static final String EDGE_DOMAIN = "edge.domain";
 			static final String EDGE_REQUEST_ENVIRONMENT = "edge.environment";
-			static final String EDGE_BATCHING_ENABLED = "edge.batching.enabled";
-			static final String EDGE_BATCHING_EVENT_NAME_ALLOWLIST = "edge.batching.eventNameAllowlist";
-			static final String EDGE_BATCHING_MAX_BATCH_SIZE = "edge.batching.maxBatchSize";
+			// Single nested object holding the entire batching configuration. The same grouped format
+			// is used whether it arrives via Configuration shared state (remote/Launch) or the bundled
+			// asset file, so parsing is identical and the two are directly comparable.
+			static final String EDGE_BATCHING = "edge.batching";
 
 			private Configuration() {}
 		}

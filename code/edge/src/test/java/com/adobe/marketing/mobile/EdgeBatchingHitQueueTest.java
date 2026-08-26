@@ -466,11 +466,15 @@ public class EdgeBatchingHitQueueTest {
 
 	private DataEntity buildEntity(final boolean batchingEnabled, final Integer maxBatchSize) {
 		Map<String, Object> config = new HashMap<>(edgeConfig);
+		Map<String, Object> batching = new HashMap<>();
 		if (batchingEnabled) {
-			config.put(EdgeConstants.SharedState.Configuration.EDGE_BATCHING_ENABLED, true);
+			batching.put(EdgeConstants.Batching.ENABLED, true);
 		}
 		if (maxBatchSize != null) {
-			config.put(EdgeConstants.SharedState.Configuration.EDGE_BATCHING_MAX_BATCH_SIZE, maxBatchSize);
+			batching.put(EdgeConstants.Batching.MAX_BATCH_SIZE, maxBatchSize);
+		}
+		if (!batching.isEmpty()) {
+			config.put(EdgeConstants.SharedState.Configuration.EDGE_BATCHING, batching);
 		}
 
 		Map<String, Object> xdmData = new HashMap<>();
