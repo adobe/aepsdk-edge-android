@@ -131,6 +131,16 @@ class EdgeBatchingHitQueue extends HitQueuing {
 	}
 
 	private void runBatchCycle() {
+		// Honor a suspend() that landed after this cycle was scheduled but before it started. Without
+		// this, a queue suspended (e.g. collect consent flipping to pending) could still send one more
+		// request — and because this is the batch queue, that request could carry up to maxBatchSize
+		// events rather than one. Cannot stop a send already in progress; this only closes the
+		// scheduled-but-not-started window. Resumption happens via beginProcessing().
+		if (suspended.get()) {
+			isTaskScheduled.set(false);
+			return;
+		}
+
 		// Peek head to determine effective batch size from snapshotted config.
 		final DataEntity head = queue.peek();
 		if (head == null) {

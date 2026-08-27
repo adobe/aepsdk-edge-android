@@ -42,7 +42,7 @@ final class EdgeBundledBatchingConfig {
 	private static final String LOG_SOURCE = "EdgeBundledBatchingConfig";
 
 	/** Name of the JSON file expected in the app's assets folder. */
-	static final String BUNDLED_CONFIG_FILE_NAME = "ADBMobilEdgeBatchingConfig.json";
+	static final String BUNDLED_CONFIG_FILE_NAME = "ADBMobileEdgeBatchingConfig.json";
 
 	private static final Object loadLock = new Object();
 	private static volatile Map<String, Object> cachedConfig;

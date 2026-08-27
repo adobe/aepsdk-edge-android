@@ -585,6 +585,28 @@ public class EdgeNetworkServiceTest {
 	}
 
 	@Test
+	public void testDoRequest_whenConnection_207ResponseCode_ReturnsSuccess_AndStreamsResponse() {
+		// setup
+		final String jsonRequest = "{}";
+		final String responseStr = "{\"handle\":[],\"errors\":[{\"title\":\"partial\"}]}";
+		MockConnection mockConnection = new MockConnection(207, responseStr, null);
+		mockNetworkService.setDefaultResponse(mockConnection);
+		networkService = new EdgeNetworkService(mockNetworkService);
+
+		// test - a real multi-event batch receiving 207 Multi-Status
+		DoRequestResult result = doRequestSync(TEST_URL, jsonRequest, true);
+
+		// verify - 207 is treated as SUCCESS: the body is streamed to the response callback (so any
+		// per-event handles/errors get routed downstream) and the batch is neither retried nor exploded.
+		assertEquals(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, result.retryResult.getNetworkRequestOutcome());
+		assertEquals(EdgeNetworkService.Retry.NO, result.retryResult.getShouldRetry());
+		assertEquals("called", result.onResponseCallback[0]);
+		assertEquals(responseStr, result.onResponseCallback[1]);
+		assertNull(result.onErrorCallback[0]);
+		assertNotNull(result.onCompleteCallback[0]);
+	}
+
+	@Test
 	public void testDoRequest_whenConnection_400ResponseCode_NotBatchRequest_TreatedAsUnrecoverable() {
 		// setup
 		final String jsonRequest = "{}";

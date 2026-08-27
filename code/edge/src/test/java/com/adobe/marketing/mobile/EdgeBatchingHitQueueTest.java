@@ -457,6 +457,46 @@ public class EdgeBatchingHitQueueTest {
 	}
 
 	// -------------------------------------------------------------------------
+	// C1: suspend() landing after a cycle is scheduled but before it starts
+	// -------------------------------------------------------------------------
+
+	@Test
+	public void testRunBatchCycle_suspendedBeforeCycleStarts_doesNotProcess() throws InterruptedException {
+		// A batchable entity is available; if the cycle ran, it would call processBatch.
+		when(mockDataQueue.peek()).thenReturn(buildEntity(true));
+		when(mockProcessor.processBatch(any())).thenReturn(BatchOutcome.done(1));
+
+		hitQueue = new EdgeBatchingHitQueue(mockDataQueue, mockProcessor, executor);
+
+		// Occupy the single worker thread so the scheduled runBatchCycle cannot start yet.
+		final CountDownLatch blockerStarted = new CountDownLatch(1);
+		final CountDownLatch release = new CountDownLatch(1);
+		executor.execute(() -> {
+			blockerStarted.countDown();
+			try {
+				release.await();
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		});
+		blockerStarted.await();
+
+		// Schedule a cycle (queued behind the blocker), then suspend before it can run.
+		hitQueue.beginProcessing();
+		hitQueue.suspend();
+
+		// Marker enqueued after runBatchCycle; once it runs, the cycle has already been processed.
+		final CountDownLatch cycleFinished = new CountDownLatch(1);
+		executor.execute(cycleFinished::countDown);
+
+		release.countDown();
+		cycleFinished.await(2, TimeUnit.SECONDS);
+
+		// Guard bailed before peeking/sending — nothing processed while suspended.
+		verify(mockProcessor, never()).processBatch(any());
+	}
+
+	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
 

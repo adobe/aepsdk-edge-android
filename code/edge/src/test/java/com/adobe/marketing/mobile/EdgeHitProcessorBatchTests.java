@@ -349,6 +349,91 @@ public class EdgeHitProcessorBatchTests {
 	}
 
 	// -------------------------------------------------------------------------
+	// Allow-list gate (xdm.eventType) — unit level
+	// -------------------------------------------------------------------------
+
+	@Test
+	public void testProcessBatch_headNotAllowlisted_processedAloneViaSinglePath() {
+		mockNetworkReturns(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0));
+		// Batching enabled, but both events carry a non-whitelisted xdm.eventType.
+		DataEntity e1 = buildExperienceEventEntity(edgeConfig, "not.allowed");
+		DataEntity e2 = buildExperienceEventEntity(edgeConfig, "not.allowed");
+
+		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(e1, e2));
+
+		// Head is not batchable → single-entity path → only the head resolved this cycle.
+		assertEquals(1, outcome.getRemoveCount());
+		// Sent as a single (non-batch) request: isBatchRequest == false.
+		verify(mockEdgeNetworkService, times(1))
+			.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.anyMap(),
+				ArgumentMatchers.eq(false),
+				any(EdgeNetworkService.ResponseCallback.class)
+			);
+	}
+
+	@Test
+	public void testProcessBatch_nonAllowlistedMiddleEvent_truncatesRun() {
+		mockNetworkReturns(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0));
+		DataEntity allow1 = buildExperienceEventEntity(); // whitelisted "test.event"
+		DataEntity allow2 = buildExperienceEventEntity();
+		DataEntity notAllowed = buildExperienceEventEntity(edgeConfig, "not.allowed");
+
+		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(allow1, allow2, notAllowed));
+
+		// Run truncates at the non-whitelisted event → the leading 2 are batched, the 3rd stays.
+		assertEquals(2, outcome.getRemoveCount());
+		verify(mockEdgeNetworkService, times(1))
+			.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.anyMap(),
+				ArgumentMatchers.eq(true),
+				any(EdgeNetworkService.ResponseCallback.class)
+			);
+	}
+
+	// -------------------------------------------------------------------------
+	// Batch DROP / drop-whole-batch (no send)
+	// -------------------------------------------------------------------------
+
+	@Test
+	public void testProcessBatch_batchNonRecoverableDrop_removesAll() {
+		mockNetworkReturns(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.DROP, 0));
+		DataEntity e1 = buildExperienceEventEntity();
+		DataEntity e2 = buildExperienceEventEntity();
+
+		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(e1, e2));
+
+		// Non-recoverable error on a batch → drop all, nothing retried.
+		assertEquals(2, outcome.getRemoveCount());
+		assertEquals(0, outcome.getRetryDelaySeconds());
+	}
+
+	@Test
+	public void testProcessBatch_missingDatastreamId_dropsWholeBatchWithoutSending() {
+		final Map<String, Object> noConfigId = new HashMap<>(edgeConfig);
+		noConfigId.remove("edge.configId");
+		DataEntity e1 = buildExperienceEventEntity(noConfigId);
+		DataEntity e2 = buildExperienceEventEntity(noConfigId);
+
+		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(e1, e2));
+
+		// buildExperienceEventHit returns null (no datastream ID) → whole batch dropped, no network call.
+		assertEquals(2, outcome.getRemoveCount());
+		verify(mockEdgeNetworkService, never())
+			.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.anyMap(),
+				ArgumentMatchers.anyBoolean(),
+				any(EdgeNetworkService.ResponseCallback.class)
+			);
+	}
+
+	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
 
@@ -357,9 +442,13 @@ public class EdgeHitProcessorBatchTests {
 	}
 
 	private DataEntity buildExperienceEventEntity(final Map<String, Object> config) {
+		return buildExperienceEventEntity(config, "test.event");
+	}
+
+	private DataEntity buildExperienceEventEntity(final Map<String, Object> config, final String xdmEventType) {
 		Map<String, Object> xdmData = new HashMap<>();
 		xdmData.put("test", "data");
-		xdmData.put("eventType", "test.event");
+		xdmData.put("eventType", xdmEventType);
 		Map<String, Object> eventData = new HashMap<>();
 		eventData.put("xdm", xdmData);
 
