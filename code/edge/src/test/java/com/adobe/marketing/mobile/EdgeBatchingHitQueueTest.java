@@ -22,7 +22,6 @@ import static org.mockito.Mockito.when;
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.DataQueue;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -177,73 +176,35 @@ public class EdgeBatchingHitQueueTest {
 	}
 
 	// -------------------------------------------------------------------------
-	// EXPLODE outcome — drain individually via forced batch-size-1, one at a time
+	// PARTIAL_REMOVE outcome — a batch 400 was exploded into individual resends inside
+	// EdgeHitProcessor.processBatch; the queue removes only the resolved head prefix and
+	// retries the next (failed) entity, never removing the whole batch or skipping an entity.
 	// -------------------------------------------------------------------------
 
 	@Test
-	public void testBeginProcessing_explode_drainsOneAtATime_neverRemovesAsWholeBatch() throws InterruptedException {
-		// Batch of 3 gets a 400 (explode(3)); each of the 3 is then resolved individually via the
-		// ordinary single-entity path, forced to batchSize 1 regardless of config.
+	public void testBeginProcessing_partialRemove_removesResolvedPrefixAndRetriesRemainder()
+		throws InterruptedException {
+		// EdgeHitProcessor.processBatch exploded a batch 400 into individual resends: 2 of 3 resolved,
+		// the 3rd hit a recoverable failure, so it reports partialRemove(2, 30). The queue removes only
+		// the 2 resolved entities and schedules a retry 30s out — it never removes the whole batch, and
+		// the failed 3rd entity is retried, not skipped.
 		List<DataEntity> batch = buildBatchEntities(3, true);
-		final CountDownLatch latch = new CountDownLatch(1);
-
-		when(mockDataQueue.peek())
-			.thenReturn(batch.get(0), batch.get(0), batch.get(1), batch.get(2))
-			.thenAnswer(inv -> {
-				latch.countDown();
-				return null;
-			});
+		when(mockDataQueue.peek()).thenReturn(batch.get(0));
 		when(mockDataQueue.count()).thenReturn(3);
 		when(mockDataQueue.peek(3)).thenReturn(batch);
-		when(mockProcessor.processBatch(batch)).thenReturn(BatchOutcome.explode(3));
-		when(mockProcessor.processBatch(Collections.singletonList(batch.get(0)))).thenReturn(BatchOutcome.done(1));
-		when(mockProcessor.processBatch(Collections.singletonList(batch.get(1)))).thenReturn(BatchOutcome.done(1));
-		when(mockProcessor.processBatch(Collections.singletonList(batch.get(2)))).thenReturn(BatchOutcome.done(1));
+		when(mockProcessor.processBatch(any())).thenReturn(BatchOutcome.partialRemove(2, 30));
 
 		hitQueue = new EdgeBatchingHitQueue(mockDataQueue, mockProcessor, executor);
 		hitQueue.beginProcessing();
 
-		latch.await(2, TimeUnit.SECONDS);
+		Thread.sleep(150);
 
-		// The original batch-sized peek happened exactly once (the failed attempt); the 3 drain
-		// cycles never re-peek a batch window (peek(int) is called exactly this once, total).
-		verify(mockDataQueue, times(1)).peek(anyInt());
-		verify(mockDataQueue, times(1)).peek(3);
-		// Each of the 3 drained entities removed individually — never as a group of 3.
-		verify(mockDataQueue, times(3)).remove(1);
+		// Only the resolved prefix (2) removed, exactly once; never the whole batch of 3.
+		verify(mockDataQueue, times(1)).remove(2);
 		verify(mockDataQueue, never()).remove(3);
-	}
-
-	@Test
-	public void testBeginProcessing_explode_recoverableFailureDuringDrain_retriesInPlace_doesNotSkip()
-		throws InterruptedException {
-		// Batch of 2 gets a 400 (explode(2)); the first drained entity hits a recoverable failure and
-		// must be retried in place — never skipped, never removed — exactly like a non-batched retry.
-		List<DataEntity> batch = buildBatchEntities(2, true);
-		final CountDownLatch retrySeen = new CountDownLatch(1);
-
-		when(mockDataQueue.peek())
-			.thenReturn(batch.get(0))
-			.thenAnswer(inv -> {
-				retrySeen.countDown();
-				return batch.get(0);
-			});
-		when(mockDataQueue.count()).thenReturn(2);
-		when(mockDataQueue.peek(2)).thenReturn(batch);
-		when(mockProcessor.processBatch(batch)).thenReturn(BatchOutcome.explode(2));
-		when(mockProcessor.processBatch(Collections.singletonList(batch.get(0))))
-			.thenReturn(BatchOutcome.retryBatch(30));
-
-		hitQueue = new EdgeBatchingHitQueue(mockDataQueue, mockProcessor, executor);
-		hitQueue.beginProcessing();
-
-		retrySeen.await(2, TimeUnit.SECONDS);
-
-		// Never removed — the retrying entity stays queued, retried in place.
-		verify(mockDataQueue, never()).remove(anyInt());
-		verify(mockDataQueue, never()).remove();
-		// The second entity in the batch was never attempted while the first is still retrying.
-		verify(mockProcessor, never()).processBatch(Collections.singletonList(batch.get(1)));
+		// The retry is scheduled 30s out (not immediate), so only the one batch attempt has run — the
+		// failed entity waits for its retry rather than being dropped or re-attempted immediately.
+		verify(mockProcessor, times(1)).processBatch(any());
 	}
 
 	// -------------------------------------------------------------------------

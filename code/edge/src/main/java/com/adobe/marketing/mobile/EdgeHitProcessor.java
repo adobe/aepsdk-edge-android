@@ -168,17 +168,17 @@ class EdgeHitProcessor implements HitProcessing {
 				);
 				return BatchOutcome.retryBatch(result.getRetryIntervalSeconds());
 			case EXPLODE_400:
-				// Batch of N>1 nothing ingested — clean up waiting state and tell the queue to drain
-				// these entities one at a time via the ordinary single-event path (see
-				// EdgeBatchingHitQueue#runBatchCycle).
+				// Batch of N>1, nothing ingested — every event is safe to resend. Discard the batch's
+				// waiting-event registration (its request id owns no completions now, so the individual
+				// resends' new request ids can) and resend each entity individually, in order.
 				Log.warning(
 					LOG_TAG,
 					LOG_SOURCE,
-					"Batch of %d events received 400; draining individually.",
+					"Batch of %d events received 400; nothing ingested, resending individually.",
 					batchEntities.size()
 				);
 				networkResponseHandler.removeWaitingEvents(edgeHit.getRequestId());
-				return BatchOutcome.explode(batchEntities.size());
+				return explodeAndResend(batchEntities);
 			case DROP:
 			default:
 				Log.warning(
@@ -208,11 +208,14 @@ class EdgeHitProcessor implements HitProcessing {
 
 	/**
 	 * Checks whether {@code candidate} shares the same request-building config as {@code head}: the
-	 * snapshotted Configuration state (datastream ID, environment, domain, ...) and the event-level
-	 * overrides ({@code datastreamIdOverride}/{@code datastreamConfigOverride}). A batched request can
-	 * only carry one of each — built entirely from the head's config (see {@link
-	 * #buildExperienceEventHit}) — so an entity whose own snapshot differs from the head's must not be
-	 * folded into the same request; it would silently lose its own config and be sent under the head's.
+	 * snapshotted Configuration state (datastream ID, environment, domain, ...), the event-level
+	 * overrides ({@code datastreamIdOverride}/{@code datastreamConfigOverride}), and the event's custom
+	 * {@code data.request.path} override. A batched request can only carry one of each — built entirely
+	 * from the head's config (see {@link #buildExperienceEventHit}) and sent to the head's endpoint path
+	 * (see {@link #getRequestProperties}) — so an entity whose own snapshot, overrides, or intended
+	 * request path differs from the head's must not be folded into the same request; it would silently
+	 * lose its own config or be sent to the wrong endpoint under the head's. Mirrors
+	 * {@code aepsdk-edge-ios}'s {@code EdgeHitProcessor.hasSameRequestConfig}.
 	 *
 	 * @param candidate the entity being considered for the batch run
 	 * @param head the entity the batch request will actually be built from
@@ -222,7 +225,10 @@ class EdgeHitProcessor implements HitProcessing {
 		if (!candidate.getConfiguration().equals(head.getConfiguration())) {
 			return false;
 		}
-		return Objects.equals(EventUtils.getConfig(candidate.getEvent()), EventUtils.getConfig(head.getEvent()));
+		if (!Objects.equals(EventUtils.getConfig(candidate.getEvent()), EventUtils.getConfig(head.getEvent()))) {
+			return false;
+		}
+		return Objects.equals(getCustomRequestPath(candidate.getEvent()), getCustomRequestPath(head.getEvent()));
 	}
 
 	/**
@@ -236,6 +242,38 @@ class EdgeHitProcessor implements HitProcessing {
 			return BatchOutcome.done(1);
 		}
 		return BatchOutcome.retryBatch(retryInterval(entity));
+	}
+
+	/**
+	 * Re-sends each entity in {@code batchEntities} individually after a batch 400. A 400 means nothing
+	 * in the batch was ingested, so every event is safe to resend. Entities are processed FIFO: a
+	 * resolved entity ({@link BatchOutcome.Kind#DONE}) counts toward the removable head prefix; the first
+	 * recoverable failure ({@link BatchOutcome.Kind#RETRY}) stops the drain and reports the resolved
+	 * count so the queue can remove those entities and retry the remainder. Mirrors
+	 * {@code aepsdk-edge-ios}'s {@code EdgeHitProcessor.explodeAndResend}.
+	 *
+	 * @param batchEntities the entities from the exploded batch, in order
+	 * @return {@link BatchOutcome#done} if all resolved, {@link BatchOutcome#retryBatch} if the very
+	 *     first entity needs a retry, or {@link BatchOutcome#partialRemove} if some resolved before a
+	 *     recoverable failure
+	 */
+	private BatchOutcome explodeAndResend(@NonNull final List<DataEntity> batchEntities) {
+		int resolvedCount = 0;
+		for (final DataEntity entity : batchEntities) {
+			// Each entity is sent as a batch-of-1 through the same terminal path (handles success, drop,
+			// and the existing single-event 400 behaviour). processSingleEntity only ever returns DONE
+			// (resolved) or RETRY (recoverable failure).
+			final BatchOutcome outcome = processSingleEntity(entity);
+			if (outcome.getKind() == BatchOutcome.Kind.DONE) {
+				resolvedCount++;
+			} else {
+				final int retryDelaySeconds = outcome.getRetryDelaySeconds();
+				return resolvedCount > 0
+					? BatchOutcome.partialRemove(resolvedCount, retryDelaySeconds)
+					: BatchOutcome.retryBatch(retryDelaySeconds);
+			}
+		}
+		return BatchOutcome.done(resolvedCount);
 	}
 
 	/**

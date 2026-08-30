@@ -267,41 +267,109 @@ public class EdgeHitProcessorBatchTests {
 	}
 
 	// -------------------------------------------------------------------------
-	// WI-1b: N>1 batch 400 — clean up waiting state, signal explode(N)
+	// WI-1b: N>1 batch 400 — clean up waiting state, resend each entity individually inline
 	// -------------------------------------------------------------------------
 
 	@Test
-	public void testProcessBatch_twoEvents_400_returnsExplodeCount_cleansUpWaitingEvents() {
-		// Batch of 2 gets 400 — nothing ingested. processBatch no longer resends individually itself;
-		// it reports explode(2) so EdgeBatchingHitQueue can drain the two entities one at a time via
-		// the ordinary single-event path (see EdgeBatchingHitQueueTest for the multi-cycle draining
-		// behavior, including the retry-without-skip guarantee).
-		mockNetworkReturns(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.EXPLODE_400, 0));
+	public void testProcessBatch_twoEvents_400_resendsIndividually_allResolve_returnsDone() {
+		// Batch of 2 gets a 400 — nothing ingested. processBatch removes the batch's waiting-event
+		// registration and resends each entity individually (isBatchRequest == false); both resends
+		// succeed, so the whole prefix is resolved and returned as done(2). Mirrors aepsdk-edge-ios's
+		// EdgeHitProcessor.explodeAndResend.
+		when(mockEdgeNetworkService.buildUrl(any(EdgeEndpoint.class), anyString(), anyString()))
+			.thenReturn("https://test.com");
+		when(
+			mockEdgeNetworkService.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.anyMap(),
+				ArgumentMatchers.eq(true),
+				any(EdgeNetworkService.ResponseCallback.class)
+			)
+		)
+			.thenReturn(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.EXPLODE_400, 0));
+		when(
+			mockEdgeNetworkService.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.anyMap(),
+				ArgumentMatchers.eq(false),
+				any(EdgeNetworkService.ResponseCallback.class)
+			)
+		)
+			.thenReturn(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0));
 
 		DataEntity entity1 = buildExperienceEventEntity();
 		DataEntity entity2 = buildExperienceEventEntity();
 
 		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(entity1, entity2));
 
-		assertEquals(0, outcome.getRemoveCount());
+		// Both resolved individually → remove the whole prefix, continue immediately.
+		assertEquals(BatchOutcome.Kind.DONE, outcome.getKind());
+		assertEquals(2, outcome.getRemoveCount());
 		assertEquals(0, outcome.getRetryDelaySeconds());
-		assertEquals(2, outcome.getExplodeCount());
 
-		// Exactly one network request — the failed batch attempt; no internal resending.
+		// One batch attempt (isBatchRequest == true) + two individual resends (isBatchRequest == false).
 		verify(mockEdgeNetworkService, times(1))
 			.doRequest(
 				anyString(),
 				anyString(),
 				ArgumentMatchers.anyMap(),
-				ArgumentMatchers.anyBoolean(),
+				ArgumentMatchers.eq(true),
+				any(EdgeNetworkService.ResponseCallback.class)
+			);
+		verify(mockEdgeNetworkService, times(2))
+			.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.anyMap(),
+				ArgumentMatchers.eq(false),
 				any(EdgeNetworkService.ResponseCallback.class)
 			);
 
-		// Original batch waiting events cleaned up (no callbacks, just removal) — no terminal error
-		// delivered for the batch request ID itself; each event gets its own fresh attempt later.
+		// Batch waiting events cleaned up once; no terminal error delivered for the failed batch id.
 		verify(mockNetworkResponseHandler, times(1)).removeWaitingEvents(anyString());
 		verify(mockNetworkResponseHandler, never()).processResponseOnError(anyString(), anyString());
-		verify(mockNetworkResponseHandler, never()).processResponseOnComplete(anyString());
+	}
+
+	@Test
+	public void testProcessBatch_twoEvents_400_recoverableFailureMidResend_returnsPartialRemove() {
+		// Batch of 2 gets a 400; the first entity resolves individually, the second hits a recoverable
+		// failure. processBatch returns partialRemove(1, retryDelay): remove the one resolved entity and
+		// retry the second — never skipped. Mirrors aepsdk-edge-ios's explodeAndResend partial path.
+		when(mockEdgeNetworkService.buildUrl(any(EdgeEndpoint.class), anyString(), anyString()))
+			.thenReturn("https://test.com");
+		when(
+			mockEdgeNetworkService.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.anyMap(),
+				ArgumentMatchers.eq(true),
+				any(EdgeNetworkService.ResponseCallback.class)
+			)
+		)
+			.thenReturn(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.EXPLODE_400, 0));
+		when(
+			mockEdgeNetworkService.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.anyMap(),
+				ArgumentMatchers.eq(false),
+				any(EdgeNetworkService.ResponseCallback.class)
+			)
+		)
+			.thenReturn(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0))
+			.thenReturn(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.RETRY, 7));
+
+		DataEntity entity1 = buildExperienceEventEntity();
+		DataEntity entity2 = buildExperienceEventEntity();
+
+		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(entity1, entity2));
+
+		// First resolved (remove 1), second failed recoverably → retry after its own interval (7).
+		assertEquals(BatchOutcome.Kind.PARTIAL_REMOVE, outcome.getKind());
+		assertEquals(1, outcome.getRemoveCount());
+		assertEquals(7, outcome.getRetryDelaySeconds());
 	}
 
 	// -------------------------------------------------------------------------
@@ -396,6 +464,55 @@ public class EdgeHitProcessorBatchTests {
 	}
 
 	// -------------------------------------------------------------------------
+	// Custom request path gate (hasSameRequestConfig) — F1 regression guard
+	// -------------------------------------------------------------------------
+
+	@Test
+	public void testProcessBatch_sameCustomRequestPath_batchesTogether() {
+		// Two batchable events sharing the same custom data.request.path are combined into one batch.
+		mockNetworkReturns(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0));
+		DataEntity e1 = buildExperienceEventEntity(edgeConfig, "test.event", "/va/v1/samePath");
+		DataEntity e2 = buildExperienceEventEntity(edgeConfig, "test.event", "/va/v1/samePath");
+
+		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(e1, e2));
+
+		// Same path → both fold into one batch request (isBatchRequest == true).
+		assertEquals(2, outcome.getRemoveCount());
+		verify(mockEdgeNetworkService, times(1))
+			.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.anyMap(),
+				ArgumentMatchers.eq(true),
+				any(EdgeNetworkService.ResponseCallback.class)
+			);
+	}
+
+	@Test
+	public void testProcessBatch_differentCustomRequestPath_truncatesRun() {
+		// The batch request is built from — and sent to — the head's custom path (getRequestProperties).
+		// An event with a different data.request.path must not be folded in, or it would be misrouted to
+		// the head's path; so the run truncates and the head is sent alone. Regression guard for the
+		// hasSameRequestConfig path check; mirrors aepsdk-edge-ios.
+		mockNetworkReturns(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0));
+		DataEntity head = buildExperienceEventEntity(edgeConfig, "test.event", "/va/v1/pathA");
+		DataEntity different = buildExperienceEventEntity(edgeConfig, "test.event", "/va/v1/pathB");
+
+		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(head, different));
+
+		// Truncates at the differing-path event → only the head resolved this cycle, sent alone.
+		assertEquals(1, outcome.getRemoveCount());
+		verify(mockEdgeNetworkService, times(1))
+			.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.anyMap(),
+				ArgumentMatchers.eq(false),
+				any(EdgeNetworkService.ResponseCallback.class)
+			);
+	}
+
+	// -------------------------------------------------------------------------
 	// Batch DROP / drop-whole-batch (no send)
 	// -------------------------------------------------------------------------
 
@@ -446,11 +563,24 @@ public class EdgeHitProcessorBatchTests {
 	}
 
 	private DataEntity buildExperienceEventEntity(final Map<String, Object> config, final String xdmEventType) {
+		return buildExperienceEventEntity(config, xdmEventType, null);
+	}
+
+	private DataEntity buildExperienceEventEntity(
+		final Map<String, Object> config,
+		final String xdmEventType,
+		final String customRequestPath
+	) {
 		Map<String, Object> xdmData = new HashMap<>();
 		xdmData.put("test", "data");
 		xdmData.put("eventType", xdmEventType);
 		Map<String, Object> eventData = new HashMap<>();
 		eventData.put("xdm", xdmData);
+		if (customRequestPath != null) {
+			Map<String, Object> requestData = new HashMap<>();
+			requestData.put("path", customRequestPath);
+			eventData.put("request", requestData);
+		}
 
 		Event event = new Event.Builder("test-event", EventType.EDGE, EventSource.REQUEST_CONTENT)
 			.setEventData(eventData)
