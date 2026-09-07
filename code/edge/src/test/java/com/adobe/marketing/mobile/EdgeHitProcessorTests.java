@@ -520,6 +520,50 @@ public class EdgeHitProcessorTests {
 	}
 
 	@Test
+	public void testSendNetworkRequest_onRetry_removesWaitingEvents_toAvoidLeak() {
+		// setup — a recoverable failure (RETRY) suppresses onComplete, so without cleanup the waiting
+		// events registered under this requestId would be orphaned (leak). The retry re-sends under a
+		// fresh requestId, so the old entry must be removed on retry.
+		final String configId = "456";
+		final JSONObject requestBody = getOneEventJson();
+		final EdgeEndpoint endpoint = new EdgeEndpoint(
+			EdgeNetworkService.RequestType.INTERACT,
+			"prod",
+			null,
+			null,
+			null
+		);
+		final EdgeHit hit = new EdgeHit(configId, requestBody, endpoint);
+		when(mockEdgeNetworkService.buildUrl(endpoint, configId, hit.getRequestId())).thenReturn("https://test.com");
+		when(
+			mockEdgeNetworkService.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.anyMap(),
+				eq(false),
+				any(EdgeNetworkService.ResponseCallback.class)
+			)
+		)
+			.thenReturn(new RetryResult(EdgeNetworkService.Retry.YES, 5));
+
+		final NetworkResponseHandler realNetworkResponseHandler = newRealNetworkResponseHandler();
+		final EdgeHitProcessor localHitProcessor = new EdgeHitProcessor(
+			realNetworkResponseHandler,
+			mockEdgeNetworkService,
+			mockNamedCollection,
+			null,
+			null
+		);
+
+		// test — note: onComplete is intentionally NOT invoked (RETRY suppresses it)
+		localHitProcessor.sendNetworkRequest(null, hit, new HashMap<String, String>());
+
+		// verify — the fix removes the orphaned waiting-events entry on RETRY even though onComplete
+		// never fires
+		verify(realNetworkResponseHandler).removeWaitingEvents(hit.getRequestId());
+	}
+
+	@Test
 	public void testSendNetworkRequest_buildsConsentRequest_whenRequestTypeConsent() throws InterruptedException {
 		final Event mockEvent1 = new Event.Builder("mock event 1", "testType", "testSource")
 			.setUniqueIdentifier("event1")

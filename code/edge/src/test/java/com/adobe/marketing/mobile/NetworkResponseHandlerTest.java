@@ -19,6 +19,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mockStatic;
@@ -1325,14 +1326,23 @@ public class NetworkResponseHandlerTest {
 					latch.countDown();
 				}
 			);
-		// Expect callback not to be called for response errors
+		// Event 2 has the error (eventIndex 1): expect onComplete (empty handles) AND onError.
+		final List<EdgeEventError> receivedError2 = new ArrayList<EdgeEventError>();
 		CompletionCallbacksManager
 			.getInstance()
 			.registerCallback(
 				requestEvent2.getUniqueIdentifier(),
-				handles -> {
-					receivedData2.addAll(handles);
-					latch.countDown();
+				new EdgeCallbackWithError() {
+					@Override
+					public void onComplete(final List<EdgeEventHandle> handles) {
+						receivedData2.addAll(handles);
+						latch.countDown();
+					}
+
+					@Override
+					public void onError(final List<EdgeEventError> errors) {
+						receivedError2.addAll(errors);
+					}
 				}
 			);
 		// Expect callback not to be called for response warnings
@@ -1354,6 +1364,7 @@ public class NetworkResponseHandlerTest {
 		latch.await(100, TimeUnit.MILLISECONDS);
 		assertEquals(1, receivedData1.size());
 		assertTrue(receivedData2.isEmpty());
+		assertEquals("event 2 received its error via onError", 1, receivedError2.size());
 		assertTrue(receivedData3.isEmpty());
 		String expectedEventData =
 			"{\n" +
@@ -1366,6 +1377,231 @@ public class NetworkResponseHandlerTest {
 			"}";
 
 		JSONAsserts.assertEquals(expectedEventData, receivedData1.get(0).toMap());
+	}
+
+	// -------------------------------------------------------------------------
+	// Cross-index handle/error ordering within a single success response (200/207)
+	// -------------------------------------------------------------------------
+
+	@Test
+	public void testProcessResponseOnSuccess_singleRecord_higherIndexHandle_lowerIndexError_firesOnError() {
+		// One success record with a handle at eventIndex 2 and an error at eventIndex 0, batch of 3.
+		// The handle must not complete event 0 before event 0's error is recorded, or onError is
+		// dropped (and the error leaks). Reproduces the reviewer-reported bug.
+		final String jsonResponse =
+			"{\n" +
+			"  \"requestId\": \"aaaaaaaa-0000-0000-0000-000000000000\",\n" +
+			"  \"handle\": [{\n" +
+			"    \"type\": \"pairedeventexample\",\n" +
+			"    \"eventIndex\": 2,\n" +
+			"    \"payload\": [{ \"id\": \"handle-for-event-2\" }]\n" +
+			"  }],\n" +
+			"  \"errors\": [{\n" +
+			"    \"status\": 503,\n" +
+			"    \"title\": \"Service temporarily unavailable\",\n" +
+			"    \"report\": { \"eventIndex\": 0 }\n" +
+			"  }]\n" +
+			"}";
+		final String requestId = "123";
+		final Event e0 = new Event.Builder("e0", "testType", "testSource").build();
+		final Event e1 = new Event.Builder("e1", "testType", "testSource").build();
+		final Event e2 = new Event.Builder("e2", "testType", "testSource").build();
+		networkResponseHandler.addWaitingEvents(
+			requestId,
+			new ArrayList<Event>() {
+				{
+					add(e0);
+					add(e1);
+					add(e2);
+				}
+			}
+		);
+
+		final List<EdgeEventHandle> e0Handles = new ArrayList<>();
+		final List<EdgeEventError> e0Errors = new ArrayList<>();
+		registerCallbackWithError(e0.getUniqueIdentifier(), e0Handles, e0Errors);
+
+		networkResponseHandler.processResponseOnSuccess(jsonResponse, requestId);
+		networkResponseHandler.processResponseOnComplete(requestId);
+
+		assertEquals("event 0 must receive its error via onError", 1, e0Errors.size());
+	}
+
+	@Test
+	public void testProcessResponseOnSuccess_singleRecord_sameEventHandleAndError_firesBoth() {
+		// One success (200) record where event 0 has BOTH a handle and an error at eventIndex 0, plus a
+		// higher-index handle (2). Event 0 must receive its handle via onComplete AND its error via
+		// onError.
+		final String jsonResponse =
+			"{\n" +
+			"  \"requestId\": \"bbbbbbbb-0000-0000-0000-000000000000\",\n" +
+			"  \"handle\": [\n" +
+			"    { \"type\": \"pairedeventexample\", \"eventIndex\": 0, \"payload\": [{ \"id\": \"h0\" }] },\n" +
+			"    { \"type\": \"pairedeventexample\", \"eventIndex\": 2, \"payload\": [{ \"id\": \"h2\" }] }\n" +
+			"  ],\n" +
+			"  \"errors\": [\n" +
+			"    { \"status\": 503, \"title\": \"err0\", \"report\": { \"eventIndex\": 0 } }\n" +
+			"  ]\n" +
+			"}";
+		final String requestId = "123";
+		final Event e0 = new Event.Builder("e0", "testType", "testSource").build();
+		final Event e1 = new Event.Builder("e1", "testType", "testSource").build();
+		final Event e2 = new Event.Builder("e2", "testType", "testSource").build();
+		networkResponseHandler.addWaitingEvents(
+			requestId,
+			new ArrayList<Event>() {
+				{
+					add(e0);
+					add(e1);
+					add(e2);
+				}
+			}
+		);
+
+		final List<EdgeEventHandle> e0Handles = new ArrayList<>();
+		final List<EdgeEventError> e0Errors = new ArrayList<>();
+		registerCallbackWithError(e0.getUniqueIdentifier(), e0Handles, e0Errors);
+
+		networkResponseHandler.processResponseOnSuccess(jsonResponse, requestId);
+		networkResponseHandler.processResponseOnComplete(requestId);
+
+		assertEquals("event 0 must receive its handle via onComplete", 1, e0Handles.size());
+		assertEquals("event 0 must receive its error via onError", 1, e0Errors.size());
+	}
+
+	@Test
+	public void testProcessResponseOnSuccess_singleRecord_multipleEvents_mixedHandlesAndErrors() {
+		// One success (200) record: e0 has a handle + an error, e1 has a handle only, e2 has an error
+		// only. Each event must receive exactly the callbacks its data warrants.
+		final String jsonResponse =
+			"{\n" +
+			"  \"requestId\": \"cccccccc-0000-0000-0000-000000000000\",\n" +
+			"  \"handle\": [\n" +
+			"    { \"type\": \"pairedeventexample\", \"eventIndex\": 0, \"payload\": [{ \"id\": \"h0\" }] },\n" +
+			"    { \"type\": \"pairedeventexample\", \"eventIndex\": 1, \"payload\": [{ \"id\": \"h1\" }] }\n" +
+			"  ],\n" +
+			"  \"errors\": [\n" +
+			"    { \"status\": 503, \"title\": \"err0\", \"report\": { \"eventIndex\": 0 } },\n" +
+			"    { \"status\": 422, \"title\": \"err2\", \"report\": { \"eventIndex\": 2 } }\n" +
+			"  ]\n" +
+			"}";
+		final String requestId = "123";
+		final Event e0 = new Event.Builder("e0", "testType", "testSource").build();
+		final Event e1 = new Event.Builder("e1", "testType", "testSource").build();
+		final Event e2 = new Event.Builder("e2", "testType", "testSource").build();
+		networkResponseHandler.addWaitingEvents(
+			requestId,
+			new ArrayList<Event>() {
+				{
+					add(e0);
+					add(e1);
+					add(e2);
+				}
+			}
+		);
+
+		final List<EdgeEventHandle> e0Handles = new ArrayList<>();
+		final List<EdgeEventError> e0Errors = new ArrayList<>();
+		final List<EdgeEventHandle> e1Handles = new ArrayList<>();
+		final List<EdgeEventError> e1Errors = new ArrayList<>();
+		final List<EdgeEventHandle> e2Handles = new ArrayList<>();
+		final List<EdgeEventError> e2Errors = new ArrayList<>();
+		registerCallbackWithError(e0.getUniqueIdentifier(), e0Handles, e0Errors);
+		registerCallbackWithError(e1.getUniqueIdentifier(), e1Handles, e1Errors);
+		registerCallbackWithError(e2.getUniqueIdentifier(), e2Handles, e2Errors);
+
+		networkResponseHandler.processResponseOnSuccess(jsonResponse, requestId);
+		networkResponseHandler.processResponseOnComplete(requestId);
+
+		assertEquals(1, e0Handles.size());
+		assertEquals(1, e0Errors.size());
+		assertEquals(1, e1Handles.size());
+		assertTrue(e1Errors.isEmpty());
+		assertTrue(e2Handles.isEmpty());
+		assertEquals(1, e2Errors.size());
+	}
+
+	/** Registers an EdgeCallbackWithError that captures onComplete handles and onError errors. */
+	private void registerCallbackWithError(
+		final String requestEventId,
+		final List<EdgeEventHandle> handlesOut,
+		final List<EdgeEventError> errorsOut
+	) {
+		CompletionCallbacksManager
+			.getInstance()
+			.registerCallback(
+				requestEventId,
+				new EdgeCallbackWithError() {
+					@Override
+					public void onComplete(final List<EdgeEventHandle> handles) {
+						handlesOut.addAll(handles);
+					}
+
+					@Override
+					public void onError(final List<EdgeEventError> errors) {
+						errorsOut.addAll(errors);
+					}
+				}
+			);
+	}
+
+	@Test
+	public void testProcessResponseOnSuccess_singleRecord_crossIndex_doesNotLogOrderingWarning() {
+		// The previously-buggy single-record case (handle idx 2 + error idx 0) must NOT log the
+		// out-of-order warning: merged processing sweeps the completion boundary monotonically.
+		final MockedStatic<Log> mockLog = mockStatic(Log.class);
+		try {
+			final String requestId = "123";
+			networkResponseHandler.addWaitingEvents(requestId, threeWaitingEvents());
+			final String jsonResponse =
+				"{\n" +
+				"  \"handle\": [{ \"type\": \"pairedeventexample\", \"eventIndex\": 2, \"payload\": [{ \"id\": \"h2\" }] }],\n" +
+				"  \"errors\": [{ \"status\": 503, \"title\": \"err0\", \"report\": { \"eventIndex\": 0 } }]\n" +
+				"}";
+			networkResponseHandler.processResponseOnSuccess(jsonResponse, requestId);
+			mockLog.verify(
+				() -> Log.warning(anyString(), anyString(), contains("Unexpected response ordering"), any()),
+				never()
+			);
+		} finally {
+			mockLog.close();
+		}
+	}
+
+	@Test
+	public void testProcessResponseOnSuccess_acrossFragments_lowerIndexAfterHigher_logsOrderingWarning() {
+		// A genuinely out-of-order fragment (lower index arriving in a later record after a higher index
+		// already completed) is a real anomaly — the diagnostic warning must still fire.
+		final MockedStatic<Log> mockLog = mockStatic(Log.class);
+		try {
+			final String requestId = "123";
+			networkResponseHandler.addWaitingEvents(requestId, threeWaitingEvents());
+			// fragment 1: handle at index 2 advances the completion boundary to 2
+			networkResponseHandler.processResponseOnSuccess(
+				"{ \"handle\": [{ \"type\": \"pairedeventexample\", \"eventIndex\": 2, \"payload\": [{ \"id\": \"h2\" }] }] }",
+				requestId
+			);
+			// fragment 2: a lower index (0) arriving later
+			networkResponseHandler.processResponseOnSuccess(
+				"{ \"handle\": [{ \"type\": \"pairedeventexample\", \"eventIndex\": 0, \"payload\": [{ \"id\": \"h0\" }] }] }",
+				requestId
+			);
+			mockLog.verify(
+				() -> Log.warning(anyString(), anyString(), contains("Unexpected response ordering"), any()),
+				times(1)
+			);
+		} finally {
+			mockLog.close();
+		}
+	}
+
+	/** Three registered waiting events for batch/ordering tests. */
+	private List<Event> threeWaitingEvents() {
+		final List<Event> events = new ArrayList<>();
+		events.add(new Event.Builder("e0", "testType", "testSource").build());
+		events.add(new Event.Builder("e1", "testType", "testSource").build());
+		events.add(new Event.Builder("e2", "testType", "testSource").build());
+		return events;
 	}
 
 	@Test

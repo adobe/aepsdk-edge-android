@@ -217,8 +217,27 @@ public class EdgeHitProcessorBatchTests {
 
 		assertEquals(0, outcome.getRemoveCount()); // retry -> nothing removed
 		assertEquals(5, outcome.getRetryDelaySeconds());
-		// Waiting events registered
+		// Waiting events registered before the send
 		verify(mockNetworkResponseHandler, times(1)).addWaitingEvents(anyString(), any());
+		// ...and removed on RETRY (the retried send re-registers under a fresh requestId), so the old
+		// entry does not leak.
+		verify(mockNetworkResponseHandler, times(1)).removeWaitingEvents(anyString());
+	}
+
+	@Test
+	public void testProcessBatch_twoEvents_retry_removesWaitingEventsToAvoidLeak() {
+		// A recoverable failure on a real N>1 batch: the N-event waiting-events entry registered under
+		// this batch's requestId must be removed on RETRY, otherwise every retry orphans N events.
+		mockNetworkReturns(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.RETRY, 5));
+		DataEntity e1 = buildExperienceEventEntity();
+		DataEntity e2 = buildExperienceEventEntity();
+
+		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(e1, e2));
+
+		assertEquals(0, outcome.getRemoveCount()); // retry -> whole batch stays queued
+		assertEquals(5, outcome.getRetryDelaySeconds());
+		verify(mockNetworkResponseHandler, times(1)).addWaitingEvents(anyString(), any());
+		verify(mockNetworkResponseHandler, times(1)).removeWaitingEvents(anyString());
 	}
 
 	// -------------------------------------------------------------------------

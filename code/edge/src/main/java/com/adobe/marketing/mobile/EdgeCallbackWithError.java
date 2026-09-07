@@ -24,6 +24,13 @@ import java.util.List;
  */
 public interface EdgeCallbackWithError extends EdgeCallback {
 	/**
+	 * This method is called when the response is successfully fetched from the Adobe Experience Edge.
+	 * It can be called with an empty list, one or multiple event handles.
+	 *
+	 * @param handles response from the server
+	 */
+	void onComplete(final List<EdgeEventHandle> handles);
+	/**
 	 * Called when one or more errors are returned for the sent {@link ExperienceEvent}.
 	 * May be called alongside {@link #onComplete} if some handles were also returned.
 	 *

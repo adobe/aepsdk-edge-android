@@ -213,6 +213,32 @@ public class EdgeBatchingFunctionalTests {
 	}
 
 	// -------------------------------------------------------------------------
+	// Batching + per-event error — each batched event still receives its onError
+	// -------------------------------------------------------------------------
+
+	@Test
+	public void testBatchingEnabledAndAllowlisted_eventError_deliversOnErrorForEachEvent() throws InterruptedException {
+		applyBatchingConfig(true, Arrays.asList(BATCH_EVENT_TYPE));
+		// A 200 response carrying a root-level (no eventIndex) error fans out to every waiting event in
+		// the request, regardless of how the batch splits across requests. Each event must receive both
+		// its onComplete and its onError through the public EdgeCallbackWithError.
+		final HttpConnecting response = mockNetworkService.createMockNetworkResponse(
+			"\u0000{\"errors\":[{\"type\":\"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\"status\":503,\"title\":\"Service Unavailable\"}]}\n",
+			200
+		);
+		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, response);
+		// Hold the first cycle in the network so the remaining events enqueue and coalesce into a batch.
+		mockNetworkService.enableNetworkResponseDelay(1);
+
+		final CountDownLatch completeLatch = new CountDownLatch(3);
+		final CountDownLatch errorLatch = new CountDownLatch(3);
+		sendEventsWithError(3, completeLatch, errorLatch);
+
+		assertTrue("Timeout waiting for all onComplete callbacks.", completeLatch.await(10, TimeUnit.SECONDS));
+		assertTrue("Timeout waiting for all onError callbacks.", errorLatch.await(10, TimeUnit.SECONDS));
+	}
+
+	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
 
@@ -238,6 +264,45 @@ public class EdgeBatchingFunctionalTests {
 			Edge.sendEvent(experienceEvent, handles -> latch.countDown());
 		}
 		return latch;
+	}
+
+	/**
+	 * Sends {@code count} identical Experience Events via {@link EdgeCallbackWithError}, counting down
+	 * {@code completeLatch} on each onComplete and {@code errorLatch} on each onError.
+	 */
+	private void sendEventsWithError(
+		final int count,
+		final CountDownLatch completeLatch,
+		final CountDownLatch errorLatch
+	) {
+		final AtomicInteger index = new AtomicInteger(0);
+		for (int i = 0; i < count; i++) {
+			final int n = index.getAndIncrement();
+			final ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
+				.setXdmSchema(
+					new HashMap<String, Object>() {
+						{
+							put("eventType", "batchingFunctionalTest");
+							put("index", n);
+						}
+					}
+				)
+				.build();
+			Edge.sendEvent(
+				experienceEvent,
+				new EdgeCallbackWithError() {
+					@Override
+					public void onComplete(final List<EdgeEventHandle> handles) {
+						completeLatch.countDown();
+					}
+
+					@Override
+					public void onError(final List<EdgeEventError> errors) {
+						errorLatch.countDown();
+					}
+				}
+			);
+		}
 	}
 
 	/** Merges the grouped {@code edge.batching} object into the Configuration shared state and waits for it to apply. */

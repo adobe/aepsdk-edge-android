@@ -448,10 +448,19 @@ class EdgeHitProcessor implements HitProcessing {
 			if (entityId != null) {
 				entityRetryIntervalMapping.remove(entityId);
 			}
-		} else if (
-			entityId != null && retryResult.getRetryIntervalSeconds() != EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS
-		) {
-			entityRetryIntervalMapping.put(entityId, retryResult.getRetryIntervalSeconds());
+		} else {
+			// RETRY: doRequest suppresses onComplete, so the completion path never removes this
+			// request's waiting-events / completion-index state. The retried send builds a fresh
+			// requestId (see EdgeHit) and re-registers these events under it, so drop the now-orphaned
+			// entry here — otherwise every retry leaks N waiting events (one per batched event) and
+			// grows unbounded under sustained 5xx/429.
+			networkResponseHandler.removeWaitingEvents(edgeHit.getRequestId());
+			if (
+				entityId != null &&
+				retryResult.getRetryIntervalSeconds() != EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS
+			) {
+				entityRetryIntervalMapping.put(entityId, retryResult.getRetryIntervalSeconds());
+			}
 		}
 
 		return retryResult;
