@@ -270,4 +270,120 @@ public class CompletionCallbacksManagerTests {
 	public void testEventHandleReceived_withUnregisteredUniqueEvent_doesNotCrash() {
 		CompletionCallbacksManager.getInstance().eventHandleReceived(uniqueEventId, eventHandle);
 	}
+
+	// ----------- EdgeCallbackWithError: per-event error delivery
+
+	@Test
+	public void testRegisterEdgeCallbackWithError_thenHandleAndErrorReceived_bothDelivered()
+		throws InterruptedException {
+		final List<EdgeEventHandle> receivedHandles = new ArrayList<>();
+		final List<EdgeEventError> receivedErrors = new ArrayList<>();
+
+		CompletionCallbacksManager
+			.getInstance()
+			.registerCallback(
+				uniqueEventId,
+				new EdgeCallbackWithError() {
+					@Override
+					public void onComplete(final List<EdgeEventHandle> handles) {
+						receivedHandles.addAll(handles);
+						latchOfOne.countDown();
+					}
+
+					@Override
+					public void onError(final List<EdgeEventError> errors) {
+						receivedErrors.addAll(errors);
+						anotherLatchOfOne.countDown();
+					}
+				}
+			);
+
+		final EdgeEventError error = new EdgeEventError(
+			"https://ns.adobe.com/aep/errors/EXEG-0201-503",
+			503,
+			"Service Unavailable",
+			"The service is temporarily unavailable"
+		);
+		CompletionCallbacksManager.getInstance().eventHandleReceived(uniqueEventId, eventHandle);
+		CompletionCallbacksManager.getInstance().eventErrorReceived(uniqueEventId, error);
+		CompletionCallbacksManager.getInstance().unregisterCallback(uniqueEventId);
+
+		assertTrue("onComplete not called", latchOfOne.await(100, TimeUnit.MILLISECONDS));
+		assertTrue("onError not called", anotherLatchOfOne.await(100, TimeUnit.MILLISECONDS));
+		assertEquals(1, receivedHandles.size());
+		assertEquals(1, receivedErrors.size());
+		final EdgeEventError delivered = receivedErrors.get(0);
+		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0201-503", delivered.getType());
+		assertEquals(503, delivered.getStatus());
+		assertEquals("Service Unavailable", delivered.getTitle());
+		assertEquals("The service is temporarily unavailable", delivered.getDetail());
+	}
+
+	@Test
+	public void testRegisterEdgeCallbackWithError_thenUnregisterWithNoErrors_onErrorNotCalled()
+		throws InterruptedException {
+		final boolean[] onErrorCalled = { false };
+
+		CompletionCallbacksManager
+			.getInstance()
+			.registerCallback(
+				uniqueEventId,
+				new EdgeCallbackWithError() {
+					@Override
+					public void onComplete(final List<EdgeEventHandle> handles) {
+						latchOfOne.countDown();
+					}
+
+					@Override
+					public void onError(final List<EdgeEventError> errors) {
+						onErrorCalled[0] = true;
+					}
+				}
+			);
+
+		CompletionCallbacksManager.getInstance().eventHandleReceived(uniqueEventId, eventHandle);
+		CompletionCallbacksManager.getInstance().unregisterCallback(uniqueEventId);
+
+		assertTrue("onComplete not called", latchOfOne.await(100, TimeUnit.MILLISECONDS));
+		// No errors were accumulated, so onError must not fire.
+		assertFalse("onError should not be called when there are no errors", onErrorCalled[0]);
+	}
+
+	@Test
+	public void testRegisterPlainEdgeCallback_thenErrorReceived_doesNotCrash_completionStillCalled()
+		throws InterruptedException {
+		final List<EdgeEventHandle> receivedHandles = new ArrayList<>();
+
+		// A plain EdgeCallback (not EdgeCallbackWithError) must not receive errors and must not crash.
+		CompletionCallbacksManager
+			.getInstance()
+			.registerCallback(
+				uniqueEventId,
+				handles -> {
+					receivedHandles.addAll(handles);
+					latchOfOne.countDown();
+				}
+			);
+
+		CompletionCallbacksManager
+			.getInstance()
+			.eventErrorReceived(uniqueEventId, new EdgeEventError("type", 500, "title", null));
+		CompletionCallbacksManager.getInstance().eventHandleReceived(uniqueEventId, eventHandle);
+		CompletionCallbacksManager.getInstance().unregisterCallback(uniqueEventId);
+
+		assertTrue(latchOfOne.await(100, TimeUnit.MILLISECONDS));
+		assertEquals(1, receivedHandles.size());
+	}
+
+	@Test
+	public void testEventErrorReceived_withNullEmptyUniqueEvent_doesNotCrash() {
+		final EdgeEventError error = new EdgeEventError("type", 500, "title", null);
+		CompletionCallbacksManager.getInstance().eventErrorReceived(null, error);
+		CompletionCallbacksManager.getInstance().eventErrorReceived("", error);
+	}
+
+	@Test
+	public void testEventErrorReceived_withNullError_doesNotCrash() {
+		CompletionCallbacksManager.getInstance().eventErrorReceived(uniqueEventId, null);
+	}
 }

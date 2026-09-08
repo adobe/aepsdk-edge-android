@@ -143,7 +143,7 @@ public class EdgeEventHandleTests {
 	}
 
 	@Test
-	public void testEdgeEventHandle_whenHandleWithMissingEventIndex_parsesCorrectly_defaultIndex0() {
+	public void testEdgeEventHandle_whenHandleWithMissingEventIndex_parsesCorrectly_absentIndex() {
 		JSONObject handleJson = new JSONObject() {
 			{
 				try {
@@ -175,7 +175,10 @@ public class EdgeEventHandleTests {
 
 		assertNotNull(handle);
 		assertEquals("testType", handle.getType());
-		assertEquals(0, handle.getEventIndex());
+		// Absent eventIndex is represented as ABSENT_EVENT_INDEX (-1), not 0, so a handle
+		// without an index (e.g. a global state:store handle) is not mis-attributed to event[0]
+		// in a batch. Mirrors the iOS model where eventIndex is optional (nil when absent).
+		assertEquals(EdgeEventHandle.ABSENT_EVENT_INDEX, handle.getEventIndex());
 		JSONAsserts.assertEquals(expected, handle.getPayload());
 	}
 
@@ -191,7 +194,10 @@ public class EdgeEventHandleTests {
 
 		assertNotNull(handle);
 		assertEquals("testType", handle.getType());
-		assertEquals(0, handle.getEventIndex());
+		// Absent eventIndex is represented as ABSENT_EVENT_INDEX (-1), not 0, so a handle
+		// without an index (e.g. a global state:store handle) is not mis-attributed to event[0]
+		// in a batch. Mirrors the iOS model where eventIndex is optional (nil when absent).
+		assertEquals(EdgeEventHandle.ABSENT_EVENT_INDEX, handle.getEventIndex());
 		assertNull(handle.getPayload());
 	}
 
@@ -216,7 +222,10 @@ public class EdgeEventHandleTests {
 
 		assertNotNull(handle);
 		assertEquals("testType", handle.getType());
-		assertEquals(0, handle.getEventIndex());
+		// Absent eventIndex is represented as ABSENT_EVENT_INDEX (-1), not 0, so a handle
+		// without an index (e.g. a global state:store handle) is not mis-attributed to event[0]
+		// in a batch. Mirrors the iOS model where eventIndex is optional (nil when absent).
+		assertEquals(EdgeEventHandle.ABSENT_EVENT_INDEX, handle.getEventIndex());
 		assertNull(handle.getPayload());
 	}
 }

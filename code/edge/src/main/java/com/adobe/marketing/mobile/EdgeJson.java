@@ -41,6 +41,7 @@ class EdgeJson {
 		static class Xdm {
 
 			static final String EVENT_ID = "_id";
+			static final String EVENT_TYPE = "eventType";
 			static final String TIMESTAMP = "timestamp";
 			static final String IDENTITY_MAP = "identityMap";
 
@@ -126,6 +127,7 @@ class EdgeJson {
 			static final String SEVERITY = "severity";
 			static final String STATUS = "status";
 			static final String TITLE = "title";
+			static final String DETAIL = "detail";
 			static final String EVENT_INDEX = "eventIndex";
 			static final String TYPE = "type";
 

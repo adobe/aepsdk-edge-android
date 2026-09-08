@@ -33,9 +33,13 @@ class CompletionCallbacksManager {
 	// edge response handles for a event request id (key)
 	private final ConcurrentMap<String, List<EdgeEventHandle>> edgeEventHandles;
 
+	// edge response errors for a event request id (key); only populated when callback is EdgeCallbackWithError
+	private final ConcurrentMap<String, List<EdgeEventError>> edgeEventErrors;
+
 	private CompletionCallbacksManager() {
 		completionCallbacks = new ConcurrentHashMap<>();
 		edgeEventHandles = new ConcurrentHashMap<>();
+		edgeEventErrors = new ConcurrentHashMap<>();
 	}
 
 	/**
@@ -91,6 +95,13 @@ class CompletionCallbacksManager {
 
 		if (callback != null) {
 			final List<EdgeEventHandle> handles = edgeEventHandles.get(requestEventId);
+			Log.debug(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Firing onComplete for event id %s with %d handle(s).",
+				requestEventId,
+				handles != null ? handles.size() : 0
+			);
 			try {
 				callback.onComplete(handles != null ? handles : new ArrayList<>());
 			} catch (Exception ex) {
@@ -102,6 +113,31 @@ class CompletionCallbacksManager {
 					android.util.Log.getStackTraceString(ex)
 				);
 			}
+
+			if (callback instanceof EdgeCallbackWithError) {
+				final List<EdgeEventError> errors = edgeEventErrors.get(requestEventId);
+				if (errors != null && !errors.isEmpty()) {
+					Log.debug(
+						LOG_TAG,
+						LOG_SOURCE,
+						"Firing onError for event id %s with %d error(s).",
+						requestEventId,
+						errors.size()
+					);
+					try {
+						((EdgeCallbackWithError) callback).onError(errors);
+					} catch (Exception ex) {
+						Log.warning(
+							LOG_TAG,
+							LOG_SOURCE,
+							"Exception thrown when invoking error callback for request event id %s: %s",
+							requestEventId,
+							android.util.Log.getStackTraceString(ex)
+						);
+					}
+				}
+			}
+
 			Log.trace(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -110,6 +146,7 @@ class CompletionCallbacksManager {
 		}
 
 		edgeEventHandles.remove(requestEventId);
+		edgeEventErrors.remove(requestEventId);
 	}
 
 	/**
@@ -125,5 +162,22 @@ class CompletionCallbacksManager {
 
 		edgeEventHandles.putIfAbsent(requestEventId, new ArrayList<>());
 		edgeEventHandles.get(requestEventId).add(eventHandle);
+	}
+
+	/**
+	 * Accumulates an {@link EdgeEventError} for the given {@code requestEventId}. These errors are
+	 * delivered to the caller via {@link EdgeCallbackWithError#onError} when {@link #unregisterCallback}
+	 * is invoked.
+	 *
+	 * @param requestEventId the request event identifier associated with this error
+	 * @param error the error to accumulate
+	 */
+	void eventErrorReceived(final String requestEventId, final EdgeEventError error) {
+		if (StringUtils.isNullOrEmpty(requestEventId) || error == null) {
+			return;
+		}
+
+		edgeEventErrors.putIfAbsent(requestEventId, new ArrayList<>());
+		edgeEventErrors.get(requestEventId).add(error);
 	}
 }

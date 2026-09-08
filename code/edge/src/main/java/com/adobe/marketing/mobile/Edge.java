@@ -88,6 +88,23 @@ public class Edge {
 	}
 
 	/**
+	 * Sends an event to Adobe Experience Edge and registers a callback for responses and per-event errors
+	 * coming from the Edge Network. Use this overload when you want to receive both response handles and
+	 * errors in the same callback object.
+	 *
+	 * @param experienceEvent event to be sent to Adobe Experience Edge; should not be null
+	 * @param callback        optional callback to be invoked when the request is complete; receives handles
+	 *                        via {@link EdgeCallbackWithError#onComplete} and per-event errors via
+	 *                        {@link EdgeCallbackWithError#onError}. It may be invoked on a different thread.
+	 */
+	public static void sendEvent(
+		@NonNull final ExperienceEvent experienceEvent,
+		@Nullable final EdgeCallbackWithError callback
+	) {
+		sendEvent(experienceEvent, (EdgeCallback) callback);
+	}
+
+	/**
 	 * Gets the Edge Network location hint used in requests to the Adobe Experience Platform Edge Network.
 	 * The Edge Network location hint may be used when building the URL for Adobe Experience Platform Edge Network
 	 * requests to hint at the server cluster to use.

@@ -42,6 +42,13 @@ class NetworkResponseHandler {
 
 	// the order of the request events matter for matching them with the response events
 	private final ConcurrentMap<String, List<Event>> sentEventsWaitingResponse;
+	// Early per-event completion progress, keyed by requestId: number of leading events already
+	// completed (monotonic; guarantees each event completes exactly once). A batched event's completion
+	// fires as soon as a response fragment for a higher eventIndex is observed — all lower-index events
+	// are then known complete — instead of waiting for the whole batch's stream to close. The highest
+	// index and anything still pending complete at stream close. Single events / consent / batch-of-1
+	// simply complete at stream close, since no higher index is ever observed to advance the boundary.
+	private final ConcurrentMap<String, Integer> nextCompletionIndex = new ConcurrentHashMap<>();
 	private final Object mutex = new Object();
 	private final NamedCollection namedCollection;
 	private final EdgeStateCallback edgeStateCallback;
@@ -120,6 +127,7 @@ class NetworkResponseHandler {
 		}
 
 		synchronized (mutex) {
+			nextCompletionIndex.remove(requestId);
 			return sentEventsWaitingResponse.remove(requestId);
 		}
 	}
@@ -148,12 +156,8 @@ class NetworkResponseHandler {
 				eventIds.add(event.getUniqueIdentifier());
 			}
 
-			if (!temp.isEmpty()) {
-				return new ArrayList<>(eventIds);
-			}
+			return eventIds;
 		}
-
-		return Collections.emptyList();
 	}
 
 	/**
@@ -167,8 +171,7 @@ class NetworkResponseHandler {
 	 * @param jsonResponse the response as a JSON formatted {@link String} to be processed
 	 * @param requestId the request id for which the response is handled, to be attached in the response event
 	 *                  and used to identify the request event identifiers
-	 * @see #processEventHandles(JSONArray, String, boolean)
-	 * @see #dispatchEventErrors(JSONArray, boolean, String)
+	 * @see #processResponseItems(JSONArray, JSONArray, JSONArray, String, boolean)
 	 */
 	void processResponseOnSuccess(final String jsonResponse, final String requestId) {
 		if (jsonResponse == null) {
@@ -193,33 +196,18 @@ class NetworkResponseHandler {
 			return;
 		}
 
-		try {
-			if (!JSONUtils.isNullOrEmpty(json)) {
-				final boolean ignoreStorePayloads = shouldIgnoreStorePayload(requestId);
-				JSONArray eventHandleArray = json.getJSONArray(EdgeJson.Response.HANDLE);
-				processEventHandles(eventHandleArray, requestId, ignoreStorePayloads);
-			}
-		} catch (JSONException e) {
-			// ok, if there are no handles, attempt to process errors & warnings (see below)
+		if (!JSONUtils.isNullOrEmpty(json)) {
+			final boolean ignoreStorePayloads = shouldIgnoreStorePayload(requestId);
+			final JSONArray eventHandleArray = json.optJSONArray(EdgeJson.Response.HANDLE);
+			final JSONArray errorsArray = json.optJSONArray(EdgeJson.Response.ERRORS);
+			final JSONArray warningsArray = json.optJSONArray(EdgeJson.Response.WARNINGS);
+			processResponseItems(eventHandleArray, errorsArray, warningsArray, requestId, ignoreStorePayloads);
 		}
-
-		try {
-			if (!JSONUtils.isNullOrEmpty(json)) {
-				JSONArray errorsArray = json.getJSONArray(EdgeJson.Response.ERRORS);
-				dispatchEventErrors(errorsArray, true, requestId);
-			}
-		} catch (JSONException e) {
-			// ok, ignore if there are no errors
-		}
-
-		try {
-			if (!JSONUtils.isNullOrEmpty(json)) {
-				JSONArray warningsArray = json.getJSONArray(EdgeJson.Response.WARNINGS);
-				dispatchEventErrors(warningsArray, false, requestId);
-			}
-		} catch (JSONException e) {
-			// ok, ignore if there are no warnings
-		}
+		// Early per-event completion happens inline in processResponseItems: the handles, errors and
+		// warnings in this record are processed together in ascending eventIndex order, so observing
+		// eventIndex M sweeps completions for events 0..M-1 only after every M-and-below handle/error/
+		// warning has been recorded. The highest index seen (and anything still pending) completes at
+		// stream close in processResponseOnComplete.
 	}
 
 	/**
@@ -284,30 +272,109 @@ class NetworkResponseHandler {
 	 * @param requestId the request id used to identify the request events
 	 */
 	void processResponseOnComplete(final String requestId) {
+		// Capture progress BEFORE removeWaitingEvents clears the per-request state.
+		final int alreadyCompleted = completedCountFor(requestId);
+
+		// removeWaitingEvents returns the full ordered event list for this request and clears state.
 		List<Event> removedWaitingEvents = removeWaitingEvents(requestId);
+		if (removedWaitingEvents == null) {
+			return;
+		}
 
-		// unregister currently known completion callbacks
-		if (removedWaitingEvents != null) {
-			for (Event event : removedWaitingEvents) {
-				CompletionCallbacksManager.getInstance().unregisterCallback(event.getUniqueIdentifier());
+		// Complete everything not already early-completed (the highest index plus anything still
+		// pending). For single events / consent nothing was early-completed → the whole request
+		// completes here at stream close.
+		for (int i = alreadyCompleted; i < removedWaitingEvents.size(); i++) {
+			completeEvent(requestId, removedWaitingEvents.get(i));
+		}
+	}
 
-				if (sendCompletionRequested(event)) {
-					// send completion event
-					Map<String, Object> eventData = new HashMap<>();
-					addEventAndRequestIdToData(eventData, requestId, null);
+	/**
+	 * @return the number of leading events already early-completed for {@code requestId}, or 0 if none.
+	 */
+	private int completedCountFor(final String requestId) {
+		final Integer completed = nextCompletionIndex.get(requestId);
+		return completed == null ? 0 : completed;
+	}
 
-					Event responseEvent = new Event.Builder(
-						EdgeConstants.EventName.CONTENT_COMPLETE,
-						EventType.EDGE,
-						EventSource.CONTENT_COMPLETE
-					)
-						.setEventData(eventData)
-						.inResponseToEvent(event)
-						.build();
+	/**
+	 * Completes a single waiting {@code event}: unregisters its response callback (firing the
+	 * internal {@link EdgeCallback} onComplete/onError with the handles/errors accumulated for it) and,
+	 * if the event requested it via {@code request.sendCompletion}, dispatches its {@code
+	 * CONTENT_COMPLETE} response event. This is the per-event completion action, called either early
+	 * (index-advance) or at stream close.
+	 *
+	 * @param requestId the batch request id, attached to the completion event data
+	 * @param event the waiting event to complete
+	 */
+	private void completeEvent(final String requestId, final Event event) {
+		CompletionCallbacksManager.getInstance().unregisterCallback(event.getUniqueIdentifier());
 
-					MobileCore.dispatchEvent(responseEvent);
-				}
+		if (sendCompletionRequested(event)) {
+			// send completion event
+			Map<String, Object> eventData = new HashMap<>();
+			addEventAndRequestIdToData(eventData, requestId, null);
+
+			Event responseEvent = new Event.Builder(
+				EdgeConstants.EventName.CONTENT_COMPLETE,
+				EventType.EDGE,
+				EventSource.CONTENT_COMPLETE
+			)
+				.setEventData(eventData)
+				.inResponseToEvent(event)
+				.build();
+
+			MobileCore.dispatchEvent(responseEvent);
+		}
+	}
+
+	/**
+	 * Completes every waiting event for {@code requestId} whose position is at or after the current
+	 * completion boundary ({@code nextCompletionIndex}) and strictly below {@code exclusiveUpperBound},
+	 * advancing the boundary so each event completes exactly once. Called with a handle/error/warning's
+	 * {@code eventIndex}: observing index M means events 0..M-1 have no more data coming (Konductor
+	 * streams fragments grouped by event, in index order), so they can complete.
+	 *
+	 * <p>If {@code exclusiveUpperBound} is below the boundary already reached, a lower index arrived
+	 * after those events were completed — this violates the assumed grouping/ordering; it is logged at
+	 * WARNING and ignored (the boundary is never moved backwards, so no event completes twice).
+	 *
+	 * <p>Events to complete are collected under {@code mutex}; the actual completion (which dispatches
+	 * events) is performed outside the lock.
+	 *
+	 * @param requestId the batch request id
+	 * @param exclusiveUpperBound complete events with index in {@code [nextCompletionIndex,
+	 *     min(exclusiveUpperBound, size))}
+	 */
+	private void sweepCompletions(final String requestId, final int exclusiveUpperBound) {
+		final List<Event> toComplete = new ArrayList<>();
+		synchronized (mutex) {
+			final List<Event> events = sentEventsWaitingResponse.get(requestId);
+			if (events == null) {
+				return;
 			}
+			int next = nextCompletionIndex.containsKey(requestId) ? nextCompletionIndex.get(requestId) : 0;
+			if (exclusiveUpperBound < next) {
+				Log.warning(
+					LOG_TAG,
+					LOG_SOURCE,
+					"Unexpected response ordering: eventIndex %d arrived for request id (%s) after events through index %d were already completed. Not re-completing; investigate response grouping/ordering.",
+					exclusiveUpperBound,
+					requestId,
+					next - 1
+				);
+				return;
+			}
+			final int limit = Math.min(exclusiveUpperBound, events.size());
+			while (next < limit) {
+				toComplete.add(events.get(next));
+				next++;
+			}
+			nextCompletionIndex.put(requestId, next);
+		}
+
+		for (final Event event : toComplete) {
+			completeEvent(requestId, event);
 		}
 	}
 
@@ -329,69 +396,272 @@ class NetworkResponseHandler {
 		return DataReader.optBoolean(requestProperties, EdgeConstants.EventDataKeys.Request.SEND_COMPLETION, false);
 	}
 
+	/** One handle/error/warning of a success response, tagged with its {@code eventIndex} and kind. */
+	private static final class ResponseItem {
+
+		static final int HANDLE = 0;
+		static final int ERROR = 1;
+		static final int WARNING = 2;
+
+		final int eventIndex;
+		final int kind;
+		final EdgeEventHandle handle; // set when kind == HANDLE
+		final Map<String, Object> errorData; // set when kind == ERROR/WARNING
+		final JSONObject rawError; // set when kind == ERROR/WARNING
+
+		private ResponseItem(
+			final int eventIndex,
+			final int kind,
+			final EdgeEventHandle handle,
+			final Map<String, Object> errorData,
+			final JSONObject rawError
+		) {
+			this.eventIndex = eventIndex;
+			this.kind = kind;
+			this.handle = handle;
+			this.errorData = errorData;
+			this.rawError = rawError;
+		}
+
+		static ResponseItem forHandle(final EdgeEventHandle handle) {
+			return new ResponseItem(handle.getEventIndex(), HANDLE, handle, null, null);
+		}
+
+		static ResponseItem forError(
+			final int eventIndex,
+			final boolean isError,
+			final Map<String, Object> errorData,
+			final JSONObject rawError
+		) {
+			return new ResponseItem(eventIndex, isError ? ERROR : WARNING, null, errorData, rawError);
+		}
+	}
+
 	/**
-	 * Dispatches each event handle in the provided {@code eventHandleArray} as a separate event through the Event Hub
-	 * and processes the store event handles (if any) and invokes the response handlers if any are registered.
+	 * Processes the handles, errors and warnings of one success response together, in ascending
+	 * {@code eventIndex} order, so that for each index every handle/error/warning at that index is
+	 * recorded before the completion boundary advances past it. This guarantees a lower-index error is
+	 * recorded before a higher-index handle completes the lower event (so {@code onError} is never
+	 * dropped and never leaks), and keeps the completion sweep monotonic within a record (no spurious
+	 * out-of-order warnings). No-{@code eventIndex} global handles are processed first (side effects
+	 * applied up front); no-{@code eventIndex} broadcast errors/warnings are processed last (they apply
+	 * to the whole request and do not advance completion).
 	 *
-	 * @param eventHandleArray {@link JSONArray} containing all the event handles to be processed
-	 * @param requestId the request identifier, used for logging and to identify the request events associated with this response
-	 * @param ignoreStorePayloads if true, the store payloads for this response will not be processed
+	 * @param eventHandleArray handles to process (may be null/empty)
+	 * @param errorsArray errors to process (may be null/empty)
+	 * @param warningsArray warnings to process (may be null/empty)
+	 * @param requestId the request identifier, used to identify the request events for this response
+	 * @param ignoreStorePayloads if true, {@code state:store} payloads for this response are not persisted
 	 */
-	private void processEventHandles(
+	private void processResponseItems(
 		final JSONArray eventHandleArray,
+		final JSONArray errorsArray,
+		final JSONArray warningsArray,
 		final String requestId,
 		final boolean ignoreStorePayloads
 	) {
-		if (JSONUtils.isNullOrEmpty(eventHandleArray)) {
-			Log.trace(LOG_TAG, LOG_SOURCE, "Received null/empty event handle array, nothing to handle");
-			return;
+		final List<EdgeEventHandle> noIndexHandles = new ArrayList<>();
+		final List<ResponseItem> indexedItems = new ArrayList<>();
+		final List<ResponseItem> noIndexErrors = new ArrayList<>();
+
+		if (!JSONUtils.isNullOrEmpty(eventHandleArray)) {
+			for (int i = 0; i < eventHandleArray.length(); i++) {
+				final JSONObject jsonEventHandle = eventHandleArray.optJSONObject(i);
+				if (jsonEventHandle == null) {
+					continue;
+				}
+				final EdgeEventHandle handle = new EdgeEventHandle(jsonEventHandle);
+				if (handle.getEventIndex() == EdgeEventHandle.ABSENT_EVENT_INDEX) {
+					noIndexHandles.add(handle);
+				} else {
+					indexedItems.add(ResponseItem.forHandle(handle));
+				}
+			}
 		}
 
-		int size = eventHandleArray.length();
-		Log.trace(LOG_TAG, LOG_SOURCE, "Processing %d event handle(s) for request id: %s", size, requestId);
+		collectErrorItems(errorsArray, true, indexedItems, noIndexErrors);
+		collectErrorItems(warningsArray, false, indexedItems, noIndexErrors);
 
-		for (int i = 0; i < size; i++) {
-			JSONObject jsonEventHandle = null;
+		// 1) Global (no-index) handles first — apply side effects and dispatch up front.
+		for (final EdgeEventHandle handle : noIndexHandles) {
+			processSingleHandle(handle, requestId, ignoreStorePayloads);
+		}
 
+		// 2) Indexed items in ascending index order (handle < error < warning within an index). Sweep to
+		// each index (completing lower events, whose data is now fully recorded) before dispatching it.
+		Collections.sort(
+			indexedItems,
+			(a, b) ->
+				a.eventIndex != b.eventIndex
+					? Integer.compare(a.eventIndex, b.eventIndex)
+					: Integer.compare(a.kind, b.kind)
+		);
+		for (final ResponseItem item : indexedItems) {
+			sweepCompletions(requestId, item.eventIndex);
+			if (item.kind == ResponseItem.HANDLE) {
+				processSingleHandle(item.handle, requestId, ignoreStorePayloads);
+			} else {
+				processIndexedError(
+					item.errorData,
+					item.rawError,
+					item.kind == ResponseItem.ERROR,
+					item.eventIndex,
+					requestId
+				);
+			}
+		}
+
+		// 3) No-index broadcast errors/warnings last — whole-request, do not advance completion.
+		for (final ResponseItem item : noIndexErrors) {
+			processBroadcastError(item.errorData, item.rawError, item.kind == ResponseItem.ERROR, requestId);
+		}
+	}
+
+	/**
+	 * Parses an errors/warnings array into {@link ResponseItem}s, splitting indexed entries (added to
+	 * {@code indexedItems}) from no-{@code eventIndex} broadcast entries (added to {@code noIndexErrors}).
+	 */
+	private void collectErrorItems(
+		final JSONArray errorsArray,
+		final boolean isError,
+		final List<ResponseItem> indexedItems,
+		final List<ResponseItem> noIndexErrors
+	) {
+		if (JSONUtils.isNullOrEmpty(errorsArray)) {
+			return;
+		}
+		for (int i = 0; i < errorsArray.length(); i++) {
+			final JSONObject currentError = errorsArray.optJSONObject(i);
+			if (currentError == null) {
+				continue;
+			}
+			Map<String, Object> eventDataResponse;
 			try {
-				jsonEventHandle = eventHandleArray.getJSONObject(i);
+				eventDataResponse = JSONUtils.toMap(currentError);
 			} catch (JSONException e) {
 				Log.trace(
 					LOG_TAG,
 					LOG_SOURCE,
-					"Event handle with index %d was not processed due to JSONException: %s",
+					"%s entry at index %d could not be parsed (JSONException): %s",
+					isError ? "Error" : "Warning",
 					i,
 					e.getLocalizedMessage()
 				);
-			}
-
-			if (jsonEventHandle == null) {
 				continue;
 			}
+			if (MapUtils.isNullOrEmpty(eventDataResponse)) {
+				continue;
+			}
+			final int eventIndex = readEventIndex(eventDataResponse);
+			final ResponseItem item = ResponseItem.forError(eventIndex, isError, eventDataResponse, currentError);
+			if (eventIndex == EdgeEventHandle.ABSENT_EVENT_INDEX) {
+				noIndexErrors.add(item);
+			} else {
+				indexedItems.add(item);
+			}
+		}
+	}
 
-			EdgeEventHandle handle = new EdgeEventHandle(jsonEventHandle);
+	/** Reads the {@code report.eventIndex} of an error/warning; absent → {@link EdgeEventHandle#ABSENT_EVENT_INDEX}. */
+	private static int readEventIndex(final Map<String, Object> eventDataResponse) {
+		final Map<String, Object> report = DataReader.optTypedMap(
+			Object.class,
+			eventDataResponse,
+			EdgeJson.Response.EventHandle.REPORT,
+			null
+		);
+		final boolean hasEventIndex = report != null && report.containsKey(EdgeJson.Response.EventHandle.EVENT_INDEX);
+		return hasEventIndex
+			? DataReader.optInt(report, EdgeJson.Response.EventHandle.EVENT_INDEX, EdgeEventHandle.ABSENT_EVENT_INDEX)
+			: EdgeEventHandle.ABSENT_EVENT_INDEX;
+	}
 
-			if (ignoreStorePayloads) {
-				Log.debug(
+	/**
+	 * Dispatches a single event handle as an event through the Event Hub, applies its store/locationHint
+	 * side effect if applicable, and records it against its originating request event. Does not advance
+	 * the completion boundary — the caller sweeps in index order.
+	 *
+	 * @param handle the event handle to process
+	 * @param requestId the request identifier
+	 * @param ignoreStorePayloads if true, {@code state:store} payloads are not persisted
+	 */
+	private void processSingleHandle(
+		final EdgeEventHandle handle,
+		final String requestId,
+		final boolean ignoreStorePayloads
+	) {
+		if (ignoreStorePayloads) {
+			Log.debug(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Identities were reset recently, ignoring state:store payload for request with id: " + requestId
+			);
+		} else {
+			if (EdgeJson.Response.EventHandle.Store.TYPE.equals(handle.getType())) {
+				handleStoreEventHandle(handle);
+			} else if (EdgeJson.Response.EventHandle.LocationHint.TYPE.equals(handle.getType())) {
+				handleLocationHintEventHandle(handle);
+			}
+		}
+
+		// Resolve the originating event for this handle using the routing policy:
+		// - Indexed handle  → route to the specific event at that position.
+		// - No eventIndex, 1 waiting event → unambiguous; route to it (backward compat).
+		// - No eventIndex, global handle type (state:store / locationHint:result)
+		//   → broadcast: apply side-effect globally, dispatch with null parentId.
+		// - No eventIndex, other type, batch > 1 → log and skip per-event attribution.
+		final String requestEventId;
+		final int handleEventIndex = handle.getEventIndex();
+
+		if (handleEventIndex != EdgeEventHandle.ABSENT_EVENT_INDEX) {
+			requestEventId = extractRequestEventId(handleEventIndex, requestId);
+			Log.trace(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Handle type '%s' eventIndex=%d → event id: %s (requestId: %s)",
+				handle.getType(),
+				handleEventIndex,
+				requestEventId,
+				requestId
+			);
+		} else {
+			final List<String> waitingIds = getWaitingEvents(requestId);
+			if (waitingIds.size() == 1) {
+				requestEventId = waitingIds.get(0);
+				Log.trace(
 					LOG_TAG,
 					LOG_SOURCE,
-					"Identities were reset recently, ignoring state:store payload for request with id: " + requestId
+					"Handle type '%s' has no eventIndex; single-event request → routed to event id: %s (requestId: %s)",
+					handle.getType(),
+					requestEventId,
+					requestId
+				);
+			} else if (isGlobalHandleType(handle.getType())) {
+				requestEventId = null;
+				Log.trace(
+					LOG_TAG,
+					LOG_SOURCE,
+					"Handle type '%s' is a global handle (no eventIndex) → broadcast with null parentId (requestId: %s)",
+					handle.getType(),
+					requestId
 				);
 			} else {
-				if (EdgeJson.Response.EventHandle.Store.TYPE.equals(handle.getType())) {
-					handleStoreEventHandle(handle);
-				} else if (EdgeJson.Response.EventHandle.LocationHint.TYPE.equals(handle.getType())) {
-					handleLocationHintEventHandle(handle);
-				}
+				requestEventId = null;
+				Log.warning(
+					LOG_TAG,
+					LOG_SOURCE,
+					"Handle type '%s' has no eventIndex in a batch of %d events and is not a known global type — skipping per-event attribution (requestId: %s)",
+					handle.getType(),
+					waitingIds.size(),
+					requestId
+				);
 			}
-
-			String requestEventId = extractRequestEventId(handle.getEventIndex(), requestId);
-
-			// Dispatched events add the event and request IDs to the data, so use a copy of the data
-			// so the IDs are not in the data when invoking the response callback
-			dispatchEventResponse(handle.toMap(), requestId, requestEventId, handle.getType());
-			CompletionCallbacksManager.getInstance().eventHandleReceived(requestEventId, handle);
 		}
+
+		// Dispatched events add the event and request IDs to the data, so use a copy of the data
+		// so the IDs are not in the data when invoking the response callback
+		dispatchEventResponse(handle.toMap(), requestId, requestEventId, handle.getType());
+		CompletionCallbacksManager.getInstance().eventHandleReceived(requestEventId, handle);
 	}
 
 	/**
@@ -448,13 +718,37 @@ class NetworkResponseHandler {
 	 * @return the event ID for which this event handle was received, or null if not found
 	 */
 	private String extractRequestEventId(final int eventIndex, final String requestId) {
-		List<String> requestEventIdsList = getWaitingEvents(requestId);
+		final List<String> requestEventIdsList = getWaitingEvents(requestId);
 
 		if (eventIndex >= 0 && eventIndex < requestEventIdsList.size()) {
 			return requestEventIdsList.get(eventIndex);
 		}
 
+		if (eventIndex != EdgeEventHandle.ABSENT_EVENT_INDEX) {
+			// Diagnostic only — logged at trace level to avoid polluting the warning channel
+			// (matches iOS, which silently returns nil for an out-of-range index).
+			Log.trace(
+				LOG_TAG,
+				LOG_SOURCE,
+				"eventIndex %d is out of range for waiting events list of size %d (requestId: %s)",
+				eventIndex,
+				requestEventIdsList.size(),
+				requestId
+			);
+		}
+
 		return null;
+	}
+
+	/**
+	 * Returns true for handle types that are session/batch scoped and carry no {@code eventIndex}
+	 * by design — these are broadcast globally rather than attributed to a specific event.
+	 */
+	private boolean isGlobalHandleType(final String handleType) {
+		return (
+			EdgeJson.Response.EventHandle.Store.TYPE.equals(handleType) ||
+			EdgeJson.Response.EventHandle.LocationHint.TYPE.equals(handleType)
+		);
 	}
 
 	private void dispatchEventResponse(
@@ -553,12 +847,24 @@ class NetworkResponseHandler {
 	 */
 	private void dispatchEventErrors(final JSONArray errorsArray, final boolean isError, final String requestId) {
 		if (JSONUtils.isNullOrEmpty(errorsArray)) {
-			Log.trace(LOG_TAG, LOG_SOURCE, "Received null/empty errors array, nothing to handle");
+			Log.trace(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Received null/empty %s array, nothing to handle",
+				isError ? "errors" : "warnings"
+			);
 			return;
 		}
 
 		int size = errorsArray.length();
-		Log.trace(LOG_TAG, LOG_SOURCE, "Processing %d error(s) for request id: %s", size, requestId);
+		Log.trace(
+			LOG_TAG,
+			LOG_SOURCE,
+			"Processing %d %s(s) for request id: %s",
+			size,
+			isError ? "error" : "warning",
+			requestId
+		);
 
 		for (int i = 0; i < size; i++) {
 			JSONObject currentError = null;
@@ -566,14 +872,13 @@ class NetworkResponseHandler {
 
 			try {
 				currentError = errorsArray.getJSONObject(i);
-
-				// Convert json object to Map<String, Object> to be able to pass it as Event data
 				eventDataResponse = JSONUtils.toMap(currentError);
 			} catch (JSONException e) {
 				Log.trace(
 					LOG_TAG,
 					LOG_SOURCE,
-					"Event error with index %d was not processed due to JSONException: %s",
+					"%s entry at index %d could not be parsed (JSONException): %s",
+					isError ? "Error" : "Warning",
 					i,
 					e.getLocalizedMessage()
 				);
@@ -582,24 +887,114 @@ class NetworkResponseHandler {
 				continue;
 			}
 
-			// if eventIndex not found in the response, it fallbacks to 0 as per Edge Network spec
-			Map<String, Object> report = DataReader.optTypedMap(
-				Object.class,
-				eventDataResponse,
-				EdgeJson.Response.EventHandle.REPORT,
-				null
+			final int eventIndex = readEventIndex(eventDataResponse);
+			if (eventIndex != EdgeEventHandle.ABSENT_EVENT_INDEX) {
+				// Complete any lower-indexed events still pending BEFORE dispatching this error's data.
+				sweepCompletions(requestId, eventIndex);
+				processIndexedError(eventDataResponse, currentError, isError, eventIndex, requestId);
+			} else {
+				processBroadcastError(eventDataResponse, currentError, isError, requestId);
+			}
+		}
+	}
+
+	/**
+	 * Records and dispatches one indexed error/warning: logs it, routes its response event to the
+	 * originating request event, and accumulates the error for that event's {@code onError}. Does not
+	 * advance the completion boundary — the caller sweeps in index order.
+	 */
+	private void processIndexedError(
+		final Map<String, Object> eventDataResponse,
+		final JSONObject currentError,
+		final boolean isError,
+		final int eventIndex,
+		final String requestId
+	) {
+		logErrorMessage(currentError, isError, requestId);
+
+		final EdgeEventError edgeEventError = isError ? buildEdgeEventError(eventDataResponse) : null;
+		final String eventId = extractRequestEventId(eventIndex, requestId);
+		Log.trace(
+			LOG_TAG,
+			LOG_SOURCE,
+			"%s eventIndex=%d → event id: %s (requestId: %s)",
+			isError ? "Error" : "Warning",
+			eventIndex,
+			eventId,
+			requestId
+		);
+		final Map<String, Object> copy = new HashMap<>(eventDataResponse);
+		removeEventIndexFromReport(copy);
+		addEventAndRequestIdToData(copy, requestId, eventId);
+		// Both errors and warnings dispatch on the error-response channel (iOS parity);
+		// the isError flag only controls log level and onError delivery, not the channel.
+		dispatchResponse(copy, eventId, true, null);
+		if (edgeEventError != null && !StringUtils.isNullOrEmpty(eventId)) {
+			CompletionCallbacksManager.getInstance().eventErrorReceived(eventId, edgeEventError);
+		}
+	}
+
+	/**
+	 * Records and dispatches one no-{@code eventIndex} (root/broadcast) error/warning. A root-level
+	 * error means the whole request failed atomically and does not advance completion; it is delivered
+	 * to every waiting event (or as a null-parent broadcast when none are registered).
+	 */
+	private void processBroadcastError(
+		final Map<String, Object> eventDataResponse,
+		final JSONObject currentError,
+		final boolean isError,
+		final String requestId
+	) {
+		logErrorMessage(currentError, isError, requestId);
+
+		final EdgeEventError edgeEventError = isError ? buildEdgeEventError(eventDataResponse) : null;
+
+		// A no-eventIndex error/warning applies to the whole request. Per the Konductor team, a
+		// root-level error means the whole batch failed atomically — it should not arrive after events
+		// already streamed successful per-event data. If some events already early-completed, flag it.
+		final Integer completed;
+		synchronized (mutex) {
+			completed = nextCompletionIndex.get(requestId);
+		}
+		if (completed != null && completed > 0) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Received a no-eventIndex %s for request id (%s) after %d event(s) were already early-completed; those events did not receive it. Root-level errors are expected only when the whole batch fails — investigate.",
+				isError ? "error" : "warning",
+				requestId,
+				completed
 			);
-			int eventIndex = DataReader.optInt(report, EdgeJson.Response.EventHandle.EVENT_INDEX, 0);
-			String eventId = extractRequestEventId(eventIndex, requestId);
+		}
 
-			logErrorMessage(currentError, isError, requestId);
-
-			// do not include eventIndex in the response event
-			removeEventIndexFromReport(eventDataResponse);
-
-			// set eventRequestId and edge requestId on the response event and dispatch data
-			addEventAndRequestIdToData(eventDataResponse, requestId, eventId);
-			dispatchResponse(eventDataResponse, eventId, true, null);
+		final List<String> waitingIds = getWaitingEvents(requestId);
+		if (waitingIds.isEmpty()) {
+			// No registered events for this requestId — dispatch as broadcast (null parentId).
+			// This preserves backward compatibility for callers that do not register waiting events.
+			final Map<String, Object> copy = new HashMap<>(eventDataResponse);
+			removeEventIndexFromReport(copy);
+			addEventAndRequestIdToData(copy, requestId, null);
+			dispatchResponse(copy, null, true, null);
+		} else {
+			// Deliver one error event per waiting event. For N==1 this naturally routes to event[0],
+			// preserving the single-event contract. For N>1 every caller learns their event failed.
+			Log.trace(
+				LOG_TAG,
+				LOG_SOURCE,
+				"%s has no eventIndex → dispatching to all %d waiting event(s) (requestId: %s)",
+				isError ? "Error" : "Warning",
+				waitingIds.size(),
+				requestId
+			);
+			for (final String eventId : waitingIds) {
+				final Map<String, Object> copy = new HashMap<>(eventDataResponse);
+				removeEventIndexFromReport(copy);
+				addEventAndRequestIdToData(copy, requestId, eventId);
+				dispatchResponse(copy, eventId, true, null);
+				if (edgeEventError != null) {
+					CompletionCallbacksManager.getInstance().eventErrorReceived(eventId, edgeEventError);
+				}
+			}
 		}
 	}
 
@@ -656,6 +1051,18 @@ class NetworkResponseHandler {
 				String.format("Received event error for request id (%s), error details:\n %s", requestId, errorToLog)
 			);
 		}
+	}
+
+	/**
+	 * Builds an {@link EdgeEventError} from the error/warning data map returned by the server.
+	 * Fields not present in the map default to empty string / 0.
+	 */
+	private EdgeEventError buildEdgeEventError(final Map<String, Object> errorData) {
+		final String type = DataReader.optString(errorData, EdgeJson.Response.Error.TYPE, "");
+		final int status = DataReader.optInt(errorData, EdgeJson.Response.Error.STATUS, 0);
+		final String title = DataReader.optString(errorData, EdgeJson.Response.Error.TITLE, "");
+		final String detail = DataReader.optString(errorData, EdgeJson.Response.Error.DETAIL, null);
+		return new EdgeEventError(type, status, title, detail);
 	}
 
 	/**
