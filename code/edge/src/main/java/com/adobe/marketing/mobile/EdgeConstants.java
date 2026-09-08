@@ -14,7 +14,7 @@ package com.adobe.marketing.mobile;
 final class EdgeConstants {
 
 	static final String EDGE_DATA_STORAGE = "EdgeDataStorage";
-	static final String EXTENSION_VERSION = "3.0.2";
+	static final String EXTENSION_VERSION = "3.1.0";
 	static final String EXTENSION_NAME = "com.adobe.edge";
 	static final String FRIENDLY_NAME = "Edge";
 	static final String LOG_TAG = FRIENDLY_NAME;
@@ -39,11 +39,32 @@ final class EdgeConstants {
 		static final String REQUEST_CONFIG_LINE_FEED = "\n";
 		static final int RETRY_INTERVAL_SECONDS = 5;
 		static final int LOCATION_HINT_TTL_SEC = 1800;
+		// Fallback used when edge.batching.maxBatchSize is absent from both Configuration and the
+		// bundled batching config file, or is not a positive value.
+		static final int MAX_BATCH_SIZE = 10;
+		// Upper bound a configured edge.batching.maxBatchSize is clamped to, regardless of source.
+		static final int MAX_BATCH_SIZE_LIMIT = 20;
 
 		static final ConsentStatus COLLECT_CONSENT_YES = ConsentStatus.YES; // used if Consent extension is not registered
 		static final ConsentStatus COLLECT_CONSENT_PENDING = ConsentStatus.PENDING; // used when Consent encoding failed or the value different than y/n
 
 		private Defaults() {}
+	}
+
+	/**
+	 * Reserved keys within the {@code edge.batching} configuration object. Any top-level key in that
+	 * object that is <em>not</em> one of these is treated as an extension group: an array of event
+	 * objects ({@code {xdmEventType, enabled}}). See {@link EdgeBatchingConfig}.
+	 */
+	static final class Batching {
+
+		static final String ENABLED = "enabled";
+		static final String MAX_BATCH_SIZE = "maxBatchSize";
+		static final String WILDCARDS = "wildcards";
+		static final String META = "_meta";
+		static final String XDM_EVENT_TYPE = "xdmEventType";
+
+		private Batching() {}
 	}
 
 	static final class EventDataKeys {
@@ -106,6 +127,10 @@ final class EdgeConstants {
 			static final String EDGE_CONFIG_ID = "edge.configId";
 			static final String EDGE_DOMAIN = "edge.domain";
 			static final String EDGE_REQUEST_ENVIRONMENT = "edge.environment";
+			// Single nested object holding the entire batching configuration. The same grouped format
+			// is used whether it arrives via Configuration shared state (remote/Launch) or the bundled
+			// asset file, so parsing is identical and the two are directly comparable.
+			static final String EDGE_BATCHING = "edge.batching";
 
 			private Configuration() {}
 		}

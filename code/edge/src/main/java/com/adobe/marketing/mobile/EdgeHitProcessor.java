@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -72,6 +73,400 @@ class EdgeHitProcessor implements HitProcessing {
 	}
 
 	/**
+	 * Processes a batch of {@link DataEntity}s as a single network request when the batch contains
+	 * more than one ExperienceEvent; otherwise delegates to the existing single-entity path.
+	 *
+	 * <p>Routing rules:
+	 * <ul>
+	 *   <li>Head is not a batchable ExperienceEvent (wrong type, not allowlisted), or only the head
+	 *       qualifies → single-entity path.</li>
+	 *   <li>Multiple consecutive batchable ExperienceEvents that also share the head's snapshotted
+	 *       config → build one batch request; on 400, drain individually; on other non-recoverable,
+	 *       drop all and error.</li>
+	 * </ul>
+	 *
+	 * @param entities ordered list of entities to process; never null, never empty
+	 * @return {@link BatchOutcome} instructing the queue how to advance
+	 */
+	BatchOutcome processBatch(@NonNull final List<DataEntity> entities) {
+		if (entities.isEmpty()) {
+			return BatchOutcome.done(0);
+		}
+
+		final DataEntity headEntity = entities.get(0);
+		final EdgeDataEntity headEdgeEntity = EdgeDataEntity.fromDataEntity(headEntity);
+
+		if (headEdgeEntity == null) {
+			Log.debug(LOG_TAG, LOG_SOURCE, "Unable to deserialize head entity to EdgeDataEntity, dropping.");
+			return BatchOutcome.done(1);
+		}
+
+		// Collect the consecutive run of batchable ExperienceEvents from the front. An entity is
+		// batchable only if it decodes, is an ExperienceEvent, has an xdm.eventType whitelisted by the
+		// batching config, and shares the head's snapshotted config (a single request can only carry one
+		// datastream ID/override, so events queued under a different config cannot be combined with the
+		// head's). The first entity that fails any of these (including the head) stops the run.
+		final List<DataEntity> batchEntities = new ArrayList<>();
+		final List<Event> batchEvents = new ArrayList<>();
+
+		for (final DataEntity dataEntity : entities) {
+			final EdgeDataEntity edgeEntity = EdgeDataEntity.fromDataEntity(dataEntity);
+			if (
+				edgeEntity == null ||
+				!EventUtils.isExperienceEvent(edgeEntity.getEvent()) ||
+				!isEventTypeBatchable(edgeEntity) ||
+				!hasSameRequestConfig(edgeEntity, headEdgeEntity)
+			) {
+				break;
+			}
+			batchEntities.add(dataEntity);
+			batchEvents.add(edgeEntity.getEvent());
+		}
+
+		// Head isn't batchable (non-ExperienceEvent, or xdm.eventType not whitelisted), or only the head
+		// qualifies — process the head alone via the existing single-entity path (consent, reset,
+		// non-whitelisted, and single-Experience-event cases all funnel here).
+		if (batchEntities.size() <= 1) {
+			Log.trace(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Head entity (%s) is not batchable or is the only batchable entity; processing alone.",
+				headEdgeEntity.getEvent().getName()
+			);
+			return processSingleEntity(headEntity);
+		}
+
+		Log.debug(LOG_TAG, LOG_SOURCE, "Processing batch of %d ExperienceEvent(s).", batchEntities.size());
+
+		final EdgeHit edgeHit = buildExperienceEventHit(headEdgeEntity, batchEvents);
+		if (edgeHit == null) {
+			// Config ID missing/empty or payload build failed — drop the whole batch.
+			return BatchOutcome.done(batchEntities.size());
+		}
+
+		// Register all events before the network call so response fragments can be routed.
+		networkResponseHandler.addWaitingEvents(edgeHit.getRequestId(), batchEvents);
+
+		final RetryResult result = sendEdgeHit(headEntity.getUniqueIdentifier(), edgeHit, getRequestHeaders(), true);
+
+		switch (result.getNetworkRequestOutcome()) {
+			case SUCCESS:
+				Log.debug(
+					LOG_TAG,
+					LOG_SOURCE,
+					"Batch of %d events sent and processed successfully.",
+					batchEntities.size()
+				);
+				return BatchOutcome.done(batchEntities.size());
+			case RETRY:
+				Log.debug(
+					LOG_TAG,
+					LOG_SOURCE,
+					"Batch of %d events will be retried in %d seconds.",
+					batchEntities.size(),
+					result.getRetryIntervalSeconds()
+				);
+				return BatchOutcome.retryBatch(result.getRetryIntervalSeconds());
+			case EXPLODE_400:
+				// Batch of N>1, nothing ingested — every event is safe to resend. Discard the batch's
+				// waiting-event registration (its request id owns no completions now, so the individual
+				// resends' new request ids can) and resend each entity individually, in order.
+				Log.warning(
+					LOG_TAG,
+					LOG_SOURCE,
+					"Batch of %d events received 400; nothing ingested, resending individually.",
+					batchEntities.size()
+				);
+				networkResponseHandler.removeWaitingEvents(edgeHit.getRequestId());
+				return explodeAndResend(batchEntities);
+			case DROP:
+			default:
+				Log.warning(
+					LOG_TAG,
+					LOG_SOURCE,
+					"Batch of %d events received non-recoverable error; dropping all.",
+					batchEntities.size()
+				);
+				return BatchOutcome.done(batchEntities.size());
+		}
+	}
+
+	/**
+	 * Checks whether {@code entity}'s outgoing Experience Event is whitelisted for batching by its
+	 * {@code xdm.eventType}, per the {@code edge.batching} configuration snapshotted on this entity at
+	 * enqueue time (see {@link EdgeBatchingConfig}). Strict allow-list semantics: an event whose
+	 * {@code xdm.eventType} is absent, or matched only by disabled entries, is not batchable —
+	 * {@code enabled} alone is not sufficient.
+	 *
+	 * @param entity the {@link EdgeDataEntity} whose event is being checked
+	 * @return true if the entity's {@code xdm.eventType} is whitelisted (exact or wildcard) for batching
+	 */
+	private boolean isEventTypeBatchable(@NonNull final EdgeDataEntity entity) {
+		final EdgeBatchingConfig batchingConfig = EdgeBatchingConfig.from(entity.getConfiguration());
+		return batchingConfig.isEventTypeBatchable(EventUtils.getXdmEventType(entity.getEvent()));
+	}
+
+	/**
+	 * Checks whether {@code candidate} shares the same request-building config as {@code head}: the
+	 * snapshotted Configuration state (datastream ID, environment, domain, ...), the event-level
+	 * overrides ({@code datastreamIdOverride}/{@code datastreamConfigOverride}), and the event's custom
+	 * {@code data.request.path} override. A batched request can only carry one of each — built entirely
+	 * from the head's config (see {@link #buildExperienceEventHit}) and sent to the head's endpoint path
+	 * (see {@link #getRequestProperties}) — so an entity whose own snapshot, overrides, or intended
+	 * request path differs from the head's must not be folded into the same request; it would silently
+	 * lose its own config or be sent to the wrong endpoint under the head's. Mirrors
+	 * {@code aepsdk-edge-ios}'s {@code EdgeHitProcessor.hasSameRequestConfig}.
+	 *
+	 * @param candidate the entity being considered for the batch run
+	 * @param head the entity the batch request will actually be built from
+	 * @return true if {@code candidate} may be safely combined with {@code head} in one request
+	 */
+	private boolean hasSameRequestConfig(@NonNull final EdgeDataEntity candidate, @NonNull final EdgeDataEntity head) {
+		if (!candidate.getConfiguration().equals(head.getConfiguration())) {
+			return false;
+		}
+		if (!Objects.equals(EventUtils.getConfig(candidate.getEvent()), EventUtils.getConfig(head.getEvent()))) {
+			return false;
+		}
+		return Objects.equals(getCustomRequestPath(candidate.getEvent()), getCustomRequestPath(head.getEvent()));
+	}
+
+	/**
+	 * Delegates a single {@link DataEntity} to the existing {@link #processHit} path and
+	 * converts the boolean result to a {@link BatchOutcome}.
+	 */
+	private BatchOutcome processSingleEntity(@NonNull final DataEntity entity) {
+		final boolean[] done = { true };
+		processHit(entity, result -> done[0] = result);
+		if (done[0]) {
+			return BatchOutcome.done(1);
+		}
+		return BatchOutcome.retryBatch(retryInterval(entity));
+	}
+
+	/**
+	 * Re-sends each entity in {@code batchEntities} individually after a batch 400. A 400 means nothing
+	 * in the batch was ingested, so every event is safe to resend. Entities are processed FIFO: a
+	 * resolved entity ({@link BatchOutcome.Kind#DONE}) counts toward the removable head prefix; the first
+	 * recoverable failure ({@link BatchOutcome.Kind#RETRY}) stops the drain and reports the resolved
+	 * count so the queue can remove those entities and retry the remainder. Mirrors
+	 * {@code aepsdk-edge-ios}'s {@code EdgeHitProcessor.explodeAndResend}.
+	 *
+	 * @param batchEntities the entities from the exploded batch, in order
+	 * @return {@link BatchOutcome#done} if all resolved, {@link BatchOutcome#retryBatch} if the very
+	 *     first entity needs a retry, or {@link BatchOutcome#partialRemove} if some resolved before a
+	 *     recoverable failure
+	 */
+	private BatchOutcome explodeAndResend(@NonNull final List<DataEntity> batchEntities) {
+		int resolvedCount = 0;
+		for (final DataEntity entity : batchEntities) {
+			// Each entity is sent as a batch-of-1 through the same terminal path (handles success, drop,
+			// and the existing single-event 400 behaviour). processSingleEntity only ever returns DONE
+			// (resolved) or RETRY (recoverable failure).
+			final BatchOutcome outcome = processSingleEntity(entity);
+			if (outcome.getKind() == BatchOutcome.Kind.DONE) {
+				resolvedCount++;
+			} else {
+				final int retryDelaySeconds = outcome.getRetryDelaySeconds();
+				return resolvedCount > 0
+					? BatchOutcome.partialRemove(resolvedCount, retryDelaySeconds)
+					: BatchOutcome.retryBatch(retryDelaySeconds);
+			}
+		}
+		return BatchOutcome.done(resolvedCount);
+	}
+
+	/**
+	 * Builds the {@link EdgeHit} for one or more consecutive ExperienceEvents that share the head
+	 * entity's snapshotted configuration (identity map, datastream ID + overrides, implementation
+	 * details, endpoint). Used by both the batch path ({@link #processBatch}) and the single-event path
+	 * ({@link #processExperienceEventHit}), which is just the one-event case.
+	 *
+	 * @param headEdgeEntity the entity whose snapshotted config drives the request
+	 * @param events the ordered ExperienceEvents to include in the payload
+	 * @return the assembled {@link EdgeHit}, or null if the datastream ID is missing/empty or the
+	 *     payload could not be built (the caller decides how to treat a dropped hit)
+	 */
+	private EdgeHit buildExperienceEventHit(
+		@NonNull final EdgeDataEntity headEdgeEntity,
+		@NonNull final List<Event> events
+	) {
+		final RequestBuilder request = new RequestBuilder(namedCollection);
+		request.addXdmPayload(headEdgeEntity.getIdentityMap());
+		request.enableResponseStreaming(
+			EdgeConstants.Defaults.REQUEST_CONFIG_RECORD_SEPARATOR,
+			EdgeConstants.Defaults.REQUEST_CONFIG_LINE_FEED
+		);
+
+		if (stateCallback != null) {
+			// Add Implementation Details to request (global) level
+			request.addXdmPayload(stateCallback.getImplementationDetails());
+		}
+
+		final Map<String, Object> edgeConfig = headEdgeEntity.getConfiguration();
+		String datastreamId = DataReader.optString(
+			edgeConfig,
+			EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID,
+			null
+		);
+		final Map<String, Object> eventConfigMap = EventUtils.getConfig(headEdgeEntity.getEvent());
+		datastreamId = processEventConfigOverrides(eventConfigMap, request, datastreamId);
+
+		if (StringUtils.isNullOrEmpty(datastreamId)) {
+			// The Edge configuration ID value should get validated when creating the Hit,
+			// so we shouldn't get here in production.
+			Log.debug(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Cannot process Experience Event hit as the Edge Network configuration ID is null or empty, dropping current event (%s).",
+				headEdgeEntity.getEvent().getUniqueIdentifier()
+			);
+			return null;
+		}
+
+		final JSONObject requestPayload = request.getPayloadWithExperienceEvents(events);
+		if (requestPayload == null) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Failed to build the request payload, dropping current event (%s).",
+				headEdgeEntity.getEvent().getUniqueIdentifier()
+			);
+			return null;
+		}
+
+		final Map<String, Object> requestProperties = getRequestProperties(headEdgeEntity.getEvent());
+		final EdgeEndpoint edgeEndpoint = getEdgeEndpoint(
+			EdgeNetworkService.RequestType.INTERACT,
+			edgeConfig,
+			requestProperties
+		);
+		return new EdgeHit(datastreamId, requestPayload, edgeEndpoint);
+	}
+
+	/**
+	 * Builds the {@link EdgeNetworkService.ResponseCallback} that forwards streamed responses, errors,
+	 * and completion for {@code requestId} to the {@link NetworkResponseHandler}.
+	 */
+	private EdgeNetworkService.ResponseCallback buildResponseCallback(final String requestId) {
+		return new EdgeNetworkService.ResponseCallback() {
+			@Override
+			public void onResponse(final String jsonResponse) {
+				networkResponseHandler.processResponseOnSuccess(jsonResponse, requestId);
+			}
+
+			@Override
+			public void onError(final String jsonError) {
+				networkResponseHandler.processResponseOnError(jsonError, requestId);
+			}
+
+			@Override
+			public void onComplete() {
+				networkResponseHandler.processResponseOnComplete(requestId);
+			}
+		};
+	}
+
+	/**
+	 * Sends {@code edgeHit} to the Edge Network and returns the full {@link RetryResult} (including the
+	 * granular {@link EdgeNetworkService.NetworkRequestOutcome}). Validates the payload and URL, logs the
+	 * request, and maintains {@code entityRetryIntervalMapping}. Never returns null — a null/empty
+	 * payload, malformed URL, or null network result all map to a {@code DROP} outcome.
+	 *
+	 * <p>Shared by the batch path (which acts on the granular outcome directly) and the single-event
+	 * wrapper {@link #sendNetworkRequest}.
+	 *
+	 * @param entityId unique identifier of the head entity, used for retry-interval tracking; may be null
+	 * @param edgeHit the assembled hit to send
+	 * @param requestHeaders HTTP headers to attach
+	 * @param isBatchRequest true if {@code edgeHit} carries more than one event and a 400 should be
+	 *                       exploded into individual resends; false for single-event requests, whose
+	 *                       400 handling must be identical to a non-batching build
+	 * @return the {@link RetryResult} describing the outcome; never null
+	 */
+	private RetryResult sendEdgeHit(
+		final String entityId,
+		final EdgeHit edgeHit,
+		final Map<String, String> requestHeaders,
+		final boolean isBatchRequest
+	) {
+		if (edgeHit == null || edgeHit.getPayload() == null || edgeHit.getPayload().length() == 0) {
+			Log.warning(LOG_TAG, LOG_SOURCE, "Request body was null/empty, dropping this request.");
+			return new RetryResult(EdgeNetworkService.NetworkRequestOutcome.DROP, 0);
+		}
+
+		final String url = networkService.buildUrl(
+			edgeHit.getEdgeEndpoint(),
+			edgeHit.getDatastreamId(),
+			edgeHit.getRequestId()
+		);
+
+		if (!isValidUrl(url)) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Unable to send network request for entity (%s) as URL is malformed or scheme is not 'https', '%s'.",
+				entityId,
+				url
+			);
+			return new RetryResult(EdgeNetworkService.NetworkRequestOutcome.DROP, 0);
+		}
+
+		try {
+			Log.debug(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Sending network request with id (%s) to URL '%s' with body:\n%s",
+				edgeHit.getRequestId(),
+				url,
+				edgeHit.getPayload().toString(2)
+			);
+		} catch (JSONException e) {
+			Log.debug(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Sending network request with id (%s) to URL '%s'. Error parsing JSON request: %s",
+				edgeHit.getRequestId(),
+				url,
+				e.getLocalizedMessage()
+			);
+		}
+
+		final RetryResult retryResult = networkService.doRequest(
+			url,
+			edgeHit.getPayload().toString(),
+			requestHeaders,
+			isBatchRequest,
+			buildResponseCallback(edgeHit.getRequestId())
+		);
+
+		if (retryResult == null) {
+			return new RetryResult(EdgeNetworkService.NetworkRequestOutcome.DROP, 0);
+		}
+
+		if (retryResult.getShouldRetry() == EdgeNetworkService.Retry.NO) {
+			if (entityId != null) {
+				entityRetryIntervalMapping.remove(entityId);
+			}
+		} else {
+			// RETRY: doRequest suppresses onComplete, so the completion path never removes this
+			// request's waiting-events / completion-index state. The retried send builds a fresh
+			// requestId (see EdgeHit) and re-registers these events under it, so drop the now-orphaned
+			// entry here — otherwise every retry leaks N waiting events (one per batched event) and
+			// grows unbounded under sustained 5xx/429.
+			networkResponseHandler.removeWaitingEvents(edgeHit.getRequestId());
+			if (
+				entityId != null &&
+				retryResult.getRetryIntervalSeconds() != EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS
+			) {
+				entityRetryIntervalMapping.put(entityId, retryResult.getRetryIntervalSeconds());
+			}
+		}
+
+		return retryResult;
+	}
+
+	/**
 	 * Send network requests out with the data encapsulated in {@link DataEntity}.
 	 * If configuration is null, the processing is paused.
 	 *
@@ -90,21 +485,11 @@ class EdgeHitProcessor implements HitProcessing {
 			return;
 		}
 
-		// Add in Identity Map at request (global) level
-		RequestBuilder request = new RequestBuilder(namedCollection);
-		request.addXdmPayload(entity.getIdentityMap());
-
-		// Enable response streaming for all events
-		request.enableResponseStreaming(
-			EdgeConstants.Defaults.REQUEST_CONFIG_RECORD_SEPARATOR,
-			EdgeConstants.Defaults.REQUEST_CONFIG_LINE_FEED
-		);
-
 		boolean hitCompleteResult = true;
 		if (EventUtils.isExperienceEvent(entity.getEvent())) {
-			hitCompleteResult = processExperienceEventHit(dataEntity.getUniqueIdentifier(), entity, request);
+			hitCompleteResult = processExperienceEventHit(dataEntity.getUniqueIdentifier(), entity);
 		} else if (EventUtils.isUpdateConsentEvent(entity.getEvent())) {
-			hitCompleteResult = processUpdateConsentEventHit(dataEntity.getUniqueIdentifier(), entity, request);
+			hitCompleteResult = processUpdateConsentEventHit(dataEntity.getUniqueIdentifier(), entity);
 		} else if (EventUtils.isResetComplete(entity.getEvent())) {
 			// clear state store
 			final StoreResponsePayloadManager payloadManager = new StoreResponsePayloadManager(namedCollection);
@@ -124,89 +509,8 @@ class EdgeHitProcessor implements HitProcessing {
 	 * @return true if sending the hit is complete, false if sending the hit should be retried at a later time
 	 */
 	boolean sendNetworkRequest(final String entityId, final EdgeHit edgeHit, final Map<String, String> requestHeaders) {
-		if (edgeHit == null || edgeHit.getPayload() == null || edgeHit.getPayload().length() == 0) {
-			Log.warning(LOG_TAG, LOG_SOURCE, "Request body was null/empty, dropping this request");
-			return true;
-		}
-
-		EdgeNetworkService.ResponseCallback responseCallback = new EdgeNetworkService.ResponseCallback() {
-			@Override
-			public void onResponse(final String jsonResponse) {
-				networkResponseHandler.processResponseOnSuccess(jsonResponse, edgeHit.getRequestId());
-			}
-
-			@Override
-			public void onError(final String jsonError) {
-				networkResponseHandler.processResponseOnError(jsonError, edgeHit.getRequestId());
-			}
-
-			@Override
-			public void onComplete() {
-				networkResponseHandler.processResponseOnComplete(edgeHit.getRequestId());
-			}
-		};
-
-		String url = networkService.buildUrl(
-			edgeHit.getEdgeEndpoint(),
-			edgeHit.getDatastreamId(),
-			edgeHit.getRequestId()
-		);
-
-		if (!isValidUrl(url)) {
-			Log.warning(
-				LOG_TAG,
-				LOG_SOURCE,
-				"Unable to send network request for entity (%s) as URL is malformed or scheme is not 'https', '%s'.",
-				entityId,
-				url
-			);
-
-			return true;
-		}
-
-		try {
-			Log.debug(
-				LOG_TAG,
-				LOG_SOURCE,
-				"Sending network request with id (%s) to URL '%s' with body:\n%s",
-				edgeHit.getRequestId(),
-				url,
-				edgeHit.getPayload().toString(2)
-			);
-		} catch (JSONException e) {
-			Log.debug(
-				LOG_TAG,
-				LOG_SOURCE,
-				"Sending network request with id (%s) to URL '%s'\nError parsing JSON request: %s",
-				edgeHit.getRequestId(),
-				url,
-				e.getLocalizedMessage()
-			);
-		}
-
-		RetryResult retryResult = networkService.doRequest(
-			url,
-			edgeHit.getPayload().toString(),
-			requestHeaders,
-			responseCallback
-		);
-
-		if (retryResult == null || retryResult.getShouldRetry() == EdgeNetworkService.Retry.NO) {
-			if (entityId != null) {
-				entityRetryIntervalMapping.remove(entityId);
-			}
-
-			return true; // Hit sent successfully
-		} else {
-			if (
-				entityId != null &&
-				retryResult.getRetryIntervalSeconds() != EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS
-			) {
-				entityRetryIntervalMapping.put(entityId, retryResult.getRetryIntervalSeconds());
-			}
-
-			return false; // Hit failed to send, retry after interval
-		}
+		final RetryResult result = sendEdgeHit(entityId, edgeHit, requestHeaders, false);
+		return result.getShouldRetry() != EdgeNetworkService.Retry.YES;
 	}
 
 	/**
@@ -277,79 +581,28 @@ class EdgeHitProcessor implements HitProcessing {
 	}
 
 	/**
-	 * Process and send an ExperienceEvent network request.
+	 * Process and send a single ExperienceEvent network request. This is the one-event case of a batch;
+	 * both share {@link #buildExperienceEventHit}.
 	 *
 	 * @param entityId the {@link DataEntity} unique identifier
 	 * @param entity the {@link EdgeDataEntity} which encapsulates the request data
-	 * @param request a {@link RequestBuilder} instance
 	 * @return true if the request processing is complete for this hit or false if processing is
 	 * not complete and this hit must be retired.
 	 */
-	private boolean processExperienceEventHit(
-		@NonNull final String entityId,
-		@NonNull final EdgeDataEntity entity,
-		@NonNull final RequestBuilder request
-	) {
-		if (stateCallback != null) {
-			// Add Implementation Details to request (global) level
-			request.addXdmPayload(stateCallback.getImplementationDetails());
-		}
-
-		Map<String, Object> edgeConfig = entity.getConfiguration();
-
-		String datastreamId = DataReader.optString(
-			edgeConfig,
-			EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID,
-			null
-		);
-
-		// Get config map containing overrides from the event
-		Map<String, Object> eventConfigMap = EventUtils.getConfig(entity.getEvent());
-
-		datastreamId = processEventConfigOverrides(eventConfigMap, request, datastreamId);
-
-		if (StringUtils.isNullOrEmpty(datastreamId)) {
-			// The Edge configuration ID value should get validated when creating the Hit,
-			// so we shouldn't get here in production.
-			Log.debug(
-				LOG_TAG,
-				LOG_SOURCE,
-				"Cannot process Experience Event hit as the Edge Network configuration ID is null or empty, dropping current event (%s).",
-				entity.getEvent().getUniqueIdentifier()
-			);
-			return true; // Request complete, don't retry hit
-		}
-
+	private boolean processExperienceEventHit(@NonNull final String entityId, @NonNull final EdgeDataEntity entity) {
 		final List<Event> listOfEvents = new ArrayList<>();
 		listOfEvents.add(entity.getEvent());
-		final JSONObject requestPayload = request.getPayloadWithExperienceEvents(listOfEvents);
 
-		if (requestPayload == null) {
-			Log.warning(
-				LOG_TAG,
-				LOG_SOURCE,
-				"Failed to build the request payload, dropping current event (%s).",
-				entity.getEvent().getUniqueIdentifier()
-			);
-
-			return true; // Request complete, don't retry hit
+		final EdgeHit edgeHit = buildExperienceEventHit(entity, listOfEvents);
+		if (edgeHit == null) {
+			return true; // Config ID missing/empty or payload build failed — request complete, don't retry.
 		}
-
-		Map<String, Object> requestProperties = getRequestProperties(entity.getEvent());
-		final EdgeEndpoint edgeEndpoint = getEdgeEndpoint(
-			EdgeNetworkService.RequestType.INTERACT,
-			edgeConfig,
-			requestProperties
-		);
-
-		final EdgeHit edgeHit = new EdgeHit(datastreamId, requestPayload, edgeEndpoint);
 
 		// NOTE: the order of these events need to be maintained as they were sent in the network request
 		// otherwise the response callback cannot be matched
 		networkResponseHandler.addWaitingEvents(edgeHit.getRequestId(), listOfEvents);
 
-		final Map<String, String> requestHeaders = getRequestHeaders();
-		return sendNetworkRequest(entityId, edgeHit, requestHeaders);
+		return sendNetworkRequest(entityId, edgeHit, getRequestHeaders());
 	}
 
 	/**
@@ -357,16 +610,18 @@ class EdgeHitProcessor implements HitProcessing {
 	 *
 	 * @param entityId the {@link DataEntity} unique identifier
 	 * @param entity the {@link EdgeDataEntity} which encapsulates the request data
-	 * @param request a {@link RequestBuilder} instance
 	 * @return true if the request processing is complete for this hit or false if processing is
 	 * not complete and this hit must be retired.
 	 */
-	private boolean processUpdateConsentEventHit(
-		@NonNull final String entityId,
-		@NonNull final EdgeDataEntity entity,
-		@NonNull final RequestBuilder request
-	) {
-		// Build and send the consent network request to Experience Edge
+	private boolean processUpdateConsentEventHit(@NonNull final String entityId, @NonNull final EdgeDataEntity entity) {
+		// Add Identity Map (global) and enable response streaming, then build the consent payload.
+		final RequestBuilder request = new RequestBuilder(namedCollection);
+		request.addXdmPayload(entity.getIdentityMap());
+		request.enableResponseStreaming(
+			EdgeConstants.Defaults.REQUEST_CONFIG_RECORD_SEPARATOR,
+			EdgeConstants.Defaults.REQUEST_CONFIG_LINE_FEED
+		);
+
 		final JSONObject consentPayload = request.getConsentPayload(entity.getEvent());
 
 		if (consentPayload == null) {

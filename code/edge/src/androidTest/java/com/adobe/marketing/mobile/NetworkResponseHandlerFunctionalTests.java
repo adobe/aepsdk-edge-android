@@ -704,6 +704,9 @@ public class NetworkResponseHandlerFunctionalTests {
 		dispatchEvents.addAll(getDispatchedEventsWith(EventType.EDGE, "pairedeventexample"));
 		assertEquals(2, dispatchEvents.size());
 
+		// The state:store handle carries no eventIndex and is a global (session-scoped) handle, so in a
+		// multi-event request it is broadcast rather than attributed to a specific event: no
+		// requestEventId in the data and a null parent id.
 		String expectedEventData1 =
 			"{" +
 			"  \"payload\": [" +
@@ -713,14 +716,11 @@ public class NetworkResponseHandlerFunctionalTests {
 			"      \"value\": \"MCMID|29068398647607325310376254630528178721\"" +
 			"    }" +
 			"  ]," +
-			"  \"requestEventId\": \"" +
-			event1.getUniqueIdentifier() +
-			"\"," +
 			"  \"requestId\": \"123\"," +
 			"  \"type\": \"state:store\"" +
 			"}";
 		JSONAsserts.assertEquals(expectedEventData1, dispatchEvents.get(0).getEventData());
-		assertEquals(event1.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
+		assertNull(dispatchEvents.get(0).getParentID());
 
 		// verify event 2
 		String expectedEventData2 =
@@ -844,7 +844,8 @@ public class NetworkResponseHandlerFunctionalTests {
 	@Test
 	public void testProcessResponseOnSuccess_WhenEventHandleAndError_dispatchesTwoEvents() throws InterruptedException {
 		setExpectationEvent(EventType.EDGE, EventSource.RESPONSE_CONTENT, 1);
-		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
+		// The no-eventIndex error fans out to both waiting events, so two error events are dispatched.
+		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 2);
 		final String requestId = "123";
 		final String jsonResponse =
 			"{\n" +
@@ -874,6 +875,9 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, "state:store");
 		assertEquals(1, dispatchEvents.size());
 
+		// The state:store handle carries no eventIndex and is a global (session-scoped) handle, so in a
+		// multi-event request it is broadcast rather than attributed to a specific event: no
+		// requestEventId in the data and a null parent id.
 		String expectedEventData1 =
 			"{" +
 			"  \"payload\": [" +
@@ -883,20 +887,19 @@ public class NetworkResponseHandlerFunctionalTests {
 			"      \"value\": \"MCMID|29068398647607325310376254630528178721\"" +
 			"    }" +
 			"  ]," +
-			"  \"requestEventId\": \"" +
-			event1.getUniqueIdentifier() +
-			"\"," +
 			"  \"requestId\": \"123\"," +
 			"  \"type\": \"state:store\"" +
 			"}";
 
 		JSONAsserts.assertEquals(expectedEventData1, dispatchEvents.get(0).getEventData());
-		assertEquals(event1.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
+		assertNull(dispatchEvents.get(0).getParentID());
 
+		// The error carries no eventIndex — a root-level error means the whole batch failed, so it is
+		// dispatched once per waiting event (each caller learns their event failed).
 		List<Event> dispatchErrorEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
-		assertEquals(1, dispatchErrorEvents.size());
+		assertEquals(2, dispatchErrorEvents.size());
 
-		String expectedEventData2 =
+		String expectedErrorForEvent1 =
 			"{" +
 			"  \"requestEventId\": \"" +
 			event1.getUniqueIdentifier() +
@@ -906,8 +909,128 @@ public class NetworkResponseHandlerFunctionalTests {
 			"  \"title\": \"Failed to process personalization event\"," +
 			"  \"type\": \"personalization\"" +
 			"}";
-		JSONAsserts.assertEquals(expectedEventData2, dispatchErrorEvents.get(0).getEventData());
+		JSONAsserts.assertEquals(expectedErrorForEvent1, dispatchErrorEvents.get(0).getEventData());
 		assertEquals(event1.getUniqueIdentifier(), dispatchErrorEvents.get(0).getParentID());
+
+		String expectedErrorForEvent2 =
+			"{" +
+			"  \"requestEventId\": \"" +
+			event2.getUniqueIdentifier() +
+			"\"," +
+			"  \"requestId\": \"123\"," +
+			"  \"status\": 2003," +
+			"  \"title\": \"Failed to process personalization event\"," +
+			"  \"type\": \"personalization\"" +
+			"}";
+		JSONAsserts.assertEquals(expectedErrorForEvent2, dispatchErrorEvents.get(1).getEventData());
+		assertEquals(event2.getUniqueIdentifier(), dispatchErrorEvents.get(1).getParentID());
+	}
+
+	@Test
+	public void testProcessResponseOnSuccess_singleResponse_higherIndexHandle_lowerIndexError_deliversOnErrorForLowerEvent()
+		throws InterruptedException {
+		// Reviewer-reported ordering bug, end-to-end: in ONE success response a handle at eventIndex 2
+		// must not complete event 0 before event 0's error (eventIndex 0) is recorded, otherwise
+		// event 0's onError is dropped (and the error leaks). Merged index-ordered processing records
+		// the error before the completion boundary advances past index 0, so onError fires.
+		setExpectationEvent(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT, 1);
+
+		final String requestId = "123";
+		final Event ev0 = new Event.Builder("ev0", "eventType", "eventSource").build();
+		final Event ev1 = new Event.Builder("ev1", "eventType", "eventSource").build();
+		final Event ev2 = new Event.Builder("ev2", "eventType", "eventSource").build();
+		networkResponseHandler.addWaitingEvents(requestId, Arrays.asList(ev0, ev1, ev2));
+
+		final List<EdgeEventHandle> ev0Handles = new ArrayList<>();
+		final List<EdgeEventError> ev0Errors = new ArrayList<>();
+		CompletionCallbacksManager
+			.getInstance()
+			.registerCallback(
+				ev0.getUniqueIdentifier(),
+				new EdgeCallbackWithError() {
+					@Override
+					public void onComplete(final List<EdgeEventHandle> handles) {
+						ev0Handles.addAll(handles);
+					}
+
+					@Override
+					public void onError(final List<EdgeEventError> errors) {
+						ev0Errors.addAll(errors);
+					}
+				}
+			);
+
+		final String jsonResponse =
+			"{\n" +
+			"  \"handle\": [{ \"type\": \"pairedeventexample\", \"eventIndex\": 2, \"payload\": [{ \"id\": \"h2\" }] }],\n" +
+			"  \"errors\": [{ \"status\": 503, \"title\": \"Service temporarily unavailable\", \"report\": { \"eventIndex\": 0 } }]\n" +
+			"}";
+		networkResponseHandler.processResponseOnSuccess(jsonResponse, requestId);
+		networkResponseHandler.processResponseOnComplete(requestId);
+
+		// Primary symptom: event 0's onError fires with its error (dropped before the fix).
+		assertEquals("event 0 must receive its error via onError", 1, ev0Errors.size());
+		assertEquals(503, ev0Errors.get(0).getStatus());
+
+		// Integration: the error response event is dispatched and paired to event 0.
+		List<Event> dispatchErrorEvents = getDispatchedEventsWith(
+			EventType.EDGE,
+			EventSource.ERROR_RESPONSE_CONTENT,
+			5000
+		);
+		assertEquals(1, dispatchErrorEvents.size());
+		assertEquals(ev0.getUniqueIdentifier(), dispatchErrorEvents.get(0).getParentID());
+
+		// The higher-index handle is paired to event 2.
+		List<Event> dispatchHandleEvents = getDispatchedEventsWith(EventType.EDGE, "pairedeventexample");
+		assertEquals(1, dispatchHandleEvents.size());
+		assertEquals(ev2.getUniqueIdentifier(), dispatchHandleEvents.get(0).getParentID());
+	}
+
+	@Test
+	public void testProcessResponseOnSuccess_singleResponse_sameEventHandleAndError_deliversBothCallbacks()
+		throws InterruptedException {
+		// A single 200 response where event 0 carries BOTH a handle and an error (eventIndex 0), plus a
+		// higher-index handle (2) that advances the completion boundary. Event 0 must receive its handle
+		// via onComplete AND its error via onError.
+		final String requestId = "123";
+		final Event ev0 = new Event.Builder("ev0", "eventType", "eventSource").build();
+		final Event ev1 = new Event.Builder("ev1", "eventType", "eventSource").build();
+		final Event ev2 = new Event.Builder("ev2", "eventType", "eventSource").build();
+		networkResponseHandler.addWaitingEvents(requestId, Arrays.asList(ev0, ev1, ev2));
+
+		final List<EdgeEventHandle> ev0Handles = new ArrayList<>();
+		final List<EdgeEventError> ev0Errors = new ArrayList<>();
+		CompletionCallbacksManager
+			.getInstance()
+			.registerCallback(
+				ev0.getUniqueIdentifier(),
+				new EdgeCallbackWithError() {
+					@Override
+					public void onComplete(final List<EdgeEventHandle> handles) {
+						ev0Handles.addAll(handles);
+					}
+
+					@Override
+					public void onError(final List<EdgeEventError> errors) {
+						ev0Errors.addAll(errors);
+					}
+				}
+			);
+
+		final String jsonResponse =
+			"{\n" +
+			"  \"handle\": [\n" +
+			"    { \"type\": \"pairedeventexample\", \"eventIndex\": 0, \"payload\": [{ \"id\": \"h0\" }] },\n" +
+			"    { \"type\": \"pairedeventexample\", \"eventIndex\": 2, \"payload\": [{ \"id\": \"h2\" }] }\n" +
+			"  ],\n" +
+			"  \"errors\": [{ \"status\": 503, \"title\": \"err0\", \"report\": { \"eventIndex\": 0 } }]\n" +
+			"}";
+		networkResponseHandler.processResponseOnSuccess(jsonResponse, requestId);
+		networkResponseHandler.processResponseOnComplete(requestId);
+
+		assertEquals("event 0 must receive its handle via onComplete", 1, ev0Handles.size());
+		assertEquals("event 0 must receive its error via onError", 1, ev0Errors.size());
 	}
 
 	@Test
@@ -949,19 +1072,9 @@ public class NetworkResponseHandlerFunctionalTests {
 		List<Event> dispatchEvents = getDispatchedEventsWith(EventType.EDGE, EventSource.ERROR_RESPONSE_CONTENT);
 		assertEquals(2, dispatchEvents.size());
 
-		String expectedEventData1 =
-			"{" +
-			"  \"requestEventId\": \"" +
-			event2.getUniqueIdentifier() +
-			"\"," +
-			"  \"requestId\": \"123\"," +
-			"  \"status\": 2003," +
-			"  \"title\": \"Failed to process personalization event\"" +
-			"}";
-		JSONAsserts.assertEquals(expectedEventData1, dispatchEvents.get(0).getEventData());
-		assertEquals(event2.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
-
-		String expectedEventData2 =
+		// Merged index-ordered processing dispatches ascending by eventIndex: the warning at eventIndex 0
+		// (event1) is dispatched before the error at eventIndex 1 (event2).
+		String expectedWarningForEvent1 =
 			"{" +
 			"  \"report\": {" +
 			"    \"cause\": {" +
@@ -977,8 +1090,20 @@ public class NetworkResponseHandlerFunctionalTests {
 			"  \"title\": \"Some Informative stuff here\"," +
 			"  \"type\": \"https://ns.adobe.com/aep/errors/EXEG-0204-200\"" +
 			"}";
-		JSONAsserts.assertEquals(expectedEventData2, dispatchEvents.get(1).getEventData());
-		assertEquals(event1.getUniqueIdentifier(), dispatchEvents.get(1).getParentID());
+		JSONAsserts.assertEquals(expectedWarningForEvent1, dispatchEvents.get(0).getEventData());
+		assertEquals(event1.getUniqueIdentifier(), dispatchEvents.get(0).getParentID());
+
+		String expectedErrorForEvent2 =
+			"{" +
+			"  \"requestEventId\": \"" +
+			event2.getUniqueIdentifier() +
+			"\"," +
+			"  \"requestId\": \"123\"," +
+			"  \"status\": 2003," +
+			"  \"title\": \"Failed to process personalization event\"" +
+			"}";
+		JSONAsserts.assertEquals(expectedErrorForEvent2, dispatchEvents.get(1).getEventData());
+		assertEquals(event2.getUniqueIdentifier(), dispatchEvents.get(1).getParentID());
 	}
 
 	// ---------------------------------------------------------------------------------------------

@@ -19,7 +19,6 @@ import com.adobe.marketing.mobile.services.DataQueue;
 import com.adobe.marketing.mobile.services.HitQueuing;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
-import com.adobe.marketing.mobile.services.PersistentHitQueue;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.DataReaderException;
@@ -98,7 +97,7 @@ class EdgeExtension extends Extension {
 			);
 
 			final DataQueue dataQueue = ServiceProvider.getInstance().getDataQueueService().getDataQueue(getName());
-			this.hitQueue = new PersistentHitQueue(dataQueue, hitProcessor);
+			this.hitQueue = new EdgeBatchingHitQueue(dataQueue, hitProcessor);
 		} else {
 			this.hitQueue = hitQueue;
 		}

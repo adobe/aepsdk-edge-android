@@ -69,8 +69,10 @@ object TestSetupHelper {
         val sharedState = TestHelper.getSharedStateFor(IntegrationTestConstants.ExtensionName.CONFIGURATION, 10_000)
         val edgeDomain = (sharedState?.get(IntegrationTestConstants.ConfigurationKey.EDGE_DOMAIN) as? String)
             ?: run {
-                println("Edge domain could not be fetched from the configuration shared state, or was invalid. " +
-                        "Using default Edge domain: ${IntegrationTestConstants.NetworkKeys.DEFAULT_EDGE_DOMAIN}")
+                println(
+                    "Edge domain could not be fetched from the configuration shared state, or was invalid. " +
+                        "Using default Edge domain: ${IntegrationTestConstants.NetworkKeys.DEFAULT_EDGE_DOMAIN}"
+                )
                 IntegrationTestConstants.NetworkKeys.DEFAULT_EDGE_DOMAIN
             }
         return if (locationHint.isNullOrEmpty()) {

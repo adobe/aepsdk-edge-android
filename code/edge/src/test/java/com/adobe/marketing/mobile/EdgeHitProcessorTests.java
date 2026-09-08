@@ -23,9 +23,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -428,14 +429,24 @@ public class EdgeHitProcessorTests {
 				anyString(),
 				anyString(),
 				ArgumentMatchers.anyMap(),
+				eq(false),
 				any(EdgeNetworkService.ResponseCallback.class)
 			)
 		)
 			.thenReturn(new RetryResult(EdgeNetworkService.Retry.NO));
 
-		// test
-		doCallRealMethod().when(mockNetworkResponseHandler).processResponseOnComplete(anyString());
-		when(mockNetworkResponseHandler.removeWaitingEvents(hit.getRequestId()))
+		// test — a real (spied) NetworkResponseHandler, so processResponseOnComplete's cleanup logic
+		// (nextCompletionIndex, etc.) runs against a properly-constructed instance rather than an
+		// uninitialized mock.
+		final NetworkResponseHandler realNetworkResponseHandler = newRealNetworkResponseHandler();
+		final EdgeHitProcessor localHitProcessor = new EdgeHitProcessor(
+			realNetworkResponseHandler,
+			mockEdgeNetworkService,
+			mockNamedCollection,
+			null,
+			null
+		);
+		when(realNetworkResponseHandler.removeWaitingEvents(hit.getRequestId()))
 			.thenReturn(
 				new ArrayList<Event>() {
 					{
@@ -444,26 +455,18 @@ public class EdgeHitProcessorTests {
 					}
 				}
 			);
-		hitProcessor.sendNetworkRequest(null, hit, new HashMap<String, String>());
+		localHitProcessor.sendNetworkRequest(null, hit, new HashMap<String, String>());
 
 		// verify
 		ArgumentCaptor<EdgeNetworkService.ResponseCallback> callbackArgCaptor = ArgumentCaptor.forClass(
 			EdgeNetworkService.ResponseCallback.class
 		);
-		verify(mockEdgeNetworkService);
-		mockEdgeNetworkService.doRequest(
-			anyString(),
-			anyString(),
-			ArgumentMatchers.anyMap(),
-			callbackArgCaptor.capture()
-		);
+		verify(mockEdgeNetworkService)
+			.doRequest(anyString(), anyString(), ArgumentMatchers.anyMap(), eq(false), callbackArgCaptor.capture());
 		callbackArgCaptor.getValue().onComplete();
-		verify(mockNetworkResponseHandler);
-		mockNetworkResponseHandler.removeWaitingEvents(hit.getRequestId());
-		verify(mockResponseCallbackHandler, times(1));
-		mockResponseCallbackHandler.unregisterCallback(mockEvent1.getUniqueIdentifier());
-		verify(mockResponseCallbackHandler, times(1));
-		mockResponseCallbackHandler.unregisterCallback(mockEvent2.getUniqueIdentifier());
+		verify(realNetworkResponseHandler).removeWaitingEvents(hit.getRequestId());
+		verify(mockResponseCallbackHandler, times(1)).unregisterCallback(mockEvent1.getUniqueIdentifier());
+		verify(mockResponseCallbackHandler, times(1)).unregisterCallback(mockEvent2.getUniqueIdentifier());
 	}
 
 	@Test
@@ -485,33 +488,79 @@ public class EdgeHitProcessorTests {
 				anyString(),
 				anyString(),
 				ArgumentMatchers.anyMap(),
+				eq(false),
 				any(EdgeNetworkService.ResponseCallback.class)
 			)
 		)
 			.thenReturn(new RetryResult(EdgeNetworkService.Retry.NO));
 
-		// test
-		doCallRealMethod().when(mockNetworkResponseHandler).processResponseOnComplete(anyString());
-		when(mockNetworkResponseHandler.removeWaitingEvents(hit.getRequestId())).thenReturn(null);
+		// test — a real (spied) NetworkResponseHandler, so processResponseOnComplete's cleanup logic
+		// runs against a properly-constructed instance rather than an uninitialized mock.
+		final NetworkResponseHandler realNetworkResponseHandler = newRealNetworkResponseHandler();
+		final EdgeHitProcessor localHitProcessor = new EdgeHitProcessor(
+			realNetworkResponseHandler,
+			mockEdgeNetworkService,
+			mockNamedCollection,
+			null,
+			null
+		);
+		when(realNetworkResponseHandler.removeWaitingEvents(hit.getRequestId())).thenReturn(null);
 
-		hitProcessor.sendNetworkRequest(null, hit, new HashMap<String, String>());
+		localHitProcessor.sendNetworkRequest(null, hit, new HashMap<String, String>());
 
 		// verify
 		ArgumentCaptor<EdgeNetworkService.ResponseCallback> callbackArgCaptor = ArgumentCaptor.forClass(
 			EdgeNetworkService.ResponseCallback.class
 		);
-		verify(mockEdgeNetworkService);
-		mockEdgeNetworkService.doRequest(
-			anyString(),
-			anyString(),
-			ArgumentMatchers.anyMap(),
-			callbackArgCaptor.capture()
-		);
+		verify(mockEdgeNetworkService)
+			.doRequest(anyString(), anyString(), ArgumentMatchers.anyMap(), eq(false), callbackArgCaptor.capture());
 		callbackArgCaptor.getValue().onComplete(); // simulates this is done by the doRequest method
-		verify(mockNetworkResponseHandler);
-		mockNetworkResponseHandler.removeWaitingEvents(hit.getRequestId());
-		verify(mockResponseCallbackHandler, never());
-		mockResponseCallbackHandler.unregisterCallback(anyString());
+		verify(realNetworkResponseHandler).removeWaitingEvents(hit.getRequestId());
+		verify(mockResponseCallbackHandler, never()).unregisterCallback(anyString());
+	}
+
+	@Test
+	public void testSendNetworkRequest_onRetry_removesWaitingEvents_toAvoidLeak() {
+		// setup — a recoverable failure (RETRY) suppresses onComplete, so without cleanup the waiting
+		// events registered under this requestId would be orphaned (leak). The retry re-sends under a
+		// fresh requestId, so the old entry must be removed on retry.
+		final String configId = "456";
+		final JSONObject requestBody = getOneEventJson();
+		final EdgeEndpoint endpoint = new EdgeEndpoint(
+			EdgeNetworkService.RequestType.INTERACT,
+			"prod",
+			null,
+			null,
+			null
+		);
+		final EdgeHit hit = new EdgeHit(configId, requestBody, endpoint);
+		when(mockEdgeNetworkService.buildUrl(endpoint, configId, hit.getRequestId())).thenReturn("https://test.com");
+		when(
+			mockEdgeNetworkService.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.anyMap(),
+				eq(false),
+				any(EdgeNetworkService.ResponseCallback.class)
+			)
+		)
+			.thenReturn(new RetryResult(EdgeNetworkService.Retry.YES, 5));
+
+		final NetworkResponseHandler realNetworkResponseHandler = newRealNetworkResponseHandler();
+		final EdgeHitProcessor localHitProcessor = new EdgeHitProcessor(
+			realNetworkResponseHandler,
+			mockEdgeNetworkService,
+			mockNamedCollection,
+			null,
+			null
+		);
+
+		// test — note: onComplete is intentionally NOT invoked (RETRY suppresses it)
+		localHitProcessor.sendNetworkRequest(null, hit, new HashMap<String, String>());
+
+		// verify — the fix removes the orphaned waiting-events entry on RETRY even though onComplete
+		// never fires
+		verify(realNetworkResponseHandler).removeWaitingEvents(hit.getRequestId());
 	}
 
 	@Test
@@ -532,8 +581,17 @@ public class EdgeHitProcessorTests {
 		);
 		final EdgeHit hit = new EdgeHit(configId, requestBody, endpoint);
 		when(mockEdgeNetworkService.buildUrl(endpoint, configId, hit.getRequestId())).thenReturn("https://test.com");
-		doCallRealMethod().when(mockNetworkResponseHandler).processResponseOnComplete(anyString());
-		when(mockNetworkResponseHandler.removeWaitingEvents(hit.getRequestId()))
+		// A real (spied) NetworkResponseHandler, so processResponseOnComplete's cleanup logic runs
+		// against a properly-constructed instance rather than an uninitialized mock.
+		final NetworkResponseHandler realNetworkResponseHandler = newRealNetworkResponseHandler();
+		final EdgeHitProcessor localHitProcessor = new EdgeHitProcessor(
+			realNetworkResponseHandler,
+			mockEdgeNetworkService,
+			mockNamedCollection,
+			null,
+			null
+		);
+		when(realNetworkResponseHandler.removeWaitingEvents(hit.getRequestId()))
 			.thenReturn(
 				new ArrayList<Event>() {
 					{
@@ -551,25 +609,19 @@ public class EdgeHitProcessorTests {
 				anyString(),
 				anyString(),
 				ArgumentMatchers.anyMap(),
+				eq(false),
 				any(EdgeNetworkService.ResponseCallback.class)
 			)
 		)
 			.thenReturn(new RetryResult(EdgeNetworkService.Retry.NO, 1));
-		hitProcessor.sendNetworkRequest(null, hit, new HashMap<String, String>());
+		localHitProcessor.sendNetworkRequest(null, hit, new HashMap<String, String>());
 
 		// verify
-		verify(mockEdgeNetworkService, times(1));
-		mockEdgeNetworkService.doRequest(
-			anyString(),
-			anyString(),
-			ArgumentMatchers.anyMap(),
-			callbackArgCaptor.capture()
-		);
+		verify(mockEdgeNetworkService, times(1))
+			.doRequest(anyString(), anyString(), ArgumentMatchers.anyMap(), eq(false), callbackArgCaptor.capture());
 		callbackArgCaptor.getValue().onComplete();
-		verify(mockNetworkResponseHandler);
-		mockNetworkResponseHandler.removeWaitingEvents(hit.getRequestId());
-		verify(mockResponseCallbackHandler, times(1));
-		mockResponseCallbackHandler.unregisterCallback(mockEvent1.getUniqueIdentifier());
+		verify(realNetworkResponseHandler).removeWaitingEvents(hit.getRequestId());
+		verify(mockResponseCallbackHandler, times(1)).unregisterCallback(mockEvent1.getUniqueIdentifier());
 	}
 
 	@Test
@@ -596,6 +648,7 @@ public class EdgeHitProcessorTests {
 				anyString(),
 				anyString(),
 				ArgumentMatchers.anyMap(),
+				eq(false),
 				any(EdgeNetworkService.ResponseCallback.class)
 			);
 
@@ -625,6 +678,7 @@ public class EdgeHitProcessorTests {
 				anyString(),
 				anyString(),
 				ArgumentMatchers.anyMap(),
+				eq(false),
 				any(EdgeNetworkService.ResponseCallback.class)
 			);
 
@@ -1176,6 +1230,7 @@ public class EdgeHitProcessorTests {
 				anyString(),
 				payloadCaptor.capture(),
 				ArgumentMatchers.anyMap(),
+				eq(false),
 				any(EdgeNetworkService.ResponseCallback.class)
 			);
 
@@ -1212,6 +1267,7 @@ public class EdgeHitProcessorTests {
 				anyString(),
 				payloadCaptor.capture(),
 				ArgumentMatchers.anyMap(),
+				eq(false),
 				any(EdgeNetworkService.ResponseCallback.class)
 			);
 
@@ -1269,6 +1325,7 @@ public class EdgeHitProcessorTests {
 				anyString(),
 				payloadCaptor.capture(),
 				ArgumentMatchers.anyMap(),
+				eq(false),
 				any(EdgeNetworkService.ResponseCallback.class)
 			);
 
@@ -1353,6 +1410,18 @@ public class EdgeHitProcessorTests {
 
 	//************************************************** Utils **************************************************
 
+	/**
+	 * A real, properly-constructed {@link NetworkResponseHandler} wrapped in a spy, for tests that
+	 * need {@code processResponseOnComplete}'s actual cleanup logic to run (not just be stubbed) —
+	 * a bare {@code @Mock} never runs field initializers (e.g. {@code nextCompletionIndex}), so
+	 * driving the real method body on one via {@code doCallRealMethod()} NPEs. Spying a real instance
+	 * avoids that while still allowing individual methods (e.g. {@code removeWaitingEvents}) to be
+	 * stubbed as needed.
+	 */
+	private NetworkResponseHandler newRealNetworkResponseHandler() {
+		return spy(new NetworkResponseHandler(mockNamedCollection, null));
+	}
+
 	void assertProcessHitResult(@NotNull final DataEntity entity, final boolean expectedHitProcessingResult) {
 		hitProcessor.processHit(
 			entity,
@@ -1428,7 +1497,7 @@ public class EdgeHitProcessorTests {
 				EdgeNetworkService.ResponseCallback.class
 			);
 			verify(mockEdgeNetworkService, times(1))
-				.doRequest(anyString(), anyString(), headersCaptor.capture(), callbackArgCaptor.capture());
+				.doRequest(anyString(), anyString(), headersCaptor.capture(), eq(false), callbackArgCaptor.capture());
 
 			if (withHeaders == null || withHeaders.isEmpty()) {
 				assertEquals(0, headersCaptor.getValue().size());
@@ -1443,6 +1512,7 @@ public class EdgeHitProcessorTests {
 					anyString(),
 					anyString(),
 					ArgumentMatchers.anyMap(),
+					eq(false),
 					any(EdgeNetworkService.ResponseCallback.class)
 				);
 		}
@@ -1469,6 +1539,7 @@ public class EdgeHitProcessorTests {
 				anyString(),
 				anyString(),
 				ArgumentMatchers.anyMap(),
+				eq(false),
 				any(EdgeNetworkService.ResponseCallback.class)
 			)
 		)
