@@ -410,7 +410,7 @@ class UpstreamIntegrationTests {
             stateStoreEvent.eventData,
             ValueExactMatch("payload[*].key"),
             // Used to strictly validate `payload` and elements under it have same count as expected
-            CollectionEqualCount(Subtree, "payload") 
+            CollectionEqualCount(Subtree, "payload")
         )
     }
 

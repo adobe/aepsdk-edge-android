@@ -54,6 +54,9 @@ public class CompletionHandlerFunctionalTests {
 	private static final String RESPONSE_BODY_WITH_TWO_ERRORS =
 		"\u0000{\"requestId\": \"0ee43289-4a4e-469a-bf5c-1d8186919a27\",\"errors\": [{\"message\": \"An error occurred while calling the 'X' service for this request. Please try again.\", \"code\": \"502\"}, {\"message\": \"An error occurred while calling the 'Y', service unavailable\", \"code\": \"503\"}]}\n";
 
+	private static final String RESPONSE_BODY_WITH_EVENT_ERROR =
+		"\u0000{\"requestId\": \"0ee43289-4a4e-469a-bf5c-1d8186919a28\",\"handle\": [],\"errors\": [{\"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\"status\": 503,\"title\": \"Service Unavailable\",\"detail\": \"The service is temporarily unavailable\",\"report\": {\"eventIndex\": 0}}]}\n";
+
 	@Rule
 	public RuleChain rule = RuleChain.outerRule(new LogOnErrorRule()).around(new SetupCoreRule());
 
@@ -329,6 +332,125 @@ public class CompletionHandlerFunctionalTests {
 		mockNetworkService.assertAllNetworkRequestExpectations();
 		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch1.await(1, TimeUnit.SECONDS));
 		assertTrue("Timeout waiting for EdgeCallback completion handler.", latch2.await(1, TimeUnit.SECONDS));
+	}
+
+	@Test
+	public void testSendEvent_withEdgeCallbackWithError_whenServerReturnsEventError_deliversOnError()
+		throws InterruptedException {
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(
+			RESPONSE_BODY_WITH_EVENT_ERROR,
+			200
+		);
+		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
+
+		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
+			.setXdmSchema(
+				new HashMap<String, Object>() {
+					{
+						put("eventType", "personalizationEvent");
+						put("test", "xdm");
+					}
+				}
+			)
+			.build();
+
+		final CountDownLatch completeLatch = new CountDownLatch(1);
+		final CountDownLatch errorLatch = new CountDownLatch(1);
+		final List<EdgeEventHandle> receivedHandles = new ArrayList<>();
+		final List<EdgeEventError> receivedErrors = new ArrayList<>();
+
+		// Exercises the new Edge.sendEvent(ExperienceEvent, EdgeCallbackWithError) overload end-to-end:
+		// server event error → NetworkResponseHandler.buildEdgeEventError → CompletionCallbacksManager
+		// → EdgeCallbackWithError.onError.
+		Edge.sendEvent(
+			experienceEvent,
+			new EdgeCallbackWithError() {
+				@Override
+				public void onComplete(final List<EdgeEventHandle> handles) {
+					receivedHandles.addAll(handles);
+					completeLatch.countDown();
+				}
+
+				@Override
+				public void onError(final List<EdgeEventError> errors) {
+					receivedErrors.addAll(errors);
+					errorLatch.countDown();
+				}
+			}
+		);
+
+		mockNetworkService.assertAllNetworkRequestExpectations();
+		assertTrue("Timeout waiting for onComplete.", completeLatch.await(1, TimeUnit.SECONDS));
+		assertTrue("Timeout waiting for onError.", errorLatch.await(1, TimeUnit.SECONDS));
+
+		assertEquals(0, receivedHandles.size());
+		assertEquals(1, receivedErrors.size());
+		EdgeEventError error = receivedErrors.get(0);
+		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0201-503", error.getType());
+		assertEquals(503, error.getStatus());
+		assertEquals("Service Unavailable", error.getTitle());
+		assertEquals("The service is temporarily unavailable", error.getDetail());
+	}
+
+	@Test
+	public void testSendEvent_withEdgeCallbackWithError_whenHandleAndEventError_deliversBothCallbacks()
+		throws InterruptedException {
+		// One 200 response for a single event carrying BOTH a handle and a per-event error. The public
+		// EdgeCallbackWithError must receive its handle via onComplete AND its error via onError — the
+		// merged index-ordered processing keeps both from being dropped.
+		final String responseBodyWithHandleAndEventError =
+			"\u0000{\"requestId\": \"0ee43289-4a4e-469a-bf5c-1d8186919a29\",\"handle\": [{\"payload\": [{\"id\": \"AT:eyJhY3Rpdml0eUlkIjoiMTE3NTg4IiwiZXhwZXJpZW5jZUlkIjoiMSJ9\",\"scope\": \"buttonColor\",\"items\": [{\"schema\": \"https://ns.adobe.com/personalization/json-content-item\",\"data\": {\"content\": {\"value\": \"#D41DBA\"}}}]}],\"type\": \"personalization:decisions\"}],\"errors\": [{\"type\": \"https://ns.adobe.com/aep/errors/EXEG-0201-503\",\"status\": 503,\"title\": \"Service Unavailable\",\"detail\": \"The service is temporarily unavailable\",\"report\": {\"eventIndex\": 0}}]}\n";
+		HttpConnecting responseConnection = mockNetworkService.createMockNetworkResponse(
+			responseBodyWithHandleAndEventError,
+			200
+		);
+		mockNetworkService.setMockResponseFor(EXEDGE_INTERACT_URL_STRING, POST, responseConnection);
+		mockNetworkService.setExpectationForNetworkRequest(EXEDGE_INTERACT_URL_STRING, POST, 1);
+
+		ExperienceEvent experienceEvent = new ExperienceEvent.Builder()
+			.setXdmSchema(
+				new HashMap<String, Object>() {
+					{
+						put("eventType", "personalizationEvent");
+						put("test", "xdm");
+					}
+				}
+			)
+			.build();
+
+		final CountDownLatch completeLatch = new CountDownLatch(1);
+		final CountDownLatch errorLatch = new CountDownLatch(1);
+		final List<EdgeEventHandle> receivedHandles = new ArrayList<>();
+		final List<EdgeEventError> receivedErrors = new ArrayList<>();
+
+		Edge.sendEvent(
+			experienceEvent,
+			new EdgeCallbackWithError() {
+				@Override
+				public void onComplete(final List<EdgeEventHandle> handles) {
+					receivedHandles.addAll(handles);
+					completeLatch.countDown();
+				}
+
+				@Override
+				public void onError(final List<EdgeEventError> errors) {
+					receivedErrors.addAll(errors);
+					errorLatch.countDown();
+				}
+			}
+		);
+
+		mockNetworkService.assertAllNetworkRequestExpectations();
+		assertTrue("Timeout waiting for onComplete.", completeLatch.await(1, TimeUnit.SECONDS));
+		assertTrue("Timeout waiting for onError.", errorLatch.await(1, TimeUnit.SECONDS));
+
+		assertEquals(1, receivedHandles.size());
+		assertEquals("personalization:decisions", receivedHandles.get(0).getType());
+		assertEquals(1, receivedErrors.size());
+		EdgeEventError error = receivedErrors.get(0);
+		assertEquals("https://ns.adobe.com/aep/errors/EXEG-0201-503", error.getType());
+		assertEquals(503, error.getStatus());
 	}
 
 	/**

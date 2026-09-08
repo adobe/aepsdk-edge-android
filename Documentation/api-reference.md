@@ -138,6 +138,31 @@ Edge.sendEvent(experienceEvent, new EdgeCallback() {
 });
 ```
 
+##### Receiving per-event errors (`EdgeCallbackWithError`)
+
+Starting with `Edge` extension version **3.1.2** onwards, an overload accepts an `EdgeCallbackWithError`, which extends `EdgeCallback` with an `onError` method. Use it to receive both success handles and per-event errors returned by the Edge Network in a single callback — useful with [event batching](batching-config.md), where the Edge Network can report an error for a specific event in a batch.
+
+```java
+public static void sendEvent(final ExperienceEvent experienceEvent, final EdgeCallbackWithError callback);
+```
+
+* `onComplete(List<EdgeEventHandle>)` returns the success handles (same as `EdgeCallback`).
+* `onError(List<EdgeEventError>)` is invoked when one or more errors are returned for the event; it may be invoked in addition to `onComplete` when some handles were also returned. Each `EdgeEventError` exposes `getType()`, `getStatus()`, `getTitle()`, and `getDetail()`.
+
+```java
+Edge.sendEvent(experienceEvent, new EdgeCallbackWithError() {
+  @Override
+  public void onComplete(final List<EdgeEventHandle> handles) {
+    // Handle the success response handles
+  }
+
+  @Override
+  public void onError(final List<EdgeEventError> errors) {
+    // Handle per-event errors returned by the Edge Network
+  }
+});
+```
+
 ##### Example with Datastream ID override
 
 ```java

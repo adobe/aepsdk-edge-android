@@ -72,6 +72,24 @@ class EdgeNetworkService {
 		}
 	}
 
+	/**
+	 * Granular classification of a completed network attempt, used by batch processing to
+	 * decide the next queue action without re-inspecting HTTP codes.
+	 *
+	 * <ul>
+	 *   <li>{@link #SUCCESS}     — 2xx / 207: response callbacks already fired; remove batch.</li>
+	 *   <li>{@link #RETRY}       — recoverable (429 / 5xx / timeout): nothing ingested; retry batch.</li>
+	 *   <li>{@link #EXPLODE_400} — 400: nothing ingested; re-send each event individually.</li>
+	 *   <li>{@link #DROP}        — other non-recoverable (403, 404, 422 …): drop batch, error all.</li>
+	 * </ul>
+	 */
+	public enum NetworkRequestOutcome {
+		SUCCESS,
+		RETRY,
+		EXPLODE_400,
+		DROP,
+	}
+
 	interface ResponseCallback {
 		/**
 		 * This method is called when the response was successfully fetched from the Adobe Experience Edge
@@ -144,6 +162,27 @@ class EdgeNetworkService {
 		final Map<String, String> requestHeaders,
 		final ResponseCallback responseCallback
 	) {
+		return doRequest(url, jsonRequest, requestHeaders, false, responseCallback);
+	}
+
+	/**
+	 * Same as {@link #doRequest(String, String, Map, ResponseCallback)}, with one additional
+	 * distinction: whether a 400 response is classified as {@link NetworkRequestOutcome#EXPLODE_400}
+	 * (only meaningful for a real multi-event batch, which the caller is prepared to explode into
+	 * individual resends) or treated as any other unrecoverable error code (single-event requests,
+	 * including exploded resends and Consent/Reset — identical to this method's behaviour before
+	 * batching existed).
+	 *
+	 * @param isBatchRequest true if {@code jsonRequest} carries more than one event and the caller
+	 *                       will explode a 400 into individual resends; false for single-event requests
+	 */
+	RetryResult doRequest(
+		final String url,
+		final String jsonRequest,
+		final Map<String, String> requestHeaders,
+		final boolean isBatchRequest,
+		final ResponseCallback responseCallback
+	) {
 		if (StringUtils.isNullOrEmpty(url)) {
 			Log.error(LOG_TAG, LOG_SOURCE, "Could not send request to a null url");
 
@@ -151,13 +190,16 @@ class EdgeNetworkService {
 				responseCallback.onComplete();
 			}
 
-			return new RetryResult(Retry.NO);
+			return new RetryResult(NetworkRequestOutcome.DROP, 0);
 		}
 
 		HttpConnecting connection = doConnect(url, jsonRequest, requestHeaders);
 
 		if (connection == null) {
-			final RetryResult retryResult = new RetryResult(Retry.YES);
+			final RetryResult retryResult = new RetryResult(
+				NetworkRequestOutcome.RETRY,
+				EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS
+			);
 			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -167,7 +209,7 @@ class EdgeNetworkService {
 			return retryResult;
 		}
 
-		RetryResult retryResult = new RetryResult(Retry.NO);
+		RetryResult retryResult = new RetryResult(NetworkRequestOutcome.SUCCESS, 0);
 
 		if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
 			Log.debug(
@@ -195,7 +237,8 @@ class EdgeNetworkService {
 				connection.getResponseMessage()
 			);
 		} else if (recoverableNetworkErrorCodes.contains(connection.getResponseCode())) {
-			retryResult = new RetryResult(Retry.YES, computeRetryInterval(connection));
+			final int retryInterval = computeRetryInterval(connection);
+			retryResult = new RetryResult(NetworkRequestOutcome.RETRY, retryInterval);
 
 			if (connection.getResponseCode() == -1) {
 				Log.debug(
@@ -231,7 +274,22 @@ class EdgeNetworkService {
 				shouldStreamResponse ? konductorConfig.getLineFeed() : null,
 				responseCallback
 			);
+		} else if (isBatchRequest && connection.getResponseCode() == HttpURLConnection.HTTP_BAD_REQUEST) {
+			// 400 on a real batch means nothing was ingested and the caller will explode it to
+			// individual requests. Suppress handleError and onComplete here so events don't get
+			// phantom error/complete callbacks before the individual resends are attempted; each
+			// exploded resend gets its own fresh error (if any) from its own single-event attempt.
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Connection to Experience Edge returned 400 Bad Request. Response message: %s. Nothing ingested.",
+				connection.getResponseMessage()
+			);
+			retryResult = new RetryResult(NetworkRequestOutcome.EXPLODE_400, 0);
 		} else {
+			// A single-event 400 (including an exploded resend) falls through here, identical to any
+			// other unrecoverable error code — same log line, same handleError→onError→onComplete flow
+			// as before batching existed.
 			Log.warning(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -240,11 +298,18 @@ class EdgeNetworkService {
 				connection.getResponseMessage()
 			);
 			handleError(connection.getErrorStream(), responseCallback);
+			retryResult = new RetryResult(NetworkRequestOutcome.DROP, 0);
 		}
 
 		connection.close();
 
-		if (retryResult.getShouldRetry() == Retry.NO && responseCallback != null) {
+		// For EXPLODE_400, skip onComplete: the caller will re-register individual events under
+		// new request IDs and fire their own completions after explosion.
+		if (
+			retryResult.getShouldRetry() == Retry.NO &&
+			retryResult.getNetworkRequestOutcome() != NetworkRequestOutcome.EXPLODE_400 &&
+			responseCallback != null
+		) {
 			responseCallback.onComplete();
 		}
 

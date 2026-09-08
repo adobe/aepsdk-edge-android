@@ -12,13 +12,32 @@
 package com.adobe.marketing.mobile;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.mockStatic;
 
 import com.adobe.marketing.mobile.util.JSONAsserts;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+import org.mockito.MockedStatic;
 
 public class EventUtilsTests {
+
+	private MockedStatic<EdgeBundledBatchingConfig> mockBundledBatchingConfigStatic;
+
+	@Before
+	public void setup() {
+		mockBundledBatchingConfigStatic = mockStatic(EdgeBundledBatchingConfig.class);
+		mockBundledBatchingConfigStatic.when(EdgeBundledBatchingConfig::get).thenReturn(Collections.emptyMap());
+	}
+
+	@After
+	public void tearDown() {
+		mockBundledBatchingConfigStatic.close();
+	}
 
 	@Test
 	public void testGetEdgeConfiguration_allValidConfigs() {
@@ -193,5 +212,80 @@ public class EventUtilsTests {
 		);
 
 		assertEquals(0, result.size());
+	}
+
+	// -------------------------------------------------------------------------
+	// Batching config (edge.batching) — wholesale resolution
+	// -------------------------------------------------------------------------
+
+	@Test
+	public void testGetEdgeConfiguration_edgeBatching_presentInSharedState_bundledConfigIgnored() {
+		Map<String, Object> bundled = new HashMap<>();
+		bundled.put("enabled", false);
+		mockBundledBatchingConfigStatic.when(EdgeBundledBatchingConfig::get).thenReturn(bundled);
+
+		final Map<String, Object> remote = new HashMap<>();
+		remote.put("enabled", true);
+
+		Map<String, Object> result = EventUtils.getEdgeConfiguration(
+			new HashMap<String, Object>() {
+				{
+					put("edge.batching", remote);
+				}
+			}
+		);
+
+		assertEquals(remote, result.get("edge.batching"));
+	}
+
+	@Test
+	public void testGetEdgeConfiguration_edgeBatching_absentFromSharedState_usesBundledConfig() {
+		Map<String, Object> bundled = new HashMap<>();
+		bundled.put("enabled", true);
+		mockBundledBatchingConfigStatic.when(EdgeBundledBatchingConfig::get).thenReturn(bundled);
+
+		Map<String, Object> result = EventUtils.getEdgeConfiguration(new HashMap<>());
+
+		assertEquals(bundled, result.get("edge.batching"));
+	}
+
+	@Test
+	public void testGetEdgeConfiguration_edgeBatching_absentFromBoth_keyNotInResult() {
+		Map<String, Object> result = EventUtils.getEdgeConfiguration(new HashMap<>());
+
+		assertEquals(false, result.containsKey("edge.batching"));
+	}
+
+	// -------------------------------------------------------------------------
+	// getXdmEventType
+	// -------------------------------------------------------------------------
+
+	@Test
+	public void testGetXdmEventType_present() {
+		final Map<String, Object> xdm = new HashMap<>();
+		xdm.put("eventType", "commerce.purchases");
+		Event event = new Event.Builder("test", EventType.EDGE, EventSource.REQUEST_CONTENT)
+			.setEventData(Collections.singletonMap("xdm", xdm))
+			.build();
+
+		assertEquals("commerce.purchases", EventUtils.getXdmEventType(event));
+	}
+
+	@Test
+	public void testGetXdmEventType_noXdm_returnsNull() {
+		Event event = new Event.Builder("test", EventType.EDGE, EventSource.REQUEST_CONTENT)
+			.setEventData(Collections.singletonMap("data", "value"))
+			.build();
+
+		assertNull(EventUtils.getXdmEventType(event));
+	}
+
+	@Test
+	public void testGetXdmEventType_xdmWithoutEventType_returnsNull() {
+		Event event = new Event.Builder("test", EventType.EDGE, EventSource.REQUEST_CONTENT)
+			.setEventData(Collections.singletonMap("xdm", Collections.singletonMap("_id", "1")))
+			.build();
+
+		assertNull(EventUtils.getXdmEventType(event));
 	}
 }

@@ -82,10 +82,49 @@ final class EventUtils {
 			MapUtils.putIfNotEmpty(edgeConfig, configKey, configValue);
 		}
 
+		// Batching config (edge.batching) is resolved wholesale, not per-key: the entire grouped
+		// object is taken from the Configuration shared state when present (remote/Launch), otherwise
+		// from the bundled asset file. Both sources use the identical grouped format, so a single
+		// object either wins or falls back as a unit — keeping behavior predictable and making
+		// bundled-vs-remote comparison straightforward. Parsed lazily by EdgeBatchingConfig at use.
+		final Map<String, Object> remoteBatchingConfig = DataReader.optTypedMap(
+			Object.class,
+			configSharedState,
+			EdgeConstants.SharedState.Configuration.EDGE_BATCHING,
+			null
+		);
+		if (remoteBatchingConfig != null) {
+			edgeConfig.put(EdgeConstants.SharedState.Configuration.EDGE_BATCHING, remoteBatchingConfig);
+		} else {
+			final Map<String, Object> bundledBatchingConfig = EdgeBundledBatchingConfig.get();
+			if (!bundledBatchingConfig.isEmpty()) {
+				edgeConfig.put(EdgeConstants.SharedState.Configuration.EDGE_BATCHING, bundledBatchingConfig);
+			}
+		}
+
 		return edgeConfig;
 	}
 
 	static Map<String, Object> getConfig(@NonNull final Event event) {
 		return DataReader.optTypedMap(Object.class, event.getEventData(), EdgeConstants.EventDataKeys.Config.KEY, null);
+	}
+
+	/**
+	 * Extracts {@code xdm.eventType} from the event's data, used as the batching whitelist key.
+	 *
+	 * @param event the outgoing Experience Event
+	 * @return the {@code xdm.eventType} value, or null if the event has no XDM or no {@code eventType}
+	 */
+	@androidx.annotation.Nullable static String getXdmEventType(@NonNull final Event event) {
+		final Map<String, Object> xdm = DataReader.optTypedMap(
+			Object.class,
+			event.getEventData(),
+			EdgeJson.Event.XDM,
+			null
+		);
+		if (xdm == null) {
+			return null;
+		}
+		return DataReader.optString(xdm, EdgeJson.Event.Xdm.EVENT_TYPE, null);
 	}
 }
