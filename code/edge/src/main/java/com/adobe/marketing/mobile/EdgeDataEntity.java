@@ -32,6 +32,7 @@ final class EdgeDataEntity {
 	private static final String CONFIGURATION_KEY = "configuration";
 	private static final String IDENTITY_MAP_KEY = "identityMap";
 	private static final String EVENT_KEY = "event";
+	private static final String BYPASS_EVENT_DATA_KEY = "bypassEventData";
 
 	private final Event event;
 	private final Map<String, Object> configuration;
@@ -96,6 +97,12 @@ final class EdgeDataEntity {
 		try {
 			JSONObject serializedEntity = new JSONObject();
 			serializedEntity.put(EVENT_KEY, new JSONObject(EventCoder.encode(this.event)));
+			if (EventUtils.isBypassConsentEvent(this.event)) {
+				serializedEntity.put(
+					BYPASS_EVENT_DATA_KEY,
+					EdgeJson.toJsonObjectPreservingNulls(this.event.getEventData())
+				);
+			}
 			serializedEntity.put(CONFIGURATION_KEY, new JSONObject(this.configuration));
 			serializedEntity.put(IDENTITY_MAP_KEY, new JSONObject(this.identityMap));
 
@@ -146,6 +153,17 @@ final class EdgeDataEntity {
 
 			String eventString = serializedEntity.getJSONObject(EVENT_KEY).toString();
 			Event event = EventCoder.decode(eventString);
+			if (serializedEntity.has(BYPASS_EVENT_DATA_KEY)) {
+				final Map<String, Object> eventData = JSONUtils.toMap(
+					serializedEntity.getJSONObject(BYPASS_EVENT_DATA_KEY)
+				);
+				event =
+					new Event.Builder(event.getName(), event.getType(), event.getSource())
+						.setUniqueIdentifier(event.getUniqueIdentifier())
+						.setTimestamp(event.getTimestamp())
+						.setEventData(eventData)
+						.build();
+			}
 
 			return new EdgeDataEntity(event, configuration, identityMap);
 		} catch (JSONException | IllegalArgumentException e) {

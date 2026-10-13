@@ -315,6 +315,26 @@ public class EdgeNetworkServiceTest {
 	}
 
 	@Test
+	public void testDoBypassConsentRequest_all2xxAccepted_andTerminalErrorsHaveStatus() {
+		networkService = new EdgeNetworkService(mockNetworkService);
+		for (int status : new int[] { 200, 201, 202, 204, 207, 299, 400, 403, 422, 408, 429, 502, 503, 504 }) {
+			MockConnection connection = new MockConnection(status, "{\"handle\":[]}", null);
+			mockNetworkService.setDefaultResponse(connection);
+			RetryResult result = networkService.doBypassConsentRequest(TEST_URL, "{}", requestHeaders);
+			assertEquals(Integer.valueOf(status), result.getHttpStatus());
+			assertEquals(
+				status < 300
+					? EdgeNetworkService.NetworkRequestOutcome.SUCCESS
+					: status == 408 || status == 429 || status >= 502
+						? EdgeNetworkService.NetworkRequestOutcome.RETRY
+						: EdgeNetworkService.NetworkRequestOutcome.DROP,
+				result.getNetworkRequestOutcome()
+			);
+			assertEquals(1, connection.closeCalledTimes);
+		}
+	}
+
+	@Test
 	public void testDoRequest_whenConnection_ResponseCode204_ReturnsRetryNo_AndNoResponseCallback_AndNoErrorCallback() {
 		// setup
 		final String jsonRequest = "{}";

@@ -27,6 +27,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 class RequestBuilder {
@@ -245,7 +246,17 @@ class RequestBuilder {
 			);
 		}
 
-		return new JSONObject(payload);
+		try {
+			return EdgeJson.toJsonObjectPreservingNulls(payload);
+		} catch (JSONException e) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Failed to serialize device-attributes payload: %s",
+				e.getLocalizedMessage()
+			);
+			return null;
+		}
 	}
 
 	private KonductorConfig buildKonductorConfig() {

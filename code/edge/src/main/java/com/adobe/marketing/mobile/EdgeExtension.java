@@ -15,6 +15,7 @@ import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
+import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.DataQueue;
 import com.adobe.marketing.mobile.services.HitQueuing;
 import com.adobe.marketing.mobile.services.Log;
@@ -52,6 +53,11 @@ class EdgeExtension extends Extension {
 		@Override
 		public SharedStateResult getSharedState(final String stateOwner, final Event event) {
 			return getApi().getSharedState(stateOwner, event, false, SharedStateResolution.ANY);
+		}
+
+		@Override
+		public SharedStateResult getXDMSharedState(final String stateOwner, final Event event) {
+			return getApi().getXDMSharedState(stateOwner, event, false, SharedStateResolution.ANY);
 		}
 
 		@Override
@@ -264,6 +270,7 @@ class EdgeExtension extends Extension {
 	 */
 	void handleBypassConsentRequest(@NonNull final Event event) {
 		if (MapUtils.isNullOrEmpty(event.getEventData())) {
+			BypassConsentOutcome.dispatch(event, "dropped", "invalidPayload", null);
 			Log.trace(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -401,6 +408,9 @@ class EdgeExtension extends Extension {
 		Map<String, Object> configReady = getConfigurationState(event);
 
 		if (configReady == null) {
+			if (bypassConsent) {
+				BypassConsentOutcome.dispatch(event, "dropped", "missingConfig", null);
+			}
 			Log.warning(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -418,6 +428,9 @@ class EdgeExtension extends Extension {
 			)
 		) {
 			// drop this event if configId is invalid (config id is a mandatory parameters for requests to Konductor)
+			if (bypassConsent) {
+				BypassConsentOutcome.dispatch(event, "dropped", "missingConfig", null);
+			}
 			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -430,6 +443,9 @@ class EdgeExtension extends Extension {
 		Map<String, Object> identityReady = getIdentityXDMState(event);
 
 		if (identityReady == null) {
+			if (bypassConsent) {
+				BypassConsentOutcome.dispatch(event, "failed", "identityUnavailable", null);
+			}
 			Log.warning(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -441,6 +457,9 @@ class EdgeExtension extends Extension {
 
 		final HitQueuing targetQueue = bypassConsent ? bypassConsentHitQueue : hitQueue;
 		if (targetQueue == null) {
+			if (bypassConsent) {
+				BypassConsentOutcome.dispatch(event, "failed", "queueUnavailable", null);
+			}
 			Log.warning(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -451,7 +470,16 @@ class EdgeExtension extends Extension {
 		}
 
 		EdgeDataEntity entity = new EdgeDataEntity(event, edgeConfig, identityReady);
-		targetQueue.queue(entity.toDataEntity());
+		final DataEntity dataEntity = entity.toDataEntity();
+		if (dataEntity == null) {
+			if (bypassConsent) {
+				BypassConsentOutcome.dispatch(event, "dropped", "invalidPayload", null);
+			}
+			return;
+		}
+		if (!targetQueue.queue(dataEntity) && bypassConsent) {
+			BypassConsentOutcome.dispatch(event, "failed", "queueUnavailable", null);
+		}
 	}
 
 	/**

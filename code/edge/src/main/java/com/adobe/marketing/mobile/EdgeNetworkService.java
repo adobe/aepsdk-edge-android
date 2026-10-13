@@ -185,6 +185,25 @@ class EdgeNetworkService {
 		final boolean isBatchRequest,
 		final ResponseCallback responseCallback
 	) {
+		return doRequest(url, jsonRequest, requestHeaders, isBatchRequest, false, responseCallback);
+	}
+
+	RetryResult doBypassConsentRequest(
+		final String url,
+		final String jsonRequest,
+		final Map<String, String> requestHeaders
+	) {
+		return doRequest(url, jsonRequest, requestHeaders, false, true, null);
+	}
+
+	private RetryResult doRequest(
+		final String url,
+		final String jsonRequest,
+		final Map<String, String> requestHeaders,
+		final boolean isBatchRequest,
+		final boolean bypassConsent,
+		final ResponseCallback responseCallback
+	) {
 		if (StringUtils.isNullOrEmpty(url)) {
 			Log.error(LOG_TAG, LOG_SOURCE, "Could not send request to a null url");
 
@@ -213,7 +232,9 @@ class EdgeNetworkService {
 
 		RetryResult retryResult = new RetryResult(NetworkRequestOutcome.SUCCESS, 0);
 
-		if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+		if (bypassConsent && connection.getResponseCode() >= 200 && connection.getResponseCode() < 300) {
+			// Device-attributes acceptance is terminal, including 202; ordinary response handling is unchanged.
+		} else if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
 			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -320,6 +341,7 @@ class EdgeNetworkService {
 			retryResult = new RetryResult(NetworkRequestOutcome.DROP, 0);
 		}
 
+		retryResult.withHttpStatus(connection.getResponseCode());
 		connection.close();
 
 		// For EXPLODE_400, skip onComplete: the caller will re-register individual events under

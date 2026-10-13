@@ -386,6 +386,12 @@ public class EdgeHitProcessorTests {
 		mockSharedStateCallback =
 			new EdgeSharedStateCallback() {
 				@Override
+				public SharedStateResult getXDMSharedState(final String stateOwner, final Event event) {
+					assertNull(event);
+					return new SharedStateResult(SharedStateStatus.SET, identityMap);
+				}
+
+				@Override
 				public SharedStateResult getSharedState(final String stateOwner, final Event event) {
 					if (EdgeConstants.SharedState.ASSURANCE.equals(stateOwner)) {
 						assertNull(event); // assert always fetches latest assurance shared state
@@ -743,15 +749,7 @@ public class EdgeHitProcessorTests {
 
 		when(mockEdgeNetworkService.buildUrl(any(EdgeEndpoint.class), anyString(), anyString()))
 			.thenReturn("https://edge.adobedc.net/ee/v1/mobile/device-attributes?configId=works");
-		when(
-			mockEdgeNetworkService.doRequest(
-				anyString(),
-				anyString(),
-				ArgumentMatchers.anyMap(),
-				eq(false),
-				any(EdgeNetworkService.ResponseCallback.class)
-			)
-		)
+		when(mockEdgeNetworkService.doBypassConsentRequest(anyString(), anyString(), ArgumentMatchers.anyMap()))
 			.thenReturn(new RetryResult(EdgeNetworkService.Retry.NO));
 		final boolean[] processingCompleted = new boolean[1];
 
@@ -767,22 +765,12 @@ public class EdgeHitProcessorTests {
 
 		ArgumentCaptor<String> requestBodyCaptor = ArgumentCaptor.forClass(String.class);
 		verify(mockEdgeNetworkService)
-			.doRequest(
-				anyString(),
-				requestBodyCaptor.capture(),
-				ArgumentMatchers.anyMap(),
-				eq(false),
-				any(EdgeNetworkService.ResponseCallback.class)
-			);
+			.doBypassConsentRequest(anyString(), requestBodyCaptor.capture(), ArgumentMatchers.anyMap());
 		JSONObject requestBody = new JSONObject(requestBodyCaptor.getValue());
 		assertEquals("com.example.app", requestBody.getJSONObject("app").getString("id"));
 		assertEquals("test-token", requestBody.getJSONObject("tokens").getString("pushNotification"));
 		assertTrue(requestBody.getJSONObject(EdgeJson.Event.XDM).has(EdgeJson.Event.Xdm.IDENTITY_MAP));
-		ArgumentCaptor<String> requestIdCaptor = ArgumentCaptor.forClass(String.class);
-		ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
-		verify(mockNetworkResponseHandler).addWaitingEvent(requestIdCaptor.capture(), eventCaptor.capture());
-		assertNotNull(requestIdCaptor.getValue());
-		assertEquals(event.getUniqueIdentifier(), eventCaptor.getValue().getUniqueIdentifier());
+		verify(mockNetworkResponseHandler, never()).addWaitingEvent(anyString(), any(Event.class));
 	}
 
 	// Test void processHit(@NonNull final DataEntity dataEntity, @NonNull final HitProcessingResult processingResult)
