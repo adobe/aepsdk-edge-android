@@ -491,7 +491,7 @@ class EdgeHitProcessor implements HitProcessing {
 		} else if (EventUtils.isUpdateConsentEvent(entity.getEvent())) {
 			hitCompleteResult = processUpdateConsentEventHit(dataEntity.getUniqueIdentifier(), entity);
 		} else if (EventUtils.isBypassConsentEvent(entity.getEvent())) {
-			hitCompleteResult = processBypassConsentEventHit(dataEntity.getUniqueIdentifier(), entity);
+			hitCompleteResult = processBypassConsent(dataEntity.getUniqueIdentifier(), entity);
 		} else if (EventUtils.isResetComplete(entity.getEvent())) {
 			// clear state store
 			final StoreResponsePayloadManager payloadManager = new StoreResponsePayloadManager(namedCollection);
@@ -671,9 +671,9 @@ class EdgeHitProcessor implements HitProcessing {
 	 * @param entity the queued event and its configuration/identity snapshots
 	 * @return true if request processing is complete; false if it should be retried
 	 */
-	private boolean processBypassConsentEventHit(@NonNull final String entityId, @NonNull final EdgeDataEntity entity) {
-		final RequestBuilder request = new RequestBuilder(namedCollection);
-		request.addXdmPayload(entity.getIdentityMap());
+	private boolean processBypassConsent(@NonNull final String entityId, @NonNull final EdgeDataEntity entity) {
+		final RequestBuilder requestBuilder = new RequestBuilder(namedCollection);
+		requestBuilder.addXdmPayload(entity.getIdentityMap());
 
 		Map<String, Object> edgeConfig = entity.getConfiguration();
 		String datastreamId = DataReader.optString(
@@ -691,7 +691,7 @@ class EdgeHitProcessor implements HitProcessing {
 			return true;
 		}
 
-		JSONObject payload = request.getPayloadWithDeviceAttributes(
+		JSONObject payload = requestBuilder.generateNoConsentPayload(
 			entity.getEvent(),
 			stateCallback != null ? stateCallback.getImplementationDetails() : null
 		);
@@ -706,13 +706,13 @@ class EdgeHitProcessor implements HitProcessing {
 			return true;
 		}
 
-		final EdgeEndpoint edgeEndpoint = getEdgeEndpoint(
+		final EdgeEndpoint endpoint = getEdgeEndpoint(
 			EdgeNetworkService.RequestType.DEVICE_ATTRIBUTES,
 			edgeConfig,
 			null
 		);
-		final EdgeHit edgeHit = new EdgeHit(datastreamId, payload, edgeEndpoint);
-		final String url = networkService.buildUrl(edgeEndpoint, datastreamId, edgeHit.getRequestId());
+		final EdgeHit edgeHit = new EdgeHit(datastreamId, payload, endpoint);
+		final String url = networkService.buildUrl(endpoint, datastreamId, edgeHit.getRequestId());
 		if (!isValidUrl(url)) {
 			BypassConsentOutcome.dispatch(entity.getEvent(), "dropped", "invalidPayload", null);
 			return true;

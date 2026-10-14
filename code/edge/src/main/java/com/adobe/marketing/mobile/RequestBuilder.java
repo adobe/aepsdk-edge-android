@@ -212,7 +212,7 @@ class RequestBuilder {
 	 * @param implementationDetails SDK implementation details, if available
 	 * @return the request body or null when the event has no data
 	 */
-	JSONObject getPayloadWithDeviceAttributes(final Event event, final Map<String, Object> implementationDetails) {
+	JSONObject generateNoConsentPayload(final Event event, final Map<String, Object> implementationDetails) {
 		if (event == null || MapUtils.isNullOrEmpty(event.getEventData())) {
 			Log.debug(LOG_TAG, LOG_SOURCE, "Unable to build device-attributes payload, event data is null or empty.");
 			return null;

@@ -579,7 +579,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithDeviceAttributes_passesThroughOperationalDataAndAddsXdm() throws Exception {
+	public void generateNoConsentPayload_passesThroughOperationalDataAndAddsXdm() throws Exception {
 		Map<String, Object> appData = new HashMap<>();
 		appData.put("id", "com.example.app");
 		Map<String, Object> tokenData = new HashMap<>();
@@ -629,7 +629,7 @@ public class RequestBuilderTest {
 			}
 		);
 
-		JSONObject payload = requestBuilder.getPayloadWithDeviceAttributes(event, implementationDetails);
+		JSONObject payload = requestBuilder.generateNoConsentPayload(event, implementationDetails);
 
 		assertExactMatch(
 			"{" +
@@ -646,7 +646,7 @@ public class RequestBuilderTest {
 	}
 
 	@Test
-	public void getPayloadWithDeviceAttributes_addsPersistedStateMetadata() throws Exception {
+	public void generateNoConsentPayload_addsPersistedStateMetadata() throws Exception {
 		setupMockStoreMetadata();
 		Event event = new Event.Builder(
 			"Device Attributes",
@@ -669,7 +669,7 @@ public class RequestBuilderTest {
 			)
 			.build();
 
-		JSONObject payload = requestBuilder.getPayloadWithDeviceAttributes(event, null);
+		JSONObject payload = requestBuilder.generateNoConsentPayload(event, null);
 
 		assertExactMatch(
 			"{" +
