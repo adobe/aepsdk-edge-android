@@ -26,10 +26,6 @@ interface EdgeSharedStateCallback {
 	 */
 	SharedStateResult getSharedState(final String stateOwner, final Event event);
 
-	default SharedStateResult getXDMSharedState(final String stateOwner, final Event event) {
-		return null;
-	}
-
 	/**
 	 * Create a new shared state for this {@code Edge} extension at the given {@code event}.
 	 *

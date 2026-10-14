@@ -17,6 +17,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.*;
 
 import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.services.NetworkRequest;
@@ -40,6 +41,7 @@ import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InOrder;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -320,7 +322,7 @@ public class EdgeNetworkServiceTest {
 		for (int status : new int[] { 200, 201, 202, 204, 207, 299, 400, 403, 422, 408, 429, 502, 503, 504 }) {
 			MockConnection connection = new MockConnection(status, "{\"handle\":[]}", null);
 			mockNetworkService.setDefaultResponse(connection);
-			RetryResult result = networkService.doBypassConsentRequest(TEST_URL, "{}", requestHeaders);
+			RetryResult result = networkService.doBypassConsentRequest(TEST_URL, "{}", requestHeaders, null);
 			assertEquals(Integer.valueOf(status), result.getHttpStatus());
 			assertEquals(
 				status < 300
@@ -332,6 +334,79 @@ public class EdgeNetworkServiceTest {
 			);
 			assertEquals(1, connection.closeCalledTimes);
 		}
+	}
+
+	@Test
+	public void testDoBypassConsentRequest_every2xxForwardsBodyBeforeCompletion() {
+		networkService = new EdgeNetworkService(mockNetworkService);
+		final String responseBody = "{\"handle\":[]}";
+		for (int status = 200; status < 300; status++) {
+			MockConnection connection = new MockConnection(status, responseBody, null);
+			mockNetworkService.setDefaultResponse(connection);
+			EdgeNetworkService.ResponseCallback callback = mock(EdgeNetworkService.ResponseCallback.class);
+
+			RetryResult result = networkService.doBypassConsentRequest(TEST_URL, "{}", requestHeaders, callback);
+
+			assertEquals(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, result.getNetworkRequestOutcome());
+			assertEquals(Integer.valueOf(status), result.getHttpStatus());
+			InOrder callbacks = inOrder(callback);
+			callbacks.verify(callback).onResponse(responseBody);
+			callbacks.verify(callback).onComplete();
+			callbacks.verifyNoMoreInteractions();
+			assertEquals(1, connection.closeCalledTimes);
+		}
+	}
+
+	@Test
+	public void testDoBypassConsentRequest_emptySuccessResponseStillCompletes() {
+		networkService = new EdgeNetworkService(mockNetworkService);
+		for (int status : new int[] { 202, 204 }) {
+			MockConnection connection = new MockConnection(status, null, null);
+			mockNetworkService.setDefaultResponse(connection);
+			EdgeNetworkService.ResponseCallback callback = mock(EdgeNetworkService.ResponseCallback.class);
+
+			RetryResult result = networkService.doBypassConsentRequest(TEST_URL, "{}", requestHeaders, callback);
+
+			assertEquals(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, result.getNetworkRequestOutcome());
+			verify(callback).onComplete();
+			verifyNoMoreInteractions(callback);
+			assertEquals(1, connection.closeCalledTimes);
+		}
+	}
+
+	@Test
+	public void testDoBypassConsentRequest_retrySuppressesResponseAndCompletion() {
+		networkService = new EdgeNetworkService(mockNetworkService);
+		for (int status : new int[] { 429, 503 }) {
+			MockConnection connection = new MockConnection(status, null, "temporarily unavailable");
+			mockNetworkService.setDefaultResponse(connection);
+			EdgeNetworkService.ResponseCallback callback = mock(EdgeNetworkService.ResponseCallback.class);
+
+			RetryResult result = networkService.doBypassConsentRequest(TEST_URL, "{}", requestHeaders, callback);
+
+			assertEquals(EdgeNetworkService.NetworkRequestOutcome.RETRY, result.getNetworkRequestOutcome());
+			verifyNoInteractions(callback);
+			assertEquals(1, connection.closeCalledTimes);
+		}
+	}
+
+	@Test
+	public void testDoBypassConsentRequest_terminalErrorForwardsErrorBeforeCompletion() {
+		networkService = new EdgeNetworkService(mockNetworkService);
+		final String errorBody = "{\"title\":\"Forbidden\",\"status\":403}";
+		MockConnection connection = new MockConnection(403, null, errorBody);
+		mockNetworkService.setDefaultResponse(connection);
+		EdgeNetworkService.ResponseCallback callback = mock(EdgeNetworkService.ResponseCallback.class);
+
+		RetryResult result = networkService.doBypassConsentRequest(TEST_URL, "{}", requestHeaders, callback);
+
+		assertEquals(EdgeNetworkService.NetworkRequestOutcome.DROP, result.getNetworkRequestOutcome());
+		assertEquals(Integer.valueOf(403), result.getHttpStatus());
+		InOrder callbacks = inOrder(callback);
+		callbacks.verify(callback).onError(errorBody);
+		callbacks.verify(callback).onComplete();
+		callbacks.verifyNoMoreInteractions();
+		assertEquals(1, connection.closeCalledTimes);
 	}
 
 	@Test

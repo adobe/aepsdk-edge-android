@@ -191,9 +191,10 @@ class EdgeNetworkService {
 	RetryResult doBypassConsentRequest(
 		final String url,
 		final String jsonRequest,
-		final Map<String, String> requestHeaders
+		final Map<String, String> requestHeaders,
+		final ResponseCallback responseCallback
 	) {
-		return doRequest(url, jsonRequest, requestHeaders, false, true, null);
+		return doRequest(url, jsonRequest, requestHeaders, false, true, responseCallback);
 	}
 
 	private RetryResult doRequest(
@@ -233,7 +234,7 @@ class EdgeNetworkService {
 		RetryResult retryResult = new RetryResult(NetworkRequestOutcome.SUCCESS, 0);
 
 		if (bypassConsent && connection.getResponseCode() >= 200 && connection.getResponseCode() < 300) {
-			// Device-attributes acceptance is terminal, including 202; ordinary response handling is unchanged.
+			handleContent(connection.getInputStream(), null, null, responseCallback);
 		} else if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
 			Log.debug(
 				LOG_TAG,

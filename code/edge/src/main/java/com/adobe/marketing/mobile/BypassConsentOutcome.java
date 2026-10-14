@@ -18,7 +18,7 @@ final class BypassConsentOutcome {
 
 	private BypassConsentOutcome() {}
 
-	static void dispatch(final Event request, final String status, final String reason, final Integer httpStatus) {
+	static Event createResult(final Event request, final String status, final String reason, final Integer httpStatus) {
 		final Map<String, Object> data = new HashMap<>();
 		data.put("status", status);
 		if (reason != null) {
@@ -27,15 +27,27 @@ final class BypassConsentOutcome {
 		if (httpStatus != null) {
 			data.put("httpStatus", httpStatus);
 		}
-		MobileCore.dispatchEvent(
-			new Event.Builder(
-				"Device Attributes Response",
-				EdgeConstants.EventType.EDGE_BYPASS_CONSENT,
-				EventSource.RESPONSE_CONTENT
-			)
-				.setEventData(data)
-				.chainToParentEvent(request)
-				.build()
-		);
+		return new Event.Builder(
+			"Device Attributes Response",
+			EdgeConstants.EventType.EDGE_BYPASS_CONSENT,
+			EventSource.RESPONSE_CONTENT
+		)
+			.setEventData(data)
+			.chainToParentEvent(request)
+			.build();
+	}
+
+	static Event createDropResult(final String requestEventId) {
+		final Map<String, Object> data = new HashMap<>();
+		data.put("status", "dropped");
+		data.put("reason", "invalidPayload");
+		data.put("requestEventId", requestEventId);
+		return new Event.Builder(
+			"Device Attributes Response",
+			EdgeConstants.EventType.EDGE_BYPASS_CONSENT,
+			EventSource.RESPONSE_CONTENT
+		)
+			.setEventData(data)
+			.build();
 	}
 }

@@ -18,9 +18,14 @@ import static org.mockito.Mockito.*;
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.HitQueuing;
 import com.adobe.marketing.mobile.services.NamedCollection;
+import com.adobe.marketing.mobile.services.PersistentHitQueue;
+import com.adobe.marketing.mobile.services.ServiceProvider;
+import com.adobe.marketing.mobile.util.MockConnection;
+import com.adobe.marketing.mobile.util.MockNetworkService;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,13 +34,17 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 
 public class BypassConsentTests {
 
+	private static final String RESPONSE_HANDLES =
+		"{\"handle\":[" +
+		"{\"type\":\"locationHint:result\",\"payload\":[{\"scope\":\"EdgeNetwork\",\"hint\":\"or2\",\"ttlSeconds\":1800}]}," +
+		"{\"type\":\"state:store\",\"payload\":[{\"key\":\"device-state\",\"value\":\"value-123\",\"maxAge\":1800}]}]}";
 	private final Map<String, Object> configuration = Collections.singletonMap("edge.configId", "config");
 	private final Map<String, Object> identity = identity("sdk", "other");
-	private SharedStateResult latest;
 	private EdgeNetworkService network;
 	private NetworkResponseHandler responses;
 	private EdgeSharedStateCallback sharedStateCallback;
@@ -52,26 +61,9 @@ public class BypassConsentTests {
 				outcomes.add(call.getArgument(0));
 				return null;
 			});
-		latest = new SharedStateResult(SharedStateStatus.SET, identity);
 		network = mock(EdgeNetworkService.class);
 		responses = mock(NetworkResponseHandler.class);
-		sharedStateCallback =
-			new EdgeSharedStateCallback() {
-				@Override
-				public SharedStateResult getSharedState(String owner, Event event) {
-					return null;
-				}
-
-				@Override
-				public SharedStateResult getXDMSharedState(String owner, Event event) {
-					assertEquals(EdgeConstants.SharedState.IDENTITY, owner);
-					assertNull(event);
-					return latest;
-				}
-
-				@Override
-				public void createSharedState(Map<String, Object> state, Event event) {}
-			};
+		sharedStateCallback = mock(EdgeSharedStateCallback.class);
 		processor = newProcessor();
 	}
 
@@ -119,13 +111,36 @@ public class BypassConsentTests {
 	private void stubNetwork(RetryResult... results) {
 		when(network.buildUrl(any(), anyString(), anyString()))
 			.thenReturn("https://edge.adobedc.net/ee/v1/mobile/device-attributes");
-		when(network.doBypassConsentRequest(anyString(), anyString(), anyMap()))
-			.thenReturn(results[0], Arrays.copyOfRange(results, 1, results.length));
+		final int[] attempt = { 0 };
+		when(
+			network.doBypassConsentRequest(
+				anyString(),
+				anyString(),
+				anyMap(),
+				any(EdgeNetworkService.ResponseCallback.class)
+			)
+		)
+			.thenAnswer(invocation -> {
+				RetryResult result = results[Math.min(attempt[0]++, results.length - 1)];
+				if (result != null && result.getShouldRetry() == EdgeNetworkService.Retry.NO) {
+					invocation.<EdgeNetworkService.ResponseCallback>getArgument(3).onComplete();
+				}
+				return result;
+			});
 	}
 
 	private void assertOutcome(Event original, String status, String reason, Integer httpStatus) {
-		assertEquals(1, outcomes.size());
-		Event outcome = outcomes.get(0);
+		List<Event> bypassResults = new ArrayList<>();
+		for (Event dispatched : outcomes) {
+			if (
+				EdgeConstants.EventType.EDGE_BYPASS_CONSENT.equals(dispatched.getType()) &&
+				EventSource.RESPONSE_CONTENT.equals(dispatched.getSource())
+			) {
+				bypassResults.add(dispatched);
+			}
+		}
+		assertEquals(1, bypassResults.size());
+		Event outcome = bypassResults.get(0);
 		assertEquals(original.getUniqueIdentifier(), outcome.getParentID());
 		assertNull(outcome.getResponseID());
 		assertEquals(EdgeConstants.EventType.EDGE_BYPASS_CONSENT, outcome.getType());
@@ -133,7 +148,250 @@ public class BypassConsentTests {
 		assertEquals(status, outcome.getEventData().get("status"));
 		assertEquals(reason, outcome.getEventData().get("reason"));
 		assertEquals(httpStatus, outcome.getEventData().get("httpStatus"));
+	}
+
+	private void useNetworkResponse(
+		MockConnection connection,
+		NamedCollection collection,
+		EdgeStateCallback stateCallback
+	) {
+		MockNetworkService networking = new MockNetworkService();
+		networking.setDefaultResponse(connection);
+		responses = spy(new NetworkResponseHandler(collection, stateCallback));
+		processor =
+			new EdgeHitProcessor(
+				responses,
+				new EdgeNetworkService(networking),
+				collection,
+				sharedStateCallback,
+				stateCallback
+			);
+	}
+
+	@Test
+	public void responseHandles_updateLocationAndPersistState_beforeTerminalSuccess() {
+		NamedCollection collection = mock(NamedCollection.class);
+		EdgeStateCallback stateCallback = mock(EdgeStateCallback.class);
+		MockConnection connection = new MockConnection(202, RESPONSE_HANDLES, null);
+		useNetworkResponse(connection, collection, stateCallback);
+		Event event = request(Collections.singletonMap("timezone", "UTC"));
+
+		assertTrue(process(entity(event, configuration, identity)));
+
+		assertOutcome(event, "success", null, 202);
+		verify(stateCallback).setLocationHint("or2", 1800);
+		verify(collection, atLeastOnce())
+			.setMap(
+				eq(EdgeConstants.DataStoreKeys.STORE_PAYLOADS),
+				argThat(stores ->
+					stores.containsKey("device-state") && stores.get("device-state").contains("\"value\":\"value-123\"")
+				)
+			);
+		ArgumentCaptor<String> requestId = ArgumentCaptor.forClass(String.class);
+		verify(responses).processResponseOnSuccess(eq(RESPONSE_HANDLES), requestId.capture());
+		verify(responses)
+			.addWaitingEvent(
+				eq(requestId.getValue()),
+				argThat(queued -> event.getUniqueIdentifier().equals(queued.getUniqueIdentifier()))
+			);
+		verify(responses).processResponseOnComplete(requestId.getValue());
+		assertNull(responses.removeWaitingEvents(requestId.getValue()));
+		assertEquals(3, outcomes.size());
+		for (Event handle : outcomes) {
+			if (EventType.EDGE.equals(handle.getType())) {
+				assertEquals(requestId.getValue(), handle.getEventData().get("requestId"));
+			}
+		}
+		assertEquals(1, connection.closeCalledTimes);
+	}
+
+	@Test
+	public void responseHandles_afterIdentityReset_preserveExistingSuppression() {
+		NamedCollection collection = mock(NamedCollection.class);
+		EdgeStateCallback stateCallback = mock(EdgeStateCallback.class);
+		useNetworkResponse(new MockConnection(202, RESPONSE_HANDLES, null), collection, stateCallback);
+		Event event = request(Collections.singletonMap("timezone", "UTC"));
+		responses.setLastResetDate(event.getTimestamp() + 1);
+
+		assertTrue(process(entity(event, configuration, identity)));
+
+		assertOutcome(event, "success", null, 202);
+		verify(stateCallback, never()).setLocationHint(anyString(), anyInt());
+		verify(collection, never())
+			.setMap(
+				eq(EdgeConstants.DataStoreKeys.STORE_PAYLOADS),
+				argThat(stores -> stores.containsKey("device-state"))
+			);
+	}
+
+	@Test
+	public void invalidUrl_dropsWithoutRegisteringWaitingEvent() {
+		Event event = request(Collections.singletonMap("timezone", "UTC"));
+		when(network.buildUrl(any(), anyString(), anyString()))
+			.thenReturn("http://edge.adobedc.net/ee/v1/mobile/device-attributes");
+
+		assertTrue(process(entity(event, configuration, identity)));
+
+		assertOutcome(event, "dropped", "invalidPayload", null);
 		verifyNoInteractions(responses);
+		verify(network, never())
+			.doBypassConsentRequest(anyString(), anyString(), anyMap(), any(EdgeNetworkService.ResponseCallback.class));
+	}
+
+	@Test
+	public void emptyOrMalformedResponse_stillReportsHTTPAcceptanceAndCleansUp() {
+		for (String body : Arrays.asList(null, "", "not-json")) {
+			outcomes.clear();
+			NamedCollection collection = mock(NamedCollection.class);
+			EdgeStateCallback stateCallback = mock(EdgeStateCallback.class);
+			useNetworkResponse(new MockConnection(202, body, null), collection, stateCallback);
+			Event event = request(Collections.singletonMap("timezone", "UTC"));
+
+			assertTrue(process(entity(event, configuration, identity)));
+
+			assertOutcome(event, "success", null, 202);
+			assertEquals(1, outcomes.size());
+			verify(stateCallback, never()).setLocationHint(anyString(), anyInt());
+			ArgumentCaptor<String> requestId = ArgumentCaptor.forClass(String.class);
+			verify(responses).processResponseOnComplete(requestId.capture());
+			assertNull(responses.removeWaitingEvents(requestId.getValue()));
+		}
+	}
+
+	@Test
+	public void terminalError_processesErrorBodyAndCompletes_beforeBypassFailure() {
+		final String errorBody = "{\"title\":\"Forbidden\",\"status\":403}";
+		useNetworkResponse(
+			new MockConnection(403, null, errorBody),
+			mock(NamedCollection.class),
+			mock(EdgeStateCallback.class)
+		);
+		Event event = request(Collections.singletonMap("timezone", "UTC"));
+
+		assertTrue(process(entity(event, configuration, identity)));
+
+		assertOutcome(event, "failed", "network", 403);
+		ArgumentCaptor<String> requestId = ArgumentCaptor.forClass(String.class);
+		verify(responses).processResponseOnError(eq(errorBody), requestId.capture());
+		verify(responses).processResponseOnComplete(requestId.getValue());
+		assertNull(responses.removeWaitingEvents(requestId.getValue()));
+	}
+
+	@Test
+	public void retryAndNullNetworkResult_removeWaitingEvents_withoutTerminalOutcome() {
+		Event event = request(Collections.singletonMap("timezone", "UTC"));
+		DataEntity persisted = entity(event, configuration, identity);
+		stubNetwork(
+			new RetryResult(EdgeNetworkService.NetworkRequestOutcome.RETRY, 17),
+			null,
+			new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0).withHttpStatus(202)
+		);
+
+		assertFalse(process(persisted));
+		assertEquals(17, processor.retryInterval(persisted));
+		assertFalse(process(persisted));
+		assertTrue(outcomes.isEmpty());
+		assertTrue(process(persisted));
+		assertOutcome(event, "success", null, 202);
+
+		ArgumentCaptor<String> requestIds = ArgumentCaptor.forClass(String.class);
+		verify(responses, times(3)).addWaitingEvent(requestIds.capture(), any(Event.class));
+		List<String> ids = requestIds.getAllValues();
+		assertNotEquals(ids.get(0), ids.get(1));
+		assertNotEquals(ids.get(1), ids.get(2));
+		verify(responses).removeWaitingEvents(ids.get(0));
+		verify(responses).removeWaitingEvents(ids.get(1));
+		verify(responses).processResponseOnComplete(ids.get(2));
+		verify(responses, never()).processResponseOnComplete(ids.get(0));
+		verify(responses, never()).processResponseOnComplete(ids.get(1));
+	}
+
+	@Test
+	public void createResult_preservesCorrelationAndDoesNotDispatch() {
+		Event original = request(Collections.singletonMap("timezone", "UTC"));
+		for (String status : Arrays.asList("success", "failed", "dropped")) {
+			Event result = BypassConsentOutcome.createResult(original, status, null, null);
+			assertEquals(original.getUniqueIdentifier(), result.getParentID());
+			assertNull(result.getResponseID());
+			assertEquals(EdgeConstants.EventType.EDGE_BYPASS_CONSENT, result.getType());
+			assertEquals(EventSource.RESPONSE_CONTENT, result.getSource());
+			assertEquals(Collections.singletonMap("status", status), result.getEventData());
+		}
+		Event failure = BypassConsentOutcome.createResult(original, "failed", "network", 403);
+		assertEquals("network", failure.getEventData().get("reason"));
+		assertEquals(403, failure.getEventData().get("httpStatus"));
+		assertTrue(outcomes.isEmpty());
+		core.verifyNoInteractions();
+	}
+
+	@Test
+	public void createDropResult_usesPersistedIdentifierWithoutInventingEventCorrelation() {
+		Event result = BypassConsentOutcome.createDropResult("persisted-request-id");
+		assertEquals(EdgeConstants.EventType.EDGE_BYPASS_CONSENT, result.getType());
+		assertEquals(EventSource.RESPONSE_CONTENT, result.getSource());
+		assertNull(result.getParentID());
+		assertNull(result.getResponseID());
+		Map<String, Object> expected = new HashMap<>();
+		expected.put("status", "dropped");
+		expected.put("reason", "invalidPayload");
+		expected.put("requestEventId", "persisted-request-id");
+		assertEquals(expected, result.getEventData());
+		core.verifyNoInteractions();
+	}
+
+	@Test
+	public void productionQueueWiring_notifiesOnlyCorruptBypassHitsAndContinuesProcessing() {
+		final List<EdgeHitProcessor> ordinaryProcessors = new ArrayList<>();
+		final List<EdgeHitProcessor> bypassProcessors = new ArrayList<>();
+		try (
+			MockedStatic<ServiceProvider> services = mockStatic(ServiceProvider.class);
+			MockedConstruction<EdgeBatchingHitQueue> ordinaryQueues = mockConstruction(
+				EdgeBatchingHitQueue.class,
+				(queue, context) -> ordinaryProcessors.add((EdgeHitProcessor) context.arguments().get(1))
+			);
+			MockedConstruction<PersistentHitQueue> bypassQueues = mockConstruction(
+				PersistentHitQueue.class,
+				(queue, context) -> bypassProcessors.add((EdgeHitProcessor) context.arguments().get(1))
+			)
+		) {
+			ServiceProvider provider = mock(ServiceProvider.class, RETURNS_DEEP_STUBS);
+			services.when(ServiceProvider::getInstance).thenReturn(provider);
+			EdgeExtension extension = new EdgeExtension(mock(ExtensionApi.class));
+			assertEquals(1, ordinaryQueues.constructed().size());
+			assertEquals(1, bypassQueues.constructed().size());
+			EdgeHitProcessor ordinaryProcessor = ordinaryProcessors.get(0);
+			EdgeHitProcessor bypassProcessor = bypassProcessors.get(0);
+			assertNotSame(ordinaryProcessor, bypassProcessor);
+
+			int count = 0;
+			for (String data : Arrays.asList(null, "", "{", "{}")) {
+				DataEntity corrupted = new DataEntity("corrupt-" + count, new Date(), data);
+				ordinaryProcessor.processHit(corrupted, finished -> assertTrue(finished));
+				assertEquals(count, outcomes.size());
+				bypassProcessor.processHit(corrupted, finished -> assertTrue(finished));
+				assertEquals(++count, outcomes.size());
+				Event outcome = outcomes.get(count - 1);
+				assertEquals(EdgeConstants.EventType.EDGE_BYPASS_CONSENT, outcome.getType());
+				assertEquals(EventSource.RESPONSE_CONTENT, outcome.getSource());
+				assertEquals("dropped", outcome.getEventData().get("status"));
+				assertEquals("invalidPayload", outcome.getEventData().get("reason"));
+				assertEquals(corrupted.getUniqueIdentifier(), outcome.getEventData().get("requestEventId"));
+				assertNull(outcome.getParentID());
+				assertNull(outcome.getResponseID());
+			}
+
+			outcomes.clear();
+			Event valid = request(Collections.singletonMap("timezone", "UTC"));
+			bypassProcessor.processHit(
+				entity(valid, Collections.emptyMap(), identity),
+				finished -> assertTrue(finished)
+			);
+			assertOutcome(valid, "dropped", "missingConfig", null);
+			assertFalse(outcomes.get(0).getEventData().containsKey("requestEventId"));
+			extension.onUnregistered();
+			verify(ordinaryQueues.constructed().get(0)).close();
+			verify(bypassQueues.constructed().get(0)).close();
+		}
 	}
 
 	@Test
@@ -151,7 +409,13 @@ public class BypassConsentTests {
 		assertTrue(process(persisted));
 		assertOutcome(event, "success", null, 202);
 		ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
-		verify(network, times(2)).doBypassConsentRequest(anyString(), body.capture(), anyMap());
+		verify(network, times(2))
+			.doBypassConsentRequest(
+				anyString(),
+				body.capture(),
+				anyMap(),
+				any(EdgeNetworkService.ResponseCallback.class)
+			);
 		JSONObject payload = new JSONObject(body.getValue());
 		assertEquals(2, payload.getJSONObject("xdm").getJSONObject("identityMap").getJSONArray("ECID").length());
 		assertEquals(
@@ -175,37 +439,82 @@ public class BypassConsentTests {
 	}
 
 	@Test
-	public void identityResetAfterRestoredHit_dropsOldHitWithoutResending() {
+	public void identityResetAfterRestoredHit_sendsWithQueuedIdentity() throws Exception {
+		ExtensionApi api = mock(ExtensionApi.class);
+		HitQueuing bypass = mock(HitQueuing.class);
+		when(api.getSharedState(eq(EdgeConstants.SharedState.CONFIGURATION), any(), eq(false), any()))
+			.thenReturn(new SharedStateResult(SharedStateStatus.SET, configuration));
+		when(api.getXDMSharedState(eq(EdgeConstants.SharedState.IDENTITY), any(), eq(false), any()))
+			.thenReturn(new SharedStateResult(SharedStateStatus.SET, identity));
+		when(bypass.queue(any())).thenReturn(true);
+		EdgeExtension extension = new EdgeExtension(api, mock(HitQueuing.class), bypass);
 		Event event = request(Collections.singletonMap("timezone", "UTC"));
-		DataEntity persisted = entity(event, configuration, identity);
-		stubNetwork(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.RETRY, 5));
+		extension.handleBypassConsentRequest(event);
+		ArgumentCaptor<DataEntity> queued = ArgumentCaptor.forClass(DataEntity.class);
+		verify(bypass).queue(queued.capture());
+		DataEntity persisted = queued.getValue();
+		stubNetwork(
+			new RetryResult(EdgeNetworkService.NetworkRequestOutcome.RETRY, 5),
+			new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0).withHttpStatus(202)
+		);
 		assertFalse(process(persisted));
 		assertTrue(outcomes.isEmpty());
-		latest = new SharedStateResult(SharedStateStatus.SET, identity("newSDK", "other"));
+		when(api.getXDMSharedState(eq(EdgeConstants.SharedState.IDENTITY), any(), eq(false), any()))
+			.thenReturn(new SharedStateResult(SharedStateStatus.SET, identity("newSDK", "other")));
 		processor = newProcessor();
 		assertTrue(process(persisted));
-		assertOutcome(event, "dropped", "identityChanged", null);
-		verify(network, times(1)).doBypassConsentRequest(anyString(), anyString(), anyMap());
+		assertOutcome(event, "success", null, 202);
+		ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
+		verify(network, times(2))
+			.doBypassConsentRequest(
+				anyString(),
+				body.capture(),
+				anyMap(),
+				any(EdgeNetworkService.ResponseCallback.class)
+			);
+		for (String attempt : body.getAllValues()) {
+			assertEquals(
+				"sdk",
+				new JSONObject(attempt)
+					.getJSONObject("xdm")
+					.getJSONObject("identityMap")
+					.getJSONArray("ECID")
+					.getJSONObject(0)
+					.getString("id")
+			);
+		}
+		verify(api, times(1)).getXDMSharedState(eq(EdgeConstants.SharedState.IDENTITY), any(), eq(false), any());
 	}
 
 	@Test
-	public void latestIdentityUnavailable_retriesWithoutNetworkOrOutcome_thenSends() {
+	public void currentIdentityUnavailable_sendsWithQueuedIdentity() {
+		ExtensionApi api = mock(ExtensionApi.class);
+		HitQueuing bypass = mock(HitQueuing.class);
+		when(api.getSharedState(eq(EdgeConstants.SharedState.CONFIGURATION), any(), eq(false), any()))
+			.thenReturn(new SharedStateResult(SharedStateStatus.SET, configuration));
+		when(api.getXDMSharedState(eq(EdgeConstants.SharedState.IDENTITY), any(), eq(false), any()))
+			.thenReturn(new SharedStateResult(SharedStateStatus.SET, identity));
+		when(bypass.queue(any())).thenReturn(true);
+		EdgeExtension extension = new EdgeExtension(api, mock(HitQueuing.class), bypass);
 		Event event = request(Collections.singletonMap("timezone", "UTC"));
-		DataEntity persisted = entity(event, configuration, identity);
+		extension.handleBypassConsentRequest(event);
+		ArgumentCaptor<DataEntity> queued = ArgumentCaptor.forClass(DataEntity.class);
+		verify(bypass).queue(queued.capture());
 		stubNetwork(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0).withHttpStatus(204));
 		for (SharedStateResult unavailable : Arrays.asList(
 			null,
 			new SharedStateResult(SharedStateStatus.PENDING, identity),
 			new SharedStateResult(SharedStateStatus.SET, Collections.<String, Object>emptyMap())
 		)) {
-			latest = unavailable;
-			assertFalse(process(persisted));
-			assertTrue(outcomes.isEmpty());
+			when(api.getXDMSharedState(eq(EdgeConstants.SharedState.IDENTITY), any(), eq(false), any()))
+				.thenReturn(unavailable);
+			outcomes.clear();
+			assertTrue(process(queued.getValue()));
+			assertOutcome(event, "success", null, 204);
 		}
-		verify(network, never()).doBypassConsentRequest(anyString(), anyString(), anyMap());
-		latest = new SharedStateResult(SharedStateStatus.SET, identity("sdk", "changedSecondary"));
-		assertTrue(process(persisted));
-		assertOutcome(event, "success", null, 204);
+		verify(network, times(3))
+			.doBypassConsentRequest(anyString(), anyString(), anyMap(), any(EdgeNetworkService.ResponseCallback.class));
+		verify(api, times(1)).getXDMSharedState(eq(EdgeConstants.SharedState.IDENTITY), any(), eq(false), any());
 	}
 
 	@Test
@@ -241,7 +550,13 @@ public class BypassConsentTests {
 		stubNetwork(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0).withHttpStatus(202));
 		assertTrue(process(persisted));
 		ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
-		verify(network).doBypassConsentRequest(anyString(), body.capture(), anyMap());
+		verify(network)
+			.doBypassConsentRequest(
+				anyString(),
+				body.capture(),
+				anyMap(),
+				any(EdgeNetworkService.ResponseCallback.class)
+			);
 		JSONObject payload = new JSONObject(body.getValue());
 		assertTrue(payload.has("timezone"));
 		assertTrue(payload.isNull("timezone"));

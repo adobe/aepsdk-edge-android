@@ -47,6 +47,7 @@ class EdgeHitProcessor implements HitProcessing {
 	private final NamedCollection namedCollection;
 	private final EdgeSharedStateCallback sharedStateCallback;
 	private final EdgeStateCallback stateCallback;
+	private final AdobeCallback<DataEntity> onDecodeFailure;
 	private final ConcurrentHashMap<String, Integer> entityRetryIntervalMapping = new ConcurrentHashMap<>();
 	static EdgeNetworkService networkService;
 	private static final String VALID_PATH_REGEX_PATTERN = "^\\/[/.a-zA-Z0-9-~_]+$";
@@ -59,11 +60,23 @@ class EdgeHitProcessor implements HitProcessing {
 		final EdgeSharedStateCallback callback,
 		final EdgeStateCallback stateCallback
 	) {
+		this(networkResponseHandler, networkService, namedCollection, callback, stateCallback, null);
+	}
+
+	EdgeHitProcessor(
+		final NetworkResponseHandler networkResponseHandler,
+		final EdgeNetworkService networkService,
+		final NamedCollection namedCollection,
+		final EdgeSharedStateCallback callback,
+		final EdgeStateCallback stateCallback,
+		final AdobeCallback<DataEntity> onDecodeFailure
+	) {
 		this.networkResponseHandler = networkResponseHandler;
 		this.networkService = networkService;
 		this.namedCollection = namedCollection;
 		this.sharedStateCallback = callback;
 		this.stateCallback = stateCallback;
+		this.onDecodeFailure = onDecodeFailure;
 	}
 
 	@Override
@@ -481,6 +494,9 @@ class EdgeHitProcessor implements HitProcessing {
 
 		if (entity == null) {
 			Log.debug(LOG_TAG, LOG_SOURCE, "Unable to deserialize DataEntity to EdgeDataEntity. Dropping the hit.");
+			if (onDecodeFailure != null) {
+				onDecodeFailure.call(dataEntity);
+			}
 			processingResult.complete(true);
 			return;
 		}
@@ -682,7 +698,9 @@ class EdgeHitProcessor implements HitProcessing {
 			null
 		);
 		if (StringUtils.isNullOrEmpty(datastreamId)) {
-			BypassConsentOutcome.dispatch(entity.getEvent(), "dropped", "missingConfig", null);
+			MobileCore.dispatchEvent(
+				BypassConsentOutcome.createResult(entity.getEvent(), "dropped", "missingConfig", null)
+			);
 			Log.warning(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -696,7 +714,9 @@ class EdgeHitProcessor implements HitProcessing {
 			stateCallback != null ? stateCallback.getImplementationDetails() : null
 		);
 		if (payload == null || payload.length() == 0) {
-			BypassConsentOutcome.dispatch(entity.getEvent(), "dropped", "invalidPayload", null);
+			MobileCore.dispatchEvent(
+				BypassConsentOutcome.createResult(entity.getEvent(), "dropped", "invalidPayload", null)
+			);
 			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -714,34 +734,21 @@ class EdgeHitProcessor implements HitProcessing {
 		final EdgeHit edgeHit = new EdgeHit(datastreamId, payload, endpoint);
 		final String url = networkService.buildUrl(endpoint, datastreamId, edgeHit.getRequestId());
 		if (!isValidUrl(url)) {
-			BypassConsentOutcome.dispatch(entity.getEvent(), "dropped", "invalidPayload", null);
+			MobileCore.dispatchEvent(
+				BypassConsentOutcome.createResult(entity.getEvent(), "dropped", "invalidPayload", null)
+			);
 			return true;
 		}
 
-		// Null selects the latest XDM state, not the event-versioned snapshot, on every attempt.
-		final SharedStateResult latestIdentity = sharedStateCallback.getXDMSharedState(
-			EdgeConstants.SharedState.IDENTITY,
-			null
+		networkResponseHandler.addWaitingEvent(edgeHit.getRequestId(), entity.getEvent());
+		final RetryResult result = networkService.doBypassConsentRequest(
+			url,
+			payload.toString(),
+			getRequestHeaders(),
+			buildResponseCallback(edgeHit.getRequestId())
 		);
-		final String latestECID = latestIdentity != null && latestIdentity.getStatus() == SharedStateStatus.SET
-			? firstECID(latestIdentity.getValue())
-			: null;
-		if (latestECID == null) {
-			return false;
-		}
-		final String queuedECID = firstECID(entity.getIdentityMap());
-		if (queuedECID == null) {
-			BypassConsentOutcome.dispatch(entity.getEvent(), "dropped", "invalidPayload", null);
-			return true;
-		}
-		if (!latestECID.equals(queuedECID)) {
-			entityRetryIntervalMapping.remove(entityId);
-			BypassConsentOutcome.dispatch(entity.getEvent(), "dropped", "identityChanged", null);
-			return true;
-		}
-
-		final RetryResult result = networkService.doBypassConsentRequest(url, payload.toString(), getRequestHeaders());
 		if (result == null || result.getShouldRetry() == EdgeNetworkService.Retry.YES) {
+			networkResponseHandler.removeWaitingEvents(edgeHit.getRequestId());
 			if (result != null) {
 				entityRetryIntervalMapping.put(entityId, result.getRetryIntervalSeconds());
 			}
@@ -749,23 +756,15 @@ class EdgeHitProcessor implements HitProcessing {
 		}
 		entityRetryIntervalMapping.remove(entityId);
 		final boolean success = result.getNetworkRequestOutcome() == EdgeNetworkService.NetworkRequestOutcome.SUCCESS;
-		BypassConsentOutcome.dispatch(
-			entity.getEvent(),
-			success ? "success" : "failed",
-			success ? null : "network",
-			result.getHttpStatus()
+		MobileCore.dispatchEvent(
+			BypassConsentOutcome.createResult(
+				entity.getEvent(),
+				success ? "success" : "failed",
+				success ? null : "network",
+				result.getHttpStatus()
+			)
 		);
 		return true;
-	}
-
-	private static String firstECID(final Map<String, Object> state) {
-		final Map<String, Object> map = DataReader.optTypedMap(Object.class, state, "identityMap", null);
-		final List<Map<String, Object>> ecids = DataReader.optTypedListOfMap(Object.class, map, "ECID", null);
-		if (ecids == null || ecids.isEmpty()) {
-			return null;
-		}
-		final String id = DataReader.optString(ecids.get(0), "id", null);
-		return StringUtils.isNullOrEmpty(id) ? null : id;
 	}
 
 	/**

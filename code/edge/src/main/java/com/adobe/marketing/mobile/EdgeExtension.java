@@ -56,11 +56,6 @@ class EdgeExtension extends Extension {
 		}
 
 		@Override
-		public SharedStateResult getXDMSharedState(final String stateOwner, final Event event) {
-			return getApi().getXDMSharedState(stateOwner, event, false, SharedStateResolution.ANY);
-		}
-
-		@Override
 		public void createSharedState(Map<String, Object> state, Event event) {
 			getApi().createSharedState(state, event);
 		}
@@ -108,9 +103,12 @@ class EdgeExtension extends Extension {
 	EdgeExtension(final ExtensionApi extensionApi, final HitQueuing hitQueue, final HitQueuing bypassConsentHitQueue) {
 		super(extensionApi);
 		if (hitQueue == null) {
+			final EdgeNetworkService edgeNetworkService = new EdgeNetworkService(
+				ServiceProvider.getInstance().getNetworkService()
+			);
 			final EdgeHitProcessor hitProcessor = new EdgeHitProcessor(
 				getNetworkResponseHandler(),
-				new EdgeNetworkService(ServiceProvider.getInstance().getNetworkService()),
+				edgeNetworkService,
 				getNamedCollection(),
 				sharedStateCallback,
 				new EdgeExtensionStateCallback()
@@ -130,7 +128,16 @@ class EdgeExtension extends Extension {
 				);
 				this.bypassConsentHitQueue = null;
 			} else {
-				this.bypassConsentHitQueue = new PersistentHitQueue(bypassConsentDataQueue, hitProcessor);
+				final EdgeHitProcessor bypassHitProcessor = new EdgeHitProcessor(
+					getNetworkResponseHandler(),
+					edgeNetworkService,
+					getNamedCollection(),
+					sharedStateCallback,
+					new EdgeExtensionStateCallback(),
+					entity ->
+						MobileCore.dispatchEvent(BypassConsentOutcome.createDropResult(entity.getUniqueIdentifier()))
+				);
+				this.bypassConsentHitQueue = new PersistentHitQueue(bypassConsentDataQueue, bypassHitProcessor);
 			}
 		} else {
 			this.hitQueue = hitQueue;
@@ -270,7 +277,7 @@ class EdgeExtension extends Extension {
 	 */
 	void handleBypassConsentRequest(@NonNull final Event event) {
 		if (MapUtils.isNullOrEmpty(event.getEventData())) {
-			BypassConsentOutcome.dispatch(event, "dropped", "invalidPayload", null);
+			MobileCore.dispatchEvent(BypassConsentOutcome.createResult(event, "dropped", "invalidPayload", null));
 			Log.trace(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -409,7 +416,7 @@ class EdgeExtension extends Extension {
 
 		if (configReady == null) {
 			if (bypassConsent) {
-				BypassConsentOutcome.dispatch(event, "dropped", "missingConfig", null);
+				MobileCore.dispatchEvent(BypassConsentOutcome.createResult(event, "dropped", "missingConfig", null));
 			}
 			Log.warning(
 				LOG_TAG,
@@ -429,7 +436,7 @@ class EdgeExtension extends Extension {
 		) {
 			// drop this event if configId is invalid (config id is a mandatory parameters for requests to Konductor)
 			if (bypassConsent) {
-				BypassConsentOutcome.dispatch(event, "dropped", "missingConfig", null);
+				MobileCore.dispatchEvent(BypassConsentOutcome.createResult(event, "dropped", "missingConfig", null));
 			}
 			Log.debug(
 				LOG_TAG,
@@ -444,7 +451,9 @@ class EdgeExtension extends Extension {
 
 		if (identityReady == null) {
 			if (bypassConsent) {
-				BypassConsentOutcome.dispatch(event, "failed", "identityUnavailable", null);
+				MobileCore.dispatchEvent(
+					BypassConsentOutcome.createResult(event, "failed", "identityUnavailable", null)
+				);
 			}
 			Log.warning(
 				LOG_TAG,
@@ -458,7 +467,7 @@ class EdgeExtension extends Extension {
 		final HitQueuing targetQueue = bypassConsent ? bypassConsentHitQueue : hitQueue;
 		if (targetQueue == null) {
 			if (bypassConsent) {
-				BypassConsentOutcome.dispatch(event, "failed", "queueUnavailable", null);
+				MobileCore.dispatchEvent(BypassConsentOutcome.createResult(event, "failed", "queueUnavailable", null));
 			}
 			Log.warning(
 				LOG_TAG,
@@ -473,12 +482,12 @@ class EdgeExtension extends Extension {
 		final DataEntity dataEntity = entity.toDataEntity();
 		if (dataEntity == null) {
 			if (bypassConsent) {
-				BypassConsentOutcome.dispatch(event, "dropped", "invalidPayload", null);
+				MobileCore.dispatchEvent(BypassConsentOutcome.createResult(event, "dropped", "invalidPayload", null));
 			}
 			return;
 		}
 		if (!targetQueue.queue(dataEntity) && bypassConsent) {
-			BypassConsentOutcome.dispatch(event, "failed", "queueUnavailable", null);
+			MobileCore.dispatchEvent(BypassConsentOutcome.createResult(event, "failed", "queueUnavailable", null));
 		}
 	}
 
