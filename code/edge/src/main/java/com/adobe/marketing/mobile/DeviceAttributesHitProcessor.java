@@ -14,6 +14,7 @@ package com.adobe.marketing.mobile;
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.HitProcessing;
 import com.adobe.marketing.mobile.services.HitProcessingResult;
@@ -22,25 +23,40 @@ import com.adobe.marketing.mobile.services.NamedCollection;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link HitProcessing} implementation for the consent-independent device attributes queue.
- * Publishes exactly one result event (E4) per terminal outcome; recoverable failures are retried without a result
- * event, and hits queued before an identities reset are discarded without a result event.
+ * Publishes exactly one response event (E4) per terminal outcome; recoverable failures are retried without a response
+ * event. Before each send attempt, the ECID in the hit's queued identity map is compared with the ECID in the latest
+ * Identity shared state, and the hit is dropped if they differ.
  */
 class DeviceAttributesHitProcessor implements HitProcessing {
 
+	/**
+	 * Provides the identity map from the latest Identity XDM shared state.
+	 */
+	interface LatestIdentityMapProvider {
+		/**
+		 * @return the latest identity map (empty if the state has none), or null if the state is not available
+		 */
+		@Nullable Map<String, Object> getLatestIdentityMap();
+	}
+
 	private static final String LOG_SOURCE = "DeviceAttributesHitProcessor";
+	private static final String ECID_NAMESPACE = "ECID";
+	private static final String IDENTITY_ID = "id";
 
 	private final DeviceAttributesNetworkService networkService;
 	private final DeviceAttributesResponseHandler responseHandler;
 	private final DeviceAttributesRequestBuilder requestBuilder;
 	private final EdgeSharedStateCallback sharedStateCallback;
 	private final EdgeStateCallback stateCallback;
-	private final NamedCollection namedCollection;
+	private final LatestIdentityMapProvider latestIdentityMapProvider;
 	private final AdobeCallback<Event> dispatcher;
 	private final Map<String, Integer> entityRetryIntervalMapping = new ConcurrentHashMap<>();
 
@@ -49,14 +65,16 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 	 * @param sharedStateCallback used to read the Assurance integration id
 	 * @param stateCallback used to read the implementation details and location hint, and to set the location hint
 	 *                      received in the response
-	 * @param namedCollection the Edge data store, holding the {@code state:store} payloads and the identities reset date
-	 * @param dispatcher dispatches the result event (E4)
+	 * @param namedCollection the Edge data store, holding the {@code state:store} payloads
+	 * @param latestIdentityMapProvider provides the latest Identity identity map for the ECID check
+	 * @param dispatcher dispatches the response event (E4)
 	 */
 	DeviceAttributesHitProcessor(
 		final DeviceAttributesNetworkService networkService,
 		final EdgeSharedStateCallback sharedStateCallback,
 		final EdgeStateCallback stateCallback,
 		final NamedCollection namedCollection,
+		final LatestIdentityMapProvider latestIdentityMapProvider,
 		final AdobeCallback<Event> dispatcher
 	) {
 		this.networkService = networkService;
@@ -64,7 +82,7 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 		this.requestBuilder = new DeviceAttributesRequestBuilder(namedCollection);
 		this.sharedStateCallback = sharedStateCallback;
 		this.stateCallback = stateCallback;
-		this.namedCollection = namedCollection;
+		this.latestIdentityMapProvider = latestIdentityMapProvider;
 		this.dispatcher = dispatcher;
 	}
 
@@ -85,23 +103,52 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 				"Dropping undecodable device attributes hit '%s'.",
 				entity.getUniqueIdentifier()
 			);
-			dispatcher.call(DeviceAttributesEvents.createDropResult(entity.getUniqueIdentifier()));
+			dispatcher.call(DeviceAttributesEvents.createDroppedResponse(entity.getUniqueIdentifier()));
 			complete(entity, processingResult);
 			return;
 		}
 
 		final Event event = edgeEntity.getEvent();
+		final Map<String, Object> identityMap = DataReader.optTypedMap(
+			Object.class,
+			edgeEntity.getIdentityMap(),
+			EdgeConstants.EventDataKeys.IDENTITY_MAP,
+			null
+		);
 
 		// Checked on every attempt so hits waiting in retry backoff or restored after relaunch are covered.
-		if (isQueuedBeforeIdentitiesReset(entity)) {
-			// Identity already reports the reset to the requester, so no result event is dispatched.
+		final Map<String, Object> latestIdentityMap = getLatestIdentityMap();
+
+		if (latestIdentityMap == null) {
 			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
-				"Discarding device attributes hit '%s' queued before identities reset.",
+				"Latest Identity shared state is unavailable, will retry device attributes hit '%s'.",
 				entity.getUniqueIdentifier()
 			);
-			complete(entity, processingResult);
+			processingResult.complete(false);
+			return;
+		}
+
+		final String queuedEcid = getEcid(identityMap);
+
+		if (!Objects.equals(queuedEcid, getEcid(latestIdentityMap))) {
+			Log.debug(
+				LOG_TAG,
+				LOG_SOURCE,
+				"ECID changed since device attributes hit '%s' was queued, dropping.",
+				entity.getUniqueIdentifier()
+			);
+			finish(
+				entity,
+				DeviceAttributesEvents.createResponse(
+					event,
+					DeviceAttributesConstants.Status.DROPPED,
+					DeviceAttributesConstants.Reason.IDENTITY_CHANGED,
+					null
+				),
+				processingResult
+			);
 			return;
 		}
 
@@ -121,7 +168,7 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 			);
 			finish(
 				entity,
-				DeviceAttributesEvents.createResult(
+				DeviceAttributesEvents.createResponse(
 					event,
 					DeviceAttributesConstants.Status.DROPPED,
 					DeviceAttributesConstants.Reason.MISSING_CONFIG,
@@ -132,12 +179,6 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 			return;
 		}
 
-		final Map<String, Object> identityMap = DataReader.optTypedMap(
-			Object.class,
-			edgeEntity.getIdentityMap(),
-			EdgeConstants.EventDataKeys.IDENTITY_MAP,
-			null
-		);
 		final EdgeEndpoint endpoint = new EdgeEndpoint(
 			EdgeNetworkService.RequestType.DEVICE_ATTRIBUTES,
 			DataReader.optString(edgeConfig, EdgeConstants.SharedState.Configuration.EDGE_REQUEST_ENVIRONMENT, null),
@@ -163,7 +204,7 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 			);
 			finish(
 				entity,
-				DeviceAttributesEvents.createResult(
+				DeviceAttributesEvents.createResponse(
 					event,
 					DeviceAttributesConstants.Status.DROPPED,
 					DeviceAttributesConstants.Reason.INVALID_PAYLOAD,
@@ -174,22 +215,28 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 			return;
 		}
 
-		networkService.send(url, body, getRequestHeaders(), result -> handle(result, entity, event, processingResult));
+		networkService.send(
+			url,
+			body,
+			getRequestHeaders(),
+			result -> handle(result, entity, event, queuedEcid, processingResult)
+		);
 	}
 
 	private void handle(
 		final DeviceAttributesNetworkResult result,
 		final DataEntity entity,
 		final Event event,
+		final String queuedEcid,
 		final HitProcessingResult processingResult
 	) {
 		switch (result.getType()) {
 			case SUCCESS:
-				// Mirrors the interact path: state:store from a request sent before a reset must not overwrite post-reset state.
-				responseHandler.handle(result.getBody(), !isQueuedBeforeIdentitiesReset(entity));
+				// state:store from a request sent for a previous ECID must not overwrite state for the current one.
+				responseHandler.handle(result.getBody(), isLatestEcid(queuedEcid));
 				finish(
 					entity,
-					DeviceAttributesEvents.createResult(
+					DeviceAttributesEvents.createResponse(
 						event,
 						DeviceAttributesConstants.Status.SUCCESS,
 						null,
@@ -206,7 +253,7 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 			default:
 				finish(
 					entity,
-					DeviceAttributesEvents.createResult(
+					DeviceAttributesEvents.createResponse(
 						event,
 						DeviceAttributesConstants.Status.FAILED,
 						DeviceAttributesConstants.Reason.NETWORK,
@@ -219,7 +266,7 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 	}
 
 	/**
-	 * Dispatches the terminal result event and removes the hit from the queue.
+	 * Dispatches the terminal response event and removes the hit from the queue.
 	 */
 	private void finish(final DataEntity entity, final Event result, final HitProcessingResult processingResult) {
 		dispatcher.call(result);
@@ -232,15 +279,41 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 	}
 
 	/**
-	 * Reads the identities reset date persisted by {@link NetworkResponseHandler#setLastResetDate(long)} (read-only).
+	 * @return the latest Identity identity map, or null if it is unavailable
 	 */
-	private boolean isQueuedBeforeIdentitiesReset(final DataEntity entity) {
-		if (namedCollection == null) {
-			return false;
+	@Nullable private Map<String, Object> getLatestIdentityMap() {
+		return latestIdentityMapProvider != null ? latestIdentityMapProvider.getLatestIdentityMap() : null;
+	}
+
+	/**
+	 * @param queuedEcid the ECID from the hit's queued identity map
+	 * @return true if the latest Identity state is available and has the same ECID
+	 */
+	private boolean isLatestEcid(@Nullable final String queuedEcid) {
+		final Map<String, Object> latestIdentityMap = getLatestIdentityMap();
+		return latestIdentityMap != null && Objects.equals(queuedEcid, getEcid(latestIdentityMap));
+	}
+
+	/**
+	 * Reads {@code identityMap["ECID"][0]["id"]}. Index 0 is Edge Identity's current ECID; a legacy ECID, if any,
+	 * follows it.
+	 *
+	 * @param identityMap the identity map
+	 * @return the current ECID, or null if not present
+	 */
+	@Nullable private static String getEcid(@Nullable final Map<String, Object> identityMap) {
+		final List<Map<String, Object>> ecids = DataReader.optTypedListOfMap(
+			Object.class,
+			identityMap,
+			ECID_NAMESPACE,
+			null
+		);
+
+		if (ecids == null || ecids.isEmpty()) {
+			return null;
 		}
 
-		final long resetDate = namedCollection.getLong(EdgeConstants.DataStoreKeys.RESET_IDENTITIES_DATE, 0);
-		return resetDate > 0 && entity.getTimestamp().getTime() < resetDate;
+		return DataReader.optString(ecids.get(0), IDENTITY_ID, null);
 	}
 
 	/**

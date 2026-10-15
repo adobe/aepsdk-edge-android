@@ -15,7 +15,6 @@ import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import com.adobe.marketing.mobile.services.DeviceInforming;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.services.Log;
@@ -37,15 +36,12 @@ class DeviceAttributesNetworkService {
 	private static final String LOG_SOURCE = "DeviceAttributesNetworkService";
 
 	private final Networking networkService;
-	private final DeviceInforming deviceInfoService;
 
 	/**
 	 * @param networkService the platform {@link Networking} service
-	 * @param deviceInfoService used to tell an offline device apart from other connection failures
 	 */
-	DeviceAttributesNetworkService(final Networking networkService, final DeviceInforming deviceInfoService) {
+	DeviceAttributesNetworkService(final Networking networkService) {
 		this.networkService = networkService;
-		this.deviceInfoService = deviceInfoService;
 	}
 
 	/**
@@ -127,29 +123,15 @@ class DeviceAttributesNetworkService {
 	/**
 	 * Classifies the {@code connection} into success, retry or failure.
 	 *
-	 * @param connection the network connection, or null if the connection could not be established
+	 * @param connection the network connection, or null if no connection could be created
 	 * @param url the request URL, used for logging
 	 * @return the classified {@link DeviceAttributesNetworkResult}
 	 */
 	@NonNull DeviceAttributesNetworkResult classify(@Nullable final HttpConnecting connection, final String url) {
 		if (connection == null) {
-			// Core does not expose the connection error, so an offline device is detected here and retried,
-			// like a recoverable connection error. Any other failure to connect is unrecoverable.
-			if (
-				deviceInfoService != null &&
-				deviceInfoService.getNetworkConnectionStatus() == DeviceInforming.ConnectionStatus.DISCONNECTED
-			) {
-				final int retryInterval = EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS;
-				Log.debug(
-					LOG_TAG,
-					LOG_SOURCE,
-					"Device attributes request with url %s failed because the device is offline. Will retry in %d seconds.",
-					url,
-					retryInterval
-				);
-				return DeviceAttributesNetworkResult.retry(retryInterval);
-			}
-
+			// Null means Core could not create a connection at all (for example an invalid URL or a failure to open
+			// the connection), which is unrecoverable. Offline devices and timeouts still return a connection with
+			// response code -1, which is in the recoverable set below and is retried.
 			Log.warning(
 				LOG_TAG,
 				LOG_SOURCE,

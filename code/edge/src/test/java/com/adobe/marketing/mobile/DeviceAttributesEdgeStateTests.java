@@ -38,7 +38,7 @@ import org.mockito.InOrder;
 public class DeviceAttributesEdgeStateTests {
 
 	private HitQueuing mockHitQueue;
-	private HitQueuing mockBypassQueue;
+	private HitQueuing mockDeviceAttributesQueue;
 	private EdgeSharedStateCallback mockSharedStateCallback;
 	private FakeNamedCollection fakeNamedCollection;
 	private EdgeProperties properties;
@@ -47,22 +47,22 @@ public class DeviceAttributesEdgeStateTests {
 	@Before
 	public void setUp() {
 		mockHitQueue = mock(HitQueuing.class);
-		mockBypassQueue = mock(HitQueuing.class);
+		mockDeviceAttributesQueue = mock(HitQueuing.class);
 		mockSharedStateCallback = mock(EdgeSharedStateCallback.class);
 		fakeNamedCollection = new FakeNamedCollection();
 		properties = new EdgeProperties(fakeNamedCollection);
-		state = new EdgeState(mockHitQueue, mockBypassQueue, properties, mockSharedStateCallback);
+		state = new EdgeState(mockHitQueue, mockDeviceAttributesQueue, properties, mockSharedStateCallback);
 	}
 
 	@Test
-	public void testInit_doesNotStartBypassQueue() {
-		verifyNoInteractions(mockBypassQueue);
+	public void testInit_doesNotStartDeviceAttributesQueue() {
+		verifyNoInteractions(mockDeviceAttributesQueue);
 		// the primary queue keeps its existing pending-consent behavior
 		verify(mockHitQueue).suspend();
 	}
 
 	@Test
-	public void testBootup_startsBypassQueueOnceAfterImplementationDetailsAndPropertiesAreLoaded() {
+	public void testBootup_startsDeviceAttributesQueueOnceAfterImplementationDetailsAndPropertiesAreLoaded() {
 		final EdgeProperties persisted = new EdgeProperties(fakeNamedCollection);
 		persisted.setLocationHint("or2", 1800);
 		persisted.saveToPersistence();
@@ -75,32 +75,32 @@ public class DeviceAttributesEdgeStateTests {
 				observedAtStart.add(state.getLocationHint());
 				return null;
 			})
-			.when(mockBypassQueue)
+			.when(mockDeviceAttributesQueue)
 			.beginProcessing();
 
 		assertTrue(state.bootupIfNeeded());
 		assertTrue(state.bootupIfNeeded());
 
-		verify(mockBypassQueue, times(1)).beginProcessing();
+		verify(mockDeviceAttributesQueue, times(1)).beginProcessing();
 		assertEquals(2, observedAtStart.size());
 		assertTrue(observedAtStart.get(0) instanceof Map);
 		assertEquals("or2", observedAtStart.get(1));
-		final InOrder inOrder = inOrder(mockSharedStateCallback, mockBypassQueue);
+		final InOrder inOrder = inOrder(mockSharedStateCallback, mockDeviceAttributesQueue);
 		inOrder.verify(mockSharedStateCallback).createSharedState(org.mockito.ArgumentMatchers.anyMap(), isNull());
-		inOrder.verify(mockBypassQueue).beginProcessing();
+		inOrder.verify(mockDeviceAttributesQueue).beginProcessing();
 	}
 
 	@Test
-	public void testBootupNotComplete_doesNotStartBypassQueue() {
+	public void testBootupNotComplete_doesNotStartDeviceAttributesQueue() {
 		mockHubState(new SharedStateResult(SharedStateStatus.PENDING, null));
 
 		assertFalse(state.bootupIfNeeded());
 
-		verify(mockBypassQueue, never()).beginProcessing();
+		verify(mockDeviceAttributesQueue, never()).beginProcessing();
 	}
 
 	@Test
-	public void testCollectConsentChanges_doNotAffectBypassQueue() {
+	public void testCollectConsentChanges_doNotAffectDeviceAttributesQueue() {
 		for (final ConsentStatus status : new ConsentStatus[] {
 			ConsentStatus.YES,
 			ConsentStatus.NO,
@@ -110,18 +110,23 @@ public class DeviceAttributesEdgeStateTests {
 			state.updateCurrentConsent(status);
 		}
 
-		verifyNoInteractions(mockBypassQueue);
+		verifyNoInteractions(mockDeviceAttributesQueue);
 	}
 
 	@Test
-	public void testMissingBypassQueue_doesNotChangePrimaryConsentLifecycle() {
+	public void testMissingDeviceAttributesQueue_doesNotChangePrimaryConsentLifecycle() {
 		final HitQueuing primary = mock(HitQueuing.class);
-		final EdgeState stateWithoutBypass = new EdgeState(primary, null, properties, mockSharedStateCallback);
+		final EdgeState stateWithoutDeviceAttributesQueue = new EdgeState(
+			primary,
+			null,
+			properties,
+			mockSharedStateCallback
+		);
 		mockHubState(new SharedStateResult(SharedStateStatus.SET, new HashMap<>()));
 
-		assertTrue(stateWithoutBypass.bootupIfNeeded());
-		stateWithoutBypass.updateCurrentConsent(ConsentStatus.YES);
-		stateWithoutBypass.updateCurrentConsent(ConsentStatus.NO);
+		assertTrue(stateWithoutDeviceAttributesQueue.bootupIfNeeded());
+		stateWithoutDeviceAttributesQueue.updateCurrentConsent(ConsentStatus.YES);
+		stateWithoutDeviceAttributesQueue.updateCurrentConsent(ConsentStatus.NO);
 
 		// pending at init -> suspend; bootup defaults consent to yes -> begin; yes -> begin; no -> clear + begin
 		final InOrder inOrder = inOrder(primary);

@@ -40,7 +40,7 @@ public class DeviceAttributesEdgeExtensionTests {
 
 	private ExtensionApi mockExtensionApi;
 	private HitQueuing mockHitQueue;
-	private HitQueuing mockBypassQueue;
+	private HitQueuing mockDeviceAttributesQueue;
 	private EdgeExtension edgeExtension;
 	private Map<String, Object> configData;
 	private Map<String, Object> identityState;
@@ -49,10 +49,10 @@ public class DeviceAttributesEdgeExtensionTests {
 	public void setUp() {
 		mockExtensionApi = mock(ExtensionApi.class);
 		mockHitQueue = mock(HitQueuing.class);
-		mockBypassQueue = mock(HitQueuing.class);
+		mockDeviceAttributesQueue = mock(HitQueuing.class);
 		when(mockHitQueue.queue(any())).thenReturn(true);
-		when(mockBypassQueue.queue(any())).thenReturn(true);
-		edgeExtension = new EdgeExtension(mockExtensionApi, mockHitQueue, mockBypassQueue);
+		when(mockDeviceAttributesQueue.queue(any())).thenReturn(true);
+		edgeExtension = new EdgeExtension(mockExtensionApi, mockHitQueue, mockDeviceAttributesQueue);
 
 		configData = new HashMap<>();
 		configData.put(EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID, "datastream-id");
@@ -60,33 +60,28 @@ public class DeviceAttributesEdgeExtensionTests {
 	}
 
 	@Test
-	public void testIsBypassConsentEvent_trueOnlyForBypassConsentTypeAndRequestContentSource() {
-		assertTrue(DeviceAttributesEvents.isBypassConsentEvent(bypassEvent(data())));
+	public void testIsDeviceAttributesRequestEvent_trueOnlyForDeviceAttributesTypeAndRequestContentSource() {
+		assertTrue(DeviceAttributesEvents.isDeviceAttributesRequestEvent(deviceAttributesRequestEvent(data())));
 		assertTrue(
-			DeviceAttributesEvents.isBypassConsentEvent(
+			DeviceAttributesEvents.isDeviceAttributesRequestEvent(
 				new Event.Builder("e", "COM.ADOBE.EVENTTYPE.EDGEBYPASSCONSENT", EventSource.REQUEST_CONTENT).build()
 			)
 		);
 		assertFalse(
-			DeviceAttributesEvents.isBypassConsentEvent(
-				new Event.Builder(
-					"e",
-					DeviceAttributesConstants.EVENT_TYPE_EDGE_BYPASS_CONSENT,
-					EventSource.RESPONSE_CONTENT
-				)
-					.build()
+			DeviceAttributesEvents.isDeviceAttributesRequestEvent(
+				new Event.Builder("e", DeviceAttributesConstants.EVENT_TYPE, EventSource.RESPONSE_CONTENT).build()
 			)
 		);
-		assertFalse(DeviceAttributesEvents.isBypassConsentEvent(experienceEvent()));
+		assertFalse(DeviceAttributesEvents.isDeviceAttributesRequestEvent(experienceEvent()));
 	}
 
 	@Test
-	public void testOnRegistered_registersBypassListener() {
+	public void testOnRegistered_registersDeviceAttributesListener() {
 		edgeExtension.onRegistered();
 
 		verify(mockExtensionApi)
 			.registerEventListener(
-				eq(DeviceAttributesConstants.EVENT_TYPE_EDGE_BYPASS_CONSENT),
+				eq(DeviceAttributesConstants.EVENT_TYPE),
 				eq(EventSource.REQUEST_CONTENT),
 				any(ExtensionEventListener.class)
 			);
@@ -97,57 +92,57 @@ public class DeviceAttributesEdgeExtensionTests {
 		edgeExtension.onUnregistered();
 
 		verify(mockHitQueue).close();
-		verify(mockBypassQueue).close();
+		verify(mockDeviceAttributesQueue).close();
 	}
 
 	@Test
-	public void testOnUnregistered_withoutBypassQueue_closesPrimaryQueue() {
+	public void testOnUnregistered_withoutDeviceAttributesQueue_closesPrimaryQueue() {
 		new EdgeExtension(mockExtensionApi, mockHitQueue, null).onUnregistered();
 
 		verify(mockHitQueue).close();
 	}
 
 	@Test
-	public void testInit_doesNotStartBypassQueue() {
-		verifyNoInteractions(mockBypassQueue);
+	public void testInit_doesNotStartDeviceAttributesQueue() {
+		verifyNoInteractions(mockDeviceAttributesQueue);
 	}
 
 	@Test
-	public void testHandleBypassConsentRequest_queuesOnBypassQueueOnly_regardlessOfCollectConsentNo() {
+	public void testHandleDeviceAttributesRequest_queuesOnDeviceAttributesQueueOnly_regardlessOfCollectConsentNo() {
 		mockSharedStates(configData, identityState);
 		edgeExtension.state.updateCurrentConsent(ConsentStatus.NO);
-		final Event event = bypassEvent(data());
+		final Event event = deviceAttributesRequestEvent(data());
 
-		edgeExtension.handleBypassConsentRequest(event);
+		edgeExtension.handleDeviceAttributesRequest(event);
 
-		final DataEntity entity = verifyQueuedOnBypassQueue(1).get(0);
+		final DataEntity entity = verifyQueuedOnDeviceAttributesQueue(1).get(0);
 		assertEquals(event.getUniqueIdentifier(), entity.getUniqueIdentifier());
 		assertEquals(event.getTimestamp(), entity.getTimestamp().getTime());
 		final EdgeDataEntity edgeEntity = EdgeDataEntity.fromDataEntity(entity);
 		assertEquals("datastream-id", edgeEntity.getConfiguration().get("edge.configId"));
 		assertEquals(identityState, edgeEntity.getIdentityMap());
 		verify(mockHitQueue, never()).queue(any());
-		verifyNoBypassResult();
+		verifyNoDeviceAttributesResponse();
 	}
 
 	@Test
-	public void testBypassRequestUsesDedicatedQueueForEveryCollectConsent() {
+	public void testDeviceAttributesRequestUsesDedicatedQueueForEveryCollectConsent() {
 		mockSharedStates(configData, identityState);
 
 		for (final ConsentStatus status : ConsentStatus.values()) {
 			edgeExtension.state.updateCurrentConsent(status);
-			edgeExtension.handleBypassConsentRequest(bypassEvent(data()));
+			edgeExtension.handleDeviceAttributesRequest(deviceAttributesRequestEvent(data()));
 		}
 
-		verifyQueuedOnBypassQueue(ConsentStatus.values().length);
+		verifyQueuedOnDeviceAttributesQueue(ConsentStatus.values().length);
 		verify(mockHitQueue, never()).queue(any());
-		verify(mockBypassQueue, never()).clear();
-		verify(mockBypassQueue, never()).suspend();
-		verifyNoBypassResult();
+		verify(mockDeviceAttributesQueue, never()).clear();
+		verify(mockDeviceAttributesQueue, never()).suspend();
+		verifyNoDeviceAttributesResponse();
 	}
 
 	@Test
-	public void testReadyForEvent_bypassMatchesExperienceAndConsentEventReadiness() {
+	public void testReadyForEvent_deviceAttributesMatchesExperienceAndConsentEventReadiness() {
 		final Map<String, Object> hub = map("extensions", new HashMap<>());
 		final Object[][] cases = {
 			{ null, null, null },
@@ -180,79 +175,79 @@ public class DeviceAttributesEdgeExtensionTests {
 
 			final boolean experienceReady = edgeExtension.readyForEvent(experienceEvent());
 			assertEquals(experienceReady, edgeExtension.readyForEvent(consentEvent));
-			assertEquals(experienceReady, edgeExtension.readyForEvent(bypassEvent(data())));
+			assertEquals(experienceReady, edgeExtension.readyForEvent(deviceAttributesRequestEvent(data())));
 		}
 
 		// the last case is ready
-		assertTrue(edgeExtension.readyForEvent(bypassEvent(data())));
+		assertTrue(edgeExtension.readyForEvent(deviceAttributesRequestEvent(data())));
 	}
 
 	@Test
-	public void testReadyForEvent_bootsStateAndStartsBypassQueueOnce() {
+	public void testReadyForEvent_bootsStateAndStartsDeviceAttributesQueueOnce() {
 		mockHubSharedState(new SharedStateResult(SharedStateStatus.SET, map("extensions", new HashMap<>())));
 		mockSharedStates(configData, identityState);
 
-		assertTrue(edgeExtension.readyForEvent(bypassEvent(data())));
+		assertTrue(edgeExtension.readyForEvent(deviceAttributesRequestEvent(data())));
 		assertTrue(edgeExtension.readyForEvent(experienceEvent()));
 
-		verify(mockBypassQueue, times(1)).beginProcessing();
+		verify(mockDeviceAttributesQueue, times(1)).beginProcessing();
 	}
 
 	@Test
-	public void testReadyForEvent_bootupNotComplete_doesNotStartBypassQueue() {
+	public void testReadyForEvent_bootupNotComplete_doesNotStartDeviceAttributesQueue() {
 		mockHubSharedState(new SharedStateResult(SharedStateStatus.PENDING, null));
 		mockSharedStates(configData, identityState);
 
-		assertFalse(edgeExtension.readyForEvent(bypassEvent(data())));
+		assertFalse(edgeExtension.readyForEvent(deviceAttributesRequestEvent(data())));
 
-		verify(mockBypassQueue, never()).beginProcessing();
+		verify(mockDeviceAttributesQueue, never()).beginProcessing();
 	}
 
 	@Test
-	public void testHandleResetComplete_doesNotTouchBypassQueue() {
+	public void testHandleResetComplete_doesNotTouchDeviceAttributesQueue() {
 		final Event resetEvent = new Event.Builder("reset", EventType.EDGE_IDENTITY, EventSource.RESET_COMPLETE)
 			.build();
 
 		edgeExtension.handleResetComplete(resetEvent);
 
 		verify(mockHitQueue).queue(any());
-		verifyNoInteractions(mockBypassQueue);
+		verifyNoInteractions(mockDeviceAttributesQueue);
 	}
 
 	@Test
-	public void testBypassQueueAcceptsNewIdentityRequestsAfterReset() {
+	public void testDeviceAttributesQueueAcceptsNewIdentityRequestsAfterReset() {
 		mockSharedStates(configData, identityState);
 		edgeExtension.handleResetComplete(
 			new Event.Builder("reset", EventType.EDGE_IDENTITY, EventSource.RESET_COMPLETE).build()
 		);
-		final Event event = bypassEvent(data());
+		final Event event = deviceAttributesRequestEvent(data());
 
-		edgeExtension.handleBypassConsentRequest(event);
+		edgeExtension.handleDeviceAttributesRequest(event);
 
-		assertEquals(event.getUniqueIdentifier(), verifyQueuedOnBypassQueue(1).get(0).getUniqueIdentifier());
-		verifyNoBypassResult();
+		assertEquals(event.getUniqueIdentifier(), verifyQueuedOnDeviceAttributesQueue(1).get(0).getUniqueIdentifier());
+		verifyNoDeviceAttributesResponse();
 	}
 
 	@Test
-	public void testBypassQueueCreationFailurePreservesOrdinaryQueueing() {
+	public void testDeviceAttributesQueueCreationFailurePreservesOrdinaryQueueing() {
 		edgeExtension = new EdgeExtension(mockExtensionApi, mockHitQueue, null);
 		mockSharedStates(configData, identityState);
 
 		edgeExtension.handleExperienceEventRequest(experienceEvent());
 
 		verify(mockHitQueue, times(1)).queue(any());
-		verifyNoBypassResult();
+		verifyNoDeviceAttributesResponse();
 	}
 
 	@Test
-	public void testBypassMissingQueueProducesCorrelatedFailure() {
+	public void testDeviceAttributesMissingQueueProducesCorrelatedFailure() {
 		edgeExtension = new EdgeExtension(mockExtensionApi, mockHitQueue, null);
 		mockSharedStates(configData, identityState);
-		final Event event = bypassEvent(data());
+		final Event event = deviceAttributesRequestEvent(data());
 
-		edgeExtension.handleBypassConsentRequest(event);
+		edgeExtension.handleDeviceAttributesRequest(event);
 
-		assertBypassResult(
+		assertDeviceAttributesResponse(
 			event,
 			DeviceAttributesConstants.Status.FAILED,
 			DeviceAttributesConstants.Reason.QUEUE_UNAVAILABLE
@@ -261,14 +256,14 @@ public class DeviceAttributesEdgeExtensionTests {
 	}
 
 	@Test
-	public void testBypassFailedEnqueueProducesCorrelatedFailure() {
-		when(mockBypassQueue.queue(any())).thenReturn(false);
+	public void testDeviceAttributesFailedEnqueueProducesCorrelatedFailure() {
+		when(mockDeviceAttributesQueue.queue(any())).thenReturn(false);
 		mockSharedStates(configData, identityState);
-		final Event event = bypassEvent(data());
+		final Event event = deviceAttributesRequestEvent(data());
 
-		edgeExtension.handleBypassConsentRequest(event);
+		edgeExtension.handleDeviceAttributesRequest(event);
 
-		assertBypassResult(
+		assertDeviceAttributesResponse(
 			event,
 			DeviceAttributesConstants.Status.FAILED,
 			DeviceAttributesConstants.Reason.QUEUE_UNAVAILABLE
@@ -276,77 +271,77 @@ public class DeviceAttributesEdgeExtensionTests {
 	}
 
 	@Test
-	public void testOrdinaryFailedEnqueueDoesNotProduceBypassResult() {
+	public void testOrdinaryFailedEnqueueDoesNotProduceDeviceAttributesResponse() {
 		when(mockHitQueue.queue(any())).thenReturn(false);
 		mockSharedStates(configData, identityState);
 
 		edgeExtension.handleExperienceEventRequest(experienceEvent());
 
 		verify(mockHitQueue, times(1)).queue(any());
-		verifyNoBypassResult();
+		verifyNoDeviceAttributesResponse();
 	}
 
 	@Test
-	public void testBypassEmptyPayloadProducesCorrelatedDrop() {
+	public void testDeviceAttributesEmptyPayloadProducesCorrelatedDrop() {
 		mockSharedStates(configData, identityState);
 
 		for (final Map<String, Object> data : Arrays.<Map<String, Object>>asList(null, new HashMap<>())) {
 			clearInvocations(mockExtensionApi);
-			final Event event = bypassEvent(data);
+			final Event event = deviceAttributesRequestEvent(data);
 
-			edgeExtension.handleBypassConsentRequest(event);
+			edgeExtension.handleDeviceAttributesRequest(event);
 
-			assertBypassResult(
+			assertDeviceAttributesResponse(
 				event,
 				DeviceAttributesConstants.Status.DROPPED,
 				DeviceAttributesConstants.Reason.INVALID_PAYLOAD
 			);
 		}
 
-		verify(mockBypassQueue, never()).queue(any());
+		verify(mockDeviceAttributesQueue, never()).queue(any());
 	}
 
 	@Test
-	public void testBypassMissingConfigurationProducesCorrelatedDrop() {
+	public void testDeviceAttributesMissingConfigurationProducesCorrelatedDrop() {
 		final Object[] configs = { null, new HashMap<>(), map("edge.configId", "") };
 
 		for (final Object config : configs) {
 			clearInvocations(mockExtensionApi);
 			mockSharedStates((Map<String, Object>) config, identityState);
-			final Event event = bypassEvent(data());
+			final Event event = deviceAttributesRequestEvent(data());
 
-			edgeExtension.handleBypassConsentRequest(event);
+			edgeExtension.handleDeviceAttributesRequest(event);
 
-			assertBypassResult(
+			assertDeviceAttributesResponse(
 				event,
 				DeviceAttributesConstants.Status.DROPPED,
 				DeviceAttributesConstants.Reason.MISSING_CONFIG
 			);
 		}
 
-		verify(mockBypassQueue, never()).queue(any());
+		verify(mockDeviceAttributesQueue, never()).queue(any());
 	}
 
 	@Test
-	public void testBypassMissingIdentityProducesCorrelatedDrop() {
+	public void testDeviceAttributesMissingIdentityProducesCorrelatedDrop() {
 		mockSharedStates(configData, null);
-		final Event event = bypassEvent(data());
+		final Event event = deviceAttributesRequestEvent(data());
 
-		edgeExtension.handleBypassConsentRequest(event);
+		edgeExtension.handleDeviceAttributesRequest(event);
 
-		assertBypassResult(
+		assertDeviceAttributesResponse(
 			event,
 			DeviceAttributesConstants.Status.DROPPED,
 			DeviceAttributesConstants.Reason.INVALID_PAYLOAD
 		);
-		verify(mockBypassQueue, never()).queue(any());
+		verify(mockDeviceAttributesQueue, never()).queue(any());
 	}
 
 	@Test
-	public void testBypassResultsRetainRequestCorrelation() {
-		final Event request = bypassEvent(data());
+	public void testDeviceAttributesResponsesRetainRequestCorrelation() {
+		final Event request = deviceAttributesRequestEvent(data());
 
-		final Event result = DeviceAttributesEvents.createResult(
+		final Event result = DeviceAttributesEvents.createResponse(
 			request,
 			DeviceAttributesConstants.Status.FAILED,
 			DeviceAttributesConstants.Reason.NETWORK,
@@ -355,16 +350,16 @@ public class DeviceAttributesEdgeExtensionTests {
 
 		assertEquals(request.getUniqueIdentifier(), result.getParentID());
 		assertNull(result.getResponseID());
-		assertEquals(DeviceAttributesConstants.EVENT_NAME_RESULT, result.getName());
-		assertEquals(DeviceAttributesConstants.EVENT_TYPE_EDGE_BYPASS_CONSENT, result.getType());
+		assertEquals(DeviceAttributesConstants.EVENT_NAME_RESPONSE, result.getName());
+		assertEquals(DeviceAttributesConstants.EVENT_TYPE, result.getType());
 		assertEquals(EventSource.RESPONSE_CONTENT, result.getSource());
 		assertEquals(500, result.getEventData().get("httpStatus"));
 	}
 
 	@Test
-	public void testBypassResultConstantsPreserveWireValues() {
-		assertEquals("com.adobe.eventType.edgeBypassConsent", DeviceAttributesConstants.EVENT_TYPE_EDGE_BYPASS_CONSENT);
-		assertEquals("Device Attributes Response", DeviceAttributesConstants.EVENT_NAME_RESULT);
+	public void testDeviceAttributesResponseConstantsPreserveWireValues() {
+		assertEquals("com.adobe.eventType.edgeBypassConsent", DeviceAttributesConstants.EVENT_TYPE);
+		assertEquals("Device Attributes Response", DeviceAttributesConstants.EVENT_NAME_RESPONSE);
 		assertEquals("success", DeviceAttributesConstants.Status.SUCCESS);
 		assertEquals("failed", DeviceAttributesConstants.Status.FAILED);
 		assertEquals("dropped", DeviceAttributesConstants.Status.DROPPED);
@@ -376,8 +371,8 @@ public class DeviceAttributesEdgeExtensionTests {
 	}
 
 	@Test
-	public void testBypassDecodeDropPreservesUnchainedWireContract() {
-		final Event result = DeviceAttributesEvents.createDropResult("stored-id");
+	public void testDeviceAttributesDecodeDropPreservesUnchainedWireContract() {
+		final Event result = DeviceAttributesEvents.createDroppedResponse("stored-id");
 
 		assertNull(result.getParentID());
 		assertNull(result.getResponseID());
@@ -390,22 +385,22 @@ public class DeviceAttributesEdgeExtensionTests {
 
 	// Helpers
 
-	private List<DataEntity> verifyQueuedOnBypassQueue(final int count) {
+	private List<DataEntity> verifyQueuedOnDeviceAttributesQueue(final int count) {
 		final ArgumentCaptor<DataEntity> captor = ArgumentCaptor.forClass(DataEntity.class);
-		verify(mockBypassQueue, times(count)).queue(captor.capture());
+		verify(mockDeviceAttributesQueue, times(count)).queue(captor.capture());
 		return captor.getAllValues();
 	}
 
-	private void verifyNoBypassResult() {
+	private void verifyNoDeviceAttributesResponse() {
 		verify(mockExtensionApi, never()).dispatch(any(Event.class));
 	}
 
-	private void assertBypassResult(final Event request, final String status, final String reason) {
+	private void assertDeviceAttributesResponse(final Event request, final String status, final String reason) {
 		final ArgumentCaptor<Event> captor = ArgumentCaptor.forClass(Event.class);
 		verify(mockExtensionApi, times(1)).dispatch(captor.capture());
 		final Event result = captor.getValue();
-		assertEquals(DeviceAttributesConstants.EVENT_NAME_RESULT, result.getName());
-		assertEquals(DeviceAttributesConstants.EVENT_TYPE_EDGE_BYPASS_CONSENT, result.getType());
+		assertEquals(DeviceAttributesConstants.EVENT_NAME_RESPONSE, result.getName());
+		assertEquals(DeviceAttributesConstants.EVENT_TYPE, result.getType());
 		assertEquals(EventSource.RESPONSE_CONTENT, result.getSource());
 		assertEquals(request.getUniqueIdentifier(), result.getParentID());
 		final Map<String, Object> expected = new HashMap<>();
@@ -454,10 +449,10 @@ public class DeviceAttributesEdgeExtensionTests {
 			.thenReturn(result);
 	}
 
-	private static Event bypassEvent(final Map<String, Object> data) {
+	private static Event deviceAttributesRequestEvent(final Map<String, Object> data) {
 		return new Event.Builder(
 			"Device Attributes Request",
-			DeviceAttributesConstants.EVENT_TYPE_EDGE_BYPASS_CONSENT,
+			DeviceAttributesConstants.EVENT_TYPE,
 			EventSource.REQUEST_CONTENT
 		)
 			.setEventData(data)

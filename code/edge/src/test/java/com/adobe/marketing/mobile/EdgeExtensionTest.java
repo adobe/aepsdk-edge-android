@@ -128,7 +128,7 @@ public class EdgeExtensionTest {
 		assertEquals(EventSource.REQUEST_IDENTITY, eventSourceCaptor.getAllValues().get(4));
 		assertEquals(EventType.EDGE, eventTypeCaptor.getAllValues().get(5));
 		assertEquals(EventSource.UPDATE_IDENTITY, eventSourceCaptor.getAllValues().get(5));
-		assertEquals(DeviceAttributesConstants.EVENT_TYPE_EDGE_BYPASS_CONSENT, eventTypeCaptor.getAllValues().get(6));
+		assertEquals(DeviceAttributesConstants.EVENT_TYPE, eventTypeCaptor.getAllValues().get(6));
 		assertEquals(EventSource.REQUEST_CONTENT, eventSourceCaptor.getAllValues().get(6));
 		assertEquals(7, listenerCaptor.getAllValues().size());
 	}

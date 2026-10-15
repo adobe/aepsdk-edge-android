@@ -22,16 +22,16 @@ import java.util.Set;
 final class DeviceAttributesConstants {
 
 	/**
-	 * Request (E3, {@code requestContent}) and result (E4, {@code responseContent}) event type for the
+	 * Request (E3, {@code requestContent}) and response (E4, {@code responseContent}) event type for the
 	 * device attributes path.
 	 */
-	static final String EVENT_TYPE_EDGE_BYPASS_CONSENT = "com.adobe.eventType.edgeBypassConsent";
+	static final String EVENT_TYPE = "com.adobe.eventType.edgeBypassConsent";
 
-	/** Name of the device attributes result event (E4). */
-	static final String EVENT_NAME_RESULT = "Device Attributes Response";
+	/** Name of the device attributes response event (E4). */
+	static final String EVENT_NAME_RESPONSE = "Device Attributes Response";
 
 	/** Suffix appended to the Edge extension name to label the dedicated device attributes queue. */
-	static final String DATA_QUEUE_NAME_SUFFIX = ".bypassConsent";
+	static final String DATA_QUEUE_SUFFIX = ".deviceAttributes";
 
 	/** HTTP status codes treated as a successful device attributes request. */
 	static final Set<Integer> SUCCESS_RESPONSE_CODES = Collections.unmodifiableSet(
@@ -65,6 +65,7 @@ final class DeviceAttributesConstants {
 		static final String INVALID_PAYLOAD = "invalidPayload";
 		static final String QUEUE_UNAVAILABLE = "queueUnavailable";
 		static final String NETWORK = "network";
+		static final String IDENTITY_CHANGED = "identityChanged";
 
 		private Reason() {}
 	}

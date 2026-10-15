@@ -17,7 +17,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.adobe.marketing.mobile.services.DeviceInforming;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.NetworkCallback;
 import com.adobe.marketing.mobile.services.NetworkRequest;
@@ -37,15 +36,12 @@ public class DeviceAttributesNetworkServiceTests {
 	private static final String URL = "https://edge.adobedc.net/ee/v1/mobile/device-attributes?configId=a&requestId=b";
 
 	private Networking mockNetworking;
-	private DeviceInforming mockDeviceInfoService;
 	private DeviceAttributesNetworkService networkService;
 
 	@Before
 	public void setUp() {
 		mockNetworking = mock(Networking.class);
-		mockDeviceInfoService = mock(DeviceInforming.class);
-		when(mockDeviceInfoService.getNetworkConnectionStatus()).thenReturn(DeviceInforming.ConnectionStatus.CONNECTED);
-		networkService = new DeviceAttributesNetworkService(mockNetworking, mockDeviceInfoService);
+		networkService = new DeviceAttributesNetworkService(mockNetworking);
 	}
 
 	@Test
@@ -141,11 +137,9 @@ public class DeviceAttributesNetworkServiceTests {
 	}
 
 	@Test
-	public void testClassify_nullConnectionWhileOffline_retries() {
-		when(mockDeviceInfoService.getNetworkConnectionStatus())
-			.thenReturn(DeviceInforming.ConnectionStatus.DISCONNECTED);
-
-		final DeviceAttributesNetworkResult result = networkService.classify(null, URL);
+	public void testClassify_responseCodeMinusOne_offlineOrTimeout_retries() {
+		// Core returns a connection with response code -1 when the device is offline or the request times out
+		final DeviceAttributesNetworkResult result = networkService.classify(connection(-1, null), URL);
 
 		assertEquals(DeviceAttributesNetworkResult.Type.RETRY, result.getType());
 		assertEquals(EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS, result.getRetryIntervalSeconds());
@@ -153,24 +147,8 @@ public class DeviceAttributesNetworkServiceTests {
 	}
 
 	@Test
-	public void testClassify_nullConnectionWhileOnlineOrUnknown_failsWithoutHttpStatus() {
-		for (final DeviceInforming.ConnectionStatus status : new DeviceInforming.ConnectionStatus[] {
-			DeviceInforming.ConnectionStatus.CONNECTED,
-			DeviceInforming.ConnectionStatus.UNKNOWN,
-		}) {
-			when(mockDeviceInfoService.getNetworkConnectionStatus()).thenReturn(status);
-
-			final DeviceAttributesNetworkResult result = networkService.classify(null, URL);
-
-			assertEquals(status.name(), DeviceAttributesNetworkResult.Type.FAILED, result.getType());
-			assertNull(status.name(), result.getHttpStatus());
-		}
-	}
-
-	@Test
-	public void testClassify_nullConnectionWithoutDeviceInfoService_failsWithoutHttpStatus() {
-		final DeviceAttributesNetworkResult result = new DeviceAttributesNetworkService(mockNetworking, null)
-			.classify(null, URL);
+	public void testClassify_nullConnection_failsWithoutHttpStatus() {
+		final DeviceAttributesNetworkResult result = networkService.classify(null, URL);
 
 		assertEquals(DeviceAttributesNetworkResult.Type.FAILED, result.getType());
 		assertNull(result.getHttpStatus());

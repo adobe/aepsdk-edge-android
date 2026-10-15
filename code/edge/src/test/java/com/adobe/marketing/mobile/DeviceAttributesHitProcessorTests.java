@@ -29,7 +29,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.adobe.marketing.mobile.services.DataEntity;
-import com.adobe.marketing.mobile.services.DeviceInforming;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.NetworkCallback;
 import com.adobe.marketing.mobile.services.NetworkRequest;
@@ -51,6 +50,7 @@ import org.junit.Test;
 public class DeviceAttributesHitProcessorTests {
 
 	private static final String DATASTREAM_ID = "datastream-id";
+	private static final String QUEUED_ECID = "ecid-value";
 	private static final String SUCCESS_BODY_WITH_HANDLES =
 		"{\"requestId\":\"r1\",\"handle\":[" +
 		"{\"type\":\"locationHint:result\",\"payload\":[{\"scope\":\"Target\",\"hint\":\"35\",\"ttlSeconds\":1800}," +
@@ -60,7 +60,6 @@ public class DeviceAttributesHitProcessorTests {
 		"]}";
 
 	private Networking mockNetworking;
-	private DeviceInforming mockDeviceInfoService;
 	private EdgeStateCallback mockStateCallback;
 	private EdgeSharedStateCallback mockSharedStateCallback;
 	private FakeNamedCollection fakeNamedCollection;
@@ -70,12 +69,11 @@ public class DeviceAttributesHitProcessorTests {
 	private DeviceAttributesHitProcessor hitProcessor;
 	private Event requestEvent;
 	private DataEntity entity;
+	private Map<String, Object> latestIdentityMap;
 
 	@Before
 	public void setUp() {
 		mockNetworking = mock(Networking.class);
-		mockDeviceInfoService = mock(DeviceInforming.class);
-		when(mockDeviceInfoService.getNetworkConnectionStatus()).thenReturn(DeviceInforming.ConnectionStatus.CONNECTED);
 		mockStateCallback = mock(EdgeStateCallback.class);
 		mockSharedStateCallback = mock(EdgeSharedStateCallback.class);
 		fakeNamedCollection = new FakeNamedCollection();
@@ -89,13 +87,15 @@ public class DeviceAttributesHitProcessorTests {
 			singletonMap("name", "https://ns.adobe.com/experience/mobilesdk/android")
 		);
 		when(mockStateCallback.getImplementationDetails()).thenReturn(implementationDetails);
+		latestIdentityMap = identityMapWithEcids(QUEUED_ECID);
 
 		hitProcessor =
 			new DeviceAttributesHitProcessor(
-				new DeviceAttributesNetworkService(mockNetworking, mockDeviceInfoService),
+				new DeviceAttributesNetworkService(mockNetworking),
 				mockSharedStateCallback,
 				mockStateCallback,
 				fakeNamedCollection,
+				() -> latestIdentityMap,
 				dispatchedEvents::add
 			);
 
@@ -153,7 +153,7 @@ public class DeviceAttributesHitProcessorTests {
 	}
 
 	@Test
-	public void testProcessHit_recoverableCodes_retryWithoutResultEvent() {
+	public void testProcessHit_recoverableCodes_retryWithoutResponseEvent() {
 		for (final int code : new int[] { -1, 408, 429, 502, 503, 504, 507 }) {
 			setUp();
 			respondWith(code, null, null);
@@ -189,10 +189,9 @@ public class DeviceAttributesHitProcessorTests {
 	}
 
 	@Test
-	public void testProcessHit_nullConnectionWhileOffline_retriesWithoutResultEvent() {
-		when(mockDeviceInfoService.getNetworkConnectionStatus())
-			.thenReturn(DeviceInforming.ConnectionStatus.DISCONNECTED);
-		mockNullConnection();
+	public void testProcessHit_responseCodeMinusOne_offlineOrTimeout_retriesWithoutResponseEvent() {
+		// Core returns a connection with response code -1 when the device is offline or the request times out
+		respondWith(-1, null, null);
 
 		processHit(entity);
 
@@ -202,7 +201,7 @@ public class DeviceAttributesHitProcessorTests {
 	}
 
 	@Test
-	public void testProcessHit_nullConnectionWhileOnline_dispatchesFailedWithoutHttpStatus() {
+	public void testProcessHit_nullConnection_dispatchesFailedWithoutHttpStatus() {
 		mockNullConnection();
 
 		processHit(entity);
@@ -325,7 +324,7 @@ public class DeviceAttributesHitProcessorTests {
 		verify(mockStateCallback, times(1)).setLocationHint("or2", 1800);
 		assertNotNull(new StoreResponsePayloadManager(fakeNamedCollection).getActiveStores());
 		assertEquals(1, new StoreResponsePayloadManager(fakeNamedCollection).getActiveStores().size());
-		// only the result event, no Edge response or content complete events
+		// only the response event, no Edge response or content complete events
 		assertResult(DeviceAttributesConstants.Status.SUCCESS, null, 200);
 	}
 
@@ -380,53 +379,75 @@ public class DeviceAttributesHitProcessorTests {
 		assertEquals("kndctr_org_cluster", ((Map<String, Object>) entries.get(0)).get("key"));
 	}
 
-	// Identities reset
+	// ECID check
 
 	@Test
-	public void testProcessHit_queuedBeforeReset_isDiscardedWithoutRequestOrResult() {
-		fakeNamedCollection.setLong(EdgeConstants.DataStoreKeys.RESET_IDENTITIES_DATE, requestEvent.getTimestamp() + 1);
-		respondWith(200, "{}", null);
-
-		processHit(entity);
-
-		assertTrue(sentRequests.isEmpty());
-		assertTrue(dispatchedEvents.isEmpty());
-		assertEquals(Arrays.asList(true), processingResults);
-	}
-
-	@Test
-	public void testProcessHit_queuedAfterReset_isSent() {
-		fakeNamedCollection.setLong(EdgeConstants.DataStoreKeys.RESET_IDENTITIES_DATE, requestEvent.getTimestamp() - 1);
+	public void testProcessHit_sameEcid_isSent() {
 		respondWith(200, "{}", null);
 
 		processHit(entity);
 
 		assertEquals(1, sentRequests.size());
 		assertResult(DeviceAttributesConstants.Status.SUCCESS, null, 200);
+		assertEquals(Arrays.asList(true), processingResults);
 	}
 
 	@Test
-	public void testProcessHit_resetWhileWaitingForRetry_isDiscardedOnNextAttempt() {
+	public void testProcessHit_changedEcid_dispatchesDroppedIdentityChangedWithoutRequest() {
+		latestIdentityMap = identityMapWithEcids("new-ecid");
+		respondWith(200, "{}", null);
+
+		processHit(entity);
+
+		verify(mockNetworking, never()).connectAsync(any(), any());
+		assertResult(DeviceAttributesConstants.Status.DROPPED, DeviceAttributesConstants.Reason.IDENTITY_CHANGED, null);
+		assertEquals(Arrays.asList(true), processingResults);
+	}
+
+	@Test
+	public void testProcessHit_latestIdentityUnavailable_retriesWithoutRequestOrResponseEvent() {
+		latestIdentityMap = null;
+		respondWith(200, "{}", null);
+
+		processHit(entity);
+
+		verify(mockNetworking, never()).connectAsync(any(), any());
+		assertTrue(dispatchedEvents.isEmpty());
+		assertEquals(Arrays.asList(false), processingResults);
+	}
+
+	@Test
+	public void testProcessHit_ecidChangesBetweenRetries_isDroppedOnNextAttempt() {
 		respondWith(503, null, null);
 		processHit(entity);
 		assertEquals(Arrays.asList(false), processingResults);
+		assertTrue(dispatchedEvents.isEmpty());
 
-		fakeNamedCollection.setLong(EdgeConstants.DataStoreKeys.RESET_IDENTITIES_DATE, requestEvent.getTimestamp() + 1);
+		latestIdentityMap = identityMapWithEcids("new-ecid");
 		processHit(entity);
 
 		assertEquals(1, sentRequests.size());
-		assertTrue(dispatchedEvents.isEmpty());
+		assertResult(DeviceAttributesConstants.Status.DROPPED, DeviceAttributesConstants.Reason.IDENTITY_CHANGED, null);
 		assertEquals(Arrays.asList(false, true), processingResults);
 	}
 
 	@Test
-	public void testProcessHit_resetWhileInFlight_dispatchesResultButIgnoresStoreHandles() {
+	public void testProcessHit_legacyEcidAtIndexOneDiffers_isSent() {
+		latestIdentityMap = identityMapWithEcids(QUEUED_ECID, "legacy-ecid");
+		respondWith(200, SUCCESS_BODY_WITH_HANDLES, null);
+
+		processHit(entity);
+
+		assertEquals(1, sentRequests.size());
+		assertEquals(1, new StoreResponsePayloadManager(fakeNamedCollection).getActiveStores().size());
+		assertResult(DeviceAttributesConstants.Status.SUCCESS, null, 200);
+	}
+
+	@Test
+	public void testProcessHit_ecidChangesDuringRequest_dispatchesResponseButIgnoresStoreHandles() {
 		doAnswer(invocation -> {
 				sentRequests.add(invocation.getArgument(0));
-				fakeNamedCollection.setLong(
-					EdgeConstants.DataStoreKeys.RESET_IDENTITIES_DATE,
-					requestEvent.getTimestamp() + 1
-				);
+				latestIdentityMap = identityMapWithEcids("new-ecid");
 				((NetworkCallback) invocation.getArgument(1)).call(
 						mockConnection(200, SUCCESS_BODY_WITH_HANDLES, null)
 					);
@@ -459,6 +480,7 @@ public class DeviceAttributesHitProcessorTests {
 		final Map<String, Object> data = new HashMap<>();
 		data.put("xdm", singletonMap("producer", "value"));
 		requestEvent = buildRequestEvent(data);
+		latestIdentityMap = new HashMap<>();
 
 		processHit(new EdgeDataEntity(requestEvent, defaultConfig(), new HashMap<>()).toDataEntity());
 
@@ -476,8 +498,8 @@ public class DeviceAttributesHitProcessorTests {
 		verify(mockNetworking, never()).connectAsync(any(), any());
 		assertEquals(1, dispatchedEvents.size());
 		final Event result = dispatchedEvents.get(0);
-		assertEquals(DeviceAttributesConstants.EVENT_NAME_RESULT, result.getName());
-		assertEquals(DeviceAttributesConstants.EVENT_TYPE_EDGE_BYPASS_CONSENT, result.getType());
+		assertEquals(DeviceAttributesConstants.EVENT_NAME_RESPONSE, result.getName());
+		assertEquals(DeviceAttributesConstants.EVENT_TYPE, result.getType());
 		assertEquals(EventSource.RESPONSE_CONTENT, result.getSource());
 		assertNull(result.getParentID());
 		assertEquals(DeviceAttributesConstants.Status.DROPPED, result.getEventData().get("status"));
@@ -520,13 +542,13 @@ public class DeviceAttributesHitProcessorTests {
 	}
 
 	/**
-	 * Asserts exactly one result event (E4) was dispatched, chained to the request event (E3).
+	 * Asserts exactly one response event (E4) was dispatched, chained to the request event (E3).
 	 */
 	private void assertResult(final String status, final String reason, final Integer httpStatus) {
 		assertEquals(1, dispatchedEvents.size());
 		final Event result = dispatchedEvents.get(0);
-		assertEquals(DeviceAttributesConstants.EVENT_NAME_RESULT, result.getName());
-		assertEquals(DeviceAttributesConstants.EVENT_TYPE_EDGE_BYPASS_CONSENT, result.getType());
+		assertEquals(DeviceAttributesConstants.EVENT_NAME_RESPONSE, result.getName());
+		assertEquals(DeviceAttributesConstants.EVENT_TYPE, result.getType());
 		assertEquals(EventSource.RESPONSE_CONTENT, result.getSource());
 		assertEquals(requestEvent.getUniqueIdentifier(), result.getParentID());
 		assertEquals(status, result.getEventData().get(DeviceAttributesConstants.EventDataKeys.STATUS));
@@ -537,7 +559,7 @@ public class DeviceAttributesHitProcessorTests {
 	private static Event buildRequestEvent(final Map<String, Object> data) {
 		return new Event.Builder(
 			"Device Attributes Request",
-			DeviceAttributesConstants.EVENT_TYPE_EDGE_BYPASS_CONSENT,
+			DeviceAttributesConstants.EVENT_TYPE,
 			EventSource.REQUEST_CONTENT
 		)
 			.setEventData(data)
@@ -545,11 +567,21 @@ public class DeviceAttributesHitProcessorTests {
 	}
 
 	private static DataEntity buildEntity(final Event event, final Map<String, Object> config) {
-		final Map<String, Object> identityState = singletonMap(
-			"identityMap",
-			singletonMap("ECID", Arrays.asList(singletonMap("id", "ecid-value")))
-		);
+		final Map<String, Object> identityState = singletonMap("identityMap", identityMapWithEcids(QUEUED_ECID));
 		return new EdgeDataEntity(event, config, identityState).toDataEntity();
+	}
+
+	/**
+	 * @return an identityMap whose ECID list holds the given ids in order (index 0 is the current ECID)
+	 */
+	private static Map<String, Object> identityMapWithEcids(final String... ecids) {
+		final List<Object> items = new ArrayList<>();
+
+		for (final String ecid : ecids) {
+			items.add(singletonMap("id", ecid));
+		}
+
+		return singletonMap("ECID", items);
 	}
 
 	private static Map<String, Object> defaultEventData() {

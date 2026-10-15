@@ -25,29 +25,29 @@ final class DeviceAttributesEvents {
 
 	/**
 	 * Checks if the provided {@code event} is a device attributes request event (E3), which has the dedicated
-	 * {@code edgeBypassConsent} type and the {@link EventSource#REQUEST_CONTENT} source. Such events are routed to
+	 * {@code com.adobe.eventType.edgeBypassConsent} type and the {@link EventSource#REQUEST_CONTENT} source. Such events are routed to
 	 * the separate device attributes queue and are not subject to the collect consent gate.
 	 *
 	 * @param event current event to check
 	 * @return true if the {@code event} is a device attributes request event
 	 */
-	static boolean isBypassConsentEvent(@NonNull final Event event) {
+	static boolean isDeviceAttributesRequestEvent(@NonNull final Event event) {
 		return (
-			DeviceAttributesConstants.EVENT_TYPE_EDGE_BYPASS_CONSENT.equalsIgnoreCase(event.getType()) &&
+			DeviceAttributesConstants.EVENT_TYPE.equalsIgnoreCase(event.getType()) &&
 			EventSource.REQUEST_CONTENT.equalsIgnoreCase(event.getSource())
 		);
 	}
 
 	/**
-	 * Creates the device attributes result event (E4) chained to the request event (E3).
+	 * Creates the device attributes response event (E4) chained to the request event (E3).
 	 *
 	 * @param requestEvent the device attributes request event (E3)
-	 * @param status the result status
-	 * @param reason the optional result reason
+	 * @param status the response status
+	 * @param reason the optional response reason
 	 * @param httpStatus the optional HTTP status code
-	 * @return the result event
+	 * @return the response event
 	 */
-	@NonNull static Event createResult(
+	@NonNull static Event createResponse(
 		@NonNull final Event requestEvent,
 		@NonNull final String status,
 		@Nullable final String reason,
@@ -65,8 +65,8 @@ final class DeviceAttributesEvents {
 		}
 
 		return new Event.Builder(
-			DeviceAttributesConstants.EVENT_NAME_RESULT,
-			DeviceAttributesConstants.EVENT_TYPE_EDGE_BYPASS_CONSENT,
+			DeviceAttributesConstants.EVENT_NAME_RESPONSE,
+			DeviceAttributesConstants.EVENT_TYPE,
 			EventSource.RESPONSE_CONTENT
 		)
 			.setEventData(data)
@@ -75,21 +75,21 @@ final class DeviceAttributesEvents {
 	}
 
 	/**
-	 * Creates the unchained result event (E4) for a stored hit that could not be decoded. A corrupt hit has no
+	 * Creates the unchained response event (E4) for a stored hit that could not be decoded. A corrupt hit has no
 	 * usable request event; its persisted identifier still identifies the request that was dropped.
 	 *
 	 * @param requestEventId the unique identifier of the stored hit
-	 * @return the result event
+	 * @return the response event
 	 */
-	@NonNull static Event createDropResult(@NonNull final String requestEventId) {
+	@NonNull static Event createDroppedResponse(@NonNull final String requestEventId) {
 		final Map<String, Object> data = new HashMap<>();
 		data.put(DeviceAttributesConstants.EventDataKeys.STATUS, DeviceAttributesConstants.Status.DROPPED);
 		data.put(DeviceAttributesConstants.EventDataKeys.REASON, DeviceAttributesConstants.Reason.INVALID_PAYLOAD);
 		data.put(DeviceAttributesConstants.EventDataKeys.REQUEST_EVENT_ID, requestEventId);
 
 		return new Event.Builder(
-			DeviceAttributesConstants.EVENT_NAME_RESULT,
-			DeviceAttributesConstants.EVENT_TYPE_EDGE_BYPASS_CONSENT,
+			DeviceAttributesConstants.EVENT_NAME_RESPONSE,
+			DeviceAttributesConstants.EVENT_TYPE,
 			EventSource.RESPONSE_CONTENT
 		)
 			.setEventData(data)
