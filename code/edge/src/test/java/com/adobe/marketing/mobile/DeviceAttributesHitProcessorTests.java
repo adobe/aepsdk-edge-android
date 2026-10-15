@@ -29,6 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.adobe.marketing.mobile.services.DataEntity;
+import com.adobe.marketing.mobile.services.DeviceInforming;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.NetworkCallback;
 import com.adobe.marketing.mobile.services.NetworkRequest;
@@ -60,6 +61,7 @@ public class DeviceAttributesHitProcessorTests {
 		"]}";
 
 	private Networking mockNetworking;
+	private DeviceInforming mockDeviceInfoService;
 	private EdgeStateCallback mockStateCallback;
 	private EdgeSharedStateCallback mockSharedStateCallback;
 	private FakeNamedCollection fakeNamedCollection;
@@ -74,6 +76,8 @@ public class DeviceAttributesHitProcessorTests {
 	@Before
 	public void setUp() {
 		mockNetworking = mock(Networking.class);
+		mockDeviceInfoService = mock(DeviceInforming.class);
+		when(mockDeviceInfoService.getNetworkConnectionStatus()).thenReturn(DeviceInforming.ConnectionStatus.CONNECTED);
 		mockStateCallback = mock(EdgeStateCallback.class);
 		mockSharedStateCallback = mock(EdgeSharedStateCallback.class);
 		fakeNamedCollection = new FakeNamedCollection();
@@ -91,7 +95,7 @@ public class DeviceAttributesHitProcessorTests {
 
 		hitProcessor =
 			new DeviceAttributesHitProcessor(
-				new DeviceAttributesNetworkService(mockNetworking),
+				new DeviceAttributesNetworkService(mockNetworking, mockDeviceInfoService),
 				mockSharedStateCallback,
 				mockStateCallback,
 				fakeNamedCollection,
@@ -189,8 +193,8 @@ public class DeviceAttributesHitProcessorTests {
 	}
 
 	@Test
-	public void testProcessHit_responseCodeMinusOne_offlineOrTimeout_retriesWithoutResponseEvent() {
-		// Core returns a connection with response code -1 when the device is offline or the request times out
+	public void testProcessHit_responseCodeMinusOne_socketTimeout_retriesWithoutResponseEvent() {
+		// Core returns a connection with response code -1 when the request times out
 		respondWith(-1, null, null);
 
 		processHit(entity);
@@ -201,7 +205,21 @@ public class DeviceAttributesHitProcessorTests {
 	}
 
 	@Test
-	public void testProcessHit_nullConnection_dispatchesFailedWithoutHttpStatus() {
+	public void testProcessHit_nullConnectionWhileOffline_retriesWithoutResponseEvent() {
+		// Core returns a null connection when the device is offline
+		when(mockDeviceInfoService.getNetworkConnectionStatus())
+			.thenReturn(DeviceInforming.ConnectionStatus.DISCONNECTED);
+		mockNullConnection();
+
+		processHit(entity);
+
+		assertTrue(dispatchedEvents.isEmpty());
+		assertEquals(Arrays.asList(false), processingResults);
+		assertEquals(EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS, hitProcessor.retryInterval(entity));
+	}
+
+	@Test
+	public void testProcessHit_nullConnectionWhileOnline_dispatchesFailedWithoutHttpStatus() {
 		mockNullConnection();
 
 		processHit(entity);
