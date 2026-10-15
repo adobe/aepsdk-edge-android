@@ -20,7 +20,6 @@ import com.adobe.marketing.mobile.services.DataQueue;
 import com.adobe.marketing.mobile.services.HitQueuing;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
-import com.adobe.marketing.mobile.services.PersistentHitQueue;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.DataReaderException;
@@ -178,7 +177,7 @@ class EdgeExtension extends Extension {
 				MobileCore.dispatchEvent(BypassConsentOutcome.createDropResult(entity.getUniqueIdentifier()));
 			}
 		);
-		return new PersistentHitQueue(bypassConsentDataQueue, bypassHitProcessor);
+		return new BypassConsentHitQueue(bypassConsentDataQueue, bypassHitProcessor);
 	}
 
 	@NonNull @Override
@@ -443,9 +442,45 @@ class EdgeExtension extends Extension {
 	 * Processes an Experience Event or Consent Update Event and adds it to the hit queue.
 	 */
 	void processAndQueueEvent(@NonNull final Event event) {
-		final DataEntity dataEntity = prepareDataEntity(event, null);
-		if (dataEntity == null) {
+		Map<String, Object> configReady = getConfigurationState(event);
+
+		if (configReady == null) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Unable to process the event '%s', Configuration shared state is null.",
+				event.getUniqueIdentifier()
+			);
+			return; // Shouldn't get here as Configuration state is checked in readyForEvent
+		}
+
+		Map<String, Object> edgeConfig = EventUtils.getEdgeConfiguration(configReady);
+
+		if (
+			StringUtils.isNullOrEmpty(
+				DataReader.optString(edgeConfig, EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID, null)
+			)
+		) {
+			// drop this event if configId is invalid (config id is a mandatory parameters for requests to Konductor)
+			Log.debug(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Missing edge.configId in Configuration, dropping event with unique id (%s)",
+				event.getUniqueIdentifier()
+			);
 			return;
+		}
+
+		Map<String, Object> identityReady = getIdentityXDMState(event);
+
+		if (identityReady == null) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Unable to process the event '%s', Identity shared state is null.",
+				event.getUniqueIdentifier()
+			);
+			return; // Shouldn't get here as Identity state is checked in readyForEvent
 		}
 
 		if (hitQueue == null) {
@@ -458,8 +493,8 @@ class EdgeExtension extends Extension {
 			return;
 		}
 
-		Log.debug(LOG_TAG, LOG_SOURCE, "Queuing event with id %s.", event.getUniqueIdentifier());
-		hitQueue.queue(dataEntity);
+		EdgeDataEntity entity = new EdgeDataEntity(event, edgeConfig, identityReady);
+		hitQueue.queue(entity.toDataEntity());
 	}
 
 	/**
@@ -468,16 +503,21 @@ class EdgeExtension extends Extension {
 	 * @param event the device-attributes request event
 	 */
 	private void processAndQueueBypassConsentEvent(@NonNull final Event event) {
-		final DataEntity dataEntity = prepareDataEntity(
-			event,
-			reason ->
-				MobileCore.dispatchEvent(
-					BypassConsentOutcome.createResult(event, EdgeConstants.BypassResult.Status.DROPPED, reason, null)
+		final BypassConsentPreparation preparation = prepareBypassConsentDataEntity(event);
+		if (preparation.dataEntity == null) {
+			MobileCore.dispatchEvent(
+				BypassConsentOutcome.createResult(
+					event,
+					EdgeConstants.BypassResult.Status.DROPPED,
+					preparation.failure == EventPreparationFailure.MISSING_CONFIGURATION
+						? EdgeConstants.BypassResult.Reason.MISSING_CONFIG
+						: EdgeConstants.BypassResult.Reason.INVALID_PAYLOAD,
+					null
 				)
-		);
-		if (dataEntity == null) {
+			);
 			return;
 		}
+		final DataEntity dataEntity = preparation.dataEntity;
 
 		Log.debug(
 			LOG_TAG,
@@ -503,23 +543,45 @@ class EdgeExtension extends Extension {
 		}
 	}
 
-	/**
-	 * Builds the persisted {@link DataEntity} for an Edge request event using the current
-	 * Configuration and Identity shared states.
-	 *
-	 * @param event the event to process
-	 * @param onDrop optional callback invoked with the drop reason when the event cannot be queued
-	 * @return the {@link DataEntity} to queue, or null if the event should be dropped
-	 */
-	private DataEntity prepareDataEntity(@NonNull final Event event, final AdobeCallback<String> onDrop) {
-		if (MapUtils.isNullOrEmpty(event.getEventData())) {
-			Log.trace(LOG_TAG, LOG_SOURCE, "Event with id %s contains no data, ignoring.", event.getUniqueIdentifier());
-			notifyDrop(onDrop, EdgeConstants.BypassResult.Reason.INVALID_PAYLOAD);
-			return null;
+	private enum EventPreparationFailure {
+		MISSING_CONFIGURATION,
+		INVALID_PAYLOAD,
+	}
+
+	private static final class BypassConsentPreparation {
+
+		final DataEntity dataEntity;
+		final EventPreparationFailure failure;
+
+		private BypassConsentPreparation(final DataEntity dataEntity, final EventPreparationFailure failure) {
+			this.dataEntity = dataEntity;
+			this.failure = failure;
 		}
 
-		Map<String, Object> configReady = getConfigurationState(event);
+		static BypassConsentPreparation success(@NonNull final DataEntity dataEntity) {
+			return new BypassConsentPreparation(dataEntity, null);
+		}
 
+		static BypassConsentPreparation failure(@NonNull final EventPreparationFailure failure) {
+			return new BypassConsentPreparation(null, failure);
+		}
+	}
+
+	/**
+	 * Builds the persisted {@link DataEntity} for a device-attributes event using the current
+	 * Configuration and Identity shared states. Batching configuration is not snapshotted because
+	 * the bypass-consent queue never batches.
+	 *
+	 * @param event the device-attributes request event
+	 * @return the prepared {@link DataEntity}, or the reason it could not be prepared
+	 */
+	private BypassConsentPreparation prepareBypassConsentDataEntity(@NonNull final Event event) {
+		if (MapUtils.isNullOrEmpty(event.getEventData())) {
+			Log.trace(LOG_TAG, LOG_SOURCE, "Event with id %s contains no data, ignoring.", event.getUniqueIdentifier());
+			return BypassConsentPreparation.failure(EventPreparationFailure.INVALID_PAYLOAD);
+		}
+
+		final Map<String, Object> configReady = getConfigurationState(event);
 		if (configReady == null) {
 			Log.warning(
 				LOG_TAG,
@@ -527,30 +589,26 @@ class EdgeExtension extends Extension {
 				"Unable to process the event '%s', Configuration shared state is null.",
 				event.getUniqueIdentifier()
 			);
-			notifyDrop(onDrop, EdgeConstants.BypassResult.Reason.MISSING_CONFIG);
-			return null; // Shouldn't get here as Configuration state is checked in readyForEvent
+			return BypassConsentPreparation.failure(EventPreparationFailure.MISSING_CONFIGURATION);
 		}
 
-		Map<String, Object> edgeConfig = EventUtils.getEdgeConfiguration(configReady);
-
+		final Map<String, Object> edgeConfig = EventUtils.getEdgeConfiguration(configReady);
+		edgeConfig.remove(EdgeConstants.SharedState.Configuration.EDGE_BATCHING);
 		if (
 			StringUtils.isNullOrEmpty(
 				DataReader.optString(edgeConfig, EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID, null)
 			)
 		) {
-			// drop this event if configId is invalid (config id is a mandatory parameters for requests to Konductor)
-			Log.debug(
+			Log.warning(
 				LOG_TAG,
 				LOG_SOURCE,
-				"Missing edge.configId in Configuration, dropping event with unique id (%s)",
+				"Unable to process the event '%s', configuration 'edge.configId' is missing or empty.",
 				event.getUniqueIdentifier()
 			);
-			notifyDrop(onDrop, EdgeConstants.BypassResult.Reason.MISSING_CONFIG);
-			return null;
+			return BypassConsentPreparation.failure(EventPreparationFailure.MISSING_CONFIGURATION);
 		}
 
-		Map<String, Object> identityReady = getIdentityXDMState(event);
-
+		final Map<String, Object> identityReady = getIdentityXDMState(event);
 		if (identityReady == null) {
 			Log.warning(
 				LOG_TAG,
@@ -558,8 +616,7 @@ class EdgeExtension extends Extension {
 				"Unable to process the event '%s', Identity shared state is null.",
 				event.getUniqueIdentifier()
 			);
-			notifyDrop(onDrop, EdgeConstants.BypassResult.Reason.INVALID_PAYLOAD);
-			return null; // Shouldn't get here as Identity state is checked in readyForEvent
+			return BypassConsentPreparation.failure(EventPreparationFailure.INVALID_PAYLOAD);
 		}
 
 		final DataEntity dataEntity = new EdgeDataEntity(event, edgeConfig, identityReady).toDataEntity();
@@ -570,16 +627,9 @@ class EdgeExtension extends Extension {
 				"Failed to encode EdgeDataEntity for event with id: '%s'.",
 				event.getUniqueIdentifier()
 			);
-			notifyDrop(onDrop, EdgeConstants.BypassResult.Reason.INVALID_PAYLOAD);
-			return null;
+			return BypassConsentPreparation.failure(EventPreparationFailure.INVALID_PAYLOAD);
 		}
-		return dataEntity;
-	}
-
-	private static void notifyDrop(final AdobeCallback<String> onDrop, final String reason) {
-		if (onDrop != null) {
-			onDrop.call(reason);
-		}
+		return BypassConsentPreparation.success(dataEntity);
 	}
 
 	/**

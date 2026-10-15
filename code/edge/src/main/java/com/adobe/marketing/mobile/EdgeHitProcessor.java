@@ -501,13 +501,16 @@ class EdgeHitProcessor implements HitProcessing {
 			return;
 		}
 
+		if (EventUtils.isBypassConsentEvent(entity.getEvent())) {
+			processingResult.complete(processBypassConsentHit(dataEntity.getUniqueIdentifier(), entity));
+			return;
+		}
+
 		boolean hitCompleteResult = true;
 		if (EventUtils.isExperienceEvent(entity.getEvent())) {
 			hitCompleteResult = processExperienceEventHit(dataEntity.getUniqueIdentifier(), entity);
 		} else if (EventUtils.isUpdateConsentEvent(entity.getEvent())) {
 			hitCompleteResult = processUpdateConsentEventHit(dataEntity.getUniqueIdentifier(), entity);
-		} else if (EventUtils.isBypassConsentEvent(entity.getEvent())) {
-			hitCompleteResult = processBypassConsent(dataEntity.getUniqueIdentifier(), entity);
 		} else if (EventUtils.isResetComplete(entity.getEvent())) {
 			// clear state store
 			final StoreResponsePayloadManager payloadManager = new StoreResponsePayloadManager(namedCollection);
@@ -682,56 +685,60 @@ class EdgeHitProcessor implements HitProcessing {
 
 	/**
 	 * Processes device-attributes operational data through the dedicated consent-independent endpoint.
+	 * The request never registers waiting events with the {@link NetworkResponseHandler}, so device-attributes
+	 * responses do not dispatch standard Edge response, error or completion events, and do not update
+	 * the primary state store or location hint. The outcome is reported only through the bypass result event.
 	 *
 	 * @param entityId the {@link DataEntity} unique identifier
-	 * @param entity the queued event and its configuration/identity snapshots
+	 * @param entity the persisted bypass event and its configuration/identity snapshots
 	 * @return true if request processing is complete; false if it should be retried
 	 */
-	private boolean processBypassConsent(@NonNull final String entityId, @NonNull final EdgeDataEntity entity) {
-		final RequestBuilder requestBuilder = new RequestBuilder(namedCollection);
-		requestBuilder.addXdmPayload(entity.getIdentityMap());
-
-		Map<String, Object> edgeConfig = entity.getConfiguration();
-		String datastreamId = DataReader.optString(
+	private boolean processBypassConsentHit(@NonNull final String entityId, @NonNull final EdgeDataEntity entity) {
+		final Event event = entity.getEvent();
+		final Map<String, Object> edgeConfig = entity.getConfiguration();
+		final String datastreamId = DataReader.optString(
 			edgeConfig,
 			EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID,
 			null
 		);
 		if (StringUtils.isNullOrEmpty(datastreamId)) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Unable to process the event (%s) due to missing or empty edge.configId in configuration.",
+				event.getUniqueIdentifier()
+			);
 			MobileCore.dispatchEvent(
 				BypassConsentOutcome.createResult(
-					entity.getEvent(),
+					event,
 					EdgeConstants.BypassResult.Status.DROPPED,
 					EdgeConstants.BypassResult.Reason.MISSING_CONFIG,
 					null
 				)
 			);
-			Log.warning(
-				LOG_TAG,
-				LOG_SOURCE,
-				"Cannot process device attribute request because the Edge Network configuration ID is null or empty."
-			);
 			return true;
 		}
 
-		JSONObject payload = requestBuilder.generateNoConsentPayload(
-			entity.getEvent(),
+		final RequestBuilder requestBuilder = new RequestBuilder(namedCollection);
+		requestBuilder.addXdmPayload(entity.getIdentityMap());
+		final JSONObject payload = requestBuilder.generateNoConsentPayload(
+			event,
 			stateCallback != null ? stateCallback.getImplementationDetails() : null
 		);
 		if (payload == null || payload.length() == 0) {
-			MobileCore.dispatchEvent(
-				BypassConsentOutcome.createResult(
-					entity.getEvent(),
-					EdgeConstants.BypassResult.Status.DROPPED,
-					EdgeConstants.BypassResult.Reason.INVALID_PAYLOAD,
-					null
-				)
-			);
 			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
 				"Failed to build the device-attributes payload, dropping event (%s).",
-				entity.getEvent().getUniqueIdentifier()
+				event.getUniqueIdentifier()
+			);
+			MobileCore.dispatchEvent(
+				BypassConsentOutcome.createResult(
+					event,
+					EdgeConstants.BypassResult.Status.DROPPED,
+					EdgeConstants.BypassResult.Reason.INVALID_PAYLOAD,
+					null
+				)
 			);
 			return true;
 		}
@@ -742,11 +749,37 @@ class EdgeHitProcessor implements HitProcessing {
 			null
 		);
 		final EdgeHit edgeHit = new EdgeHit(datastreamId, payload, endpoint);
-		final String url = networkService.buildUrl(endpoint, datastreamId, edgeHit.getRequestId());
+		return sendBypassConsentHit(entityId, edgeHit, event);
+	}
+
+	/**
+	 * Sends the device-attributes request and dispatches the bypass result for terminal outcomes.
+	 *
+	 * @param entityId the {@link DataEntity} unique identifier, used for retry-interval tracking
+	 * @param edgeHit the device-attributes hit to send
+	 * @param event the originating bypass-consent request event
+	 * @return true if request processing is complete; false if it should be retried
+	 */
+	private boolean sendBypassConsentHit(
+		@NonNull final String entityId,
+		@NonNull final EdgeHit edgeHit,
+		@NonNull final Event event
+	) {
+		final String url = networkService.buildUrl(
+			edgeHit.getEdgeEndpoint(),
+			edgeHit.getDatastreamId(),
+			edgeHit.getRequestId()
+		);
 		if (!isValidUrl(url)) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Invalid device attributes URL, dropping event (%s).",
+				event.getUniqueIdentifier()
+			);
 			MobileCore.dispatchEvent(
 				BypassConsentOutcome.createResult(
-					entity.getEvent(),
+					event,
 					EdgeConstants.BypassResult.Status.DROPPED,
 					EdgeConstants.BypassResult.Reason.INVALID_PAYLOAD,
 					null
@@ -755,31 +788,39 @@ class EdgeHitProcessor implements HitProcessing {
 			return true;
 		}
 
-		networkResponseHandler.addWaitingEvent(edgeHit.getRequestId(), entity.getEvent());
-		final RetryResult result = networkService.doBypassConsentRequest(
+		final BypassConsentNetworkOutcome outcome = networkService.doBypassConsentRequest(
 			url,
-			payload.toString(),
-			getRequestHeaders(),
-			buildResponseCallback(edgeHit.getRequestId())
+			edgeHit.getPayload().toString(),
+			getRequestHeaders()
 		);
-		if (result == null || result.getShouldRetry() == EdgeNetworkService.Retry.YES) {
-			networkResponseHandler.removeWaitingEvents(edgeHit.getRequestId());
-			if (result != null) {
-				entityRetryIntervalMapping.put(entityId, result.getRetryIntervalSeconds());
-			}
-			return false;
+		switch (outcome.getType()) {
+			case RETRY:
+				entityRetryIntervalMapping.put(entityId, outcome.getRetryIntervalSeconds());
+				return false;
+			case SUCCESS:
+				entityRetryIntervalMapping.remove(entityId);
+				MobileCore.dispatchEvent(
+					BypassConsentOutcome.createResult(
+						event,
+						EdgeConstants.BypassResult.Status.SUCCESS,
+						null,
+						outcome.getHttpStatus()
+					)
+				);
+				return true;
+			case FAILURE:
+			default:
+				entityRetryIntervalMapping.remove(entityId);
+				MobileCore.dispatchEvent(
+					BypassConsentOutcome.createResult(
+						event,
+						EdgeConstants.BypassResult.Status.FAILED,
+						EdgeConstants.BypassResult.Reason.NETWORK,
+						outcome.getHttpStatus()
+					)
+				);
+				return true;
 		}
-		entityRetryIntervalMapping.remove(entityId);
-		final boolean success = result.getNetworkRequestOutcome() == EdgeNetworkService.NetworkRequestOutcome.SUCCESS;
-		MobileCore.dispatchEvent(
-			BypassConsentOutcome.createResult(
-				entity.getEvent(),
-				success ? EdgeConstants.BypassResult.Status.SUCCESS : EdgeConstants.BypassResult.Status.FAILED,
-				success ? null : EdgeConstants.BypassResult.Reason.NETWORK,
-				result.getHttpStatus()
-			)
-		);
-		return true;
 	}
 
 	/**

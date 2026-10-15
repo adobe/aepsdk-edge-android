@@ -18,16 +18,6 @@ class RetryResult {
 
 	private int retryIntervalSeconds = EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS;
 	private final EdgeNetworkService.NetworkRequestOutcome networkRequestOutcome;
-	private Integer httpStatus;
-
-	RetryResult withHttpStatus(final int status) {
-		this.httpStatus = status;
-		return this;
-	}
-
-	Integer getHttpStatus() {
-		return httpStatus;
-	}
 
 	/**
 	 * Constructs a {@link RetryResult} with the specified retry value and default retry interval of 5 seconds.

@@ -13,6 +13,7 @@ package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
+import androidx.annotation.NonNull;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.services.Log;
@@ -185,26 +186,6 @@ class EdgeNetworkService {
 		final boolean isBatchRequest,
 		final ResponseCallback responseCallback
 	) {
-		return doRequest(url, jsonRequest, requestHeaders, isBatchRequest, false, responseCallback);
-	}
-
-	RetryResult doBypassConsentRequest(
-		final String url,
-		final String jsonRequest,
-		final Map<String, String> requestHeaders,
-		final ResponseCallback responseCallback
-	) {
-		return doRequest(url, jsonRequest, requestHeaders, false, true, responseCallback);
-	}
-
-	private RetryResult doRequest(
-		final String url,
-		final String jsonRequest,
-		final Map<String, String> requestHeaders,
-		final boolean isBatchRequest,
-		final boolean bypassConsent,
-		final ResponseCallback responseCallback
-	) {
 		if (StringUtils.isNullOrEmpty(url)) {
 			Log.error(LOG_TAG, LOG_SOURCE, "Could not send request to a null url");
 
@@ -233,9 +214,7 @@ class EdgeNetworkService {
 
 		RetryResult retryResult = new RetryResult(NetworkRequestOutcome.SUCCESS, 0);
 
-		if (bypassConsent && isBypassConsentSuccessCode(connection.getResponseCode())) {
-			handleContent(connection.getInputStream(), null, null, responseCallback);
-		} else if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+		if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
 			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -325,16 +304,6 @@ class EdgeNetworkService {
 			retryResult = new RetryResult(NetworkRequestOutcome.DROP, 0);
 		}
 
-		// Device attributes treat only 200, 202 and 204 as success; any other finished response is a failure.
-		if (
-			bypassConsent &&
-			retryResult.getNetworkRequestOutcome() == NetworkRequestOutcome.SUCCESS &&
-			!isBypassConsentSuccessCode(connection.getResponseCode())
-		) {
-			retryResult = new RetryResult(NetworkRequestOutcome.DROP, 0);
-		}
-
-		retryResult.withHttpStatus(connection.getResponseCode());
 		connection.close();
 
 		// For EXPLODE_400, skip onComplete: the caller will re-register individual events under
@@ -348,6 +317,78 @@ class EdgeNetworkService {
 		}
 
 		return retryResult;
+	}
+
+	/**
+	 * Sends a non-streaming device-attributes request without entering primary Edge response handling.
+	 * The response body is never parsed or forwarded; only the HTTP status determines the outcome.
+	 *
+	 * @param url URL to the Adobe Edge Network device-attributes endpoint
+	 * @param jsonRequest the request body as a JSON formatted string
+	 * @param requestHeaders HTTP headers to be included with the request
+	 * @return the {@link BypassConsentNetworkOutcome}; never null
+	 */
+	@NonNull BypassConsentNetworkOutcome doBypassConsentRequest(
+		final String url,
+		final String jsonRequest,
+		final Map<String, String> requestHeaders
+	) {
+		if (StringUtils.isNullOrEmpty(url)) {
+			Log.warning(LOG_TAG, LOG_SOURCE, "Device attributes request URL is null/empty, dropping this request.");
+			return BypassConsentNetworkOutcome.failure(null);
+		}
+
+		if (StringUtils.isNullOrEmpty(jsonRequest)) {
+			Log.warning(LOG_TAG, LOG_SOURCE, "Device attributes request body is null/empty, dropping this request.");
+			return BypassConsentNetworkOutcome.failure(null);
+		}
+
+		final HttpConnecting connection = doConnect(url, jsonRequest, requestHeaders);
+		if (connection == null) {
+			Log.debug(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Device attributes request returned null connection. Will retry request in %d seconds.",
+				EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS
+			);
+			return BypassConsentNetworkOutcome.retry(EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS);
+		}
+
+		try {
+			return handleBypassConsentConnection(connection);
+		} finally {
+			connection.close();
+		}
+	}
+
+	private BypassConsentNetworkOutcome handleBypassConsentConnection(@NonNull final HttpConnecting connection) {
+		final int responseCode = connection.getResponseCode();
+		if (isBypassConsentSuccessCode(responseCode)) {
+			return BypassConsentNetworkOutcome.success(responseCode);
+		}
+
+		if (recoverableNetworkErrorCodes.contains(responseCode)) {
+			final int retryInterval = computeRetryInterval(connection);
+			Log.debug(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Device attributes HTTP %d is recoverable. Will retry in %d seconds.",
+				responseCode,
+				retryInterval
+			);
+			return BypassConsentNetworkOutcome.retry(retryInterval);
+		}
+
+		Log.warning(LOG_TAG, LOG_SOURCE, "Device attributes HTTP %d failed. Dropping the request.", responseCode);
+		return BypassConsentNetworkOutcome.failure(responseCode);
+	}
+
+	private static boolean isBypassConsentSuccessCode(final int responseCode) {
+		return (
+			responseCode == HttpURLConnection.HTTP_OK ||
+			responseCode == HttpURLConnection.HTTP_ACCEPTED ||
+			responseCode == HttpURLConnection.HTTP_NO_CONTENT
+		);
 	}
 
 	/**
@@ -444,14 +485,6 @@ class EdgeNetworkService {
 		}
 
 		return null;
-	}
-
-	private static boolean isBypassConsentSuccessCode(final int responseCode) {
-		return (
-			responseCode == HttpURLConnection.HTTP_OK ||
-			responseCode == HttpURLConnection.HTTP_ACCEPTED ||
-			responseCode == HttpURLConnection.HTTP_NO_CONTENT
-		);
 	}
 
 	/**

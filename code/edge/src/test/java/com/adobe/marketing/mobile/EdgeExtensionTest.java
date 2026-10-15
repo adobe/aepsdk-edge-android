@@ -29,6 +29,7 @@ import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.HitQueuing;
 import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.JSONUtils;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.json.JSONObject;
@@ -216,6 +217,40 @@ public class EdgeExtensionTest {
 		verifyEventQueued(mockBypassConsentQueue, bypassConsentEvent);
 		verify(mockQueue, never()).queue(any(DataEntity.class));
 		verifyGetSharedStateCalls(1, 1, 0);
+	}
+
+	@Test
+	public void testHandleBypassConsentRequest_doesNotSnapshotBatchingConfiguration() {
+		final Map<String, Object> batching = new HashMap<>();
+		batching.put("enabled", true);
+		batching.put("maxBatchSize", 10);
+		final Map<String, Object> configWithBatching = new HashMap<>(configData);
+		configWithBatching.put(EdgeConstants.SharedState.Configuration.EDGE_BATCHING, batching);
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configWithBatching),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			new SharedStateResult(SharedStateStatus.SET, getConsentsData(ConsentStatus.NO))
+		);
+		final Event bypassConsentEvent = new Event.Builder(
+			"device attributes",
+			EdgeConstants.EventType.EDGE_BYPASS_CONSENT,
+			EventSource.REQUEST_CONTENT
+		)
+			.setEventData(Collections.singletonMap("timezone", (Object) "UTC"))
+			.build();
+
+		edgeExtension.handleBypassConsentRequest(bypassConsentEvent);
+
+		final ArgumentCaptor<DataEntity> queued = ArgumentCaptor.forClass(DataEntity.class);
+		verify(mockBypassConsentQueue).queue(queued.capture());
+		final EdgeDataEntity persisted = EdgeDataEntity.fromDataEntity(queued.getValue());
+		assertNotNull(persisted);
+		assertFalse(persisted.getConfiguration().containsKey(EdgeConstants.SharedState.Configuration.EDGE_BATCHING));
+		assertEquals(
+			configData.get(EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID),
+			persisted.getConfiguration().get(EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID)
+		);
+		verify(mockQueue, never()).queue(any(DataEntity.class));
 	}
 
 	@Test

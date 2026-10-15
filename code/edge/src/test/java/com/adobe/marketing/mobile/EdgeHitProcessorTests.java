@@ -29,6 +29,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.adobe.marketing.mobile.services.DataEntity;
@@ -743,15 +744,8 @@ public class EdgeHitProcessorTests {
 
 		when(mockEdgeNetworkService.buildUrl(any(EdgeEndpoint.class), anyString(), anyString()))
 			.thenReturn("https://edge.adobedc.net/ee/v1/mobile/device-attributes?configId=works");
-		when(
-			mockEdgeNetworkService.doBypassConsentRequest(
-				anyString(),
-				anyString(),
-				ArgumentMatchers.anyMap(),
-				any(EdgeNetworkService.ResponseCallback.class)
-			)
-		)
-			.thenReturn(new RetryResult(EdgeNetworkService.Retry.NO));
+		when(mockEdgeNetworkService.doBypassConsentRequest(anyString(), anyString(), ArgumentMatchers.anyMap()))
+			.thenReturn(BypassConsentNetworkOutcome.success(200));
 		final boolean[] processingCompleted = new boolean[1];
 
 		hitProcessor.processHit(dataEntity, result -> processingCompleted[0] = result);
@@ -766,17 +760,13 @@ public class EdgeHitProcessorTests {
 
 		ArgumentCaptor<String> requestBodyCaptor = ArgumentCaptor.forClass(String.class);
 		verify(mockEdgeNetworkService)
-			.doBypassConsentRequest(
-				anyString(),
-				requestBodyCaptor.capture(),
-				ArgumentMatchers.anyMap(),
-				any(EdgeNetworkService.ResponseCallback.class)
-			);
+			.doBypassConsentRequest(anyString(), requestBodyCaptor.capture(), ArgumentMatchers.anyMap());
 		JSONObject requestBody = new JSONObject(requestBodyCaptor.getValue());
 		assertEquals("com.example.app", requestBody.getJSONObject("app").getString("id"));
 		assertEquals("test-token", requestBody.getJSONObject("tokens").getString("pushNotification"));
 		assertTrue(requestBody.getJSONObject(EdgeJson.Event.XDM).has(EdgeJson.Event.Xdm.IDENTITY_MAP));
-		verify(mockNetworkResponseHandler).addWaitingEvent(anyString(), any(Event.class));
+		// Device-attributes requests never enter primary Edge response handling.
+		verifyNoInteractions(mockNetworkResponseHandler);
 	}
 
 	// Test void processHit(@NonNull final DataEntity dataEntity, @NonNull final HitProcessingResult processingResult)
