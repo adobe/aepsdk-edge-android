@@ -92,6 +92,27 @@ public class EdgeStateTests {
 	}
 
 	@Test
+	public void testLegacyConstructor_preservesRegularQueueConsentLifecycle() {
+		clearInvocations(mockHitQueue, mockBypassConsentHitQueue);
+		EdgeState legacyState = new EdgeState(mockHitQueue, properties, mockSharedStateCallback);
+
+		assertEquals(ConsentStatus.PENDING, legacyState.getCurrentCollectConsent());
+		verify(mockHitQueue).suspend();
+
+		legacyState.updateCurrentConsent(ConsentStatus.YES);
+		assertEquals(ConsentStatus.YES, legacyState.getCurrentCollectConsent());
+		verify(mockHitQueue).beginProcessing();
+
+		legacyState.updateCurrentConsent(ConsentStatus.NO);
+		assertEquals(ConsentStatus.NO, legacyState.getCurrentCollectConsent());
+		verify(mockHitQueue).clear();
+		verify(mockHitQueue, times(2)).beginProcessing();
+		verify(mockBypassConsentHitQueue, never()).beginProcessing();
+		verify(mockBypassConsentHitQueue, never()).suspend();
+		verify(mockBypassConsentHitQueue, never()).clear();
+	}
+
+	@Test
 	public void testConstructor_withNullBypassConsentQueue_doesNotThrow() {
 		EdgeState noBypassState = new EdgeState(mockHitQueue, null, properties, mockSharedStateCallback);
 		assertNotNull(noBypassState);

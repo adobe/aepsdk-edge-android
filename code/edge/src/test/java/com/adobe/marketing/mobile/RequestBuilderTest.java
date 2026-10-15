@@ -579,6 +579,26 @@ public class RequestBuilderTest {
 	}
 
 	@Test
+	public void generateNoConsentPayload_rejectsNonFiniteNumbers() {
+		for (double invalid : new double[] { Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY }) {
+			Map<String, Object> eventData = new HashMap<>();
+			eventData.put("invalidNumber", invalid);
+			Event event = new Event.Builder(
+				"Device Attributes",
+				EdgeConstants.EventType.EDGE_BYPASS_CONSENT,
+				EventSource.REQUEST_CONTENT
+			)
+				.setEventData(eventData)
+				.build();
+			assertEquals(Double.valueOf(invalid), event.getEventData().get("invalidNumber"));
+
+			JSONObject payload = requestBuilder.generateNoConsentPayload(event, null);
+
+			assertNull(payload);
+		}
+	}
+
+	@Test
 	public void generateNoConsentPayload_passesThroughOperationalDataAndAddsXdm() throws Exception {
 		Map<String, Object> appData = new HashMap<>();
 		appData.put("id", "com.example.app");

@@ -29,6 +29,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -395,6 +396,72 @@ public class BypassConsentTests {
 	}
 
 	@Test
+	public void productionQueueWiring_unavailableBypassDataQueue_failsWithoutAffectingOrdinaryQueue() {
+		try (
+			MockedStatic<ServiceProvider> services = mockStatic(ServiceProvider.class);
+			MockedConstruction<EdgeBatchingHitQueue> ordinaryQueues = mockConstruction(EdgeBatchingHitQueue.class);
+			MockedConstruction<PersistentHitQueue> bypassQueues = mockConstruction(PersistentHitQueue.class)
+		) {
+			ServiceProvider provider = mock(ServiceProvider.class, RETURNS_DEEP_STUBS);
+			services.when(ServiceProvider::getInstance).thenReturn(provider);
+			when(
+				provider
+					.getDataQueueService()
+					.getDataQueue(EdgeConstants.EXTENSION_NAME + EdgeConstants.DataQueueLabels.BYPASS_CONSENT_SUFFIX)
+			)
+				.thenReturn(null);
+			ExtensionApi api = mock(ExtensionApi.class);
+			when(api.getSharedState(eq(EdgeConstants.SharedState.CONFIGURATION), any(), eq(false), any()))
+				.thenReturn(new SharedStateResult(SharedStateStatus.SET, configuration));
+			when(api.getXDMSharedState(eq(EdgeConstants.SharedState.IDENTITY), any(), eq(false), any()))
+				.thenReturn(new SharedStateResult(SharedStateStatus.SET, identity));
+			EdgeExtension extension = new EdgeExtension(api);
+			assertEquals(1, ordinaryQueues.constructed().size());
+			assertTrue(bypassQueues.constructed().isEmpty());
+			HitQueuing ordinary = ordinaryQueues.constructed().get(0);
+			Event event = request(Collections.singletonMap("timezone", "UTC"));
+
+			extension.handleBypassConsentRequest(event);
+
+			assertOutcome(event, "failed", "queueUnavailable", null);
+			assertEquals(1, outcomes.size());
+			verify(ordinary, never()).queue(any(DataEntity.class));
+			extension.onUnregistered();
+			verify(ordinary).close();
+		}
+	}
+
+	@Test
+	public void legacyQueueConstructor_rejectsBypassButStillQueuesOrdinaryEvents() {
+		ExtensionApi api = mock(ExtensionApi.class);
+		when(api.getSharedState(eq(EdgeConstants.SharedState.CONFIGURATION), any(), eq(false), any()))
+			.thenReturn(new SharedStateResult(SharedStateStatus.SET, configuration));
+		when(api.getXDMSharedState(eq(EdgeConstants.SharedState.IDENTITY), any(), eq(false), any()))
+			.thenReturn(new SharedStateResult(SharedStateStatus.SET, identity));
+		HitQueuing ordinary = mock(HitQueuing.class);
+		when(ordinary.queue(any(DataEntity.class))).thenReturn(true);
+		EdgeExtension extension = new EdgeExtension(api, ordinary);
+		Event bypass = request(Collections.singletonMap("timezone", "UTC"));
+		Event experience = new Event.Builder("Experience", EventType.EDGE, EventSource.REQUEST_CONTENT)
+			.setEventData(Collections.singletonMap("xdm", Collections.singletonMap("eventType", "test")))
+			.build();
+
+		extension.handleBypassConsentRequest(bypass);
+		extension.handleExperienceEventRequest(experience);
+
+		assertOutcome(bypass, "failed", "queueUnavailable", null);
+		assertEquals(1, outcomes.size());
+		ArgumentCaptor<DataEntity> queued = ArgumentCaptor.forClass(DataEntity.class);
+		verify(ordinary).queue(queued.capture());
+		assertEquals(
+			experience.getUniqueIdentifier(),
+			EdgeDataEntity.fromDataEntity(queued.getValue()).getEvent().getUniqueIdentifier()
+		);
+		extension.onUnregistered();
+		verify(ordinary).close();
+	}
+
+	@Test
 	public void retryThen202_emitsExactlyOneOutcome_preservesBothECIDsAndCorrelation() throws Exception {
 		Event event = request(Collections.singletonMap("timezone", "UTC"));
 		DataEntity persisted = entity(event, configuration, identity);
@@ -565,6 +632,57 @@ public class BypassConsentTests {
 	}
 
 	@Test
+	public void nullPreservingSerialization_preservesNativeJsonValuesAndExplicitNulls() throws Exception {
+		JSONObject object = new JSONObject().put("pushNotification", JSONObject.NULL);
+		JSONArray array = new JSONArray().put(JSONObject.NULL).put("token");
+		Map<String, Object> values = new HashMap<>();
+		values.put("tokens", object);
+		values.put("values", array);
+		values.put("clear", JSONObject.NULL);
+
+		JSONObject result = EdgeJson.toJsonObjectPreservingNulls(values);
+
+		assertEquals(3, result.length());
+		assertSame(object, result.getJSONObject("tokens"));
+		assertTrue(result.getJSONObject("tokens").has("pushNotification"));
+		assertTrue(result.getJSONObject("tokens").isNull("pushNotification"));
+		assertSame(array, result.getJSONArray("values"));
+		assertEquals(2, result.getJSONArray("values").length());
+		assertTrue(result.getJSONArray("values").isNull(0));
+		assertEquals("token", result.getJSONArray("values").getString(1));
+		assertTrue(result.has("clear"));
+		assertTrue(result.isNull("clear"));
+	}
+
+	@Test
+	public void nullPreservingSerialization_handlesObjectPrimitiveAndEmptyArrays() throws Exception {
+		Map<String, Object> values = new HashMap<>();
+		values.put(
+			"objects",
+			new Object[] { null, Collections.singletonMap("pushNotification", null), new String[] { "UTC", null } }
+		);
+		values.put("numbers", new int[] { 1, 2 });
+		values.put("empty", new Object[0]);
+
+		JSONObject result = EdgeJson.toJsonObjectPreservingNulls(values);
+
+		assertEquals(3, result.length());
+		JSONArray objects = result.getJSONArray("objects");
+		assertEquals(3, objects.length());
+		assertTrue(objects.isNull(0));
+		assertTrue(objects.getJSONObject(1).has("pushNotification"));
+		assertTrue(objects.getJSONObject(1).isNull("pushNotification"));
+		assertEquals(2, objects.getJSONArray(2).length());
+		assertEquals("UTC", objects.getJSONArray(2).getString(0));
+		assertTrue(objects.getJSONArray(2).isNull(1));
+		JSONArray numbers = result.getJSONArray("numbers");
+		assertEquals(2, numbers.length());
+		assertEquals(1, numbers.getInt(0));
+		assertEquals(2, numbers.getInt(1));
+		assertEquals(0, result.getJSONArray("empty").length());
+	}
+
+	@Test
 	public void missingConfig_emitsExplicitFailure() {
 		Event event = request(Collections.singletonMap("timezone", "UTC"));
 		assertTrue(process(entity(event, null, identity)));
@@ -578,6 +696,96 @@ public class BypassConsentTests {
 		assertTrue(process(entity(event, configuration, identity)));
 		assertOutcome(event, "dropped", "invalidPayload", null);
 		verifyNoInteractions(network);
+	}
+
+	@Test
+	public void ingressConfigurationUnavailable_emitsCorrelatedDropWithoutQueuing() {
+		for (SharedStateResult unavailable : Arrays.asList(
+			null,
+			new SharedStateResult(SharedStateStatus.PENDING, configuration)
+		)) {
+			assertIngressFailure(
+				request(Collections.singletonMap("timezone", "UTC")),
+				unavailable,
+				new SharedStateResult(SharedStateStatus.SET, identity),
+				"dropped",
+				"missingConfig"
+			);
+		}
+	}
+
+	@Test
+	public void ingressConfigIdMissingOrEmpty_emitsCorrelatedDropWithoutQueuing() {
+		for (Map<String, Object> invalidConfig : Arrays.asList(
+			Collections.<String, Object>emptyMap(),
+			Collections.<String, Object>singletonMap("edge.configId", ""),
+			Collections.<String, Object>singletonMap("edge.configId", null)
+		)) {
+			assertIngressFailure(
+				request(Collections.singletonMap("timezone", "UTC")),
+				new SharedStateResult(SharedStateStatus.SET, invalidConfig),
+				new SharedStateResult(SharedStateStatus.SET, identity),
+				"dropped",
+				"missingConfig"
+			);
+		}
+	}
+
+	@Test
+	public void ingressIdentityUnavailable_emitsCorrelatedFailureWithoutQueuing() {
+		for (SharedStateResult unavailable : Arrays.asList(
+			null,
+			new SharedStateResult(SharedStateStatus.PENDING, identity)
+		)) {
+			assertIngressFailure(
+				request(Collections.singletonMap("timezone", "UTC")),
+				new SharedStateResult(SharedStateStatus.SET, configuration),
+				unavailable,
+				"failed",
+				"identityUnavailable"
+			);
+		}
+	}
+
+	@Test
+	public void ingressSerializationFailure_emitsCorrelatedDropWithoutQueuing() {
+		Event event = request(Collections.singletonMap("timezone", "UTC"));
+		try (MockedStatic<EventCoder> coder = mockStatic(EventCoder.class)) {
+			coder.when(() -> EventCoder.encode(any(Event.class))).thenReturn("{");
+			assertIngressFailure(
+				event,
+				new SharedStateResult(SharedStateStatus.SET, configuration),
+				new SharedStateResult(SharedStateStatus.SET, identity),
+				"dropped",
+				"invalidPayload"
+			);
+		}
+	}
+
+	private void assertIngressFailure(
+		Event event,
+		SharedStateResult configurationState,
+		SharedStateResult identityState,
+		String status,
+		String reason
+	) {
+		outcomes.clear();
+		ExtensionApi api = mock(ExtensionApi.class);
+		HitQueuing ordinary = mock(HitQueuing.class);
+		HitQueuing bypass = mock(HitQueuing.class);
+		when(api.getSharedState(eq(EdgeConstants.SharedState.CONFIGURATION), any(), eq(false), any()))
+			.thenReturn(configurationState);
+		when(api.getXDMSharedState(eq(EdgeConstants.SharedState.IDENTITY), any(), eq(false), any()))
+			.thenReturn(identityState);
+		EdgeExtension extension = new EdgeExtension(api, ordinary, bypass);
+
+		extension.handleBypassConsentRequest(event);
+
+		assertOutcome(event, status, reason, null);
+		assertEquals(1, outcomes.size());
+		assertFalse(outcomes.get(0).getEventData().containsKey("httpStatus"));
+		verify(ordinary, never()).queue(any(DataEntity.class));
+		verify(bypass, never()).queue(any(DataEntity.class));
 	}
 
 	@Test
