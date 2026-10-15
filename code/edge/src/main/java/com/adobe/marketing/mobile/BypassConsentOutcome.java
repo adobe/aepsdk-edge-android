@@ -20,15 +20,15 @@ final class BypassConsentOutcome {
 
 	static Event createResult(final Event request, final String status, final String reason, final Integer httpStatus) {
 		final Map<String, Object> data = new HashMap<>();
-		data.put("status", status);
+		data.put(EdgeConstants.EventDataKeys.BypassResult.STATUS, status);
 		if (reason != null) {
-			data.put("reason", reason);
+			data.put(EdgeConstants.EventDataKeys.BypassResult.REASON, reason);
 		}
 		if (httpStatus != null) {
-			data.put("httpStatus", httpStatus);
+			data.put(EdgeConstants.EventDataKeys.BypassResult.HTTP_STATUS, httpStatus);
 		}
 		return new Event.Builder(
-			"Device Attributes Response",
+			EdgeConstants.EventName.BYPASS_RESULT,
 			EdgeConstants.EventType.EDGE_BYPASS_CONSENT,
 			EventSource.RESPONSE_CONTENT
 		)
@@ -37,13 +37,16 @@ final class BypassConsentOutcome {
 			.build();
 	}
 
+	/**
+	 * A corrupt hit has no usable Event; its persisted identifier still identifies the request to drop.
+	 */
 	static Event createDropResult(final String requestEventId) {
 		final Map<String, Object> data = new HashMap<>();
-		data.put("status", "dropped");
-		data.put("reason", "invalidPayload");
-		data.put("requestEventId", requestEventId);
+		data.put(EdgeConstants.EventDataKeys.BypassResult.STATUS, EdgeConstants.BypassResult.Status.DROPPED);
+		data.put(EdgeConstants.EventDataKeys.BypassResult.REASON, EdgeConstants.BypassResult.Reason.INVALID_PAYLOAD);
+		data.put(EdgeConstants.EventDataKeys.BypassResult.REQUEST_EVENT_ID, requestEventId);
 		return new Event.Builder(
-			"Device Attributes Response",
+			EdgeConstants.EventName.BYPASS_RESULT,
 			EdgeConstants.EventType.EDGE_BYPASS_CONSENT,
 			EventSource.RESPONSE_CONTENT
 		)

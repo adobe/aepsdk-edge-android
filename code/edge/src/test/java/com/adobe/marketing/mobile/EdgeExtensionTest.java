@@ -445,6 +445,27 @@ public class EdgeExtensionTest {
 	}
 
 	@Test
+	public void testHandleResetComplete_clearsBypassConsentHits_andPreservesPrimaryHits() {
+		Event resetComplete = new Event.Builder("Reset complete", EventType.EDGE_IDENTITY, EventSource.RESET_COMPLETE)
+			.build();
+		edgeExtension.handleResetComplete(resetComplete);
+
+		verify(mockBypassConsentQueue).clear();
+		verify(mockQueue, never()).clear();
+		verifyEventQueued(resetComplete);
+	}
+
+	@Test
+	public void testHandleResetComplete_withoutBypassConsentQueue_queuesReset() {
+		EdgeExtension extensionWithoutBypassQueue = new EdgeExtension(mockExtensionApi, mockQueue, null);
+		Event resetComplete = new Event.Builder("Reset complete", EventType.EDGE_IDENTITY, EventSource.RESET_COMPLETE)
+			.build();
+		extensionWithoutBypassQueue.handleResetComplete(resetComplete);
+
+		verifyEventQueued(resetComplete);
+	}
+
+	@Test
 	public void testReadyForEvent_whenNotBootedUp_waits_returnsFalse() {
 		// setup: bootupIfNeeded waits for HUB shared state
 		mockHubSharedState(new SharedStateResult(SharedStateStatus.PENDING, null));

@@ -233,30 +233,13 @@ class EdgeNetworkService {
 
 		RetryResult retryResult = new RetryResult(NetworkRequestOutcome.SUCCESS, 0);
 
-		if (bypassConsent && connection.getResponseCode() >= 200 && connection.getResponseCode() < 300) {
+		if (bypassConsent && isBypassConsentSuccessCode(connection.getResponseCode())) {
 			handleContent(connection.getInputStream(), null, null, responseCallback);
 		} else if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
 			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
 				"Interact connection to Experience Edge successful. Response message: " +
-				connection.getResponseMessage()
-			);
-
-			KonductorConfig konductorConfig = KonductorConfig.fromJsonRequest(jsonRequest);
-			boolean shouldStreamResponse = konductorConfig != null && konductorConfig.isStreamingEnabled();
-
-			handleContent(
-				connection.getInputStream(),
-				shouldStreamResponse ? konductorConfig.getRecordSeparator() : null,
-				shouldStreamResponse ? konductorConfig.getLineFeed() : null,
-				responseCallback
-			);
-		} else if (connection.getResponseCode() == HttpURLConnection.HTTP_ACCEPTED) {
-			Log.debug(
-				LOG_TAG,
-				LOG_SOURCE,
-				"Connection to Experience Edge successful, request accepted for processing. Response message: " +
 				connection.getResponseMessage()
 			);
 
@@ -339,6 +322,15 @@ class EdgeNetworkService {
 				connection.getResponseMessage()
 			);
 			handleError(connection.getErrorStream(), responseCallback);
+			retryResult = new RetryResult(NetworkRequestOutcome.DROP, 0);
+		}
+
+		// Device attributes treat only 200, 202 and 204 as success; any other finished response is a failure.
+		if (
+			bypassConsent &&
+			retryResult.getNetworkRequestOutcome() == NetworkRequestOutcome.SUCCESS &&
+			!isBypassConsentSuccessCode(connection.getResponseCode())
+		) {
 			retryResult = new RetryResult(NetworkRequestOutcome.DROP, 0);
 		}
 
@@ -452,6 +444,14 @@ class EdgeNetworkService {
 		}
 
 		return null;
+	}
+
+	private static boolean isBypassConsentSuccessCode(final int responseCode) {
+		return (
+			responseCode == HttpURLConnection.HTTP_OK ||
+			responseCode == HttpURLConnection.HTTP_ACCEPTED ||
+			responseCode == HttpURLConnection.HTTP_NO_CONTENT
+		);
 	}
 
 	/**

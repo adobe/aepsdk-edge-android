@@ -116,29 +116,7 @@ class EdgeExtension extends Extension {
 
 			final DataQueue dataQueue = ServiceProvider.getInstance().getDataQueueService().getDataQueue(getName());
 			this.hitQueue = new EdgeBatchingHitQueue(dataQueue, hitProcessor);
-			final DataQueue bypassConsentDataQueue = ServiceProvider
-				.getInstance()
-				.getDataQueueService()
-				.getDataQueue(getName() + EdgeConstants.DataQueueLabels.BYPASS_CONSENT_SUFFIX);
-			if (bypassConsentDataQueue == null) {
-				Log.error(
-					LOG_TAG,
-					LOG_SOURCE,
-					"Failed to create the bypass-consent DataQueue. Device attribute requests cannot be processed."
-				);
-				this.bypassConsentHitQueue = null;
-			} else {
-				final EdgeHitProcessor bypassHitProcessor = new EdgeHitProcessor(
-					getNetworkResponseHandler(),
-					edgeNetworkService,
-					getNamedCollection(),
-					sharedStateCallback,
-					new EdgeExtensionStateCallback(),
-					entity ->
-						MobileCore.dispatchEvent(BypassConsentOutcome.createDropResult(entity.getUniqueIdentifier()))
-				);
-				this.bypassConsentHitQueue = new PersistentHitQueue(bypassConsentDataQueue, bypassHitProcessor);
-			}
+			this.bypassConsentHitQueue = setupBypassConsentHitQueue(edgeNetworkService);
 		} else {
 			this.hitQueue = hitQueue;
 			this.bypassConsentHitQueue = bypassConsentHitQueue;
@@ -151,6 +129,56 @@ class EdgeExtension extends Extension {
 				new EdgeProperties(getNamedCollection()),
 				sharedStateCallback
 			);
+	}
+
+	/**
+	 * Sets up the optional consent-bypass queue independently of the primary queue.
+	 *
+	 * @param edgeNetworkService the network service shared with the primary queue
+	 * @return the device-attributes hit queue, or null if it could not be created
+	 */
+	private HitQueuing setupBypassConsentHitQueue(@NonNull final EdgeNetworkService edgeNetworkService) {
+		final DataQueue bypassConsentDataQueue = ServiceProvider
+			.getInstance()
+			.getDataQueueService()
+			.getDataQueue(getName() + EdgeConstants.DataQueueLabels.BYPASS_CONSENT_SUFFIX);
+		if (bypassConsentDataQueue == null) {
+			Log.error(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Device attributes queue is unavailable; ordinary Edge remains initialized."
+			);
+			return null;
+		}
+
+		final NetworkResponseHandler responseHandler = getNetworkResponseHandler();
+		if (responseHandler == null) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Failed to create device attributes queue, the NetworkResponseHandler is not initialized"
+			);
+			return null;
+		}
+
+		// Only the bypass queue reports undecodable hits to Identity; ordinary drop behavior is unchanged.
+		final EdgeHitProcessor bypassHitProcessor = new EdgeHitProcessor(
+			responseHandler,
+			edgeNetworkService,
+			getNamedCollection(),
+			sharedStateCallback,
+			new EdgeExtensionStateCallback(),
+			entity -> {
+				Log.error(
+					LOG_TAG,
+					LOG_SOURCE,
+					"Dropping undecodable device attributes hit %s.",
+					entity.getUniqueIdentifier()
+				);
+				MobileCore.dispatchEvent(BypassConsentOutcome.createDropResult(entity.getUniqueIdentifier()));
+			}
+		);
+		return new PersistentHitQueue(bypassConsentDataQueue, bypassHitProcessor);
 	}
 
 	@NonNull @Override
@@ -276,18 +304,20 @@ class EdgeExtension extends Extension {
 	 * @param event event carrying operational data such as app metadata and device tokens
 	 */
 	void handleBypassConsentRequest(@NonNull final Event event) {
-		if (MapUtils.isNullOrEmpty(event.getEventData())) {
-			MobileCore.dispatchEvent(BypassConsentOutcome.createResult(event, "dropped", "invalidPayload", null));
-			Log.trace(
-				LOG_TAG,
-				LOG_SOURCE,
-				"Device attribute request with id %s contained no data, ignoring.",
-				event.getUniqueIdentifier()
+		if (bypassConsentHitQueue == null) {
+			Log.error(LOG_TAG, LOG_SOURCE, "Device attributes queue is unavailable.");
+			MobileCore.dispatchEvent(
+				BypassConsentOutcome.createResult(
+					event,
+					EdgeConstants.BypassResult.Status.FAILED,
+					EdgeConstants.BypassResult.Reason.QUEUE_UNAVAILABLE,
+					null
+				)
 			);
 			return;
 		}
 
-		processAndQueueEvent(event, true);
+		processAndQueueBypassConsentEvent(event);
 	}
 
 	/**
@@ -334,6 +364,11 @@ class EdgeExtension extends Extension {
 	 */
 	void handleResetComplete(@NonNull final Event event) {
 		getNetworkResponseHandler().setLastResetDate(event.getTimestamp()); // set last reset date
+
+		// Identity abandons pending device-attribute requests on reset; discard their persisted hits too.
+		if (bypassConsentHitQueue != null) {
+			bypassConsentHitQueue.clear();
+		}
 
 		if (hitQueue == null) {
 			Log.warning(
@@ -405,26 +440,95 @@ class EdgeExtension extends Extension {
 	}
 
 	/**
-	 * Processes an Edge request event and adds it to the appropriate hit queue.
+	 * Processes an Experience Event or Consent Update Event and adds it to the hit queue.
 	 */
 	void processAndQueueEvent(@NonNull final Event event) {
-		processAndQueueEvent(event, false);
+		final DataEntity dataEntity = prepareDataEntity(event, null);
+		if (dataEntity == null) {
+			return;
+		}
+
+		if (hitQueue == null) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Hit queue is null, unable to queue Edge event with id (%s).",
+				event.getUniqueIdentifier()
+			);
+			return;
+		}
+
+		Log.debug(LOG_TAG, LOG_SOURCE, "Queuing event with id %s.", event.getUniqueIdentifier());
+		hitQueue.queue(dataEntity);
 	}
 
-	private void processAndQueueEvent(@NonNull final Event event, final boolean bypassConsent) {
+	/**
+	 * Processes a consent-independent device-attributes event and adds it to the bypass-consent hit queue.
+	 *
+	 * @param event the device-attributes request event
+	 */
+	private void processAndQueueBypassConsentEvent(@NonNull final Event event) {
+		final DataEntity dataEntity = prepareDataEntity(
+			event,
+			reason ->
+				MobileCore.dispatchEvent(
+					BypassConsentOutcome.createResult(event, EdgeConstants.BypassResult.Status.DROPPED, reason, null)
+				)
+		);
+		if (dataEntity == null) {
+			return;
+		}
+
+		Log.debug(
+			LOG_TAG,
+			LOG_SOURCE,
+			"Queuing event %s on the device registration queue.",
+			event.getUniqueIdentifier()
+		);
+		if (bypassConsentHitQueue == null || !bypassConsentHitQueue.queue(dataEntity)) {
+			Log.error(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Failed to persist device attributes event %s.",
+				event.getUniqueIdentifier()
+			);
+			MobileCore.dispatchEvent(
+				BypassConsentOutcome.createResult(
+					event,
+					EdgeConstants.BypassResult.Status.FAILED,
+					EdgeConstants.BypassResult.Reason.QUEUE_UNAVAILABLE,
+					null
+				)
+			);
+		}
+	}
+
+	/**
+	 * Builds the persisted {@link DataEntity} for an Edge request event using the current
+	 * Configuration and Identity shared states.
+	 *
+	 * @param event the event to process
+	 * @param onDrop optional callback invoked with the drop reason when the event cannot be queued
+	 * @return the {@link DataEntity} to queue, or null if the event should be dropped
+	 */
+	private DataEntity prepareDataEntity(@NonNull final Event event, final AdobeCallback<String> onDrop) {
+		if (MapUtils.isNullOrEmpty(event.getEventData())) {
+			Log.trace(LOG_TAG, LOG_SOURCE, "Event with id %s contains no data, ignoring.", event.getUniqueIdentifier());
+			notifyDrop(onDrop, EdgeConstants.BypassResult.Reason.INVALID_PAYLOAD);
+			return null;
+		}
+
 		Map<String, Object> configReady = getConfigurationState(event);
 
 		if (configReady == null) {
-			if (bypassConsent) {
-				MobileCore.dispatchEvent(BypassConsentOutcome.createResult(event, "dropped", "missingConfig", null));
-			}
 			Log.warning(
 				LOG_TAG,
 				LOG_SOURCE,
 				"Unable to process the event '%s', Configuration shared state is null.",
 				event.getUniqueIdentifier()
 			);
-			return; // Shouldn't get here as Configuration state is checked in readyForEvent
+			notifyDrop(onDrop, EdgeConstants.BypassResult.Reason.MISSING_CONFIG);
+			return null; // Shouldn't get here as Configuration state is checked in readyForEvent
 		}
 
 		Map<String, Object> edgeConfig = EventUtils.getEdgeConfiguration(configReady);
@@ -435,57 +539,46 @@ class EdgeExtension extends Extension {
 			)
 		) {
 			// drop this event if configId is invalid (config id is a mandatory parameters for requests to Konductor)
-			if (bypassConsent) {
-				MobileCore.dispatchEvent(BypassConsentOutcome.createResult(event, "dropped", "missingConfig", null));
-			}
 			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
 				"Missing edge.configId in Configuration, dropping event with unique id (%s)",
 				event.getUniqueIdentifier()
 			);
-			return;
+			notifyDrop(onDrop, EdgeConstants.BypassResult.Reason.MISSING_CONFIG);
+			return null;
 		}
 
 		Map<String, Object> identityReady = getIdentityXDMState(event);
 
 		if (identityReady == null) {
-			if (bypassConsent) {
-				MobileCore.dispatchEvent(BypassConsentOutcome.createResult(event, "dropped", "invalidPayload", null));
-			}
 			Log.warning(
 				LOG_TAG,
 				LOG_SOURCE,
 				"Unable to process the event '%s', Identity shared state is null.",
 				event.getUniqueIdentifier()
 			);
-			return; // Shouldn't get here as Identity state is checked in readyForEvent
+			notifyDrop(onDrop, EdgeConstants.BypassResult.Reason.INVALID_PAYLOAD);
+			return null; // Shouldn't get here as Identity state is checked in readyForEvent
 		}
 
-		final HitQueuing targetQueue = bypassConsent ? bypassConsentHitQueue : hitQueue;
-		if (targetQueue == null) {
-			if (bypassConsent) {
-				MobileCore.dispatchEvent(BypassConsentOutcome.createResult(event, "failed", "queueUnavailable", null));
-			}
-			Log.warning(
+		final DataEntity dataEntity = new EdgeDataEntity(event, edgeConfig, identityReady).toDataEntity();
+		if (dataEntity == null) {
+			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
-				"Hit queue is unavailable, unable to queue Edge event with id (%s).",
+				"Failed to encode EdgeDataEntity for event with id: '%s'.",
 				event.getUniqueIdentifier()
 			);
-			return;
+			notifyDrop(onDrop, EdgeConstants.BypassResult.Reason.INVALID_PAYLOAD);
+			return null;
 		}
+		return dataEntity;
+	}
 
-		EdgeDataEntity entity = new EdgeDataEntity(event, edgeConfig, identityReady);
-		final DataEntity dataEntity = entity.toDataEntity();
-		if (dataEntity == null) {
-			if (bypassConsent) {
-				MobileCore.dispatchEvent(BypassConsentOutcome.createResult(event, "dropped", "invalidPayload", null));
-			}
-			return;
-		}
-		if (!targetQueue.queue(dataEntity) && bypassConsent) {
-			MobileCore.dispatchEvent(BypassConsentOutcome.createResult(event, "failed", "queueUnavailable", null));
+	private static void notifyDrop(final AdobeCallback<String> onDrop, final String reason) {
+		if (onDrop != null) {
+			onDrop.call(reason);
 		}
 	}
 

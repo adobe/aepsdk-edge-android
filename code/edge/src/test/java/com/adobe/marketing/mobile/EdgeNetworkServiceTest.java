@@ -298,34 +298,34 @@ public class EdgeNetworkServiceTest {
 	}
 
 	@Test
-	public void testDoRequest_whenConnection_ResponseCode202_ReturnsRetryNo_AndCallsResponseCallback() {
+	public void testDoRequest_whenConnection_ResponseCode202_ReturnsRetryNo_AndCallsErrorCallback() {
+		// Normal Edge requests have no 202 success path; only device attributes accept 202.
 		final String jsonRequest = "{}";
-		final String responseStr = "{\"handle\":[]}";
-		MockConnection mockConnection = new MockConnection(202, responseStr, null);
+		MockConnection mockConnection = new MockConnection(202, null, "accepted");
 		mockNetworkService.setDefaultResponse(mockConnection);
 		networkService = new EdgeNetworkService(mockNetworkService);
 
 		DoRequestResult result = doRequestSync(TEST_URL, jsonRequest);
 
 		assertEquals(EdgeNetworkService.Retry.NO, result.retryResult.getShouldRetry());
-		assertEquals("called", result.onResponseCallback[0]);
-		assertEquals(responseStr, result.onResponseCallback[1]);
-		assertNull(result.onErrorCallback[0]);
+		assertEquals(EdgeNetworkService.NetworkRequestOutcome.DROP, result.retryResult.getNetworkRequestOutcome());
+		assertNull(result.onResponseCallback[0]);
+		assertEquals("called", result.onErrorCallback[0]);
 		assertNotNull(result.onCompleteCallback[0]);
-		assertEquals(1, mockConnection.getInputStreamCalledTimes);
 		assertEquals(1, mockConnection.closeCalledTimes);
 	}
 
 	@Test
-	public void testDoBypassConsentRequest_all2xxAccepted_andTerminalErrorsHaveStatus() {
+	public void testDoBypassConsentRequest_only200_202_204AreSuccess_andTerminalErrorsHaveStatus() {
 		networkService = new EdgeNetworkService(mockNetworkService);
-		for (int status : new int[] { 200, 201, 202, 204, 207, 299, 400, 403, 422, 408, 429, 502, 503, 504 }) {
+		for (int status : new int[] { 200, 201, 202, 204, 206, 207, 299, 400, 403, 422, 408, 429, 502, 503, 504 }) {
 			MockConnection connection = new MockConnection(status, "{\"handle\":[]}", null);
 			mockNetworkService.setDefaultResponse(connection);
 			RetryResult result = networkService.doBypassConsentRequest(TEST_URL, "{}", requestHeaders, null);
 			assertEquals(Integer.valueOf(status), result.getHttpStatus());
 			assertEquals(
-				status < 300
+				"status " + status,
+				status == 200 || status == 202 || status == 204
 					? EdgeNetworkService.NetworkRequestOutcome.SUCCESS
 					: status == 408 || status == 429 || status >= 502
 						? EdgeNetworkService.NetworkRequestOutcome.RETRY
@@ -337,10 +337,10 @@ public class EdgeNetworkServiceTest {
 	}
 
 	@Test
-	public void testDoBypassConsentRequest_every2xxForwardsBodyBeforeCompletion() {
+	public void testDoBypassConsentRequest_successCodesForwardBodyBeforeCompletion() {
 		networkService = new EdgeNetworkService(mockNetworkService);
 		final String responseBody = "{\"handle\":[]}";
-		for (int status = 200; status < 300; status++) {
+		for (int status : new int[] { 200, 202, 204 }) {
 			MockConnection connection = new MockConnection(status, responseBody, null);
 			mockNetworkService.setDefaultResponse(connection);
 			EdgeNetworkService.ResponseCallback callback = mock(EdgeNetworkService.ResponseCallback.class);
@@ -354,6 +354,42 @@ public class EdgeNetworkServiceTest {
 			callbacks.verify(callback).onComplete();
 			callbacks.verifyNoMoreInteractions();
 			assertEquals(1, connection.closeCalledTimes);
+		}
+	}
+
+	@Test
+	public void testDoBypassConsentRequest_207SurfacesErrorsAndFails() {
+		networkService = new EdgeNetworkService(mockNetworkService);
+		final String responseBody =
+			"{\"errors\":[{\"type\":\"https://ns.adobe.com/aep/errors/EXEG-0102-400\",\"status\":400}]}";
+		MockConnection connection = new MockConnection(207, responseBody, null);
+		mockNetworkService.setDefaultResponse(connection);
+		EdgeNetworkService.ResponseCallback callback = mock(EdgeNetworkService.ResponseCallback.class);
+
+		RetryResult result = networkService.doBypassConsentRequest(TEST_URL, "{}", requestHeaders, callback);
+
+		assertEquals(EdgeNetworkService.NetworkRequestOutcome.DROP, result.getNetworkRequestOutcome());
+		assertEquals(Integer.valueOf(207), result.getHttpStatus());
+		InOrder callbacks = inOrder(callback);
+		callbacks.verify(callback).onResponse(responseBody);
+		callbacks.verify(callback).onComplete();
+		callbacks.verifyNoMoreInteractions();
+	}
+
+	@Test
+	public void testDoBypassConsentRequest_otherNonSuccess2xxReportErrors() {
+		networkService = new EdgeNetworkService(mockNetworkService);
+		for (int status : new int[] { 201, 206, 299 }) {
+			MockConnection connection = new MockConnection(status, null, "error body");
+			mockNetworkService.setDefaultResponse(connection);
+			EdgeNetworkService.ResponseCallback callback = mock(EdgeNetworkService.ResponseCallback.class);
+
+			RetryResult result = networkService.doBypassConsentRequest(TEST_URL, "{}", requestHeaders, callback);
+
+			assertEquals(EdgeNetworkService.NetworkRequestOutcome.DROP, result.getNetworkRequestOutcome());
+			verify(callback).onError(any());
+			verify(callback, never()).onResponse(any());
+			verify(callback).onComplete();
 		}
 	}
 

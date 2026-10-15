@@ -699,7 +699,12 @@ class EdgeHitProcessor implements HitProcessing {
 		);
 		if (StringUtils.isNullOrEmpty(datastreamId)) {
 			MobileCore.dispatchEvent(
-				BypassConsentOutcome.createResult(entity.getEvent(), "dropped", "missingConfig", null)
+				BypassConsentOutcome.createResult(
+					entity.getEvent(),
+					EdgeConstants.BypassResult.Status.DROPPED,
+					EdgeConstants.BypassResult.Reason.MISSING_CONFIG,
+					null
+				)
 			);
 			Log.warning(
 				LOG_TAG,
@@ -715,7 +720,12 @@ class EdgeHitProcessor implements HitProcessing {
 		);
 		if (payload == null || payload.length() == 0) {
 			MobileCore.dispatchEvent(
-				BypassConsentOutcome.createResult(entity.getEvent(), "dropped", "invalidPayload", null)
+				BypassConsentOutcome.createResult(
+					entity.getEvent(),
+					EdgeConstants.BypassResult.Status.DROPPED,
+					EdgeConstants.BypassResult.Reason.INVALID_PAYLOAD,
+					null
+				)
 			);
 			Log.debug(
 				LOG_TAG,
@@ -735,7 +745,12 @@ class EdgeHitProcessor implements HitProcessing {
 		final String url = networkService.buildUrl(endpoint, datastreamId, edgeHit.getRequestId());
 		if (!isValidUrl(url)) {
 			MobileCore.dispatchEvent(
-				BypassConsentOutcome.createResult(entity.getEvent(), "dropped", "invalidPayload", null)
+				BypassConsentOutcome.createResult(
+					entity.getEvent(),
+					EdgeConstants.BypassResult.Status.DROPPED,
+					EdgeConstants.BypassResult.Reason.INVALID_PAYLOAD,
+					null
+				)
 			);
 			return true;
 		}
@@ -759,8 +774,8 @@ class EdgeHitProcessor implements HitProcessing {
 		MobileCore.dispatchEvent(
 			BypassConsentOutcome.createResult(
 				entity.getEvent(),
-				success ? "success" : "failed",
-				success ? null : "network",
+				success ? EdgeConstants.BypassResult.Status.SUCCESS : EdgeConstants.BypassResult.Status.FAILED,
+				success ? null : EdgeConstants.BypassResult.Reason.NETWORK,
 				result.getHttpStatus()
 			)
 		);

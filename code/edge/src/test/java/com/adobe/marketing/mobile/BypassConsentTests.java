@@ -809,9 +809,10 @@ public class BypassConsentTests {
 		verify(ordinary).queue(any());
 		assertTrue(outcomes.isEmpty());
 		outcomes.clear();
+		// The bypass queue is checked before the payload, matching iOS.
 		Event empty = request(null);
 		extension.handleBypassConsentRequest(empty);
-		assertOutcome(empty, "dropped", "invalidPayload", null);
+		assertOutcome(empty, "failed", "queueUnavailable", null);
 	}
 
 	@Test
@@ -826,5 +827,44 @@ public class BypassConsentTests {
 		Event event = request(Collections.singletonMap("timezone", "UTC"));
 		extension.handleBypassConsentRequest(event);
 		assertOutcome(event, "failed", "queueUnavailable", null);
+	}
+
+	@Test
+	public void bypassResultConstants_preserveWireValues() {
+		assertEquals("Edge bypass result", EdgeConstants.EventName.BYPASS_RESULT);
+		assertEquals("status", EdgeConstants.EventDataKeys.BypassResult.STATUS);
+		assertEquals("reason", EdgeConstants.EventDataKeys.BypassResult.REASON);
+		assertEquals("httpStatus", EdgeConstants.EventDataKeys.BypassResult.HTTP_STATUS);
+		assertEquals("requestEventId", EdgeConstants.EventDataKeys.BypassResult.REQUEST_EVENT_ID);
+		assertEquals("success", EdgeConstants.BypassResult.Status.SUCCESS);
+		assertEquals("failed", EdgeConstants.BypassResult.Status.FAILED);
+		assertEquals("dropped", EdgeConstants.BypassResult.Status.DROPPED);
+		assertEquals("missingConfig", EdgeConstants.BypassResult.Reason.MISSING_CONFIG);
+		assertEquals("invalidPayload", EdgeConstants.BypassResult.Reason.INVALID_PAYLOAD);
+		assertEquals("queueUnavailable", EdgeConstants.BypassResult.Reason.QUEUE_UNAVAILABLE);
+		assertEquals("network", EdgeConstants.BypassResult.Reason.NETWORK);
+	}
+
+	@Test
+	public void dropResult_isUnchained_andCarriesRequestEventId() {
+		Event result = BypassConsentOutcome.createDropResult("persisted-id");
+
+		assertEquals(EdgeConstants.EventName.BYPASS_RESULT, result.getName());
+		assertEquals(EdgeConstants.EventType.EDGE_BYPASS_CONSENT, result.getType());
+		assertEquals(EventSource.RESPONSE_CONTENT, result.getSource());
+		assertNull(result.getParentID());
+		assertEquals("dropped", result.getEventData().get("status"));
+		assertEquals("invalidPayload", result.getEventData().get("reason"));
+		assertEquals("persisted-id", result.getEventData().get("requestEventId"));
+	}
+
+	@Test
+	public void bypassResult_isChainedToRequest() {
+		Event request = request(Collections.singletonMap("timezone", "UTC"));
+		Event result = BypassConsentOutcome.createResult(request, "failed", "network", 207);
+
+		assertEquals(EdgeConstants.EventName.BYPASS_RESULT, result.getName());
+		assertEquals(request.getUniqueIdentifier(), result.getParentID());
+		assertEquals(207, result.getEventData().get("httpStatus"));
 	}
 }

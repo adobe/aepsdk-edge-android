@@ -30,6 +30,7 @@ import com.adobe.marketing.mobile.util.JSONUtils;
 import com.adobe.marketing.mobile.util.KeyMustBeAbsent;
 import com.adobe.marketing.mobile.util.TimeUtils;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -661,6 +662,50 @@ public class RequestBuilderTest {
 			"\"identityMap\":{\"ECID\":[{\"id\":\"test-ecid\"}]}" +
 			"}" +
 			"}",
+			payload
+		);
+	}
+
+	@Test
+	public void generateNoConsentPayload_ignoresProducerSuppliedXdmAndMeta() throws Exception {
+		Map<String, Object> eventData = new HashMap<>();
+		eventData.put("timezone", "Asia/Kolkata");
+		eventData.put("xdm", Collections.singletonMap("identityMap", Collections.singletonMap("FAKE", "value")));
+		eventData.put("meta", Collections.singletonMap("state", Collections.singletonMap("entries", "fake")));
+		Event event = new Event.Builder(
+			"Device Attributes",
+			EdgeConstants.EventType.EDGE_BYPASS_CONSENT,
+			EventSource.REQUEST_CONTENT
+		)
+			.setEventData(eventData)
+			.build();
+
+		JSONObject payload = requestBuilder.generateNoConsentPayload(event, null);
+
+		assertExactMatch("{\"timezone\":\"Asia/Kolkata\"}", payload);
+	}
+
+	@Test
+	public void generateNoConsentPayload_replacesProducerXdmWithSdkOwnedXdm() throws Exception {
+		Map<String, Object> eventData = new HashMap<>();
+		eventData.put("timezone", "UTC");
+		eventData.put("xdm", Collections.singletonMap("producer", "value"));
+		Event event = new Event.Builder(
+			"Device Attributes",
+			EdgeConstants.EventType.EDGE_BYPASS_CONSENT,
+			EventSource.REQUEST_CONTENT
+		)
+			.setEventData(eventData)
+			.build();
+		Map<String, Object> implementationDetails = Collections.singletonMap(
+			"implementationDetails",
+			Collections.singletonMap("environment", "app")
+		);
+
+		JSONObject payload = requestBuilder.generateNoConsentPayload(event, implementationDetails);
+
+		assertExactMatch(
+			"{\"timezone\":\"UTC\",\"xdm\":{\"implementationDetails\":{\"environment\":\"app\"}}}",
 			payload
 		);
 	}

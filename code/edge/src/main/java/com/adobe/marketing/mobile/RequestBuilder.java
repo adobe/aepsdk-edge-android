@@ -205,8 +205,9 @@ class RequestBuilder {
 	}
 
 	/**
-	 * Builds the device-attributes request body from the producer's operational data and adds the
-	 * Edge-owned XDM identity/implementation details and persisted state metadata.
+	 * Builds the device-attributes request body from the producer's operational data, excluding the
+	 * SDK-owned {@code xdm} and {@code meta} keys, and adds the Edge-owned XDM identity/implementation
+	 * details and persisted state metadata when available.
 	 *
 	 * @param event the consent-independent event containing the operational data
 	 * @param implementationDetails SDK implementation details, if available
@@ -219,6 +220,18 @@ class RequestBuilder {
 		}
 
 		Map<String, Object> payload = new HashMap<>(event.getEventData());
+		final boolean hadXdm = payload.containsKey(EdgeJson.Event.XDM);
+		final boolean hadMeta = payload.containsKey(EdgeJson.Event.METADATA);
+		payload.remove(EdgeJson.Event.XDM);
+		payload.remove(EdgeJson.Event.METADATA);
+		if (hadXdm || hadMeta) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Ignoring producer-supplied SDK-owned xdm/meta fields for device attributes."
+			);
+		}
+
 		Map<String, Object> xdm = new HashMap<>();
 		if (!MapUtils.isNullOrEmpty(implementationDetails)) {
 			xdm.putAll(implementationDetails);
