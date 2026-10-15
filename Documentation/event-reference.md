@@ -79,6 +79,8 @@ This internal request carries device/profile operational data produced by an Edg
 
 The operational-data fields (for example, `app`, `tokens`, and `timezone`) are passed through to the request body. Edge snapshots the identity map when queuing the event and adds it with SDK implementation details under `xdm`, and includes persisted `state:store` values under `meta.state` when available. Configuration and Identity shared states must be available before Edge queues the event. Sending and retrying queued requests uses the stored identity snapshot without comparing it with the latest ECID; a later identity reset does not by itself drop the request.
 
+Persistence preserves explicit null attributes and the original event metadata, including its identifier, timestamp, parent ID, response ID, and event-history mask.
+
 #### Terminal results<!-- omit in toc -->
 
 Edge dispatches terminal results with type `com.adobe.eventType.edgeBypassConsent` and source `com.adobe.eventSource.responseContent`. Results contain `status` (`success`, `failed`, or `dropped`), an optional `reason`, and an optional `httpStatus`. Retryable attempts do not dispatch a terminal result.
