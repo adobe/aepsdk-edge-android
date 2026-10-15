@@ -27,6 +27,15 @@ public class EdgeEndpointTests {
 	}
 
 	@Test
+	public void testEnvironmentProdCreatesDeviceAttributesEndpoint() {
+		final String expected = "https://edge.adobedc.net/ee/v1/mobile/device-attributes";
+		assertEquals(
+			expected,
+			(new EdgeEndpoint(EdgeNetworkService.RequestType.DEVICE_ATTRIBUTES, "prod", null, null, null)).getEndpoint()
+		);
+	}
+
+	@Test
 	public void testEnvironmentProdAndLocationHintCreatesEdgeEndpointProd() {
 		final String expected = "https://edge.adobedc.net/ee/lh1/v1/interact";
 		assertEquals(

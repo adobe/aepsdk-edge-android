@@ -28,6 +28,7 @@ class EdgeState {
 	private final Object mutex = new Object();
 	private ConsentStatus currentCollectConsent;
 	private final HitQueuing hitQueue;
+	private final HitQueuing bypassConsentHitQueue;
 	private boolean hasBooted;
 	private Map<String, Object> implementationDetails;
 	private final EdgeSharedStateCallback sharedStateCallback;
@@ -40,11 +41,31 @@ class EdgeState {
 	 * @param sharedStateCallback callback for setting shared states
 	 */
 	EdgeState(final HitQueuing hitQueue, EdgeProperties edgeProperties, EdgeSharedStateCallback sharedStateCallback) {
+		this(hitQueue, null, edgeProperties, sharedStateCallback);
+	}
+
+	/**
+	 * Constructor.
+	 * @param hitQueue queue governed by collect consent
+	 * @param bypassConsentHitQueue queue for consent-independent device attribute requests
+	 * @param edgeProperties instance of type {@link EdgeProperties}
+	 * @param sharedStateCallback callback for setting shared states
+	 */
+	EdgeState(
+		final HitQueuing hitQueue,
+		final HitQueuing bypassConsentHitQueue,
+		EdgeProperties edgeProperties,
+		EdgeSharedStateCallback sharedStateCallback
+	) {
 		currentCollectConsent = EdgeConstants.Defaults.COLLECT_CONSENT_PENDING;
 		this.edgeProperties = edgeProperties;
 		this.sharedStateCallback = sharedStateCallback;
 		this.hitQueue = hitQueue;
+		this.bypassConsentHitQueue = bypassConsentHitQueue;
 		handleCollectConsentChange(currentCollectConsent);
+		if (bypassConsentHitQueue != null) {
+			bypassConsentHitQueue.beginProcessing();
+		}
 	}
 
 	/**

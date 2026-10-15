@@ -29,6 +29,7 @@ import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.HitQueuing;
 import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.JSONUtils;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.json.JSONObject;
@@ -96,9 +97,12 @@ public class EdgeExtensionTest {
 	@Mock
 	HitQueuing mockQueue;
 
+	@Mock
+	HitQueuing mockBypassConsentQueue;
+
 	@Before
 	public void setup() throws Exception {
-		edgeExtension = new EdgeExtension(mockExtensionApi, mockQueue);
+		edgeExtension = new EdgeExtension(mockExtensionApi, mockQueue, mockBypassConsentQueue);
 		state = edgeExtension.state;
 		mockSharedStates(null, null, null); // default return null, to be set in test if needed
 
@@ -114,21 +118,31 @@ public class EdgeExtensionTest {
 		final ArgumentCaptor<ExtensionEventListener> listenerCaptor = ArgumentCaptor.forClass(
 			ExtensionEventListener.class
 		);
-		verify(mockExtensionApi, times(6))
+		verify(mockExtensionApi, times(7))
 			.registerEventListener(eventTypeCaptor.capture(), eventSourceCaptor.capture(), listenerCaptor.capture());
 		assertEquals(EventType.EDGE, eventTypeCaptor.getAllValues().get(0));
 		assertEquals(EventSource.REQUEST_CONTENT, eventSourceCaptor.getAllValues().get(0));
-		assertEquals(EventType.CONSENT, eventTypeCaptor.getAllValues().get(1));
-		assertEquals(EventSource.RESPONSE_CONTENT, eventSourceCaptor.getAllValues().get(1));
-		assertEquals(EventType.EDGE, eventTypeCaptor.getAllValues().get(2));
-		assertEquals(EventSource.UPDATE_CONSENT, eventSourceCaptor.getAllValues().get(2));
-		assertEquals(EventType.EDGE_IDENTITY, eventTypeCaptor.getAllValues().get(3));
-		assertEquals(EventSource.RESET_COMPLETE, eventSourceCaptor.getAllValues().get(3));
-		assertEquals(EventType.EDGE, eventTypeCaptor.getAllValues().get(4));
-		assertEquals(EventSource.REQUEST_IDENTITY, eventSourceCaptor.getAllValues().get(4));
+		assertEquals(EdgeConstants.EventType.EDGE_BYPASS_CONSENT, eventTypeCaptor.getAllValues().get(1));
+		assertEquals(EventSource.REQUEST_CONTENT, eventSourceCaptor.getAllValues().get(1));
+		assertEquals(EventType.CONSENT, eventTypeCaptor.getAllValues().get(2));
+		assertEquals(EventSource.RESPONSE_CONTENT, eventSourceCaptor.getAllValues().get(2));
+		assertEquals(EventType.EDGE, eventTypeCaptor.getAllValues().get(3));
+		assertEquals(EventSource.UPDATE_CONSENT, eventSourceCaptor.getAllValues().get(3));
+		assertEquals(EventType.EDGE_IDENTITY, eventTypeCaptor.getAllValues().get(4));
+		assertEquals(EventSource.RESET_COMPLETE, eventSourceCaptor.getAllValues().get(4));
 		assertEquals(EventType.EDGE, eventTypeCaptor.getAllValues().get(5));
-		assertEquals(EventSource.UPDATE_IDENTITY, eventSourceCaptor.getAllValues().get(5));
-		assertEquals(6, listenerCaptor.getAllValues().size());
+		assertEquals(EventSource.REQUEST_IDENTITY, eventSourceCaptor.getAllValues().get(5));
+		assertEquals(EventType.EDGE, eventTypeCaptor.getAllValues().get(6));
+		assertEquals(EventSource.UPDATE_IDENTITY, eventSourceCaptor.getAllValues().get(6));
+		assertEquals(7, listenerCaptor.getAllValues().size());
+	}
+
+	@Test
+	public void testOnUnregistered_closesBothHitQueues() {
+		edgeExtension.onUnregistered();
+
+		verify(mockQueue).close();
+		verify(mockBypassConsentQueue).close();
 	}
 
 	@Test
@@ -174,6 +188,116 @@ public class EdgeExtensionTest {
 		//verify
 		verify(mockQueue, never()).queue(any(DataEntity.class));
 		verifyGetSharedStateCalls(0, 0, 1);
+	}
+
+	@Test
+	public void testHandleBypassConsentRequest_whenCollectConsentNo_queuesOnDedicatedQueue() {
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			new SharedStateResult(SharedStateStatus.SET, getConsentsData(ConsentStatus.NO))
+		);
+		Event bypassConsentEvent = new Event.Builder(
+			"device attributes",
+			EdgeConstants.EventType.EDGE_BYPASS_CONSENT,
+			EventSource.REQUEST_CONTENT
+		)
+			.setEventData(
+				new HashMap<String, Object>() {
+					{
+						put("app", new HashMap<String, Object>());
+						put("tokens", new HashMap<String, Object>());
+					}
+				}
+			)
+			.build();
+
+		edgeExtension.handleBypassConsentRequest(bypassConsentEvent);
+
+		verifyEventQueued(mockBypassConsentQueue, bypassConsentEvent);
+		verify(mockQueue, never()).queue(any(DataEntity.class));
+		verifyGetSharedStateCalls(1, 1, 0);
+	}
+
+	@Test
+	public void testHandleBypassConsentRequest_doesNotSnapshotBatchingConfiguration() {
+		final Map<String, Object> batching = new HashMap<>();
+		batching.put("enabled", true);
+		batching.put("maxBatchSize", 10);
+		final Map<String, Object> configWithBatching = new HashMap<>(configData);
+		configWithBatching.put(EdgeConstants.SharedState.Configuration.EDGE_BATCHING, batching);
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configWithBatching),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			new SharedStateResult(SharedStateStatus.SET, getConsentsData(ConsentStatus.NO))
+		);
+		final Event bypassConsentEvent = new Event.Builder(
+			"device attributes",
+			EdgeConstants.EventType.EDGE_BYPASS_CONSENT,
+			EventSource.REQUEST_CONTENT
+		)
+			.setEventData(Collections.singletonMap("timezone", (Object) "UTC"))
+			.build();
+
+		edgeExtension.handleBypassConsentRequest(bypassConsentEvent);
+
+		final ArgumentCaptor<DataEntity> queued = ArgumentCaptor.forClass(DataEntity.class);
+		verify(mockBypassConsentQueue).queue(queued.capture());
+		final EdgeDataEntity persisted = EdgeDataEntity.fromDataEntity(queued.getValue());
+		assertNotNull(persisted);
+		assertFalse(persisted.getConfiguration().containsKey(EdgeConstants.SharedState.Configuration.EDGE_BATCHING));
+		assertEquals(
+			configData.get(EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID),
+			persisted.getConfiguration().get(EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID)
+		);
+		verify(mockQueue, never()).queue(any(DataEntity.class));
+	}
+
+	@Test
+	public void testHandleBypassConsentRequest_whenEmptyEventData_ignoresEvent() {
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			null
+		);
+		Event bypassConsentEvent = new Event.Builder(
+			"device attributes",
+			EdgeConstants.EventType.EDGE_BYPASS_CONSENT,
+			EventSource.REQUEST_CONTENT
+		)
+			.build();
+
+		edgeExtension.handleBypassConsentRequest(bypassConsentEvent);
+
+		verify(mockQueue, never()).queue(any(DataEntity.class));
+		verify(mockBypassConsentQueue, never()).queue(any(DataEntity.class));
+	}
+
+	@Test
+	public void testHandleBypassConsentRequest_whenQueueUnavailable_doesNotQueue() {
+		EdgeExtension extensionWithoutBypassQueue = new EdgeExtension(mockExtensionApi, mockQueue, null);
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			null
+		);
+		Event bypassConsentEvent = new Event.Builder(
+			"device attributes",
+			EdgeConstants.EventType.EDGE_BYPASS_CONSENT,
+			EventSource.REQUEST_CONTENT
+		)
+			.setEventData(
+				new HashMap<String, Object>() {
+					{
+						put("app", new HashMap<String, Object>());
+					}
+				}
+			)
+			.build();
+
+		extensionWithoutBypassQueue.handleBypassConsentRequest(bypassConsentEvent);
+
+		verify(mockQueue, never()).queue(any(DataEntity.class));
 	}
 
 	@Test
@@ -356,6 +480,27 @@ public class EdgeExtensionTest {
 	}
 
 	@Test
+	public void testHandleResetComplete_clearsBypassConsentHits_andPreservesPrimaryHits() {
+		Event resetComplete = new Event.Builder("Reset complete", EventType.EDGE_IDENTITY, EventSource.RESET_COMPLETE)
+			.build();
+		edgeExtension.handleResetComplete(resetComplete);
+
+		verify(mockBypassConsentQueue).clear();
+		verify(mockQueue, never()).clear();
+		verifyEventQueued(resetComplete);
+	}
+
+	@Test
+	public void testHandleResetComplete_withoutBypassConsentQueue_queuesReset() {
+		EdgeExtension extensionWithoutBypassQueue = new EdgeExtension(mockExtensionApi, mockQueue, null);
+		Event resetComplete = new Event.Builder("Reset complete", EventType.EDGE_IDENTITY, EventSource.RESET_COMPLETE)
+			.build();
+		extensionWithoutBypassQueue.handleResetComplete(resetComplete);
+
+		verifyEventQueued(resetComplete);
+	}
+
+	@Test
 	public void testReadyForEvent_whenNotBootedUp_waits_returnsFalse() {
 		// setup: bootupIfNeeded waits for HUB shared state
 		mockHubSharedState(new SharedStateResult(SharedStateStatus.PENDING, null));
@@ -443,6 +588,25 @@ public class EdgeExtensionTest {
 			null
 		);
 		assertTrue(edgeExtension.readyForEvent(event1));
+	}
+
+	@Test
+	public void testReadyForEvent_bypassConsentEvent_waitsForConfigurationAndIdentity() {
+		mockHubSharedState(new SharedStateResult(SharedStateStatus.SET, getHubExtensions(true)));
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			null
+		);
+		Event bypassConsentEvent = new Event.Builder(
+			"device attributes",
+			EdgeConstants.EventType.EDGE_BYPASS_CONSENT,
+			EventSource.REQUEST_CONTENT
+		)
+			.build();
+
+		assertTrue(edgeExtension.readyForEvent(bypassConsentEvent));
+		verifyGetSharedStateCalls(1, 1, 0);
 	}
 
 	@Test
@@ -642,9 +806,13 @@ public class EdgeExtensionTest {
 	 * @param expectedEvent to verify against the queue captor; should not be null
 	 */
 	private void verifyEventQueued(final Event expectedEvent) {
+		verifyEventQueued(mockQueue, expectedEvent);
+	}
+
+	private void verifyEventQueued(final HitQueuing queue, final Event expectedEvent) {
 		assertNotNull(expectedEvent);
 		final ArgumentCaptor<DataEntity> entityCaptor = ArgumentCaptor.forClass(DataEntity.class);
-		verify(mockQueue, times(1)).queue(entityCaptor.capture());
+		verify(queue, times(1)).queue(entityCaptor.capture());
 		EdgeDataEntity edgeEntity = EdgeDataEntity.fromDataEntity(entityCaptor.getValue());
 		assertNotNull(edgeEntity);
 		assertEquals(expectedEvent.getName(), edgeEntity.getEvent().getName());

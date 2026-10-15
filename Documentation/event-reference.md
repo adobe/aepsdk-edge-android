@@ -3,6 +3,7 @@
 ## Table of Contents<!-- omit in toc -->
 - [Events handled by Edge](#events-handled-by-edge)
   - [Edge request content](#edge-request-content)
+  - [Edge bypass-consent request content](#edge-bypass-consent-request-content)
   - [Edge request identity](#edge-request-identity)
   - [Edge update consent](#edge-update-consent)
   - [Edge update identity](#edge-update-identity)
@@ -61,6 +62,38 @@ request
 
 > **Note**
 > Events of this type and source are only processed if the data collection consent status stored in the `collect` property is **not** `n` (no); that is, either `y` (yes) or `p` (pending).
+
+-----
+
+### Edge bypass-consent request content
+
+This internal request carries device/profile operational data produced by an Edge Identity operational-data rule. Edge sends it to the dedicated `mobile/device-attributes` endpoint using a separate persistent queue that is not suspended or cleared by collect-consent changes. It is not an Experience Event and is not processed by the regular `interact` path.
+
+#### Event details<!-- omit in toc -->
+
+| Event type | Event source |
+| ---------- | ------------ |
+| com.adobe.eventType.edgeBypassConsent | com.adobe.eventSource.requestContent |
+
+#### Event data payload definition<!-- omit in toc -->
+
+The operational-data fields (for example, `app`, `tokens`, and `timezone`) are passed through to the request body. Edge snapshots the identity map when queuing the event and adds it with SDK implementation details under `xdm`, and includes persisted `state:store` values under `meta.state` when available. Configuration and Identity shared states must be available before Edge queues the event. Sending and retrying queued requests uses the stored identity snapshot without comparing it with the latest ECID; a later identity reset does not by itself drop the request.
+
+Persistence preserves explicit null attributes and the original event metadata, including its identifier, timestamp, parent ID, response ID, and event-history mask.
+
+#### Terminal results<!-- omit in toc -->
+
+Edge dispatches terminal results with type `com.adobe.eventType.edgeBypassConsent` and source `com.adobe.eventSource.responseContent`. Results contain `status` (`success`, `failed`, or `dropped`), an optional `reason`, and an optional `httpStatus`. Retryable attempts do not dispatch a terminal result.
+
+Pending Configuration or Identity shared states normally defer handling. If Identity is unexpectedly unavailable during request handling, Edge dispatches `status: dropped` with `reason: invalidPayload`, without queuing the request.
+
+When the original request can be decoded, the result is chained to that request using its parent ID, not its response ID. If a persisted bypass-queue record cannot be decoded, Edge removes it and dispatches `status: dropped`, `reason: invalidPayload`, and `requestEventId` containing the persisted record's identifier. This result has no parent ID or response ID because the original event is unavailable. Undecodable records on the ordinary queue do not dispatch bypass results.
+
+#### Network response handling<!-- omit in toc -->
+
+All HTTP 2xx responses are treated as acceptance. When a response body is present, Edge processes it through the existing non-streaming response handler before dispatching the terminal bypass result. Supported handles can update the location hint, persist `state:store` values, and dispatch normal Edge response events. Existing identity-reset suppression of stored-state and location-hint updates still applies. Empty or malformed response bodies do not turn an accepted HTTP response into a bypass failure.
+
+Permanent network errors are forwarded to the normal error handler before the bypass failure result. Retryable attempts produce no terminal bypass result and remove their waiting-event registration; a subsequent attempt registers the original event under a new request ID.
 
 -----
 

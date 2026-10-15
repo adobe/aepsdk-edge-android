@@ -12,7 +12,9 @@
 package com.adobe.marketing.mobile;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mockStatic;
 
 import com.adobe.marketing.mobile.util.JSONAsserts;
@@ -37,6 +39,28 @@ public class EventUtilsTests {
 	@After
 	public void tearDown() {
 		mockBundledBatchingConfigStatic.close();
+	}
+
+	@Test
+	public void testIsBypassConsentEvent_requiresDedicatedTypeAndRequestContentSource() {
+		Event bypassConsentEvent = new Event.Builder(
+			"device attributes",
+			EdgeConstants.EventType.EDGE_BYPASS_CONSENT,
+			EventSource.REQUEST_CONTENT
+		)
+			.build();
+		Event ordinaryEdgeEvent = new Event.Builder("experience event", EventType.EDGE, EventSource.REQUEST_CONTENT)
+			.build();
+		Event wrongSourceEvent = new Event.Builder(
+			"device attributes",
+			EdgeConstants.EventType.EDGE_BYPASS_CONSENT,
+			EventSource.UPDATE_CONSENT
+		)
+			.build();
+
+		assertTrue(EventUtils.isBypassConsentEvent(bypassConsentEvent));
+		assertFalse(EventUtils.isBypassConsentEvent(ordinaryEdgeEvent));
+		assertFalse(EventUtils.isBypassConsentEvent(wrongSourceEvent));
 	}
 
 	@Test

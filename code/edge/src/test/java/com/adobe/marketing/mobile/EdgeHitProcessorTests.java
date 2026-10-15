@@ -29,6 +29,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.adobe.marketing.mobile.services.DataEntity;
@@ -710,6 +711,62 @@ public class EdgeHitProcessorTests {
 
 		// verify state store cleared
 		verify(mockNamedCollection, times(1)).remove(EdgeConstants.DataStoreKeys.STORE_PAYLOADS);
+	}
+
+	@Test
+	public void testProcessHit_onBypassConsentEvent_sendsDeviceAttributesRequest() throws Exception {
+		Map<String, Object> eventData = new HashMap<>();
+		eventData.put(
+			"app",
+			new HashMap<String, Object>() {
+				{
+					put("id", "com.example.app");
+				}
+			}
+		);
+		eventData.put(
+			"tokens",
+			new HashMap<String, Object>() {
+				{
+					put("pushNotification", "test-token");
+				}
+			}
+		);
+		Event event = new Event.Builder(
+			"Device Attributes",
+			EdgeConstants.EventType.EDGE_BYPASS_CONSENT,
+			EventSource.REQUEST_CONTENT
+		)
+			.setEventData(eventData)
+			.build();
+		DataEntity dataEntity = new EdgeDataEntity(event, edgeConfig, identityMap).toDataEntity();
+		assertNotNull(dataEntity);
+
+		when(mockEdgeNetworkService.buildUrl(any(EdgeEndpoint.class), anyString(), anyString()))
+			.thenReturn("https://edge.adobedc.net/ee/v1/mobile/device-attributes?configId=works");
+		when(mockEdgeNetworkService.doBypassConsentRequest(anyString(), anyString(), ArgumentMatchers.anyMap()))
+			.thenReturn(BypassConsentNetworkOutcome.success(200));
+		final boolean[] processingCompleted = new boolean[1];
+
+		hitProcessor.processHit(dataEntity, result -> processingCompleted[0] = result);
+
+		assertTrue(processingCompleted[0]);
+		ArgumentCaptor<EdgeEndpoint> endpointCaptor = ArgumentCaptor.forClass(EdgeEndpoint.class);
+		verify(mockEdgeNetworkService).buildUrl(endpointCaptor.capture(), eq("works"), anyString());
+		assertEquals(
+			"https://edge.adobedc.net/ee/v1/mobile/device-attributes",
+			endpointCaptor.getValue().getEndpoint()
+		);
+
+		ArgumentCaptor<String> requestBodyCaptor = ArgumentCaptor.forClass(String.class);
+		verify(mockEdgeNetworkService)
+			.doBypassConsentRequest(anyString(), requestBodyCaptor.capture(), ArgumentMatchers.anyMap());
+		JSONObject requestBody = new JSONObject(requestBodyCaptor.getValue());
+		assertEquals("com.example.app", requestBody.getJSONObject("app").getString("id"));
+		assertEquals("test-token", requestBody.getJSONObject("tokens").getString("pushNotification"));
+		assertTrue(requestBody.getJSONObject(EdgeJson.Event.XDM).has(EdgeJson.Event.Xdm.IDENTITY_MAP));
+		// Device-attributes requests never enter primary Edge response handling.
+		verifyNoInteractions(mockNetworkResponseHandler);
 	}
 
 	// Test void processHit(@NonNull final DataEntity dataEntity, @NonNull final HitProcessingResult processingResult)

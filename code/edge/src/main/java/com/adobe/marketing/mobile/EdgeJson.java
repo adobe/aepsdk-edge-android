@@ -11,9 +11,55 @@
 
 package com.adobe.marketing.mobile;
 
+import java.lang.reflect.Array;
+import java.util.Map;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 class EdgeJson {
 
 	private EdgeJson() {}
+
+	static JSONObject toJsonObjectPreservingNulls(final Map<?, ?> values) throws JSONException {
+		final JSONObject object = new JSONObject();
+		if (values == null) {
+			return object;
+		}
+		for (Map.Entry<?, ?> entry : values.entrySet()) {
+			if (entry.getKey() != null) {
+				object.put(String.valueOf(entry.getKey()), toJsonValuePreservingNulls(entry.getValue()));
+			}
+		}
+		return object;
+	}
+
+	private static Object toJsonValuePreservingNulls(final Object value) throws JSONException {
+		if (value == null) {
+			return JSONObject.NULL;
+		}
+		if (value == JSONObject.NULL || value instanceof JSONObject || value instanceof JSONArray) {
+			return value;
+		}
+		if (value instanceof Map) {
+			return toJsonObjectPreservingNulls((Map<?, ?>) value);
+		}
+		if (value instanceof Iterable) {
+			final JSONArray array = new JSONArray();
+			for (Object item : (Iterable<?>) value) {
+				array.put(toJsonValuePreservingNulls(item));
+			}
+			return array;
+		}
+		if (value.getClass().isArray()) {
+			final JSONArray array = new JSONArray();
+			for (int i = 0; i < Array.getLength(value); i++) {
+				array.put(toJsonValuePreservingNulls(Array.get(value, i)));
+			}
+			return array;
+		}
+		return value;
+	}
 
 	static class Event {
 

@@ -36,6 +36,19 @@ final class EventUtils {
 	}
 
 	/**
+	 * Checks whether the provided event is a consent-independent device-attributes request.
+	 *
+	 * @param event the event to verify
+	 * @return true if the event type and source match the bypass-consent contract
+	 */
+	static boolean isBypassConsentEvent(@NonNull final Event event) {
+		return (
+			EdgeConstants.EventType.EDGE_BYPASS_CONSENT.equalsIgnoreCase(event.getType()) &&
+			EventSource.REQUEST_CONTENT.equalsIgnoreCase(event.getSource())
+		);
+	}
+
+	/**
 	 * Checks if the provided {@code event} is of type {@link EventType#EDGE} and source {@link EventSource#UPDATE_CONSENT}.
 	 *
 	 * @param event the event to verify

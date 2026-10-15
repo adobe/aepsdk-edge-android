@@ -27,6 +27,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 class RequestBuilder {
@@ -201,6 +202,74 @@ class RequestBuilder {
 		);
 
 		return consents.asJsonObject();
+	}
+
+	/**
+	 * Builds the device-attributes request body from the producer's operational data, excluding the
+	 * SDK-owned {@code xdm} and {@code meta} keys, and adds the Edge-owned XDM identity/implementation
+	 * details and persisted state metadata when available.
+	 *
+	 * @param event the consent-independent event containing the operational data
+	 * @param implementationDetails SDK implementation details, if available
+	 * @return the request body or null when the event has no data
+	 */
+	JSONObject generateNoConsentPayload(final Event event, final Map<String, Object> implementationDetails) {
+		if (event == null || MapUtils.isNullOrEmpty(event.getEventData())) {
+			Log.debug(LOG_TAG, LOG_SOURCE, "Unable to build device-attributes payload, event data is null or empty.");
+			return null;
+		}
+
+		Map<String, Object> payload = new HashMap<>(event.getEventData());
+		final boolean hadXdm = payload.containsKey(EdgeJson.Event.XDM);
+		final boolean hadMeta = payload.containsKey(EdgeJson.Event.METADATA);
+		payload.remove(EdgeJson.Event.XDM);
+		payload.remove(EdgeJson.Event.METADATA);
+		if (hadXdm || hadMeta) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Ignoring producer-supplied SDK-owned xdm/meta fields for device attributes."
+			);
+		}
+
+		Map<String, Object> xdm = new HashMap<>();
+		if (!MapUtils.isNullOrEmpty(implementationDetails)) {
+			xdm.putAll(implementationDetails);
+		}
+
+		Map<String, Object> identityMap = DataReader.optTypedMap(
+			Object.class,
+			xdmPayloads,
+			EdgeConstants.EventDataKeys.IDENTITY_MAP,
+			null
+		);
+		MapUtils.putIfNotEmpty(xdm, EdgeConstants.EventDataKeys.IDENTITY_MAP, identityMap);
+		MapUtils.putIfNotEmpty(payload, EdgeJson.Event.XDM, xdm);
+
+		Map<String, Object> stateMetadata = new StateMetadata(storeResponsePayloadManager.getActiveStores())
+			.toObjectMap();
+		if (!MapUtils.isNullOrEmpty(stateMetadata)) {
+			payload.put(
+				EdgeJson.Event.METADATA,
+				new HashMap<String, Object>() {
+					{
+						put("state", stateMetadata);
+					}
+				}
+			);
+		}
+
+		try {
+			return EdgeJson.toJsonObjectPreservingNulls(payload);
+		} catch (JSONException e) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Failed to serialize device-attributes payload: %s",
+				e.getLocalizedMessage()
+			);
+			return null;
+		}
 	}
 
 	private KonductorConfig buildKonductorConfig() {
