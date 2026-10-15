@@ -451,9 +451,7 @@ class EdgeExtension extends Extension {
 
 		if (identityReady == null) {
 			if (bypassConsent) {
-				MobileCore.dispatchEvent(
-					BypassConsentOutcome.createResult(event, "failed", "identityUnavailable", null)
-				);
+				MobileCore.dispatchEvent(BypassConsentOutcome.createResult(event, "dropped", "invalidPayload", null));
 			}
 			Log.warning(
 				LOG_TAG,

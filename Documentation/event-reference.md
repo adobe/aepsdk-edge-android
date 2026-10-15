@@ -85,6 +85,8 @@ Persistence preserves explicit null attributes and the original event metadata, 
 
 Edge dispatches terminal results with type `com.adobe.eventType.edgeBypassConsent` and source `com.adobe.eventSource.responseContent`. Results contain `status` (`success`, `failed`, or `dropped`), an optional `reason`, and an optional `httpStatus`. Retryable attempts do not dispatch a terminal result.
 
+Pending Configuration or Identity shared states normally defer handling. If Identity is unexpectedly unavailable during request handling, Edge dispatches `status: dropped` with `reason: invalidPayload`, without queuing the request.
+
 When the original request can be decoded, the result is chained to that request using its parent ID, not its response ID. If a persisted bypass-queue record cannot be decoded, Edge removes it and dispatches `status: dropped`, `reason: invalidPayload`, and `requestEventId` containing the persisted record's identifier. This result has no parent ID or response ID because the original event is unavailable. Undecodable records on the ordinary queue do not dispatch bypass results.
 
 #### Network response handling<!-- omit in toc -->

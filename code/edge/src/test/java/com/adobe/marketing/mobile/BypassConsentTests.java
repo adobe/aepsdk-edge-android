@@ -732,7 +732,7 @@ public class BypassConsentTests {
 	}
 
 	@Test
-	public void ingressIdentityUnavailable_emitsCorrelatedFailureWithoutQueuing() {
+	public void ingressIdentityUnavailable_emitsCorrelatedDropWithoutQueuing() {
 		for (SharedStateResult unavailable : Arrays.asList(
 			null,
 			new SharedStateResult(SharedStateStatus.PENDING, identity)
@@ -741,8 +741,8 @@ public class BypassConsentTests {
 				request(Collections.singletonMap("timezone", "UTC")),
 				new SharedStateResult(SharedStateStatus.SET, configuration),
 				unavailable,
-				"failed",
-				"identityUnavailable"
+				"dropped",
+				"invalidPayload"
 			);
 		}
 	}
