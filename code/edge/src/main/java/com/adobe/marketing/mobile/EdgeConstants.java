@@ -19,16 +19,8 @@ final class EdgeConstants {
 	static final String FRIENDLY_NAME = "Edge";
 	static final String LOG_TAG = FRIENDLY_NAME;
 
-	static final class EventType {
-
-		static final String EDGE_BYPASS_CONSENT = "com.adobe.eventType.edgeBypassConsent";
-
-		private EventType() {}
-	}
-
 	static final class EventName {
 
-		static final String BYPASS_RESULT = "Edge bypass result";
 		static final String REQUEST_CONTENT = "AEP Request Event";
 		static final String RESPONSE_CONTENT = "AEP Response Event Handle";
 		static final String CONTENT_COMPLETE = "AEP Response Complete";
@@ -84,16 +76,6 @@ final class EdgeConstants {
 		static final String IDENTITY_MAP = "identityMap";
 		static final String LOCATION_HINT = "locationHint";
 
-		static final class BypassResult {
-
-			static final String STATUS = "status";
-			static final String REASON = "reason";
-			static final String HTTP_STATUS = "httpStatus";
-			static final String REQUEST_EVENT_ID = EventDataKeys.REQUEST_EVENT_ID;
-
-			private BypassResult() {}
-		}
-
 		static final class Config {
 
 			static final String KEY = "config";
@@ -112,37 +94,6 @@ final class EdgeConstants {
 		}
 
 		private EventDataKeys() {}
-	}
-
-	static final class DataQueueLabels {
-
-		static final String BYPASS_CONSENT_SUFFIX = ".bypassConsent";
-
-		private DataQueueLabels() {}
-	}
-
-	static final class BypassResult {
-
-		static final class Status {
-
-			static final String SUCCESS = "success";
-			static final String FAILED = "failed";
-			static final String DROPPED = "dropped";
-
-			private Status() {}
-		}
-
-		static final class Reason {
-
-			static final String MISSING_CONFIG = "missingConfig";
-			static final String INVALID_PAYLOAD = "invalidPayload";
-			static final String QUEUE_UNAVAILABLE = "queueUnavailable";
-			static final String NETWORK = "network";
-
-			private Reason() {}
-		}
-
-		private BypassResult() {}
 	}
 
 	static final class DataStoreKeys {

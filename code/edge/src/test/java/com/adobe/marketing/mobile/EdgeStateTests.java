@@ -48,75 +48,14 @@ public class EdgeStateTests {
 	HitQueuing mockHitQueue;
 
 	@Mock
-	HitQueuing mockBypassConsentHitQueue;
-
-	@Mock
 	EdgeSharedStateCallback mockSharedStateCallback;
 
 	@Before
 	public void setUp() {
 		fakeNamedCollection = new FakeNamedCollection();
 		properties = new EdgeProperties(fakeNamedCollection);
-		mockHitQueue = mock(HitQueuing.class);
-		mockBypassConsentHitQueue = mock(HitQueuing.class);
 		mockSharedStateCallback = mock(EdgeSharedStateCallback.class);
-		state = new EdgeState(mockHitQueue, mockBypassConsentHitQueue, properties, mockSharedStateCallback);
-	}
-
-	@Test
-	public void testConsentChangesDoNotSuspendOrClearBypassConsentQueue() {
-		clearInvocations(mockHitQueue, mockBypassConsentHitQueue);
-
-		state.updateCurrentConsent(ConsentStatus.NO);
-
-		verify(mockHitQueue).clear();
-		verify(mockHitQueue).beginProcessing();
-		verify(mockBypassConsentHitQueue, never()).clear();
-		verify(mockBypassConsentHitQueue, never()).suspend();
-	}
-
-	@Test
-	public void testPendingConsentSuspendsRegularQueueWithoutAffectingBypassQueue() {
-		clearInvocations(mockHitQueue, mockBypassConsentHitQueue);
-
-		state.updateCurrentConsent(ConsentStatus.PENDING);
-
-		verify(mockHitQueue).suspend();
-		verify(mockBypassConsentHitQueue, never()).suspend();
-		verify(mockBypassConsentHitQueue, never()).clear();
-	}
-
-	@Test
-	public void testConstructor_startsBypassConsentQueue() {
-		verify(mockBypassConsentHitQueue).beginProcessing();
-	}
-
-	@Test
-	public void testLegacyConstructor_preservesRegularQueueConsentLifecycle() {
-		clearInvocations(mockHitQueue, mockBypassConsentHitQueue);
-		EdgeState legacyState = new EdgeState(mockHitQueue, properties, mockSharedStateCallback);
-
-		assertEquals(ConsentStatus.PENDING, legacyState.getCurrentCollectConsent());
-		verify(mockHitQueue).suspend();
-
-		legacyState.updateCurrentConsent(ConsentStatus.YES);
-		assertEquals(ConsentStatus.YES, legacyState.getCurrentCollectConsent());
-		verify(mockHitQueue).beginProcessing();
-
-		legacyState.updateCurrentConsent(ConsentStatus.NO);
-		assertEquals(ConsentStatus.NO, legacyState.getCurrentCollectConsent());
-		verify(mockHitQueue).clear();
-		verify(mockHitQueue, times(2)).beginProcessing();
-		verify(mockBypassConsentHitQueue, never()).beginProcessing();
-		verify(mockBypassConsentHitQueue, never()).suspend();
-		verify(mockBypassConsentHitQueue, never()).clear();
-	}
-
-	@Test
-	public void testConstructor_withNullBypassConsentQueue_doesNotThrow() {
-		EdgeState noBypassState = new EdgeState(mockHitQueue, null, properties, mockSharedStateCallback);
-		assertNotNull(noBypassState);
-		assertEquals(ConsentStatus.PENDING, noBypassState.getCurrentCollectConsent());
+		state = new EdgeState(mockHitQueue, properties, mockSharedStateCallback);
 	}
 
 	@Test

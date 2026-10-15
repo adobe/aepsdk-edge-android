@@ -28,6 +28,7 @@ class EdgeState {
 	private final Object mutex = new Object();
 	private ConsentStatus currentCollectConsent;
 	private final HitQueuing hitQueue;
+	// Device attributes queue. Never receives collect consent changes; started once bootup completes.
 	private final HitQueuing bypassConsentHitQueue;
 	private boolean hasBooted;
 	private Map<String, Object> implementationDetails;
@@ -46,8 +47,8 @@ class EdgeState {
 
 	/**
 	 * Constructor.
-	 * @param hitQueue queue governed by collect consent
-	 * @param bypassConsentHitQueue queue for consent-independent device attribute requests
+	 * @param hitQueue instance of type {@link HitQueuing}
+	 * @param bypassConsentHitQueue the device attributes {@link HitQueuing}, or null if it is unavailable
 	 * @param edgeProperties instance of type {@link EdgeProperties}
 	 * @param sharedStateCallback callback for setting shared states
 	 */
@@ -63,9 +64,6 @@ class EdgeState {
 		this.hitQueue = hitQueue;
 		this.bypassConsentHitQueue = bypassConsentHitQueue;
 		handleCollectConsentChange(currentCollectConsent);
-		if (bypassConsentHitQueue != null) {
-			bypassConsentHitQueue.beginProcessing();
-		}
 	}
 
 	/**
@@ -117,6 +115,12 @@ class EdgeState {
 		}
 
 		hasBooted = true;
+
+		// Started after persisted properties and implementationDetails are loaded, so restored hits use them.
+		if (bypassConsentHitQueue != null) {
+			bypassConsentHitQueue.beginProcessing();
+		}
+
 		Log.debug(LOG_TAG, LOG_SOURCE, "Edge has successfully booted up");
 
 		return hasBooted;

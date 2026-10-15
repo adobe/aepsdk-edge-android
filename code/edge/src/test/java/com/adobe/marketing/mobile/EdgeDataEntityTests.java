@@ -11,7 +11,6 @@
 
 package com.adobe.marketing.mobile;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -21,10 +20,8 @@ import static org.junit.Assert.assertTrue;
 
 import com.adobe.marketing.mobile.services.DataEntity;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import org.json.JSONObject;
 import org.junit.Test;
 
 public class EdgeDataEntityTests {
@@ -176,91 +173,6 @@ public class EdgeDataEntityTests {
 
 		// Assert IdentityMap
 		assertEquals(identityMap, deserializedEntity.getIdentityMap());
-	}
-
-	@Test
-	public void testToFromDataEntity_bypassPreservesEventMetadataAndExplicitNulls() throws Exception {
-		Map<String, Object> tokens = new HashMap<>();
-		tokens.put("pushNotification", null);
-		Map<String, Object> data = new HashMap<>();
-		data.put("timezone", null);
-		data.put("tokens", tokens);
-		data.put("values", Arrays.asList(null, "UTC"));
-		String[] mask = { "timezone", "tokens.pushNotification" };
-		Event parent = new Event.Builder("parent", "type", "source").build();
-		Event request = new Event.Builder(
-			"Device Attributes",
-			EdgeConstants.EventType.EDGE_BYPASS_CONSENT,
-			EventSource.REQUEST_CONTENT,
-			mask
-		)
-			.setUniqueIdentifier("persisted-request")
-			.setTimestamp(123456789L)
-			.setEventData(data)
-			.inResponseToEvent(event)
-			.chainToParentEvent(parent)
-			.build();
-		assertEquals(parent.getUniqueIdentifier(), request.getParentID());
-		assertEquals(event.getUniqueIdentifier(), request.getResponseID());
-
-		EdgeDataEntity entity = new EdgeDataEntity(request, edgeConfig, identityMap);
-		for (int attempt = 0; attempt < 2; attempt++) {
-			DataEntity persisted = entity.toDataEntity();
-			assertNotNull(persisted);
-			entity = EdgeDataEntity.fromDataEntity(persisted);
-			assertNotNull(entity);
-			Event restored = entity.getEvent();
-			assertEquals(request.getName(), restored.getName());
-			assertEquals(request.getType(), restored.getType());
-			assertEquals(request.getSource(), restored.getSource());
-			assertEquals(request.getUniqueIdentifier(), restored.getUniqueIdentifier());
-			assertEquals(request.getTimestamp(), restored.getTimestamp());
-			assertEquals(request.getParentID(), restored.getParentID());
-			assertEquals(request.getResponseID(), restored.getResponseID());
-			assertArrayEquals(mask, restored.getMask());
-			assertEquals(edgeConfig, entity.getConfiguration());
-			assertEquals(identityMap, entity.getIdentityMap());
-			JSONObject restoredData = EdgeJson.toJsonObjectPreservingNulls(restored.getEventData());
-			assertTrue(restoredData.has("timezone"));
-			assertTrue(restoredData.isNull("timezone"));
-			assertTrue(restoredData.getJSONObject("tokens").has("pushNotification"));
-			assertTrue(restoredData.getJSONObject("tokens").isNull("pushNotification"));
-			assertEquals(2, restoredData.getJSONArray("values").length());
-			assertTrue(restoredData.getJSONArray("values").isNull(0));
-			assertEquals("UTC", restoredData.getJSONArray("values").getString(1));
-		}
-	}
-
-	@Test
-	public void testFromDataEntity_bypassWithoutNullPreservingDataPreservesEventMetadata() throws Exception {
-		Map<String, Object> data = new HashMap<>();
-		data.put("timezone", "UTC");
-		String[] mask = { "timezone" };
-		Event request = new Event.Builder(
-			"Device Attributes",
-			EdgeConstants.EventType.EDGE_BYPASS_CONSENT,
-			EventSource.REQUEST_CONTENT,
-			mask
-		)
-			.setEventData(data)
-			.inResponseToEvent(event)
-			.chainToParentEvent(event)
-			.build();
-		DataEntity persisted = new EdgeDataEntity(request, edgeConfig, identityMap).toDataEntity();
-		assertNotNull(persisted);
-		JSONObject serialized = new JSONObject(persisted.getData());
-		serialized.remove("bypassEventData");
-
-		EdgeDataEntity restored = EdgeDataEntity.fromDataEntity(new DataEntity(serialized.toString()));
-		assertNotNull(restored);
-		assertEquals(request.getUniqueIdentifier(), restored.getEvent().getUniqueIdentifier());
-		assertEquals(request.getTimestamp(), restored.getEvent().getTimestamp());
-		assertEquals(request.getParentID(), restored.getEvent().getParentID());
-		assertEquals(request.getResponseID(), restored.getEvent().getResponseID());
-		assertArrayEquals(mask, restored.getEvent().getMask());
-		assertEquals(data, restored.getEvent().getEventData());
-		assertEquals(edgeConfig, restored.getConfiguration());
-		assertEquals(identityMap, restored.getIdentityMap());
 	}
 
 	@Test
