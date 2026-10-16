@@ -577,10 +577,7 @@ class EdgeExtension extends Extension {
 		}
 
 		final DeviceAttributesHitProcessor hitProcessor = new DeviceAttributesHitProcessor(
-			new DeviceAttributesNetworkService(
-				ServiceProvider.getInstance().getNetworkService(),
-				ServiceProvider.getInstance().getDeviceInfoService()
-			),
+			new DeviceAttributesNetworkService(ServiceProvider.getInstance().getNetworkService()),
 			sharedStateCallback,
 			new EdgeExtensionStateCallback(),
 			getNamedCollection(),

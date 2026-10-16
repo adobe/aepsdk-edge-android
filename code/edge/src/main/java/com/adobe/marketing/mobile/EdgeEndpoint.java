@@ -56,6 +56,7 @@ class EdgeEndpoint {
 	}
 
 	private final String endpoint;
+	private final String host;
 
 	/**
 	 * Construct a new {@code EdgeEndpoint} based on the Edge request environment and custom domain.
@@ -114,6 +115,7 @@ class EdgeEndpoint {
 		}
 
 		endpoint = endpointBuilder.toString();
+		host = type == EdgeEnvironmentType.INT ? EdgeConstants.NetworkKeys.REQUEST_DOMAIN_INT : edgeDomain;
 	}
 
 	/**
@@ -122,5 +124,15 @@ class EdgeEndpoint {
 	 */
 	String getEndpoint() {
 		return endpoint;
+	}
+
+	/**
+	 * Returns the host this endpoint was built for: the configured domain, the default domain, or the integration
+	 * domain for the {@code int} environment. Used to validate device attributes request URLs.
+	 *
+	 * @return the expected host of this endpoint
+	 */
+	String getHost() {
+		return host;
 	}
 }

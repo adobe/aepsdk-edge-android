@@ -15,7 +15,6 @@ import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import com.adobe.marketing.mobile.services.DeviceInforming;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.HttpMethod;
 import com.adobe.marketing.mobile.services.Log;
@@ -24,6 +23,8 @@ import com.adobe.marketing.mobile.services.Networking;
 import com.adobe.marketing.mobile.util.StreamUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 import com.adobe.marketing.mobile.util.UrlUtils;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,15 +38,12 @@ class DeviceAttributesNetworkService {
 	private static final String LOG_SOURCE = "DeviceAttributesNetworkService";
 
 	private final Networking networkService;
-	private final DeviceInforming deviceInfoService;
 
 	/**
 	 * @param networkService the platform {@link Networking} service
-	 * @param deviceInfoService used to tell an offline device apart from other connection failures
 	 */
-	DeviceAttributesNetworkService(final Networking networkService, final DeviceInforming deviceInfoService) {
+	DeviceAttributesNetworkService(final Networking networkService) {
 		this.networkService = networkService;
-		this.deviceInfoService = deviceInfoService;
 	}
 
 	/**
@@ -54,7 +52,7 @@ class DeviceAttributesNetworkService {
 	 * @param endpoint the {@link EdgeEndpoint} for the device attributes request type
 	 * @param datastreamId the datastream identifier
 	 * @param requestId the request identifier
-	 * @return the URL, or null if it is not a valid HTTPS URL
+	 * @return the URL, or null if it is not a valid HTTPS URL whose host matches the endpoint host
 	 */
 	@Nullable String buildUrl(
 		@NonNull final EdgeEndpoint endpoint,
@@ -72,12 +70,30 @@ class DeviceAttributesNetworkService {
 			"=" +
 			requestId;
 
-		if (!UrlUtils.isValidUrl(url) || !url.startsWith("https")) {
+		if (!UrlUtils.isValidUrl(url) || !url.startsWith("https") || !hasExpectedHost(url, endpoint.getHost())) {
 			Log.debug(LOG_TAG, LOG_SOURCE, "Device attributes request URL is invalid, '%s'.", url);
 			return null;
 		}
 
 		return url;
+	}
+
+	/**
+	 * {@link UrlUtils#isValidUrl} accepts hosts that cannot be reached (for example with spaces or invalid escapes) and
+	 * domains containing path characters (for example {@code a/b} parses with host {@code a}). Such requests would be
+	 * retried indefinitely, so the URL must parse as a URI whose host equals the host the endpoint was built for.
+	 *
+	 * @param url the request URL
+	 * @param expectedHost the host the endpoint was built for
+	 * @return true if the URL host is non-empty and equals {@code expectedHost}
+	 */
+	private static boolean hasExpectedHost(final String url, final String expectedHost) {
+		try {
+			final String host = new URI(url).getHost();
+			return !StringUtils.isNullOrEmpty(host) && host.equalsIgnoreCase(expectedHost);
+		} catch (final URISyntaxException e) {
+			return false;
+		}
 	}
 
 	/**
@@ -133,31 +149,17 @@ class DeviceAttributesNetworkService {
 	 */
 	@NonNull DeviceAttributesNetworkResult classify(@Nullable final HttpConnecting connection, final String url) {
 		if (connection == null) {
-			// Core returns a null connection when the device is offline, so offline is detected here and retried like a
-			// recoverable connection error. Any other null connection is unrecoverable. Socket timeouts return a connection
-			// with response code -1, which is in the recoverable set below and is retried.
-			if (
-				deviceInfoService != null &&
-				deviceInfoService.getNetworkConnectionStatus() == DeviceInforming.ConnectionStatus.DISCONNECTED
-			) {
-				final int retryInterval = EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS;
-				Log.debug(
-					LOG_TAG,
-					LOG_SOURCE,
-					"Device attributes request with url %s failed because the device is offline. Will retry in %d seconds.",
-					url,
-					retryInterval
-				);
-				return DeviceAttributesNetworkResult.retry(retryInterval);
-			}
-
-			Log.warning(
+			// Core returns a null connection when the device is offline or the connection could not be created. It is
+			// retried indefinitely, like the interact path. Invalid URLs are rejected earlier by buildUrl.
+			final int retryInterval = EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS;
+			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
-				"Device attributes request with url %s failed with unknown error, no connection was established.",
-				url
+				"Device attributes request with url %s returned null connection. Will retry in %d seconds.",
+				url,
+				retryInterval
 			);
-			return DeviceAttributesNetworkResult.failed(null);
+			return DeviceAttributesNetworkResult.retry(retryInterval);
 		}
 
 		final int responseCode = connection.getResponseCode();

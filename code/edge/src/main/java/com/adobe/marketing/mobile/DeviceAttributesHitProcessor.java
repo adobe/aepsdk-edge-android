@@ -78,7 +78,7 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 		final AdobeCallback<Event> dispatcher
 	) {
 		this.networkService = networkService;
-		this.responseHandler = new DeviceAttributesResponseHandler(namedCollection, stateCallback);
+		this.responseHandler = new DeviceAttributesResponseHandler(namedCollection);
 		this.requestBuilder = new DeviceAttributesRequestBuilder(namedCollection);
 		this.sharedStateCallback = sharedStateCallback;
 		this.stateCallback = stateCallback;

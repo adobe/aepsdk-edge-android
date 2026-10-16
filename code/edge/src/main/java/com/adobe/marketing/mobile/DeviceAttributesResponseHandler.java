@@ -16,8 +16,6 @@ import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 import androidx.annotation.Nullable;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
-import com.adobe.marketing.mobile.util.DataReader;
-import com.adobe.marketing.mobile.util.DataReaderException;
 import com.adobe.marketing.mobile.util.JSONUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
@@ -26,32 +24,28 @@ import java.util.Map;
 import org.json.JSONObject;
 
 /**
- * Applies the supported handles from a successful device attributes response:
- * {@code locationHint:result} (EdgeNetwork scope) and {@code state:store}. Other handle types are ignored and no
- * events are dispatched.
+ * Applies the {@code state:store} handles from a successful device attributes response. Other handle types,
+ * including {@code locationHint:result}, are ignored and no events are dispatched.
  */
 class DeviceAttributesResponseHandler {
 
 	private static final String LOG_SOURCE = "DeviceAttributesResponseHandler";
 
 	private final StoreResponsePayloadManager storeResponsePayloadManager;
-	private final EdgeStateCallback stateCallback;
 
 	/**
 	 * @param namedCollection data store holding the {@code state:store} payloads
-	 * @param stateCallback used to set the Edge Network location hint received in the response
 	 */
-	DeviceAttributesResponseHandler(final NamedCollection namedCollection, final EdgeStateCallback stateCallback) {
+	DeviceAttributesResponseHandler(final NamedCollection namedCollection) {
 		this.storeResponsePayloadManager = new StoreResponsePayloadManager(namedCollection);
-		this.stateCallback = stateCallback;
 	}
 
 	/**
 	 * Parses {@code responseBody} and applies the supported handles.
 	 *
 	 * @param responseBody plain JSON response body
-	 * @param applyStorePayloads false to ignore {@code state:store} handles (e.g. the identities were reset while
-	 *                           the request was in flight)
+	 * @param applyStorePayloads false to ignore {@code state:store} handles (the ECID changed while the request was in
+	 *                           flight)
 	 */
 	void handle(@Nullable final String responseBody, final boolean applyStorePayloads) {
 		if (StringUtils.isNullOrEmpty(responseBody)) {
@@ -89,55 +83,17 @@ class DeviceAttributesResponseHandler {
 				continue;
 			}
 
-			if (EdgeJson.Response.EventHandle.LocationHint.TYPE.equals(type)) {
-				handleLocationHint(payload);
-			} else if (EdgeJson.Response.EventHandle.Store.TYPE.equals(type)) {
+			if (EdgeJson.Response.EventHandle.Store.TYPE.equals(type)) {
 				if (applyStorePayloads) {
 					handleStorePayloads(payload);
 				} else {
-					Log.debug(LOG_TAG, LOG_SOURCE, "Identities were reset, ignoring state:store handle.");
+					Log.debug(
+						LOG_TAG,
+						LOG_SOURCE,
+						"ECID changed since the request was sent, ignoring state:store handle."
+					);
 				}
 			}
-		}
-	}
-
-	/**
-	 * Applies the first {@code EdgeNetwork} scoped location hint, mirroring {@link NetworkResponseHandler}.
-	 *
-	 * @param payload the {@code locationHint:result} handle payload
-	 */
-	private void handleLocationHint(final List<Map<String, Object>> payload) {
-		for (final Map<String, Object> locationHint : payload) {
-			final String scope = DataReader.optString(
-				locationHint,
-				EdgeJson.Response.EventHandle.LocationHint.SCOPE,
-				null
-			);
-
-			if (!DeviceAttributesConstants.EDGE_NETWORK_SCOPE.equals(scope)) {
-				continue;
-			}
-
-			try {
-				final String hint = DataReader.getString(locationHint, EdgeJson.Response.EventHandle.LocationHint.HINT);
-				final int ttlSeconds = DataReader.getInt(
-					locationHint,
-					EdgeJson.Response.EventHandle.LocationHint.TTL_SECONDS
-				);
-
-				if (!StringUtils.isNullOrEmpty(hint) && stateCallback != null) {
-					stateCallback.setLocationHint(hint, ttlSeconds);
-				}
-			} catch (final DataReaderException e) {
-				Log.warning(
-					LOG_TAG,
-					LOG_SOURCE,
-					"Failed to parse 'locationHint:result' for scope 'EdgeNetwork': %s",
-					e.getLocalizedMessage()
-				);
-			}
-
-			break;
 		}
 	}
 

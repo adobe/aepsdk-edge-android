@@ -17,7 +17,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.adobe.marketing.mobile.services.DeviceInforming;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.NetworkCallback;
 import com.adobe.marketing.mobile.services.NetworkRequest;
@@ -37,15 +36,12 @@ public class DeviceAttributesNetworkServiceTests {
 	private static final String URL = "https://edge.adobedc.net/ee/v1/mobile/device-attributes?configId=a&requestId=b";
 
 	private Networking mockNetworking;
-	private DeviceInforming mockDeviceInfoService;
 	private DeviceAttributesNetworkService networkService;
 
 	@Before
 	public void setUp() {
 		mockNetworking = mock(Networking.class);
-		mockDeviceInfoService = mock(DeviceInforming.class);
-		when(mockDeviceInfoService.getNetworkConnectionStatus()).thenReturn(DeviceInforming.ConnectionStatus.CONNECTED);
-		networkService = new DeviceAttributesNetworkService(mockNetworking, mockDeviceInfoService);
+		networkService = new DeviceAttributesNetworkService(mockNetworking);
 	}
 
 	@Test
@@ -65,16 +61,49 @@ public class DeviceAttributesNetworkServiceTests {
 	}
 
 	@Test
-	public void testBuildUrl_invalidDomain_returnsNull() {
-		final EdgeEndpoint endpoint = new EdgeEndpoint(
-			EdgeNetworkService.RequestType.DEVICE_ATTRIBUTES,
-			null,
-			"invalid:port",
-			null,
-			null
+	public void testBuildUrl_customDomain_buildsUrl() {
+		assertEquals(
+			"https://my.edge.com/ee/v1/mobile/device-attributes?configId=ds&requestId=req",
+			networkService.buildUrl(endpoint(null, "my.edge.com", null), "ds", "req")
 		);
+		assertEquals(
+			"https://my.edge.com/ee-pre-prd/or2/v1/mobile/device-attributes?configId=ds&requestId=req",
+			networkService.buildUrl(endpoint("pre-prod", "my.edge.com", "or2"), "ds", "req")
+		);
+	}
 
-		assertNull(networkService.buildUrl(endpoint, "ds", "req"));
+	@Test
+	public void testBuildUrl_intEnvironmentIgnoresCustomDomain_buildsUrl() {
+		assertEquals(
+			"https://edge-int.adobedc.net/ee/v1/mobile/device-attributes?configId=ds&requestId=req",
+			networkService.buildUrl(endpoint("int", "my.edge.com", null), "ds", "req")
+		);
+	}
+
+	@Test
+	public void testBuildUrl_emptyDomain_usesDefaultDomain() {
+		// EdgeEndpoint falls back to the default domain when the configured domain is empty
+		assertEquals(
+			"https://edge.adobedc.net/ee/v1/mobile/device-attributes?configId=ds&requestId=req",
+			networkService.buildUrl(endpoint(null, "", null), "ds", "req")
+		);
+	}
+
+	@Test
+	public void testBuildUrl_invalidDomain_returnsNull() {
+		for (final String domain : new String[] { "invalid:port", "invalid domain.com", "%zz", "a/b" }) {
+			assertNull("domain " + domain, networkService.buildUrl(endpoint(null, domain, null), "ds", "req"));
+		}
+	}
+
+	private static EdgeEndpoint endpoint(final String environment, final String domain, final String locationHint) {
+		return new EdgeEndpoint(
+			EdgeNetworkService.RequestType.DEVICE_ATTRIBUTES,
+			environment,
+			domain,
+			null,
+			locationHint
+		);
 	}
 
 	@Test
@@ -151,40 +180,12 @@ public class DeviceAttributesNetworkServiceTests {
 	}
 
 	@Test
-	public void testClassify_nullConnectionWhileOffline_retries() {
-		// Core returns a null connection when the device is offline
-		when(mockDeviceInfoService.getNetworkConnectionStatus())
-			.thenReturn(DeviceInforming.ConnectionStatus.DISCONNECTED);
-
+	public void testClassify_nullConnection_retries() {
+		// Core returns a null connection when the device is offline or the connection could not be created
 		final DeviceAttributesNetworkResult result = networkService.classify(null, URL);
 
 		assertEquals(DeviceAttributesNetworkResult.Type.RETRY, result.getType());
 		assertEquals(EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS, result.getRetryIntervalSeconds());
-		assertNull(result.getHttpStatus());
-	}
-
-	@Test
-	public void testClassify_nullConnectionWhileOnlineOrUnknown_failsWithoutHttpStatus() {
-		for (final DeviceInforming.ConnectionStatus status : new DeviceInforming.ConnectionStatus[] {
-			DeviceInforming.ConnectionStatus.CONNECTED,
-			DeviceInforming.ConnectionStatus.UNKNOWN,
-		}) {
-			when(mockDeviceInfoService.getNetworkConnectionStatus()).thenReturn(status);
-
-			final DeviceAttributesNetworkResult result = networkService.classify(null, URL);
-
-			assertEquals("status " + status, DeviceAttributesNetworkResult.Type.FAILED, result.getType());
-			assertNull(result.getHttpStatus());
-		}
-	}
-
-	@Test
-	public void testClassify_nullConnectionWithoutDeviceInfoService_failsWithoutHttpStatus() {
-		networkService = new DeviceAttributesNetworkService(mockNetworking, null);
-
-		final DeviceAttributesNetworkResult result = networkService.classify(null, URL);
-
-		assertEquals(DeviceAttributesNetworkResult.Type.FAILED, result.getType());
 		assertNull(result.getHttpStatus());
 	}
 

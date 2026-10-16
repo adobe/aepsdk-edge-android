@@ -13,12 +13,6 @@ package com.adobe.marketing.mobile;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.adobe.marketing.mobile.util.FakeNamedCollection;
 import org.junit.Before;
@@ -27,38 +21,25 @@ import org.junit.Test;
 public class DeviceAttributesResponseHandlerTests {
 
 	private FakeNamedCollection fakeNamedCollection;
-	private EdgeStateCallback mockStateCallback;
 	private DeviceAttributesResponseHandler handler;
 
 	@Before
 	public void setUp() {
 		fakeNamedCollection = new FakeNamedCollection();
-		mockStateCallback = mock(EdgeStateCallback.class);
-		handler = new DeviceAttributesResponseHandler(fakeNamedCollection, mockStateCallback);
+		handler = new DeviceAttributesResponseHandler(fakeNamedCollection);
 	}
 
 	@Test
-	public void testHandle_locationHint_appliesFirstEdgeNetworkScopeOnly() {
+	public void testHandle_locationHint_isIgnored() {
 		handler.handle(
 			"{\"handle\":[{\"type\":\"locationHint:result\",\"payload\":[" +
-			"{\"scope\":\"Target\",\"hint\":\"35\",\"ttlSeconds\":1800}," +
-			"{\"scope\":\"EdgeNetwork\",\"hint\":\"or2\",\"ttlSeconds\":1800}," +
-			"{\"scope\":\"EdgeNetwork\",\"hint\":\"va6\",\"ttlSeconds\":100}]}]}",
+			"{\"scope\":\"EdgeNetwork\",\"hint\":\"or2\",\"ttlSeconds\":1800}]}," +
+			"{\"type\":\"state:store\",\"payload\":[{\"key\":\"kndctr_org_cluster\",\"value\":\"or2\",\"maxAge\":1800}]}]}",
 			true
 		);
 
-		verify(mockStateCallback).setLocationHint("or2", 1800);
-		verifyNoMoreInteractions(mockStateCallback);
-	}
-
-	@Test
-	public void testHandle_locationHintMissingTtl_isNotApplied() {
-		handler.handle(
-			"{\"handle\":[{\"type\":\"locationHint:result\",\"payload\":[{\"scope\":\"EdgeNetwork\",\"hint\":\"or2\"}]}]}",
-			true
-		);
-
-		verify(mockStateCallback, never()).setLocationHint(anyString(), anyInt());
+		// only the state:store handle is applied
+		assertEquals(1, new StoreResponsePayloadManager(fakeNamedCollection).getActiveStores().size());
 	}
 
 	@Test
@@ -83,7 +64,6 @@ public class DeviceAttributesResponseHandlerTests {
 			true
 		);
 
-		verify(mockStateCallback, never()).setLocationHint(anyString(), anyInt());
 		assertNull(new StoreResponsePayloadManager(fakeNamedCollection).getActiveStores());
 	}
 
@@ -93,7 +73,6 @@ public class DeviceAttributesResponseHandlerTests {
 			handler.handle(body, true);
 		}
 
-		verify(mockStateCallback, never()).setLocationHint(anyString(), anyInt());
 		assertNull(new StoreResponsePayloadManager(fakeNamedCollection).getActiveStores());
 	}
 

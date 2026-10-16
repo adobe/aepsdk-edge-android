@@ -38,8 +38,6 @@ final class DeviceAttributesConstants {
 		new HashSet<>(Arrays.asList(200, 202))
 	);
 
-	static final String EDGE_NETWORK_SCOPE = "EdgeNetwork";
-
 	static final class EventDataKeys {
 
 		static final String STATUS = "status";

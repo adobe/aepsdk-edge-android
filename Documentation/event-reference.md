@@ -72,7 +72,7 @@ This internal request carries device attributes (for example, app details, push 
 
 Edge handles this event when Configuration and Identity shared states are available, using the same readiness condition as [Edge request content](#edge-request-content) and [Edge update consent](#edge-update-consent) events. The request is stored on a dedicated persistent queue that is not suspended or cleared by collect-consent changes. Processing of that queue starts after Edge has loaded its persisted state at boot.
 
-Edge dispatches exactly one [Edge device attributes response](#edge-device-attributes-response) for each request that reaches a terminal outcome. Recoverable network failures (the device is offline, the connection timed out, or HTTP 408, 429, 502, 503, 504 and 507) are retried, honouring an integer `Retry-After` header, and dispatch no response until a terminal outcome is reached.
+Edge dispatches exactly one [Edge device attributes response](#edge-device-attributes-response) for each request that reaches a terminal outcome. Recoverable network failures (no connection could be made, for example because the device is offline, the connection timed out, or HTTP 408, 429, 502, 503, 504 and 507) are retried, honouring an integer `Retry-After` header, and dispatch no response until a terminal outcome is reached.
 
 Before each send attempt, Edge compares the ECID in the identity map captured when the request was queued with the ECID in the latest Edge Identity shared state (the first `ECID` entry; a legacy ECID listed after it is not compared). If the ECIDs differ, the request is not sent and a `dropped` response with reason `identityChanged` is dispatched. If the latest Edge Identity shared state is unavailable, the request is retried later without dispatching a response. These checks also apply to requests that were waiting to be retried or were restored after an app restart.
 
@@ -324,7 +324,7 @@ This event is a response to an [Edge request content](#edge-request-content) eve
 
 This event is the terminal result of an [Edge device attributes request content](#edge-device-attributes-request-content) event. It is chained to the request event, so its parent ID is the request event's ID. Its response ID is not set.
 
-A success response (HTTP 200 or 202) body is used only to update the Edge Network location hint (`locationHint:result` with scope `EdgeNetwork`) and to persist `state:store` values. Other handle types are ignored and no Edge response, error or content-complete events are dispatched. `state:store` values are saved only if the ECID in the latest Edge Identity shared state still matches the ECID the request was sent with; otherwise they are ignored, while the location hint is still applied and the response event is dispatched as usual.
+A success response (HTTP 200 or 202) body is used only to persist `state:store` values. Other handle types, including `locationHint:result`, are ignored and no Edge response, error or content-complete events are dispatched. `state:store` values are saved only if the ECID in the latest Edge Identity shared state still matches the ECID the request was sent with; otherwise they are ignored, and the response event is dispatched as usual.
 
 #### Event details<!-- omit in toc -->
 
@@ -344,8 +344,8 @@ A success response (HTTP 200 or 202) body is used only to update the Edge Networ
 | status | reason | When |
 | ------ | ------ | ---- |
 | `success` | | Edge Network returned HTTP 200 or 202. |
-| `failed` | `network` | Edge Network returned a non-recoverable HTTP status, including 204, 207, 400, 403 and 500, and `httpStatus` is set. Also sent without `httpStatus` when no connection could be created while the device is not offline. |
+| `failed` | `network` | Edge Network returned a non-recoverable HTTP status, including 204, 207, 400, 403 and 500, and `httpStatus` is set. |
 | `failed` | `queueUnavailable` | The dedicated queue could not be created or the request could not be queued. |
 | `dropped` | `missingConfig` | The Edge configuration ID (datastream) is missing. |
-| `dropped` | `invalidPayload` | The request has no data, Identity is unavailable, the request body cannot be built, or a stored request cannot be decoded. |
+| `dropped` | `invalidPayload` | The request has no data, Identity is unavailable, the request body or URL cannot be built, or a stored request cannot be decoded. |
 | `dropped` | `identityChanged` | The ECID in the latest Edge Identity shared state differs from the ECID captured when the request was queued. The request is not sent. |

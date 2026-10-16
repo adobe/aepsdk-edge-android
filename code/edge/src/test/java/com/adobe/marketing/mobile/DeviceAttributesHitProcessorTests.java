@@ -24,12 +24,10 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.adobe.marketing.mobile.services.DataEntity;
-import com.adobe.marketing.mobile.services.DeviceInforming;
 import com.adobe.marketing.mobile.services.HttpConnecting;
 import com.adobe.marketing.mobile.services.NetworkCallback;
 import com.adobe.marketing.mobile.services.NetworkRequest;
@@ -61,7 +59,6 @@ public class DeviceAttributesHitProcessorTests {
 		"]}";
 
 	private Networking mockNetworking;
-	private DeviceInforming mockDeviceInfoService;
 	private EdgeStateCallback mockStateCallback;
 	private EdgeSharedStateCallback mockSharedStateCallback;
 	private FakeNamedCollection fakeNamedCollection;
@@ -76,8 +73,6 @@ public class DeviceAttributesHitProcessorTests {
 	@Before
 	public void setUp() {
 		mockNetworking = mock(Networking.class);
-		mockDeviceInfoService = mock(DeviceInforming.class);
-		when(mockDeviceInfoService.getNetworkConnectionStatus()).thenReturn(DeviceInforming.ConnectionStatus.CONNECTED);
 		mockStateCallback = mock(EdgeStateCallback.class);
 		mockSharedStateCallback = mock(EdgeSharedStateCallback.class);
 		fakeNamedCollection = new FakeNamedCollection();
@@ -95,7 +90,7 @@ public class DeviceAttributesHitProcessorTests {
 
 		hitProcessor =
 			new DeviceAttributesHitProcessor(
-				new DeviceAttributesNetworkService(mockNetworking, mockDeviceInfoService),
+				new DeviceAttributesNetworkService(mockNetworking),
 				mockSharedStateCallback,
 				mockStateCallback,
 				fakeNamedCollection,
@@ -205,10 +200,8 @@ public class DeviceAttributesHitProcessorTests {
 	}
 
 	@Test
-	public void testProcessHit_nullConnectionWhileOffline_retriesWithoutResponseEvent() {
-		// Core returns a null connection when the device is offline
-		when(mockDeviceInfoService.getNetworkConnectionStatus())
-			.thenReturn(DeviceInforming.ConnectionStatus.DISCONNECTED);
+	public void testProcessHit_nullConnection_retriesWithoutResponseEvent() {
+		// Core returns a null connection when the device is offline or the connection could not be created
 		mockNullConnection();
 
 		processHit(entity);
@@ -216,20 +209,6 @@ public class DeviceAttributesHitProcessorTests {
 		assertTrue(dispatchedEvents.isEmpty());
 		assertEquals(Arrays.asList(false), processingResults);
 		assertEquals(EdgeConstants.Defaults.RETRY_INTERVAL_SECONDS, hitProcessor.retryInterval(entity));
-	}
-
-	@Test
-	public void testProcessHit_nullConnectionWhileOnline_dispatchesFailedWithoutHttpStatus() {
-		mockNullConnection();
-
-		processHit(entity);
-
-		assertEquals(Arrays.asList(true), processingResults);
-		assertEquals(1, dispatchedEvents.size());
-		final Map<String, Object> data = dispatchedEvents.get(0).getEventData();
-		assertEquals(DeviceAttributesConstants.Status.FAILED, data.get("status"));
-		assertEquals(DeviceAttributesConstants.Reason.NETWORK, data.get("reason"));
-		assertFalse(data.containsKey("httpStatus"));
 	}
 
 	private void mockNullConnection() {
@@ -313,6 +292,26 @@ public class DeviceAttributesHitProcessorTests {
 	}
 
 	@Test
+	public void testProcessHit_invalidDomain_dispatchesDroppedInvalidPayloadWithoutRequest() {
+		for (final String domain : new String[] { "invalid:port", "invalid domain.com", "a/b" }) {
+			setUp();
+			final Map<String, Object> config = defaultConfig();
+			config.put(EdgeConstants.SharedState.Configuration.EDGE_DOMAIN, domain);
+			respondWith(200, "{}", null);
+
+			processHit(buildEntity(requestEvent, config));
+
+			verify(mockNetworking, never()).connectAsync(any(), any());
+			assertResult(
+				DeviceAttributesConstants.Status.DROPPED,
+				DeviceAttributesConstants.Reason.INVALID_PAYLOAD,
+				null
+			);
+			assertEquals("domain " + domain, Arrays.asList(true), processingResults);
+		}
+	}
+
+	@Test
 	public void testProcessHit_sendsAssuranceHeaderWhenAvailable() {
 		when(mockSharedStateCallback.getSharedState(eq(EdgeConstants.SharedState.ASSURANCE), isNull()))
 			.thenReturn(
@@ -334,12 +333,13 @@ public class DeviceAttributesHitProcessorTests {
 	// Response handles
 
 	@Test
-	public void testProcessHit_success_appliesLocationHintAndStoreHandlesOnly() {
+	public void testProcessHit_success_appliesStoreHandlesOnly() {
 		respondWith(200, SUCCESS_BODY_WITH_HANDLES, null);
 
 		processHit(entity);
 
-		verify(mockStateCallback, times(1)).setLocationHint("or2", 1800);
+		// the locationHint:result handle in the response is ignored
+		verify(mockStateCallback, never()).setLocationHint(anyString(), anyInt());
 		assertNotNull(new StoreResponsePayloadManager(fakeNamedCollection).getActiveStores());
 		assertEquals(1, new StoreResponsePayloadManager(fakeNamedCollection).getActiveStores().size());
 		// only the response event, no Edge response or content complete events
@@ -476,7 +476,7 @@ public class DeviceAttributesHitProcessorTests {
 
 		processHit(entity);
 
-		verify(mockStateCallback, times(1)).setLocationHint("or2", 1800);
+		verify(mockStateCallback, never()).setLocationHint(anyString(), anyInt());
 		assertNull(new StoreResponsePayloadManager(fakeNamedCollection).getActiveStores());
 		assertResult(DeviceAttributesConstants.Status.SUCCESS, null, 200);
 	}
