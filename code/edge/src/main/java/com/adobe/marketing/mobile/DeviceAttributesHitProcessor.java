@@ -99,8 +99,8 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 
 		try {
 			processHit(attempt);
-		} catch (final Exception e) {
-			attempt.fail(e);
+		} catch (final Throwable t) {
+			attempt.fail(t);
 		}
 	}
 
@@ -228,8 +228,8 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 			result -> {
 				try {
 					handle(result, attempt, event, queuedEcid);
-				} catch (final Exception e) {
-					attempt.fail(e);
+				} catch (final Throwable t) {
+					attempt.fail(t);
 				}
 			}
 		);
@@ -274,8 +274,8 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 
 	/**
 	 * Tracks one processing attempt of a hit so that it is completed exactly once and at most one response event is
-	 * dispatched for it, including when an unexpected exception is thrown while processing the hit or while handling
-	 * the network result.
+	 * dispatched for it, including when an unexpected exception or error is thrown while processing the hit or while
+	 * handling the network result.
 	 */
 	private final class HitAttempt {
 
@@ -312,16 +312,16 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 		}
 
 		/**
-		 * Handles an unexpected exception: dispatches a {@code dropped} / {@code invalidPayload} response unless one
-		 * was already dispatched, and removes the hit so the queue keeps moving.
+		 * Handles an unexpected exception or error: dispatches a {@code dropped} / {@code invalidPayload} response unless
+		 * one was already dispatched, and removes the hit so the queue keeps moving.
 		 */
-		void fail(final Exception e) {
+		void fail(final Throwable error) {
 			Log.error(
 				LOG_TAG,
 				LOG_SOURCE,
 				"Unexpected error processing device attributes hit '%s', dropping: %s",
 				entity.getUniqueIdentifier(),
-				e.getLocalizedMessage()
+				error.getLocalizedMessage()
 			);
 
 			if (completed.get()) {
@@ -339,7 +339,7 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 						)
 						: DeviceAttributesEvents.createDroppedResponse(entity.getUniqueIdentifier())
 				);
-			} catch (final Exception dispatchError) {
+			} catch (final Throwable dispatchError) {
 				Log.error(
 					LOG_TAG,
 					LOG_SOURCE,

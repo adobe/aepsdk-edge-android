@@ -129,15 +129,56 @@ class DeviceAttributesNetworkService {
 		networkService.connectAsync(
 			networkRequest,
 			connection -> {
-				final DeviceAttributesNetworkResult result = classify(connection, url);
+				DeviceAttributesNetworkResult result;
 
-				if (connection != null) {
-					connection.close();
+				try {
+					result = classify(connection, url);
+				} catch (final Throwable t) {
+					// A deterministic error would recur on every attempt, so fail instead of retrying.
+					Log.error(
+						LOG_TAG,
+						LOG_SOURCE,
+						"Unexpected error classifying device attributes response for url %s: %s",
+						url,
+						t.getLocalizedMessage()
+					);
+					result = DeviceAttributesNetworkResult.failed(getResponseCodeIfAvailable(connection));
+				} finally {
+					close(connection);
 				}
 
 				callback.call(result);
 			}
 		);
+	}
+
+	/**
+	 * @param connection the network connection, or null
+	 * @return the HTTP status code if it can be read and is positive, otherwise null
+	 */
+	@Nullable private static Integer getResponseCodeIfAvailable(@Nullable final HttpConnecting connection) {
+		if (connection == null) {
+			return null;
+		}
+
+		try {
+			final int responseCode = connection.getResponseCode();
+			return responseCode > 0 ? responseCode : null;
+		} catch (final Throwable t) {
+			return null;
+		}
+	}
+
+	private static void close(@Nullable final HttpConnecting connection) {
+		if (connection == null) {
+			return;
+		}
+
+		try {
+			connection.close();
+		} catch (final Throwable t) {
+			Log.debug(LOG_TAG, LOG_SOURCE, "Failed to close device attributes connection: %s", t.getLocalizedMessage());
+		}
 	}
 
 	/**

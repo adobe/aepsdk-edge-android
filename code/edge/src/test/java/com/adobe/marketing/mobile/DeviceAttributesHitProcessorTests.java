@@ -557,6 +557,29 @@ public class DeviceAttributesHitProcessorTests {
 	}
 
 	@Test
+	public void testProcessHit_collaboratorThrowsError_dispatchesDroppedInvalidPayloadAndQueueContinues() {
+		when(mockStateCallback.getLocationHint()).thenThrow(new StackOverflowError());
+
+		processHit(entity);
+
+		verify(mockNetworking, never()).connectAsync(any(), any());
+		assertResult(DeviceAttributesConstants.Status.DROPPED, DeviceAttributesConstants.Reason.INVALID_PAYLOAD, null);
+		assertEquals(Arrays.asList(true), processingResults);
+
+		doReturn(null).when(mockStateCallback).getLocationHint();
+		respondWith(200, "{}", null);
+		dispatchedEvents.clear();
+		processingResults.clear();
+		requestEvent = buildRequestEvent(defaultEventData());
+
+		processHit(buildEntity(requestEvent, defaultConfig()));
+
+		assertEquals(1, sentRequests.size());
+		assertResult(DeviceAttributesConstants.Status.SUCCESS, null, 200);
+		assertEquals(Arrays.asList(true), processingResults);
+	}
+
+	@Test
 	public void testProcessHit_throwsBeforeDecode_dispatchesUnchainedDrop() {
 		try (MockedStatic<EdgeDataEntity> mockedEntity = mockStatic(EdgeDataEntity.class)) {
 			mockedEntity.when(() -> EdgeDataEntity.fromDataEntity(any())).thenThrow(new RuntimeException("boom"));

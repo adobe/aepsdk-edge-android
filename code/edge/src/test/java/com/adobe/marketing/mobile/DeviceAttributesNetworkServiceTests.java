@@ -13,6 +13,8 @@ package com.adobe.marketing.mobile;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -136,6 +138,55 @@ public class DeviceAttributesNetworkServiceTests {
 		assertEquals(1, results.size());
 		assertEquals(DeviceAttributesNetworkResult.Type.SUCCESS, results.get(0).getType());
 		verify(connection).close();
+	}
+
+	@Test
+	public void testSend_classifyThrows_callsBackOnceWithFailureAndCloses() {
+		final HttpConnecting connection = mock(HttpConnecting.class);
+		when(connection.getResponseCode()).thenThrow(new RuntimeException("boom"));
+
+		final List<DeviceAttributesNetworkResult> results = sendAndRespond(connection);
+
+		assertEquals(1, results.size());
+		assertEquals(DeviceAttributesNetworkResult.Type.FAILED, results.get(0).getType());
+		assertNull(results.get(0).getHttpStatus());
+		verify(connection).close();
+	}
+
+	@Test
+	public void testSend_classifyThrowsAfterReadingCode_keepsHttpStatus() {
+		final HttpConnecting connection = connection(503, null);
+		when(connection.getResponsePropertyValue(EdgeConstants.NetworkKeys.HEADER_KEY_RETRY_AFTER))
+			.thenThrow(new RuntimeException("boom"));
+
+		final List<DeviceAttributesNetworkResult> results = sendAndRespond(connection);
+
+		assertEquals(1, results.size());
+		assertEquals(DeviceAttributesNetworkResult.Type.FAILED, results.get(0).getType());
+		assertEquals(Integer.valueOf(503), results.get(0).getHttpStatus());
+		verify(connection).close();
+	}
+
+	@Test
+	public void testSend_closeThrows_callsBackOnceWithClassifiedResult() {
+		final HttpConnecting connection = connection(200, "{}");
+		doThrow(new RuntimeException("boom")).when(connection).close();
+
+		final List<DeviceAttributesNetworkResult> results = sendAndRespond(connection);
+
+		assertEquals(1, results.size());
+		assertEquals(DeviceAttributesNetworkResult.Type.SUCCESS, results.get(0).getType());
+		assertEquals(Integer.valueOf(200), results.get(0).getHttpStatus());
+	}
+
+	private List<DeviceAttributesNetworkResult> sendAndRespond(final HttpConnecting connection) {
+		final List<DeviceAttributesNetworkResult> results = new ArrayList<>();
+		networkService.send(URL, "{}", null, results::add);
+
+		final ArgumentCaptor<NetworkCallback> callbackCaptor = ArgumentCaptor.forClass(NetworkCallback.class);
+		verify(mockNetworking).connectAsync(any(NetworkRequest.class), callbackCaptor.capture());
+		callbackCaptor.getValue().call(connection);
+		return results;
 	}
 
 	@Test
