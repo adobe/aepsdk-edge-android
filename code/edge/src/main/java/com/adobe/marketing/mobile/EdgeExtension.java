@@ -14,11 +14,14 @@ package com.adobe.marketing.mobile;
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
+import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.DataQueue;
 import com.adobe.marketing.mobile.services.HitQueuing;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
+import com.adobe.marketing.mobile.services.PersistentHitQueue;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.DataReaderException;
@@ -42,6 +45,8 @@ class EdgeExtension extends Extension {
 	private NetworkResponseHandler networkResponseHandler;
 	private NamedCollection dataStore;
 	private final HitQueuing hitQueue;
+	// Device attributes queue, independent of the primary queue and of collect consent; null if it could not be created
+	private final HitQueuing deviceAttributesHitQueue;
 
 	/*
 	 * An {@code EdgeSharedStateCallback} to create and retrieve shared states.
@@ -102,7 +107,40 @@ class EdgeExtension extends Extension {
 			this.hitQueue = hitQueue;
 		}
 
-		state = new EdgeState(this.hitQueue, new EdgeProperties(getNamedCollection()), sharedStateCallback);
+		this.deviceAttributesHitQueue = setupDeviceAttributesHitQueue();
+		state =
+			new EdgeState(
+				this.hitQueue,
+				this.deviceAttributesHitQueue,
+				new EdgeProperties(getNamedCollection()),
+				sharedStateCallback
+			);
+	}
+
+	/**
+	 * Constructor intended to be used for testing purposes only.
+	 *
+	 * @param extensionApi the {@link ExtensionApi} instance for this extension
+	 * @param hitQueue the {@link HitQueuing} instance for queuing experience, consent and reset events
+	 * @param deviceAttributesHitQueue the {@link HitQueuing} instance for queuing device attributes events;
+	 *                              null simulates a queue that could not be created
+	 */
+	@VisibleForTesting
+	EdgeExtension(
+		final ExtensionApi extensionApi,
+		final HitQueuing hitQueue,
+		final HitQueuing deviceAttributesHitQueue
+	) {
+		super(extensionApi);
+		this.hitQueue = hitQueue;
+		this.deviceAttributesHitQueue = deviceAttributesHitQueue;
+		state =
+			new EdgeState(
+				this.hitQueue,
+				this.deviceAttributesHitQueue,
+				new EdgeProperties(getNamedCollection()),
+				sharedStateCallback
+			);
 	}
 
 	@NonNull @Override
@@ -131,6 +169,7 @@ class EdgeExtension extends Extension {
 	 *     <li> EventType {@link EventType#EDGE_IDENTITY} and EventSource {@link EventSource#RESET_COMPLETE}</li>
 	 *     <li> EventType {@link EventType#EDGE} and EventSource {@link EventSource#REQUEST_IDENTITY}</li>
 	 *     <li> EventType {@link EventType#EDGE} and EventSource {@link EventSource#UPDATE_IDENTITY}</li>
+	 *     <li> EventType {@code com.adobe.eventType.edgeBypassConsent} and EventSource {@link EventSource#REQUEST_CONTENT}</li>
 	 * </ul>
 	 * </p>
 	 */
@@ -160,12 +199,24 @@ class EdgeExtension extends Extension {
 
 		// register listener for edge update location hint
 		getApi().registerEventListener(EventType.EDGE, EventSource.UPDATE_IDENTITY, this::handleSetLocationHint);
+
+		// register listener for device attributes (consent-independent) requests
+		getApi()
+			.registerEventListener(
+				DeviceAttributesConstants.EVENT_TYPE,
+				EventSource.REQUEST_CONTENT,
+				this::handleDeviceAttributesRequest
+			);
 	}
 
 	@Override
 	protected void onUnregistered() {
 		super.onUnregistered();
 		hitQueue.close();
+
+		if (deviceAttributesHitQueue != null) {
+			deviceAttributesHitQueue.close();
+		}
 	}
 
 	@Override
@@ -174,7 +225,11 @@ class EdgeExtension extends Extension {
 			return false;
 		}
 
-		if (EventUtils.isExperienceEvent(event) || EventUtils.isUpdateConsentEvent(event)) {
+		if (
+			EventUtils.isExperienceEvent(event) ||
+			EventUtils.isUpdateConsentEvent(event) ||
+			DeviceAttributesEvents.isDeviceAttributesRequestEvent(event)
+		) {
 			return getConfigurationState(event) != null && getIdentityXDMState(event) != null;
 		} else if (EventUtils.isResetComplete(event)) {
 			// use barrier to wait for EdgeIdentity to handle the reset
@@ -379,6 +434,206 @@ class EdgeExtension extends Extension {
 
 		EdgeDataEntity entity = new EdgeDataEntity(event, edgeConfig, identityReady);
 		hitQueue.queue(entity.toDataEntity());
+	}
+
+	/**
+	 * Handles device attributes (consent-independent) request events. They are queued on the dedicated device
+	 * attributes queue, which is not subject to collect consent, and always result in exactly one device attributes
+	 * response event.
+	 *
+	 * @param event the device attributes request event
+	 */
+	void handleDeviceAttributesRequest(@NonNull final Event event) {
+		Event response;
+
+		try {
+			response = queueDeviceAttributesRequest(event);
+		} catch (final Exception e) {
+			Log.error(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Unexpected error handling device attributes event (%s), dropping: %s",
+				event.getUniqueIdentifier(),
+				e.getLocalizedMessage()
+			);
+			response =
+				DeviceAttributesEvents.createResponse(
+					event,
+					DeviceAttributesConstants.Status.DROPPED,
+					DeviceAttributesConstants.Reason.INVALID_PAYLOAD,
+					null
+				);
+		}
+
+		if (response != null) {
+			getApi().dispatch(response);
+		}
+	}
+
+	/**
+	 * Validates and queues a device attributes request.
+	 *
+	 * @param event the device attributes request event
+	 * @return the terminal response to dispatch, or null if the request was queued
+	 */
+	@Nullable private Event queueDeviceAttributesRequest(@NonNull final Event event) {
+		if (deviceAttributesHitQueue == null) {
+			Log.error(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Device attributes queue is unavailable, dropping event (%s).",
+				event.getUniqueIdentifier()
+			);
+			return DeviceAttributesEvents.createResponse(
+				event,
+				DeviceAttributesConstants.Status.FAILED,
+				DeviceAttributesConstants.Reason.QUEUE_UNAVAILABLE,
+				null
+			);
+		}
+
+		if (MapUtils.isNullOrEmpty(event.getEventData())) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Device attributes event (%s) contains no data, dropping.",
+				event.getUniqueIdentifier()
+			);
+			return DeviceAttributesEvents.createResponse(
+				event,
+				DeviceAttributesConstants.Status.DROPPED,
+				DeviceAttributesConstants.Reason.INVALID_PAYLOAD,
+				null
+			);
+		}
+
+		// Configuration shared state should be resolved based on the readyForEvent check
+		final Map<String, Object> configState = getConfigurationState(event);
+		final Map<String, Object> edgeConfig = configState != null
+			? EventUtils.getEdgeConfiguration(configState)
+			: new HashMap<>();
+
+		if (
+			StringUtils.isNullOrEmpty(
+				DataReader.optString(edgeConfig, EdgeConstants.SharedState.Configuration.EDGE_CONFIG_ID, null)
+			)
+		) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Unable to process device attributes event (%s), configuration 'edge.configId' is missing or empty.",
+				event.getUniqueIdentifier()
+			);
+			return DeviceAttributesEvents.createResponse(
+				event,
+				DeviceAttributesConstants.Status.DROPPED,
+				DeviceAttributesConstants.Reason.MISSING_CONFIG,
+				null
+			);
+		}
+
+		// Identity shared state should be resolved based on the readyForEvent check
+		final Map<String, Object> identityState = getIdentityXDMState(event);
+
+		if (identityState == null) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Unable to process device attributes event (%s), Identity shared state is null.",
+				event.getUniqueIdentifier()
+			);
+			return DeviceAttributesEvents.createResponse(
+				event,
+				DeviceAttributesConstants.Status.DROPPED,
+				DeviceAttributesConstants.Reason.INVALID_PAYLOAD,
+				null
+			);
+		}
+
+		final DataEntity entity = new EdgeDataEntity(event, edgeConfig, identityState).toDataEntity();
+
+		if (entity == null) {
+			Log.warning(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Failed to encode device attributes event (%s), dropping.",
+				event.getUniqueIdentifier()
+			);
+			return DeviceAttributesEvents.createResponse(
+				event,
+				DeviceAttributesConstants.Status.DROPPED,
+				DeviceAttributesConstants.Reason.INVALID_PAYLOAD,
+				null
+			);
+		}
+
+		if (!deviceAttributesHitQueue.queue(entity)) {
+			Log.error(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Failed to persist device attributes event (%s).",
+				event.getUniqueIdentifier()
+			);
+			return DeviceAttributesEvents.createResponse(
+				event,
+				DeviceAttributesConstants.Status.FAILED,
+				DeviceAttributesConstants.Reason.QUEUE_UNAVAILABLE,
+				null
+			);
+		}
+
+		Log.debug(LOG_TAG, LOG_SOURCE, "Queued device attributes event (%s).", event.getUniqueIdentifier());
+		return null;
+	}
+
+	/**
+	 * Sets up the {@link PersistentHitQueue} for device attributes hits. It is independent of the primary queue and
+	 * of collect consent, and starts processing once {@link EdgeState} completes bootup.
+	 *
+	 * @return the device attributes queue, or null if its {@link DataQueue} could not be created
+	 */
+	private HitQueuing setupDeviceAttributesHitQueue() {
+		final DataQueue dataQueue = ServiceProvider
+			.getInstance()
+			.getDataQueueService()
+			.getDataQueue(getName() + DeviceAttributesConstants.DATA_QUEUE_SUFFIX);
+
+		if (dataQueue == null) {
+			Log.error(LOG_TAG, LOG_SOURCE, "Failed to create the device attributes DataQueue.");
+			return null;
+		}
+
+		final DeviceAttributesHitProcessor hitProcessor = new DeviceAttributesHitProcessor(
+			new DeviceAttributesNetworkService(ServiceProvider.getInstance().getNetworkService()),
+			sharedStateCallback,
+			new EdgeExtensionStateCallback(),
+			getNamedCollection(),
+			this::getLatestIdentityMap,
+			responseEvent -> getApi().dispatch(responseEvent)
+		);
+		return new PersistentHitQueue(dataQueue, hitProcessor);
+	}
+
+	/**
+	 * Reads the identity map from the latest Identity XDM shared state, used by the device attributes ECID check.
+	 *
+	 * @return the latest identity map (empty if the state has none), or null if the state is not set
+	 */
+	private Map<String, Object> getLatestIdentityMap() {
+		final SharedStateResult sharedStateResult = getApi()
+			.getXDMSharedState(EdgeConstants.SharedState.IDENTITY, null, false, SharedStateResolution.ANY);
+
+		if (sharedStateResult == null || sharedStateResult.getStatus() != SharedStateStatus.SET) {
+			return null;
+		}
+
+		final Map<String, Object> identityMap = DataReader.optTypedMap(
+			Object.class,
+			sharedStateResult.getValue(),
+			EdgeConstants.EventDataKeys.IDENTITY_MAP,
+			null
+		);
+		return identityMap != null ? identityMap : new HashMap<>();
 	}
 
 	/**

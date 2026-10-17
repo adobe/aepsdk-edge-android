@@ -114,7 +114,7 @@ public class EdgeExtensionTest {
 		final ArgumentCaptor<ExtensionEventListener> listenerCaptor = ArgumentCaptor.forClass(
 			ExtensionEventListener.class
 		);
-		verify(mockExtensionApi, times(6))
+		verify(mockExtensionApi, times(7))
 			.registerEventListener(eventTypeCaptor.capture(), eventSourceCaptor.capture(), listenerCaptor.capture());
 		assertEquals(EventType.EDGE, eventTypeCaptor.getAllValues().get(0));
 		assertEquals(EventSource.REQUEST_CONTENT, eventSourceCaptor.getAllValues().get(0));
@@ -128,7 +128,9 @@ public class EdgeExtensionTest {
 		assertEquals(EventSource.REQUEST_IDENTITY, eventSourceCaptor.getAllValues().get(4));
 		assertEquals(EventType.EDGE, eventTypeCaptor.getAllValues().get(5));
 		assertEquals(EventSource.UPDATE_IDENTITY, eventSourceCaptor.getAllValues().get(5));
-		assertEquals(6, listenerCaptor.getAllValues().size());
+		assertEquals(DeviceAttributesConstants.EVENT_TYPE, eventTypeCaptor.getAllValues().get(6));
+		assertEquals(EventSource.REQUEST_CONTENT, eventSourceCaptor.getAllValues().get(6));
+		assertEquals(7, listenerCaptor.getAllValues().size());
 	}
 
 	@Test
