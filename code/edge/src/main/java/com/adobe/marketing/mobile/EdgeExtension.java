@@ -14,6 +14,7 @@ package com.adobe.marketing.mobile;
 import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import com.adobe.marketing.mobile.services.DataEntity;
 import com.adobe.marketing.mobile.services.DataQueue;
@@ -443,6 +444,39 @@ class EdgeExtension extends Extension {
 	 * @param event the device attributes request event
 	 */
 	void handleDeviceAttributesRequest(@NonNull final Event event) {
+		Event response;
+
+		try {
+			response = queueDeviceAttributesRequest(event);
+		} catch (final Exception e) {
+			Log.error(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Unexpected error handling device attributes event (%s), dropping: %s",
+				event.getUniqueIdentifier(),
+				e.getLocalizedMessage()
+			);
+			response =
+				DeviceAttributesEvents.createResponse(
+					event,
+					DeviceAttributesConstants.Status.DROPPED,
+					DeviceAttributesConstants.Reason.INVALID_PAYLOAD,
+					null
+				);
+		}
+
+		if (response != null) {
+			getApi().dispatch(response);
+		}
+	}
+
+	/**
+	 * Validates and queues a device attributes request.
+	 *
+	 * @param event the device attributes request event
+	 * @return the terminal response to dispatch, or null if the request was queued
+	 */
+	@Nullable private Event queueDeviceAttributesRequest(@NonNull final Event event) {
 		if (deviceAttributesHitQueue == null) {
 			Log.error(
 				LOG_TAG,
@@ -450,12 +484,12 @@ class EdgeExtension extends Extension {
 				"Device attributes queue is unavailable, dropping event (%s).",
 				event.getUniqueIdentifier()
 			);
-			dispatchDeviceAttributesResponse(
+			return DeviceAttributesEvents.createResponse(
 				event,
 				DeviceAttributesConstants.Status.FAILED,
-				DeviceAttributesConstants.Reason.QUEUE_UNAVAILABLE
+				DeviceAttributesConstants.Reason.QUEUE_UNAVAILABLE,
+				null
 			);
-			return;
 		}
 
 		if (MapUtils.isNullOrEmpty(event.getEventData())) {
@@ -465,12 +499,12 @@ class EdgeExtension extends Extension {
 				"Device attributes event (%s) contains no data, dropping.",
 				event.getUniqueIdentifier()
 			);
-			dispatchDeviceAttributesResponse(
+			return DeviceAttributesEvents.createResponse(
 				event,
 				DeviceAttributesConstants.Status.DROPPED,
-				DeviceAttributesConstants.Reason.INVALID_PAYLOAD
+				DeviceAttributesConstants.Reason.INVALID_PAYLOAD,
+				null
 			);
-			return;
 		}
 
 		// Configuration shared state should be resolved based on the readyForEvent check
@@ -490,12 +524,12 @@ class EdgeExtension extends Extension {
 				"Unable to process device attributes event (%s), configuration 'edge.configId' is missing or empty.",
 				event.getUniqueIdentifier()
 			);
-			dispatchDeviceAttributesResponse(
+			return DeviceAttributesEvents.createResponse(
 				event,
 				DeviceAttributesConstants.Status.DROPPED,
-				DeviceAttributesConstants.Reason.MISSING_CONFIG
+				DeviceAttributesConstants.Reason.MISSING_CONFIG,
+				null
 			);
-			return;
 		}
 
 		// Identity shared state should be resolved based on the readyForEvent check
@@ -508,12 +542,12 @@ class EdgeExtension extends Extension {
 				"Unable to process device attributes event (%s), Identity shared state is null.",
 				event.getUniqueIdentifier()
 			);
-			dispatchDeviceAttributesResponse(
+			return DeviceAttributesEvents.createResponse(
 				event,
 				DeviceAttributesConstants.Status.DROPPED,
-				DeviceAttributesConstants.Reason.INVALID_PAYLOAD
+				DeviceAttributesConstants.Reason.INVALID_PAYLOAD,
+				null
 			);
-			return;
 		}
 
 		final DataEntity entity = new EdgeDataEntity(event, edgeConfig, identityState).toDataEntity();
@@ -525,12 +559,12 @@ class EdgeExtension extends Extension {
 				"Failed to encode device attributes event (%s), dropping.",
 				event.getUniqueIdentifier()
 			);
-			dispatchDeviceAttributesResponse(
+			return DeviceAttributesEvents.createResponse(
 				event,
 				DeviceAttributesConstants.Status.DROPPED,
-				DeviceAttributesConstants.Reason.INVALID_PAYLOAD
+				DeviceAttributesConstants.Reason.INVALID_PAYLOAD,
+				null
 			);
-			return;
 		}
 
 		if (!deviceAttributesHitQueue.queue(entity)) {
@@ -540,23 +574,16 @@ class EdgeExtension extends Extension {
 				"Failed to persist device attributes event (%s).",
 				event.getUniqueIdentifier()
 			);
-			dispatchDeviceAttributesResponse(
+			return DeviceAttributesEvents.createResponse(
 				event,
 				DeviceAttributesConstants.Status.FAILED,
-				DeviceAttributesConstants.Reason.QUEUE_UNAVAILABLE
+				DeviceAttributesConstants.Reason.QUEUE_UNAVAILABLE,
+				null
 			);
-			return;
 		}
 
 		Log.debug(LOG_TAG, LOG_SOURCE, "Queued device attributes event (%s).", event.getUniqueIdentifier());
-	}
-
-	private void dispatchDeviceAttributesResponse(
-		@NonNull final Event event,
-		final String status,
-		final String reason
-	) {
-		getApi().dispatch(DeviceAttributesEvents.createResponse(event, status, reason, null));
+		return null;
 	}
 
 	/**

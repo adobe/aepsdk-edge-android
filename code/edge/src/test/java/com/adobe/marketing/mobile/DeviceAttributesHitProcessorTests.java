@@ -22,7 +22,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -45,6 +47,7 @@ import java.util.Map;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.MockedStatic;
 
 public class DeviceAttributesHitProcessorTests {
 
@@ -524,6 +527,105 @@ public class DeviceAttributesHitProcessorTests {
 		assertEquals(DeviceAttributesConstants.Reason.INVALID_PAYLOAD, result.getEventData().get("reason"));
 		assertEquals("corrupt-id", result.getEventData().get("requestEventId"));
 		assertFalse(result.getEventData().containsKey("httpStatus"));
+		assertEquals(Arrays.asList(true), processingResults);
+	}
+
+	// Unexpected exceptions
+
+	@Test
+	public void testProcessHit_collaboratorThrows_dispatchesDroppedInvalidPayloadAndQueueContinues() {
+		when(mockStateCallback.getLocationHint()).thenThrow(new RuntimeException("boom"));
+
+		processHit(entity);
+
+		verify(mockNetworking, never()).connectAsync(any(), any());
+		assertResult(DeviceAttributesConstants.Status.DROPPED, DeviceAttributesConstants.Reason.INVALID_PAYLOAD, null);
+		assertEquals(Arrays.asList(true), processingResults);
+
+		// The next hit is still processed normally.
+		doReturn(null).when(mockStateCallback).getLocationHint();
+		respondWith(200, "{}", null);
+		dispatchedEvents.clear();
+		processingResults.clear();
+		requestEvent = buildRequestEvent(defaultEventData());
+
+		processHit(buildEntity(requestEvent, defaultConfig()));
+
+		assertEquals(1, sentRequests.size());
+		assertResult(DeviceAttributesConstants.Status.SUCCESS, null, 200);
+		assertEquals(Arrays.asList(true), processingResults);
+	}
+
+	@Test
+	public void testProcessHit_throwsBeforeDecode_dispatchesUnchainedDrop() {
+		try (MockedStatic<EdgeDataEntity> mockedEntity = mockStatic(EdgeDataEntity.class)) {
+			mockedEntity.when(() -> EdgeDataEntity.fromDataEntity(any())).thenThrow(new RuntimeException("boom"));
+
+			processHit(entity);
+		}
+
+		verify(mockNetworking, never()).connectAsync(any(), any());
+		assertEquals(1, dispatchedEvents.size());
+		final Event result = dispatchedEvents.get(0);
+		assertNull(result.getParentID());
+		assertEquals(DeviceAttributesConstants.Status.DROPPED, result.getEventData().get("status"));
+		assertEquals(DeviceAttributesConstants.Reason.INVALID_PAYLOAD, result.getEventData().get("reason"));
+		assertEquals(entity.getUniqueIdentifier(), result.getEventData().get("requestEventId"));
+		assertEquals(Arrays.asList(true), processingResults);
+	}
+
+	@Test
+	public void testProcessHit_networkCallbackThrows_dispatchesSingleDroppedAndCompletesOnce() {
+		final int[] identityReads = { 0 };
+		hitProcessor =
+			new DeviceAttributesHitProcessor(
+				new DeviceAttributesNetworkService(mockNetworking),
+				mockSharedStateCallback,
+				mockStateCallback,
+				fakeNamedCollection,
+				() -> {
+					// The first read is the pre-send ECID check; the second happens in the network callback.
+					if (++identityReads[0] > 1) {
+						throw new RuntimeException("boom");
+					}
+
+					return latestIdentityMap;
+				},
+				dispatchedEvents::add
+			);
+		respondWith(200, SUCCESS_BODY_WITH_HANDLES, null);
+
+		processHit(entity);
+
+		assertEquals(1, sentRequests.size());
+		assertResult(DeviceAttributesConstants.Status.DROPPED, DeviceAttributesConstants.Reason.INVALID_PAYLOAD, null);
+		assertEquals(Arrays.asList(true), processingResults);
+	}
+
+	@Test
+	public void testProcessHit_dispatcherThrows_noSecondResponseAndCompletesOnce() {
+		final List<Event> attemptedDispatches = new ArrayList<>();
+		hitProcessor =
+			new DeviceAttributesHitProcessor(
+				new DeviceAttributesNetworkService(mockNetworking),
+				mockSharedStateCallback,
+				mockStateCallback,
+				fakeNamedCollection,
+				() -> latestIdentityMap,
+				event -> {
+					attemptedDispatches.add(event);
+					throw new RuntimeException("boom");
+				}
+			);
+		respondWith(200, "{}", null);
+
+		processHit(entity);
+
+		assertEquals(1, attemptedDispatches.size());
+		assertEquals(
+			DeviceAttributesConstants.Status.SUCCESS,
+			attemptedDispatches.get(0).getEventData().get(DeviceAttributesConstants.EventDataKeys.STATUS)
+		);
 		assertEquals(Arrays.asList(true), processingResults);
 	}
 

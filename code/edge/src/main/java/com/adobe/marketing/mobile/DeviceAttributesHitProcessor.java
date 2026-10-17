@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * {@link HitProcessing} implementation for the consent-independent device attributes queue.
@@ -94,6 +95,17 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 
 	@Override
 	public void processHit(@NonNull final DataEntity entity, @NonNull final HitProcessingResult processingResult) {
+		final HitAttempt attempt = new HitAttempt(entity, processingResult);
+
+		try {
+			processHit(attempt);
+		} catch (final Exception e) {
+			attempt.fail(e);
+		}
+	}
+
+	private void processHit(final HitAttempt attempt) {
+		final DataEntity entity = attempt.entity;
 		final EdgeDataEntity edgeEntity = EdgeDataEntity.fromDataEntity(entity);
 
 		if (edgeEntity == null) {
@@ -103,12 +115,12 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 				"Dropping undecodable device attributes hit '%s'.",
 				entity.getUniqueIdentifier()
 			);
-			dispatcher.call(DeviceAttributesEvents.createDroppedResponse(entity.getUniqueIdentifier()));
-			complete(entity, processingResult);
+			attempt.finish(DeviceAttributesEvents.createDroppedResponse(entity.getUniqueIdentifier()));
 			return;
 		}
 
 		final Event event = edgeEntity.getEvent();
+		attempt.requestEvent = event;
 		final Map<String, Object> identityMap = DataReader.optTypedMap(
 			Object.class,
 			edgeEntity.getIdentityMap(),
@@ -126,7 +138,7 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 				"Latest Identity shared state is unavailable, will retry device attributes hit '%s'.",
 				entity.getUniqueIdentifier()
 			);
-			processingResult.complete(false);
+			attempt.retry();
 			return;
 		}
 
@@ -139,15 +151,13 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 				"ECID changed since device attributes hit '%s' was queued, dropping.",
 				entity.getUniqueIdentifier()
 			);
-			finish(
-				entity,
+			attempt.finish(
 				DeviceAttributesEvents.createResponse(
 					event,
 					DeviceAttributesConstants.Status.DROPPED,
 					DeviceAttributesConstants.Reason.IDENTITY_CHANGED,
 					null
-				),
-				processingResult
+				)
 			);
 			return;
 		}
@@ -166,15 +176,13 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 				"Missing datastream id, dropping device attributes hit '%s'.",
 				entity.getUniqueIdentifier()
 			);
-			finish(
-				entity,
+			attempt.finish(
 				DeviceAttributesEvents.createResponse(
 					event,
 					DeviceAttributesConstants.Status.DROPPED,
 					DeviceAttributesConstants.Reason.MISSING_CONFIG,
 					null
-				),
-				processingResult
+				)
 			);
 			return;
 		}
@@ -202,15 +210,13 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 				"Unable to build device attributes request, dropping hit '%s'.",
 				entity.getUniqueIdentifier()
 			);
-			finish(
-				entity,
+			attempt.finish(
 				DeviceAttributesEvents.createResponse(
 					event,
 					DeviceAttributesConstants.Status.DROPPED,
 					DeviceAttributesConstants.Reason.INVALID_PAYLOAD,
 					null
-				),
-				processingResult
+				)
 			);
 			return;
 		}
@@ -219,63 +225,151 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 			url,
 			body,
 			getRequestHeaders(),
-			result -> handle(result, entity, event, queuedEcid, processingResult)
+			result -> {
+				try {
+					handle(result, attempt, event, queuedEcid);
+				} catch (final Exception e) {
+					attempt.fail(e);
+				}
+			}
 		);
 	}
 
 	private void handle(
 		final DeviceAttributesNetworkResult result,
-		final DataEntity entity,
+		final HitAttempt attempt,
 		final Event event,
-		final String queuedEcid,
-		final HitProcessingResult processingResult
+		final String queuedEcid
 	) {
 		switch (result.getType()) {
 			case SUCCESS:
 				// state:store from a request sent for a previous ECID must not overwrite state for the current one.
 				responseHandler.handle(result.getBody(), isLatestEcid(queuedEcid));
-				finish(
-					entity,
+				attempt.finish(
 					DeviceAttributesEvents.createResponse(
 						event,
 						DeviceAttributesConstants.Status.SUCCESS,
 						null,
 						result.getHttpStatus()
-					),
-					processingResult
+					)
 				);
 				break;
 			case RETRY:
-				entityRetryIntervalMapping.put(entity.getUniqueIdentifier(), result.getRetryIntervalSeconds());
-				processingResult.complete(false);
+				entityRetryIntervalMapping.put(attempt.entity.getUniqueIdentifier(), result.getRetryIntervalSeconds());
+				attempt.retry();
 				break;
 			case FAILED:
 			default:
-				finish(
-					entity,
+				attempt.finish(
 					DeviceAttributesEvents.createResponse(
 						event,
 						DeviceAttributesConstants.Status.FAILED,
 						DeviceAttributesConstants.Reason.NETWORK,
 						result.getHttpStatus()
-					),
-					processingResult
+					)
 				);
 				break;
 		}
 	}
 
 	/**
-	 * Dispatches the terminal response event and removes the hit from the queue.
+	 * Tracks one processing attempt of a hit so that it is completed exactly once and at most one response event is
+	 * dispatched for it, including when an unexpected exception is thrown while processing the hit or while handling
+	 * the network result.
 	 */
-	private void finish(final DataEntity entity, final Event result, final HitProcessingResult processingResult) {
-		dispatcher.call(result);
-		complete(entity, processingResult);
-	}
+	private final class HitAttempt {
 
-	private void complete(final DataEntity entity, final HitProcessingResult processingResult) {
-		entityRetryIntervalMapping.remove(entity.getUniqueIdentifier());
-		processingResult.complete(true);
+		private final DataEntity entity;
+		private final HitProcessingResult processingResult;
+		private final AtomicBoolean completed = new AtomicBoolean(false);
+		private final AtomicBoolean responseDispatched = new AtomicBoolean(false);
+
+		/** The decoded request event, set once the hit has been decoded. */
+		private volatile Event requestEvent;
+
+		HitAttempt(final DataEntity entity, final HitProcessingResult processingResult) {
+			this.entity = entity;
+			this.processingResult = processingResult;
+		}
+
+		/**
+		 * Dispatches the terminal response event and removes the hit from the queue.
+		 */
+		void finish(final Event response) {
+			if (completed.get()) {
+				return;
+			}
+
+			dispatchOnce(response);
+			complete(true);
+		}
+
+		/**
+		 * Keeps the hit in the queue so it is retried.
+		 */
+		void retry() {
+			complete(false);
+		}
+
+		/**
+		 * Handles an unexpected exception: dispatches a {@code dropped} / {@code invalidPayload} response unless one
+		 * was already dispatched, and removes the hit so the queue keeps moving.
+		 */
+		void fail(final Exception e) {
+			Log.error(
+				LOG_TAG,
+				LOG_SOURCE,
+				"Unexpected error processing device attributes hit '%s', dropping: %s",
+				entity.getUniqueIdentifier(),
+				e.getLocalizedMessage()
+			);
+
+			if (completed.get()) {
+				return;
+			}
+
+			try {
+				dispatchOnce(
+					requestEvent != null
+						? DeviceAttributesEvents.createResponse(
+							requestEvent,
+							DeviceAttributesConstants.Status.DROPPED,
+							DeviceAttributesConstants.Reason.INVALID_PAYLOAD,
+							null
+						)
+						: DeviceAttributesEvents.createDroppedResponse(entity.getUniqueIdentifier())
+				);
+			} catch (final Exception dispatchError) {
+				Log.error(
+					LOG_TAG,
+					LOG_SOURCE,
+					"Failed to dispatch the response for device attributes hit '%s': %s",
+					entity.getUniqueIdentifier(),
+					dispatchError.getLocalizedMessage()
+				);
+			}
+
+			complete(true);
+		}
+
+		// The flag is set before dispatching so that a failing dispatch is never retried as a second response.
+		private void dispatchOnce(final Event response) {
+			if (responseDispatched.compareAndSet(false, true)) {
+				dispatcher.call(response);
+			}
+		}
+
+		private void complete(final boolean remove) {
+			if (!completed.compareAndSet(false, true)) {
+				return;
+			}
+
+			if (remove) {
+				entityRetryIntervalMapping.remove(entity.getUniqueIdentifier());
+			}
+
+			processingResult.complete(remove);
+		}
 	}
 
 	/**

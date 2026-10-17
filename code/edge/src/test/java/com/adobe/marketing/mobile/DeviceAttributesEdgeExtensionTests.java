@@ -20,6 +20,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -35,6 +36,7 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockedConstruction;
 
 public class DeviceAttributesEdgeExtensionTests {
 
@@ -384,6 +386,28 @@ public class DeviceAttributesEdgeExtensionTests {
 	}
 
 	// Helpers
+
+	@Test
+	public void testDeviceAttributesUnexpectedExceptionProducesCorrelatedDrop() {
+		mockSharedStates(configData, identityState);
+		final Event event = deviceAttributesRequestEvent(data());
+
+		try (
+			MockedConstruction<EdgeDataEntity> ignored = mockConstruction(
+				EdgeDataEntity.class,
+				(mockEntity, context) -> when(mockEntity.toDataEntity()).thenThrow(new RuntimeException("boom"))
+			)
+		) {
+			edgeExtension.handleDeviceAttributesRequest(event);
+		}
+
+		assertDeviceAttributesResponse(
+			event,
+			DeviceAttributesConstants.Status.DROPPED,
+			DeviceAttributesConstants.Reason.INVALID_PAYLOAD
+		);
+		verify(mockDeviceAttributesQueue, never()).queue(any());
+	}
 
 	private List<DataEntity> verifyQueuedOnDeviceAttributesQueue(final int count) {
 		final ArgumentCaptor<DataEntity> captor = ArgumentCaptor.forClass(DataEntity.class);
