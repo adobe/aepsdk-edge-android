@@ -48,11 +48,13 @@ class EdgeNetworkService {
 	 * <ul>
 	 *     <li>INTERACT - makes request and expects a response</li>
 	 *     <li>CONSENT - makes request to the consent endpoint, expects a response</li>
+	 *     <li>DEVICE_ATTRIBUTES - makes request to the device attributes endpoint, used only by the device attributes path</li>
 	 * </ul>
 	 */
 	public enum RequestType {
 		INTERACT("interact"),
-		CONSENT("privacy/set-consent");
+		CONSENT("privacy/set-consent"),
+		DEVICE_ATTRIBUTES("mobile/device-attributes");
 
 		public final String type;
 
