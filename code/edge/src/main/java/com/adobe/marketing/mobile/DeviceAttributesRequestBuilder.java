@@ -16,8 +16,11 @@ import static com.adobe.marketing.mobile.EdgeConstants.LOG_TAG;
 import androidx.annotation.Nullable;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.services.NamedCollection;
+import com.adobe.marketing.mobile.util.DataReader;
 import com.adobe.marketing.mobile.util.MapUtils;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.json.JSONObject;
 
@@ -75,7 +78,20 @@ class DeviceAttributesRequestBuilder {
 		}
 
 		if (!MapUtils.isNullOrEmpty(identityMap)) {
-			xdm.put(EdgeJson.Event.Xdm.IDENTITY_MAP, identityMap);
+			final Map<String, Object> requestIdentityMap = new HashMap<>(identityMap);
+			final List<Map<String, Object>> ecids = DataReader.optTypedListOfMap(
+				Object.class,
+				identityMap,
+				"ECID",
+				null
+			);
+
+			if (ecids != null && ecids.size() > 1) {
+				// Edge Identity's current ECID is first; this endpoint does not accept additional legacy ECIDs.
+				requestIdentityMap.put("ECID", Collections.singletonList(ecids.get(0)));
+			}
+
+			xdm.put(EdgeJson.Event.Xdm.IDENTITY_MAP, requestIdentityMap);
 		}
 
 		if (!xdm.isEmpty()) {

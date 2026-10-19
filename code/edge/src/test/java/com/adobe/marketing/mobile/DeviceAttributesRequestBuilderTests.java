@@ -142,6 +142,39 @@ public class DeviceAttributesRequestBuilderTests {
 	}
 
 	@Test
+	public void testBuildRequestBody_multipleEcids_keepsCurrentEcidAndPreservesSharedIdentityMap() throws Exception {
+		final Map<String, Object> currentEcid = map("id", "current-edge-ecid");
+		currentEcid.put("primary", true);
+		currentEcid.put("authenticatedState", "ambiguous");
+		final List<Map<String, Object>> ecids = Arrays.asList(
+			currentEcid,
+			map("id", "legacy-ecid"),
+			map("id", "another-legacy-ecid")
+		);
+		identityMap.put("ECID", ecids);
+		identityMap.put("Email", Arrays.asList(map("id", "test@example.com")));
+
+		final JSONObject body = new JSONObject(
+			builder.buildRequestBody(producerData(), implementationDetails, identityMap)
+		);
+		final JSONObject requestIdentityMap = body.getJSONObject("xdm").getJSONObject("identityMap");
+
+		assertEquals(1, requestIdentityMap.getJSONArray("ECID").length());
+		assertEquals(currentEcid, JSONUtils.toMap(requestIdentityMap.getJSONArray("ECID").getJSONObject(0)));
+		assertEquals("test@example.com", requestIdentityMap.getJSONArray("Email").getJSONObject(0).getString("id"));
+		assertEquals(ecids, identityMap.get("ECID"));
+		assertEquals(3, ((List<?>) identityMap.get("ECID")).size());
+	}
+
+	@Test
+	public void testBuildRequestBody_singleEcid_isPreserved() throws Exception {
+		final JSONObject body = new JSONObject(
+			builder.buildRequestBody(producerData(), implementationDetails, identityMap)
+		);
+		assertEquals(identityMap, JSONUtils.toMap(body.getJSONObject("xdm").getJSONObject("identityMap")));
+	}
+
+	@Test
 	public void testBuildRequestBody_noData_returnsNull() {
 		assertNull(builder.buildRequestBody(null, implementationDetails, identityMap));
 	}
