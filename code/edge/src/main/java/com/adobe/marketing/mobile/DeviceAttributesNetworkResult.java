@@ -30,28 +30,20 @@ final class DeviceAttributesNetworkResult {
 
 	private final Type type;
 	private final Integer httpStatus;
-	private final String body;
 	private final int retryIntervalSeconds;
 
-	private DeviceAttributesNetworkResult(
-		final Type type,
-		final Integer httpStatus,
-		final String body,
-		final int retryIntervalSeconds
-	) {
+	private DeviceAttributesNetworkResult(final Type type, final Integer httpStatus, final int retryIntervalSeconds) {
 		this.type = type;
 		this.httpStatus = httpStatus;
-		this.body = body;
 		this.retryIntervalSeconds = retryIntervalSeconds;
 	}
 
 	/**
 	 * @param httpStatus the successful HTTP status code
-	 * @param body the plain JSON response body, if any
 	 * @return a {@link Type#SUCCESS} result
 	 */
-	static DeviceAttributesNetworkResult success(final int httpStatus, @Nullable final String body) {
-		return new DeviceAttributesNetworkResult(Type.SUCCESS, httpStatus, body, 0);
+	static DeviceAttributesNetworkResult success(final int httpStatus) {
+		return new DeviceAttributesNetworkResult(Type.SUCCESS, httpStatus, 0);
 	}
 
 	/**
@@ -59,7 +51,7 @@ final class DeviceAttributesNetworkResult {
 	 * @return a {@link Type#RETRY} result
 	 */
 	static DeviceAttributesNetworkResult retry(final int retryIntervalSeconds) {
-		return new DeviceAttributesNetworkResult(Type.RETRY, null, null, retryIntervalSeconds);
+		return new DeviceAttributesNetworkResult(Type.RETRY, null, retryIntervalSeconds);
 	}
 
 	/**
@@ -67,7 +59,7 @@ final class DeviceAttributesNetworkResult {
 	 * @return a {@link Type#FAILED} result
 	 */
 	static DeviceAttributesNetworkResult failed(@Nullable final Integer httpStatus) {
-		return new DeviceAttributesNetworkResult(Type.FAILED, httpStatus, null, 0);
+		return new DeviceAttributesNetworkResult(Type.FAILED, httpStatus, 0);
 	}
 
 	@NonNull Type getType() {
@@ -76,10 +68,6 @@ final class DeviceAttributesNetworkResult {
 
 	@Nullable Integer getHttpStatus() {
 		return httpStatus;
-	}
-
-	@Nullable String getBody() {
-		return body;
 	}
 
 	int getRetryIntervalSeconds() {

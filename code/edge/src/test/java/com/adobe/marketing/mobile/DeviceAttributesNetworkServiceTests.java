@@ -16,6 +16,7 @@ import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -190,12 +191,14 @@ public class DeviceAttributesNetworkServiceTests {
 	}
 
 	@Test
-	public void testClassify_success_readsBody() {
-		final DeviceAttributesNetworkResult result = networkService.classify(connection(200, "{\"handle\":[]}"), URL);
+	public void testClassify_success_isDecidedByStatusCodeWithoutReadingBody() {
+		final HttpConnecting connection = connection(200, "{\"handle\":[]}");
+
+		final DeviceAttributesNetworkResult result = networkService.classify(connection, URL);
 
 		assertEquals(DeviceAttributesNetworkResult.Type.SUCCESS, result.getType());
 		assertEquals(Integer.valueOf(200), result.getHttpStatus());
-		assertEquals("{\"handle\":[]}", result.getBody());
+		verify(connection, never()).getInputStream();
 	}
 
 	@Test
@@ -255,7 +258,6 @@ public class DeviceAttributesNetworkServiceTests {
 		);
 		assertEquals("code " + code, DeviceAttributesNetworkResult.Type.FAILED, result.getType());
 		assertEquals(Integer.valueOf(code), result.getHttpStatus());
-		assertNull(result.getBody());
 	}
 
 	private static HttpConnecting connection(final int code, final String body) {

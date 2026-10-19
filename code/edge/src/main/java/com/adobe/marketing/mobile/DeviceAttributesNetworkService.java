@@ -207,7 +207,7 @@ class DeviceAttributesNetworkService {
 
 		if (DeviceAttributesConstants.SUCCESS_RESPONSE_CODES.contains(responseCode)) {
 			Log.debug(LOG_TAG, LOG_SOURCE, "Device attributes request was successful (%d).", responseCode);
-			return DeviceAttributesNetworkResult.success(responseCode, readStream(connection, true));
+			return DeviceAttributesNetworkResult.success(responseCode);
 		}
 
 		// Same recoverable set as the interact path, so retry behavior matches
@@ -223,7 +223,7 @@ class DeviceAttributesNetworkService {
 			return DeviceAttributesNetworkResult.retry(retryInterval);
 		}
 
-		logUnrecoverableResponse(responseCode, readStream(connection, false));
+		logUnrecoverableResponse(responseCode, readErrorStream(connection));
 		return DeviceAttributesNetworkResult.failed(responseCode);
 	}
 
@@ -296,9 +296,9 @@ class DeviceAttributesNetworkService {
 		);
 	}
 
-	@Nullable private String readStream(@NonNull final HttpConnecting connection, final boolean success) {
+	@Nullable private String readErrorStream(@NonNull final HttpConnecting connection) {
 		try {
-			return StreamUtils.readAsString(success ? connection.getInputStream() : connection.getErrorStream());
+			return StreamUtils.readAsString(connection.getErrorStream());
 		} catch (final Exception e) {
 			Log.debug(LOG_TAG, LOG_SOURCE, "Failed to read device attributes response: %s", e.getLocalizedMessage());
 			return null;

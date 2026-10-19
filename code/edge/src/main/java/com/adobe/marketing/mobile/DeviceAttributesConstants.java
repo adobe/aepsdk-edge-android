@@ -70,9 +70,6 @@ final class DeviceAttributesConstants {
 
 	static final class ResponseKeys {
 
-		static final String HANDLE = "handle";
-		static final String TYPE = "type";
-		static final String PAYLOAD = "payload";
 		static final String TITLE = "title";
 		static final String REPORT = "report";
 		static final String ERRORS = "errors";

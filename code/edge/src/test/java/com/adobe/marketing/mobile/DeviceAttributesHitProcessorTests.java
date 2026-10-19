@@ -26,6 +26,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -333,20 +334,23 @@ public class DeviceAttributesHitProcessorTests {
 		);
 	}
 
-	// Response handles
+	// Response handles are ignored
 
 	@Test
-	public void testProcessHit_success_appliesStoreHandlesOnly() {
+	public void testProcessHit_successWithStoreAndLocationHintHandles_changesNeitherStoreNorHint() {
+		saveStorePayload("existing_key", "existing");
 		respondWith(200, SUCCESS_BODY_WITH_HANDLES, null);
 
 		processHit(entity);
 
-		// the locationHint:result handle in the response is ignored
 		verify(mockStateCallback, never()).setLocationHint(anyString(), anyInt());
-		assertNotNull(new StoreResponsePayloadManager(fakeNamedCollection).getActiveStores());
-		assertEquals(1, new StoreResponsePayloadManager(fakeNamedCollection).getActiveStores().size());
+		final Map<String, StoreResponsePayload> storedAfter = new StoreResponsePayloadManager(fakeNamedCollection)
+			.getActiveStores();
+		assertEquals(1, storedAfter.size());
+		assertEquals("existing", storedAfter.get("existing_key").getValue());
 		// only the response event, no Edge response or content complete events
 		assertResult(DeviceAttributesConstants.Status.SUCCESS, null, 200);
+		assertEquals(Arrays.asList(true), processingResults);
 	}
 
 	@Test
@@ -360,17 +364,6 @@ public class DeviceAttributesHitProcessorTests {
 			assertResult(DeviceAttributesConstants.Status.SUCCESS, null, 200);
 			verify(mockStateCallback, never()).setLocationHint(anyString(), anyInt());
 		}
-	}
-
-	@Test
-	public void testProcessHit_failure_doesNotApplyResponseHandles() {
-		respondWith(400, SUCCESS_BODY_WITH_HANDLES, null);
-
-		processHit(entity);
-
-		verify(mockStateCallback, never()).setLocationHint(anyString(), anyInt());
-		assertNull(new StoreResponsePayloadManager(fakeNamedCollection).getActiveStores());
-		assertResult(DeviceAttributesConstants.Status.FAILED, DeviceAttributesConstants.Reason.NETWORK, 400);
 	}
 
 	@Test
@@ -455,32 +448,11 @@ public class DeviceAttributesHitProcessorTests {
 	@Test
 	public void testProcessHit_legacyEcidAtIndexOneDiffers_isSent() {
 		latestIdentityMap = identityMapWithEcids(QUEUED_ECID, "legacy-ecid");
-		respondWith(200, SUCCESS_BODY_WITH_HANDLES, null);
+		respondWith(200, "{}", null);
 
 		processHit(entity);
 
 		assertEquals(1, sentRequests.size());
-		assertEquals(1, new StoreResponsePayloadManager(fakeNamedCollection).getActiveStores().size());
-		assertResult(DeviceAttributesConstants.Status.SUCCESS, null, 200);
-	}
-
-	@Test
-	public void testProcessHit_ecidChangesDuringRequest_dispatchesResponseButIgnoresStoreHandles() {
-		doAnswer(invocation -> {
-				sentRequests.add(invocation.getArgument(0));
-				latestIdentityMap = identityMapWithEcids("new-ecid");
-				((NetworkCallback) invocation.getArgument(1)).call(
-						mockConnection(200, SUCCESS_BODY_WITH_HANDLES, null)
-					);
-				return null;
-			})
-			.when(mockNetworking)
-			.connectAsync(any(NetworkRequest.class), any(NetworkCallback.class));
-
-		processHit(entity);
-
-		verify(mockStateCallback, never()).setLocationHint(anyString(), anyInt());
-		assertNull(new StoreResponsePayloadManager(fakeNamedCollection).getActiveStores());
 		assertResult(DeviceAttributesConstants.Status.SUCCESS, null, 200);
 	}
 
@@ -599,28 +571,27 @@ public class DeviceAttributesHitProcessorTests {
 
 	@Test
 	public void testProcessHit_networkCallbackThrows_dispatchesSingleDroppedAndCompletesOnce() {
-		final int[] identityReads = { 0 };
+		final DeviceAttributesNetworkService networkService = spy(new DeviceAttributesNetworkService(mockNetworking));
+		// A null result makes the callback body throw while handling it.
+		doAnswer(invocation -> {
+				((AdobeCallback<DeviceAttributesNetworkResult>) invocation.getArgument(3)).call(null);
+				return null;
+			})
+			.when(networkService)
+			.send(anyString(), anyString(), any(), any());
 		hitProcessor =
 			new DeviceAttributesHitProcessor(
-				new DeviceAttributesNetworkService(mockNetworking),
+				networkService,
 				mockSharedStateCallback,
 				mockStateCallback,
 				fakeNamedCollection,
-				() -> {
-					// The first read is the pre-send ECID check; the second happens in the network callback.
-					if (++identityReads[0] > 1) {
-						throw new RuntimeException("boom");
-					}
-
-					return latestIdentityMap;
-				},
+				() -> latestIdentityMap,
 				dispatchedEvents::add
 			);
-		respondWith(200, SUCCESS_BODY_WITH_HANDLES, null);
 
 		processHit(entity);
 
-		assertEquals(1, sentRequests.size());
+		verify(networkService).send(anyString(), anyString(), any(), any());
 		assertResult(DeviceAttributesConstants.Status.DROPPED, DeviceAttributesConstants.Reason.INVALID_PAYLOAD, null);
 		assertEquals(Arrays.asList(true), processingResults);
 	}
@@ -653,6 +624,14 @@ public class DeviceAttributesHitProcessorTests {
 	}
 
 	// Helpers
+
+	private void saveStorePayload(final String key, final String value) {
+		final Map<String, Object> store = new HashMap<>();
+		store.put(EdgeJson.Response.EventHandle.Store.KEY, key);
+		store.put(EdgeJson.Response.EventHandle.Store.VALUE, value);
+		store.put(EdgeJson.Response.EventHandle.Store.MAX_AGE, 1800);
+		new StoreResponsePayloadManager(fakeNamedCollection).saveStorePayloads(Arrays.asList(store));
+	}
 
 	private void processHit(final DataEntity dataEntity) {
 		hitProcessor.processHit(dataEntity, processingResults::add);

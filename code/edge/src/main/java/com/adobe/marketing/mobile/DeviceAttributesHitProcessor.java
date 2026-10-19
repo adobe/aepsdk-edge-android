@@ -53,7 +53,6 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 	private static final String IDENTITY_ID = "id";
 
 	private final DeviceAttributesNetworkService networkService;
-	private final DeviceAttributesResponseHandler responseHandler;
 	private final DeviceAttributesRequestBuilder requestBuilder;
 	private final EdgeSharedStateCallback sharedStateCallback;
 	private final EdgeStateCallback stateCallback;
@@ -64,9 +63,8 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 	/**
 	 * @param networkService sender for the device attributes request
 	 * @param sharedStateCallback used to read the Assurance integration id
-	 * @param stateCallback used to read the implementation details and location hint, and to set the location hint
-	 *                      received in the response
-	 * @param namedCollection the Edge data store, holding the {@code state:store} payloads
+	 * @param stateCallback used to read the implementation details and location hint
+	 * @param namedCollection the Edge data store, holding the {@code state:store} payloads sent as {@code meta.state}
 	 * @param latestIdentityMapProvider provides the latest Identity identity map for the ECID check
 	 * @param dispatcher dispatches the response event (E4)
 	 */
@@ -79,7 +77,6 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 		final AdobeCallback<Event> dispatcher
 	) {
 		this.networkService = networkService;
-		this.responseHandler = new DeviceAttributesResponseHandler(namedCollection);
 		this.requestBuilder = new DeviceAttributesRequestBuilder(namedCollection);
 		this.sharedStateCallback = sharedStateCallback;
 		this.stateCallback = stateCallback;
@@ -142,9 +139,7 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 			return;
 		}
 
-		final String queuedEcid = getEcid(identityMap);
-
-		if (!Objects.equals(queuedEcid, getEcid(latestIdentityMap))) {
+		if (!Objects.equals(getEcid(identityMap), getEcid(latestIdentityMap))) {
 			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
@@ -227,7 +222,7 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 			getRequestHeaders(),
 			result -> {
 				try {
-					handle(result, attempt, event, queuedEcid);
+					handle(result, attempt, event);
 				} catch (final Throwable t) {
 					attempt.fail(t);
 				}
@@ -235,16 +230,10 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 		);
 	}
 
-	private void handle(
-		final DeviceAttributesNetworkResult result,
-		final HitAttempt attempt,
-		final Event event,
-		final String queuedEcid
-	) {
+	private void handle(final DeviceAttributesNetworkResult result, final HitAttempt attempt, final Event event) {
 		switch (result.getType()) {
 			case SUCCESS:
-				// state:store from a request sent for a previous ECID must not overwrite state for the current one.
-				responseHandler.handle(result.getBody(), isLatestEcid(queuedEcid));
+				// Success is decided by the status code only; the response body is not processed.
 				attempt.finish(
 					DeviceAttributesEvents.createResponse(
 						event,
@@ -377,15 +366,6 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 	 */
 	@Nullable private Map<String, Object> getLatestIdentityMap() {
 		return latestIdentityMapProvider != null ? latestIdentityMapProvider.getLatestIdentityMap() : null;
-	}
-
-	/**
-	 * @param queuedEcid the ECID from the hit's queued identity map
-	 * @return true if the latest Identity state is available and has the same ECID
-	 */
-	private boolean isLatestEcid(@Nullable final String queuedEcid) {
-		final Map<String, Object> latestIdentityMap = getLatestIdentityMap();
-		return latestIdentityMap != null && Objects.equals(queuedEcid, getEcid(latestIdentityMap));
 	}
 
 	/**

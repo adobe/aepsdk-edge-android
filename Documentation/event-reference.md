@@ -324,7 +324,7 @@ This event is a response to an [Edge request content](#edge-request-content) eve
 
 This event is the terminal result of an [Edge device attributes request content](#edge-device-attributes-request-content) event. It is chained to the request event, so its parent ID is the request event's ID. Its response ID is not set.
 
-A success response (HTTP 200 or 202) body is used only to persist `state:store` values. Other handle types, including `locationHint:result`, are ignored and no Edge response, error or content-complete events are dispatched. `state:store` values are saved only if the ECID in the latest Edge Identity shared state still matches the ECID the request was sent with; otherwise they are ignored, and the response event is dispatched as usual.
+Success is decided by the HTTP status code (200 or 202) only; the response body is not processed. Handles in the body, including `state:store` and `locationHint:result`, do not change the Edge store or location hint, and no Edge response, error or content-complete events are dispatched.
 
 #### Event details<!-- omit in toc -->
 
