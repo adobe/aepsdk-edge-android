@@ -90,7 +90,7 @@ Before each send attempt, Edge compares the ECID in the identity map captured wh
 
 The event data fields (for example, `app`, `tokens` and `timezone`) are sent as-is in a flat request body. Any `xdm` or `meta` keys provided in the event data are discarded. Edge adds:
 
-* `xdm.implementationDetails` and `xdm.identityMap`, using the identity map available when the request is queued.
+* `xdm.implementationDetails` and `xdm.identityMap`, using the identity map available when the request is queued. The device-attributes endpoint accepts exactly one ECID, so only the first (current Edge Identity) ECID is included; additional legacy ECIDs are omitted from this request. Other identity namespaces and the shared identity map are unchanged. This filtering does not apply to ordinary `interact` requests.
 * `meta.state.entries`, containing persisted `state:store` values when available.
 
 -----
