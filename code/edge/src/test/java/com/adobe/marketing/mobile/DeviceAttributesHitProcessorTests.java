@@ -664,7 +664,7 @@ public class DeviceAttributesHitProcessorTests {
 	}
 
 	/**
-	 * Asserts exactly one response event (E4) was dispatched, chained to the request event (E3).
+	 * Asserts exactly one device attributes response event was dispatched, with the request event as its parent.
 	 */
 	private void assertResult(final String status, final String reason, final Integer httpStatus) {
 		assertEquals(1, dispatchedEvents.size());

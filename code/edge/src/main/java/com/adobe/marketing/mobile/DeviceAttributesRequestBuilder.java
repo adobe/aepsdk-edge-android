@@ -26,7 +26,7 @@ import org.json.JSONObject;
 
 /**
  * Builds the device attributes request body. The body is flat (not the interact request envelope):
- * the producer data from the request event, plus the SDK-owned {@code xdm} (implementationDetails and identityMap)
+ * the request event data, plus the SDK-owned {@code xdm} (implementationDetails and identityMap)
  * and {@code meta.state}.
  */
 class DeviceAttributesRequestBuilder {
@@ -42,10 +42,10 @@ class DeviceAttributesRequestBuilder {
 	}
 
 	/**
-	 * Builds the device attributes request payload. Producer-supplied {@code xdm} and {@code meta} are ignored.
+	 * Builds the device attributes request payload. Any {@code xdm} and {@code meta} in the event data are ignored.
 	 * The SDK adds {@code xdm} (implementationDetails and identityMap) and {@code meta.state} when available.
 	 *
-	 * @param eventData the request event (E3) data forming the base of the request body
+	 * @param eventData the device attributes request event data forming the base of the request body
 	 * @param implementationDetails the SDK implementation details, as {@code {implementationDetails: {...}}}
 	 * @param identityMap the identity map to attach under {@code xdm}
 	 * @return the request payload, or null if there is nothing to send
@@ -114,7 +114,7 @@ class DeviceAttributesRequestBuilder {
 	/**
 	 * Builds the device attributes request payload and encodes it as compact JSON.
 	 *
-	 * @param eventData the request event (E3) data forming the base of the request body
+	 * @param eventData the device attributes request event data forming the base of the request body
 	 * @param implementationDetails the SDK implementation details, as {@code {implementationDetails: {...}}}
 	 * @param identityMap the identity map to attach under {@code xdm}
 	 * @return the JSON request body, or null if there is nothing to send or encoding fails

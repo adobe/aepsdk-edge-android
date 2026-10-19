@@ -32,8 +32,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * {@link HitProcessing} implementation for the consent-independent device attributes queue.
- * Publishes exactly one response event (E4) per terminal outcome; recoverable failures are retried without a response
- * event. Before each send attempt, the ECID in the hit's queued identity map is compared with the ECID in the latest
+ * Dispatches exactly one device attributes response event per hit once it succeeds, fails or is dropped; recoverable
+ * failures are retried without a response event. Before each send attempt, the ECID in the hit's queued identity map is compared with the ECID in the latest
  * Identity shared state, and the hit is dropped if they differ.
  */
 class DeviceAttributesHitProcessor implements HitProcessing {
@@ -66,7 +66,7 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 	 * @param stateCallback used to read the implementation details and location hint
 	 * @param namedCollection the Edge data store, holding the {@code state:store} payloads sent as {@code meta.state}
 	 * @param latestIdentityMapProvider provides the latest Identity identity map for the ECID check
-	 * @param dispatcher dispatches the response event (E4)
+	 * @param dispatcher dispatches the device attributes response event
 	 */
 	DeviceAttributesHitProcessor(
 		final DeviceAttributesNetworkService networkService,
@@ -282,7 +282,7 @@ class DeviceAttributesHitProcessor implements HitProcessing {
 		}
 
 		/**
-		 * Dispatches the terminal response event and removes the hit from the queue.
+		 * Dispatches the device attributes response event and removes the hit from the queue.
 		 */
 		void finish(final Event response) {
 			if (completed.get()) {

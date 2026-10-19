@@ -24,9 +24,9 @@ final class DeviceAttributesEvents {
 	private DeviceAttributesEvents() {}
 
 	/**
-	 * Checks if the provided {@code event} is a device attributes request event (E3), which has the dedicated
+	 * Checks if the provided {@code event} is a device attributes request event, which has the dedicated
 	 * {@code com.adobe.eventType.edgeBypassConsent} type and the {@link EventSource#REQUEST_CONTENT} source. Such events are routed to
-	 * the separate device attributes queue and are not subject to the collect consent gate.
+	 * the separate device attributes queue and are not subject to collect consent.
 	 *
 	 * @param event current event to check
 	 * @return true if the {@code event} is a device attributes request event
@@ -39,9 +39,9 @@ final class DeviceAttributesEvents {
 	}
 
 	/**
-	 * Creates the device attributes response event (E4) chained to the request event (E3).
+	 * Creates the device attributes response event, with the request event as its parent event.
 	 *
-	 * @param requestEvent the device attributes request event (E3)
+	 * @param requestEvent the device attributes request event
 	 * @param status the response status
 	 * @param reason the optional response reason
 	 * @param httpStatus the optional HTTP status code
@@ -75,8 +75,8 @@ final class DeviceAttributesEvents {
 	}
 
 	/**
-	 * Creates the unchained response event (E4) for a stored hit that could not be decoded. A corrupt hit has no
-	 * usable request event; its persisted identifier still identifies the request that was dropped.
+	 * Creates the device attributes response event for a stored hit that could not be decoded. It has no parent event
+	 * because the request event is unavailable; the stored hit's identifier identifies the dropped request.
 	 *
 	 * @param requestEventId the unique identifier of the stored hit
 	 * @return the response event

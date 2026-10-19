@@ -22,12 +22,12 @@ import java.util.Set;
 final class DeviceAttributesConstants {
 
 	/**
-	 * Request (E3, {@code requestContent}) and response (E4, {@code responseContent}) event type for the
-	 * device attributes path.
+	 * Event type of the device attributes request ({@code requestContent}) and response ({@code responseContent})
+	 * events.
 	 */
 	static final String EVENT_TYPE = "com.adobe.eventType.edgeBypassConsent";
 
-	/** Name of the device attributes response event (E4). */
+	/** Name of the device attributes response event. */
 	static final String EVENT_NAME_RESPONSE = "Device Attributes Response";
 
 	/** Suffix appended to the Edge extension name to label the dedicated device attributes queue. */

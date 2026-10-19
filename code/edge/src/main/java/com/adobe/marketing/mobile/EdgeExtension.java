@@ -474,7 +474,7 @@ class EdgeExtension extends Extension {
 	 * Validates and queues a device attributes request.
 	 *
 	 * @param event the device attributes request event
-	 * @return the terminal response to dispatch, or null if the request was queued
+	 * @return the device attributes response event to dispatch if the request was not queued, or null if it was queued
 	 */
 	@Nullable private Event queueDeviceAttributesRequest(@NonNull final Event event) {
 		if (deviceAttributesHitQueue == null) {
