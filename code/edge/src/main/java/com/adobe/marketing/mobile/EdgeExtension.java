@@ -169,7 +169,7 @@ class EdgeExtension extends Extension {
 	 *     <li> EventType {@link EventType#EDGE_IDENTITY} and EventSource {@link EventSource#RESET_COMPLETE}</li>
 	 *     <li> EventType {@link EventType#EDGE} and EventSource {@link EventSource#REQUEST_IDENTITY}</li>
 	 *     <li> EventType {@link EventType#EDGE} and EventSource {@link EventSource#UPDATE_IDENTITY}</li>
-	 *     <li> EventType {@code com.adobe.eventType.edgeBypassConsent} and EventSource {@link EventSource#REQUEST_CONTENT}</li>
+	 *     <li> EventType {@code com.adobe.eventType.edgeDeviceAttributes} and EventSource {@link EventSource#REQUEST_CONTENT}</li>
 	 * </ul>
 	 * </p>
 	 */

@@ -25,7 +25,7 @@ final class DeviceAttributesConstants {
 	 * Event type of the device attributes request ({@code requestContent}) and response ({@code responseContent})
 	 * events.
 	 */
-	static final String EVENT_TYPE = "com.adobe.eventType.edgeBypassConsent";
+	static final String EVENT_TYPE = "com.adobe.eventType.edgeDeviceAttributes";
 
 	/** Name of the device attributes response event. */
 	static final String EVENT_NAME_RESPONSE = "Device Attributes Response";

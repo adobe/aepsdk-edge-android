@@ -66,7 +66,7 @@ public class DeviceAttributesEdgeExtensionTests {
 		assertTrue(DeviceAttributesEvents.isDeviceAttributesRequestEvent(deviceAttributesRequestEvent(data())));
 		assertTrue(
 			DeviceAttributesEvents.isDeviceAttributesRequestEvent(
-				new Event.Builder("e", "COM.ADOBE.EVENTTYPE.EDGEBYPASSCONSENT", EventSource.REQUEST_CONTENT).build()
+				new Event.Builder("e", "COM.ADOBE.EVENTTYPE.EDGEDEVICEATTRIBUTES", EventSource.REQUEST_CONTENT).build()
 			)
 		);
 		assertFalse(
@@ -360,7 +360,7 @@ public class DeviceAttributesEdgeExtensionTests {
 
 	@Test
 	public void testDeviceAttributesResponseConstantsPreserveWireValues() {
-		assertEquals("com.adobe.eventType.edgeBypassConsent", DeviceAttributesConstants.EVENT_TYPE);
+		assertEquals("com.adobe.eventType.edgeDeviceAttributes", DeviceAttributesConstants.EVENT_TYPE);
 		assertEquals("Device Attributes Response", DeviceAttributesConstants.EVENT_NAME_RESPONSE);
 		assertEquals("success", DeviceAttributesConstants.Status.SUCCESS);
 		assertEquals("failed", DeviceAttributesConstants.Status.FAILED);

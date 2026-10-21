@@ -25,7 +25,7 @@ final class DeviceAttributesEvents {
 
 	/**
 	 * Checks if the provided {@code event} is a device attributes request event, which has the dedicated
-	 * {@code com.adobe.eventType.edgeBypassConsent} type and the {@link EventSource#REQUEST_CONTENT} source. Such events are routed to
+	 * {@code com.adobe.eventType.edgeDeviceAttributes} type and the {@link EventSource#REQUEST_CONTENT} source. Such events are routed to
 	 * the separate device attributes queue and are not subject to collect consent.
 	 *
 	 * @param event current event to check
