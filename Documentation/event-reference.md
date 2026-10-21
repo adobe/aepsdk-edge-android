@@ -84,7 +84,7 @@ Before each send attempt, Edge compares the ECID in the identity map captured wh
 
 | Event type | Event source |
 | ---------- | ------------ |
-| com.adobe.eventType.edgeBypassConsent | com.adobe.eventSource.requestContent |
+| com.adobe.eventType.edgeDeviceAttributes | com.adobe.eventSource.requestContent |
 
 #### Event data payload definition<!-- omit in toc -->
 
@@ -330,7 +330,7 @@ Success is decided by the HTTP status code (200 or 202) only; the response body 
 
 | Event name | Event type | Event source |
 | ---------- | ---------- | ------------ |
-| Device Attributes Response | com.adobe.eventType.edgeBypassConsent | com.adobe.eventSource.responseContent |
+| Device Attributes Response | com.adobe.eventType.edgeDeviceAttributes | com.adobe.eventSource.responseContent |
 
 #### Event data payload definition<!-- omit in toc -->
 
