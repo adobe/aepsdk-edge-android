@@ -74,11 +74,11 @@ assemble-app:
 	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-JAVA) assemble)
 	(./code/gradlew -p code/$(TEST-APP-FOLDER-NAME-KOTLIN) assemble)
 
-ci-publish-maven-local-jitpack:
-	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publishReleasePublicationToMavenLocal -Pjitpack  -x signReleasePublication)
+ci-publish-maven-local-jitpack: assemble-phone-release
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publishReleasePublicationToMavenLocal -Pjitpack)
 
-ci-publish-staging:
-	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publishReleasePublicationToSonatypeRepository)
+ci-publish-staging: clean
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publish)
 
-ci-publish:
-	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publishReleasePublicationToSonatypeRepository -Prelease)
+ci-publish: assemble-phone-release
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) publish -Prelease)
