@@ -67,6 +67,20 @@ final class EdgeConstants {
 		private Batching() {}
 	}
 
+	/**
+	 * SDK telemetry (adoption and usage) Experience Events, identified by their {@code xdm.eventType}.
+	 * These requests must not carry identifiers, so Edge sends them with an empty {@code identityMap},
+	 * without stored state ({@code meta.state}), never batches them, and does not persist the
+	 * {@code state:store} payloads from their responses.
+	 */
+	static final class Telemetry {
+
+		static final String ADOPTION_EVENT_TYPE = "sdk.adoption";
+		static final String USAGE_EVENT_TYPE = "sdk.usage";
+
+		private Telemetry() {}
+	}
+
 	static final class EventDataKeys {
 
 		static final String EDGE_REQUEST_ID = "requestId";

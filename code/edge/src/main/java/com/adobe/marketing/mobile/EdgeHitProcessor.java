@@ -202,6 +202,11 @@ class EdgeHitProcessor implements HitProcessing {
 	 * @return true if the entity's {@code xdm.eventType} is whitelisted (exact or wildcard) for batching
 	 */
 	private boolean isEventTypeBatchable(@NonNull final EdgeDataEntity entity) {
+		// SDK telemetry events are always sent alone so their empty identityMap is never shared with,
+		// or replaced by, the identityMap of another event in the same request.
+		if (EventUtils.isTelemetryEvent(entity.getEvent())) {
+			return false;
+		}
 		final EdgeBatchingConfig batchingConfig = EdgeBatchingConfig.from(entity.getConfiguration());
 		return batchingConfig.isEventTypeBatchable(EventUtils.getXdmEventType(entity.getEvent()));
 	}
@@ -293,6 +298,10 @@ class EdgeHitProcessor implements HitProcessing {
 	) {
 		final RequestBuilder request = new RequestBuilder(namedCollection);
 		request.addXdmPayload(headEdgeEntity.getIdentityMap());
+		if (EventUtils.isTelemetryEvent(headEdgeEntity.getEvent())) {
+			// Stored state holds the Edge Network identity cookie, so it is not sent with SDK telemetry.
+			request.excludeStateMetadata();
+		}
 		request.enableResponseStreaming(
 			EdgeConstants.Defaults.REQUEST_CONFIG_RECORD_SEPARATOR,
 			EdgeConstants.Defaults.REQUEST_CONFIG_LINE_FEED

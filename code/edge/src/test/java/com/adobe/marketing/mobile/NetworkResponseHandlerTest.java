@@ -34,6 +34,7 @@ import com.adobe.marketing.mobile.util.JSONAsserts;
 import com.adobe.marketing.mobile.util.JSONUtils;
 import com.adobe.marketing.mobile.util.StringUtils;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -603,6 +604,40 @@ public class NetworkResponseHandlerTest {
 			"                    \"key\": \"s_ecid\",\n" +
 			"                    \"value\": \"MCMID|29068398647607325310376254630528178721\",\n" +
 			"                    \"maxAge\": 15552000\n" +
+			"                }\n" +
+			"            ]\n" +
+			"        }],\n" +
+			"      \"errors\": []\n" +
+			"    }";
+		networkResponseHandler.processResponseOnSuccess(jsonResponse, "123");
+
+		// verify
+		verify(mockNamedCollection, never()).setMap(eq(EdgeConstants.DataStoreKeys.STORE_PAYLOADS), any(Map.class));
+	}
+
+	@Test
+	public void testProcessResponseOnSuccess_telemetryEvent_doesNotSavePayloads() {
+		final Event event = new Event.Builder("test Event", EventType.EDGE, EventSource.REQUEST_CONTENT)
+			.setEventData(
+				Collections.singletonMap(
+					"xdm",
+					Collections.singletonMap("eventType", EdgeConstants.Telemetry.ADOPTION_EVENT_TYPE)
+				)
+			)
+			.build();
+		networkResponseHandler.addWaitingEvent("123", event);
+
+		final String jsonResponse =
+			"{\n" +
+			"      \"requestId\": \"123\",\n" +
+			"      \"handle\": [" +
+			"           {\n" +
+			"            \"type\": \"state:store\",\n" +
+			"            \"payload\": [\n" +
+			"                {\n" +
+			"                    \"key\": \"kndctr_test_identity\",\n" +
+			"                    \"value\": \"new-identity\",\n" +
+			"                    \"maxAge\": 34128000\n" +
 			"                }\n" +
 			"            ]\n" +
 			"        }],\n" +

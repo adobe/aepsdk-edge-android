@@ -12,7 +12,9 @@
 package com.adobe.marketing.mobile;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -28,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -176,6 +179,89 @@ public class EdgeHitProcessorBatchTests {
 				ArgumentMatchers.anyBoolean(),
 				any(EdgeNetworkService.ResponseCallback.class)
 			);
+	}
+
+	@Test
+	public void testProcessBatch_telemetryEventFollowedByExperienceEvent_resolvesOnlyTelemetryEvent() {
+		mockNetworkReturns(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0));
+		Map<String, Object> config = createConfigBatchingTelemetryEventTypes();
+
+		DataEntity telemetryEntity = buildExperienceEventEntity(config, EdgeConstants.Telemetry.ADOPTION_EVENT_TYPE);
+		DataEntity experienceEntity = buildExperienceEventEntity(config);
+
+		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(telemetryEntity, experienceEntity));
+
+		assertEquals(1, outcome.getRemoveCount());
+		verifyRequestCount(1);
+	}
+
+	@Test
+	public void testProcessBatch_experienceEventFollowedByTelemetryEvent_resolvesOnlyExperienceEvent() {
+		mockNetworkReturns(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0));
+		Map<String, Object> config = createConfigBatchingTelemetryEventTypes();
+
+		DataEntity experienceEntity = buildExperienceEventEntity(config);
+		DataEntity telemetryEntity = buildExperienceEventEntity(config, EdgeConstants.Telemetry.USAGE_EVENT_TYPE);
+
+		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(experienceEntity, telemetryEntity));
+
+		assertEquals(1, outcome.getRemoveCount());
+		verifyRequestCount(1);
+	}
+
+	@Test
+	public void testProcessBatch_twoTelemetryEvents_resolvesOnlyHead() {
+		mockNetworkReturns(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0));
+		Map<String, Object> config = createConfigBatchingTelemetryEventTypes();
+
+		DataEntity usageEntity1 = buildExperienceEventEntity(config, EdgeConstants.Telemetry.USAGE_EVENT_TYPE);
+		DataEntity usageEntity2 = buildExperienceEventEntity(config, EdgeConstants.Telemetry.USAGE_EVENT_TYPE);
+
+		BatchOutcome outcome = hitProcessor.processBatch(Arrays.asList(usageEntity1, usageEntity2));
+
+		assertEquals(1, outcome.getRemoveCount());
+		verifyRequestCount(1);
+	}
+
+	@Test
+	public void testProcessBatch_telemetryEvent_sendsEmptyIdentityMapAndNoStateMetadata() throws Exception {
+		mockNetworkReturns(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0));
+		mockStorePayloads();
+		Map<String, Object> emptyIdentityMap = new HashMap<>();
+		emptyIdentityMap.put("identityMap", new HashMap<String, Object>());
+
+		DataEntity telemetryEntity = buildExperienceEventEntity(
+			edgeConfig,
+			EdgeConstants.Telemetry.ADOPTION_EVENT_TYPE,
+			null,
+			emptyIdentityMap
+		);
+
+		hitProcessor.processBatch(Collections.singletonList(telemetryEntity));
+
+		JSONObject request = captureSingleRequest();
+		assertEquals(0, request.getJSONObject("xdm").getJSONObject("identityMap").length());
+		assertFalse(request.getJSONObject("meta").has("state"));
+	}
+
+	@Test
+	public void testProcessBatch_nonTelemetryEvent_sendsIdentityMapAndStateMetadata() throws Exception {
+		mockNetworkReturns(new RetryResult(EdgeNetworkService.NetworkRequestOutcome.SUCCESS, 0));
+		mockStorePayloads();
+
+		hitProcessor.processBatch(Collections.singletonList(buildExperienceEventEntity()));
+
+		JSONObject request = captureSingleRequest();
+		assertEquals(
+			"test-ecid",
+			request
+				.getJSONObject("xdm")
+				.getJSONObject("identityMap")
+				.getJSONArray("ECID")
+				.getJSONObject(0)
+				.getString("id")
+		);
+		assertTrue(request.getJSONObject("meta").has("state"));
 	}
 
 	@Test
@@ -590,6 +676,15 @@ public class EdgeHitProcessorBatchTests {
 		final String xdmEventType,
 		final String customRequestPath
 	) {
+		return buildExperienceEventEntity(config, xdmEventType, customRequestPath, identityMap);
+	}
+
+	private DataEntity buildExperienceEventEntity(
+		final Map<String, Object> config,
+		final String xdmEventType,
+		final String customRequestPath,
+		final Map<String, Object> entityIdentityMap
+	) {
 		Map<String, Object> xdmData = new HashMap<>();
 		xdmData.put("test", "data");
 		xdmData.put("eventType", xdmEventType);
@@ -605,7 +700,67 @@ public class EdgeHitProcessorBatchTests {
 			.setEventData(eventData)
 			.build();
 
-		return new EdgeDataEntity(event, config, identityMap).toDataEntity();
+		return new EdgeDataEntity(event, config, entityIdentityMap).toDataEntity();
+	}
+
+	/**
+	 * Returns a copy of the test config whose batching allow-list also includes the SDK telemetry
+	 * event types, to prove telemetry is never batched even when the config allows it.
+	 */
+	private Map<String, Object> createConfigBatchingTelemetryEventTypes() {
+		Map<String, Object> batching = new HashMap<>();
+		batching.put(EdgeConstants.Batching.ENABLED, true);
+		batching.put(
+			"events",
+			Arrays.asList(
+				createBatchingEntry("test.event"),
+				createBatchingEntry(EdgeConstants.Telemetry.ADOPTION_EVENT_TYPE),
+				createBatchingEntry(EdgeConstants.Telemetry.USAGE_EVENT_TYPE)
+			)
+		);
+		Map<String, Object> config = new HashMap<>(edgeConfig);
+		config.put(EdgeConstants.SharedState.Configuration.EDGE_BATCHING, batching);
+		return config;
+	}
+
+	private static Map<String, Object> createBatchingEntry(final String xdmEventType) {
+		Map<String, Object> entry = new HashMap<>();
+		entry.put(EdgeConstants.Batching.XDM_EVENT_TYPE, xdmEventType);
+		entry.put(EdgeConstants.Batching.ENABLED, true);
+		return entry;
+	}
+
+	private void mockStorePayloads() {
+		Map<String, String> payloads = new HashMap<>();
+		payloads.put(
+			"kndctr_test_identity",
+			"{\"key\":\"kndctr_test_identity\",\"value\":\"encoded-ecid\",\"maxAge\":34128000}"
+		);
+		when(mockNamedCollection.getMap(EdgeConstants.DataStoreKeys.STORE_PAYLOADS)).thenReturn(payloads);
+	}
+
+	private void verifyRequestCount(final int count) {
+		verify(mockEdgeNetworkService, times(count))
+			.doRequest(
+				anyString(),
+				anyString(),
+				ArgumentMatchers.anyMap(),
+				ArgumentMatchers.anyBoolean(),
+				any(EdgeNetworkService.ResponseCallback.class)
+			);
+	}
+
+	private JSONObject captureSingleRequest() throws Exception {
+		ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
+		verify(mockEdgeNetworkService, times(1))
+			.doRequest(
+				anyString(),
+				payloadCaptor.capture(),
+				ArgumentMatchers.anyMap(),
+				ArgumentMatchers.anyBoolean(),
+				any(EdgeNetworkService.ResponseCallback.class)
+			);
+		return new JSONObject(payloadCaptor.getValue());
 	}
 
 	private DataEntity buildConsentEventEntity() {

@@ -594,7 +594,8 @@ class NetworkResponseHandler {
 			Log.debug(
 				LOG_TAG,
 				LOG_SOURCE,
-				"Identities were reset recently, ignoring state:store payload for request with id: " + requestId
+				"Ignoring state:store and locationHint:result payloads for request with id (%s), identities were reset recently or the request is SDK telemetry.",
+				requestId
 			);
 		} else {
 			if (EdgeJson.Response.EventHandle.Store.TYPE.equals(handle.getType())) {
@@ -1069,6 +1070,7 @@ class NetworkResponseHandler {
 	 * Determines if the store payload response for a given request id should be ignored.
 	 * A store payload should be ignored when a reset happened and the persisted state store was removed while processing a network request, in order to avoid an identity overwrite.
 	 * The first network request after reset will update the state store with the new information.
+	 * A store payload is also ignored for SDK telemetry requests, which are sent without identifiers or stored state.
 	 * @param requestId the request id
 	 * @return true if the store payload responses for requestId should be ignored
 	 */
@@ -1085,6 +1087,11 @@ class NetworkResponseHandler {
 			}
 
 			final Event firstEvent = contexts.get(0);
+			// An SDK telemetry request is sent without identifiers or stored state, so its state:store
+			// payloads must not overwrite the state used by other Edge requests.
+			if (EventUtils.isTelemetryEvent(firstEvent)) {
+				return true;
+			}
 			return firstEvent.getTimestamp() < lastResetDate;
 		}
 	}

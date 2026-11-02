@@ -242,6 +242,63 @@ public class EdgeExtensionTest {
 		verify(mockQueue, never()).queue(any(DataEntity.class));
 	}
 
+	@Test
+	public void testHandleExperienceEventRequest_adoptionTelemetryEvent_queuesWithEmptyIdentityMap() {
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			new SharedStateResult(SharedStateStatus.SET, getConsentsData(ConsentStatus.YES))
+		);
+
+		edgeExtension.handleExperienceEventRequest(createXdmEvent(EdgeConstants.Telemetry.ADOPTION_EVENT_TYPE));
+
+		final EdgeDataEntity entity = captureQueuedEntity();
+		assertEquals(1, entity.getIdentityMap().size());
+		assertEquals(new HashMap<String, Object>(), entity.getIdentityMap().get("identityMap"));
+	}
+
+	@Test
+	public void testHandleExperienceEventRequest_usageTelemetryEvent_queuesWithEmptyIdentityMap() {
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			new SharedStateResult(SharedStateStatus.SET, getConsentsData(ConsentStatus.YES))
+		);
+
+		edgeExtension.handleExperienceEventRequest(createXdmEvent(EdgeConstants.Telemetry.USAGE_EVENT_TYPE));
+
+		final EdgeDataEntity entity = captureQueuedEntity();
+		assertEquals(1, entity.getIdentityMap().size());
+		assertEquals(new HashMap<String, Object>(), entity.getIdentityMap().get("identityMap"));
+	}
+
+	@Test
+	public void testHandleExperienceEventRequest_nonTelemetryEvent_queuesWithIdentityState() {
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			new SharedStateResult(SharedStateStatus.SET, getConsentsData(ConsentStatus.YES))
+		);
+
+		edgeExtension.handleExperienceEventRequest(createXdmEvent("commerce.purchases"));
+
+		final EdgeDataEntity entity = captureQueuedEntity();
+		assertEquals(identityState, entity.getIdentityMap());
+	}
+
+	@Test
+	public void testHandleExperienceEventRequest_telemetryEvent_whenCollectConsentNo_doesNotQueue() {
+		mockSharedStates(
+			new SharedStateResult(SharedStateStatus.SET, configData),
+			new SharedStateResult(SharedStateStatus.SET, identityState),
+			new SharedStateResult(SharedStateStatus.SET, getConsentsData(ConsentStatus.NO))
+		);
+
+		edgeExtension.handleExperienceEventRequest(createXdmEvent(EdgeConstants.Telemetry.ADOPTION_EVENT_TYPE));
+
+		verify(mockQueue, never()).queue(any(DataEntity.class));
+	}
+
 	// Tests for void handleConsentUpdate(final Event event)
 
 	@Test
@@ -636,6 +693,33 @@ public class EdgeExtensionTest {
 			)
 		)
 			.thenReturn(consent);
+	}
+
+	/**
+	 * Captures the single entity queued on the hit queue.
+	 *
+	 * @return the queued {@link EdgeDataEntity}
+	 */
+	private EdgeDataEntity captureQueuedEntity() {
+		final ArgumentCaptor<DataEntity> entityCaptor = ArgumentCaptor.forClass(DataEntity.class);
+		verify(mockQueue, times(1)).queue(entityCaptor.capture());
+		final EdgeDataEntity edgeEntity = EdgeDataEntity.fromDataEntity(entityCaptor.getValue());
+		assertNotNull(edgeEntity);
+		return edgeEntity;
+	}
+
+	/**
+	 * Creates an Experience Event with the given {@code xdm.eventType}.
+	 *
+	 * @param xdmEventType the XDM event type
+	 * @return the Experience Event
+	 */
+	private static Event createXdmEvent(final String xdmEventType) {
+		final Map<String, Object> xdm = new HashMap<>();
+		xdm.put("eventType", xdmEventType);
+		final Map<String, Object> data = new HashMap<>();
+		data.put("xdm", xdm);
+		return new Event.Builder("xdmEvent", EventType.EDGE, EventSource.REQUEST_CONTENT).setEventData(data).build();
 	}
 
 	/**

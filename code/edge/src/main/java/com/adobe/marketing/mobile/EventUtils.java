@@ -36,6 +36,25 @@ final class EventUtils {
 	}
 
 	/**
+	 * Checks if the provided {@code event} is an SDK telemetry Experience Event, that is an
+	 * Experience Event whose {@code xdm.eventType} is {@code sdk.adoption} or {@code sdk.usage}.
+	 *
+	 * @param event the event to verify
+	 * @return true if the event is an SDK telemetry Experience Event, false otherwise
+	 */
+	static boolean isTelemetryEvent(@NonNull final Event event) {
+		if (!isExperienceEvent(event)) {
+			return false;
+		}
+
+		final String xdmEventType = getXdmEventType(event);
+		return (
+			EdgeConstants.Telemetry.ADOPTION_EVENT_TYPE.equals(xdmEventType) ||
+			EdgeConstants.Telemetry.USAGE_EVENT_TYPE.equals(xdmEventType)
+		);
+	}
+
+	/**
 	 * Checks if the provided {@code event} is of type {@link EventType#EDGE} and source {@link EventSource#UPDATE_CONSENT}.
 	 *
 	 * @param event the event to verify

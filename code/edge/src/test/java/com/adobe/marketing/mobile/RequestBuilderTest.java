@@ -601,6 +601,33 @@ public class RequestBuilderTest {
 		assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.state"));
 	}
 
+	@Test
+	public void getPayloadWithExperienceEvents_doesNotAddStoreMetadata_whenStateMetadataExcluded() {
+		List<Event> events = getSingleEvent(getExperienceEventData("value"));
+		setupMockStoreMetadata();
+		requestBuilder.excludeStateMetadata();
+		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
+		assertNotNull(payload);
+		assertNumberOfEvents(payload, 1);
+
+		assertExactMatch("{}", payload, new KeyMustBeAbsent("meta.state"));
+	}
+
+	@Test
+	public void getPayloadWithExperienceEvents_addsEmptyIdentityMap_whenIdentityMapIsEmpty() throws Exception {
+		List<Event> events = getSingleEvent(getExperienceEventData("value"));
+		Map<String, Object> identityPayload = new HashMap<>();
+		identityPayload.put("identityMap", new HashMap<String, Object>());
+		requestBuilder.addXdmPayload(identityPayload);
+
+		JSONObject payload = requestBuilder.getPayloadWithExperienceEvents(events);
+		assertNotNull(payload);
+		assertNumberOfEvents(payload, 1);
+
+		JSONObject identityMap = payload.getJSONObject("xdm").getJSONObject("identityMap");
+		assertEquals(0, identityMap.length());
+	}
+
 	// getConsentPayload tests
 	@Test
 	public void getConsentPayload_returnsNull_whenEventNull() {

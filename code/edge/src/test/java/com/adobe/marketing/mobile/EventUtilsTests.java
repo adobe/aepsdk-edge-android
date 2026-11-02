@@ -12,7 +12,9 @@
 package com.adobe.marketing.mobile;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mockStatic;
 
 import com.adobe.marketing.mobile.util.JSONAsserts;
@@ -287,5 +289,44 @@ public class EventUtilsTests {
 			.build();
 
 		assertNull(EventUtils.getXdmEventType(event));
+	}
+
+	// isTelemetryEvent
+
+	@Test
+	public void testIsTelemetryEvent_adoptionEventType_returnsTrue() {
+		assertTrue(EventUtils.isTelemetryEvent(createXdmEvent(EventType.EDGE, "sdk.adoption")));
+	}
+
+	@Test
+	public void testIsTelemetryEvent_usageEventType_returnsTrue() {
+		assertTrue(EventUtils.isTelemetryEvent(createXdmEvent(EventType.EDGE, "sdk.usage")));
+	}
+
+	@Test
+	public void testIsTelemetryEvent_otherEventType_returnsFalse() {
+		assertFalse(EventUtils.isTelemetryEvent(createXdmEvent(EventType.EDGE, "commerce.purchases")));
+		assertFalse(EventUtils.isTelemetryEvent(createXdmEvent(EventType.EDGE, "sdk.adoption.other")));
+		assertFalse(EventUtils.isTelemetryEvent(createXdmEvent(EventType.EDGE, "SDK.ADOPTION")));
+	}
+
+	@Test
+	public void testIsTelemetryEvent_noXdmEventType_returnsFalse() {
+		Event event = new Event.Builder("test", EventType.EDGE, EventSource.REQUEST_CONTENT)
+			.setEventData(Collections.singletonMap("xdm", Collections.singletonMap("_id", "1")))
+			.build();
+
+		assertFalse(EventUtils.isTelemetryEvent(event));
+	}
+
+	@Test
+	public void testIsTelemetryEvent_notExperienceEvent_returnsFalse() {
+		assertFalse(EventUtils.isTelemetryEvent(createXdmEvent(EventType.GENERIC_TRACK, "sdk.adoption")));
+	}
+
+	private static Event createXdmEvent(final String type, final String xdmEventType) {
+		return new Event.Builder("test", type, EventSource.REQUEST_CONTENT)
+			.setEventData(Collections.singletonMap("xdm", Collections.singletonMap("eventType", xdmEventType)))
+			.build();
 	}
 }

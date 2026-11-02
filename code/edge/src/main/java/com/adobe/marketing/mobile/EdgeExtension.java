@@ -432,8 +432,25 @@ class EdgeExtension extends Extension {
 			return;
 		}
 
-		EdgeDataEntity entity = new EdgeDataEntity(event, edgeConfig, identityReady);
+		// SDK telemetry events must not carry identifiers, so they are queued with an empty identityMap
+		// instead of the Identity XDM shared state.
+		final Map<String, Object> identityMap = EventUtils.isTelemetryEvent(event)
+			? createEmptyIdentityMap()
+			: identityReady;
+
+		EdgeDataEntity entity = new EdgeDataEntity(event, edgeConfig, identityMap);
 		hitQueue.queue(entity.toDataEntity());
+	}
+
+	/**
+	 * Creates the identity payload used for SDK telemetry events: {@code {"identityMap": {}}}.
+	 *
+	 * @return a map holding an empty {@code identityMap}
+	 */
+	@NonNull private static Map<String, Object> createEmptyIdentityMap() {
+		final Map<String, Object> identityMap = new HashMap<>();
+		identityMap.put(EdgeJson.Event.Xdm.IDENTITY_MAP, new HashMap<String, Object>());
+		return identityMap;
 	}
 
 	/**

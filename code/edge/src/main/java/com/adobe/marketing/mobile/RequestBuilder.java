@@ -59,9 +59,20 @@ class RequestBuilder {
 	/// Configuration override metadata for Edge Network services
 	private Map<String, Object> configOverrides;
 
+	// When true, stored state (meta.state) is not attached to the request
+	private boolean excludeStateMetadata;
+
 	RequestBuilder(final NamedCollection namedCollection) {
 		storeResponsePayloadManager = new StoreResponsePayloadManager(namedCollection);
 		xdmPayloads = new HashMap<>();
+	}
+
+	/**
+	 * Excludes the stored state ({@code meta.state}) from the request. The stored state holds the
+	 * Edge Network identity cookie, so it is excluded from requests that must not carry identifiers.
+	 */
+	void excludeStateMetadata() {
+		this.excludeStateMetadata = true;
 	}
 
 	/**
@@ -131,7 +142,11 @@ class RequestBuilder {
 				.setKonductorConfig(konductorConfig.toObjectMap())
 				.setSdkConfig(sdkConfig != null ? sdkConfig.toMap() : null)
 				.setConfigOverrides(configOverrides)
-				.setStateMetadata(new StateMetadata(storeResponsePayloadManager.getActiveStores()).toObjectMap())
+				.setStateMetadata(
+					excludeStateMetadata
+						? null
+						: new StateMetadata(storeResponsePayloadManager.getActiveStores()).toObjectMap()
+				)
 				.build()
 		);
 
